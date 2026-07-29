@@ -25,6 +25,10 @@ from pathlib import Path
 
 import pytest
 
+from tests.support.js_source_scan import line_of as _line_of
+from tests.support.js_source_scan import mask_code as _mask_code
+from tests.support.js_source_scan import scan_view as _scan_view
+
 ROOT = Path(__file__).resolve().parents[2]
 DASH = ROOT / "usdcop-trading-dashboard" / "components"
 
@@ -77,98 +81,14 @@ def test_da_surface_carries_caveat(rel: str, markers: tuple):
 # FULL no-signal clauses, and (c) rejects promotional/action language outright.
 # ---------------------------------------------------------------------------
 
-def _mask_code(src: str) -> str:
-    """Return `src` with comments and string bodies blanked out, same length.
-
-    S-07: every structural check below reasons about JSX brace balance
-    (`prefix.count("{") - prefix.count("}")`). Counting braces that live inside a
-    comment or a string literal makes the check trivially defeatable — the
-    demonstrated attack was one comment character:
-
-        {__isInternal && (
-          /* } el candado cuenta llaves literales, tambien en comentarios */
-          <ForecastDisclaimer variant="weekly" />
-        )}
-
-    which rebalances the count to 0 while the banner is invisible to everyone who
-    is not an admin. Blanking (rather than deleting) keeps every character index
-    identical, so the callers can keep using positions from the original source.
-
-    Template literals keep their `${...}` interpolations visible (they are real
-    code, with real braces) and are masked recursively.
-    """
-    out = list(src)
-    n = len(src)
-
-    def blank(a: int, b: int) -> None:
-        for k in range(a, min(b, n)):
-            if out[k] not in "\r\n":
-                out[k] = " "
-
-    i = 0
-    while i < n:
-        c = src[i]
-        if c == "/" and i + 1 < n and src[i + 1] == "/":
-            j = src.find("\n", i)
-            j = n if j == -1 else j
-            blank(i, j)
-            i = j
-            continue
-        if c == "/" and i + 1 < n and src[i + 1] == "*":
-            j = src.find("*/", i + 2)
-            j = n if j == -1 else j + 2
-            blank(i, j)
-            i = j
-            continue
-        if c in "\"'":
-            j = i + 1
-            while j < n:
-                if src[j] == "\\":
-                    j += 2
-                    continue
-                if src[j] == c:
-                    j += 1
-                    break
-                if src[j] == "\n":       # unterminated literal — stop at EOL
-                    break
-                j += 1
-            blank(i, j)
-            i = j
-            continue
-        if c == "`":
-            blank(i, i + 1)
-            j = i + 1
-            while j < n:
-                if src[j] == "\\":
-                    blank(j, j + 2)
-                    j += 2
-                    continue
-                if src[j] == "`":
-                    blank(j, j + 1)
-                    j += 1
-                    break
-                if src[j] == "$" and j + 1 < n and src[j + 1] == "{":
-                    blank(j, j + 1)      # the '$' is text; '{...}' is code
-                    depth = 0
-                    k = j + 1
-                    while k < n:
-                        if src[k] == "{":
-                            depth += 1
-                        elif src[k] == "}":
-                            depth -= 1
-                            if depth == 0:
-                                k += 1
-                                break
-                        k += 1
-                    out[j + 1:k] = list(_mask_code(src[j + 1:k]))
-                    j = k
-                    continue
-                blank(j, j + 1)
-                j += 1
-            i = j
-            continue
-        i += 1
-    return "".join(out)
+# `_mask_code`, `_scan_view` and `_line_of` are imported from
+# `tests/support/js_source_scan.py` — the SAME primitives back the /replay read-only lock
+# (`test_replay_is_read_only.py`). They used to be duplicated per lock, which is how the
+# two locks drifted: /replay folded `'a' + 'b'` before searching, BL-06 did not, and a
+# three-character concatenation walked through this muralla (see the BL-06 section below).
+# Their self-tests live next to the locks that depend on them:
+# `test_brace_depth_ignores_comments_and_strings` (mask_code, S-07) here, and
+# `test_scan_view_collapses_the_known_evasions` (scan_view) in the /replay module.
 
 
 def _jsx_depth_from_enclosing_return(src: str, pos: int) -> int | None:
@@ -783,36 +703,106 @@ def test_legacy_diagnostic_caveat_wrapper_cannot_hide():
 # They must never grow approve/deploy/execution wiring or order verbs.
 # ---------------------------------------------------------------------------
 
+# S-08 (auto-red-team, 2026-07-28) — THE MATCHER, not the perimeter, was the hole.
+#
+# S-06 fixed the PERIMETER (it is now the import closure of the routes: a rogue widget is
+# inside the muralla wherever its author files it). That part held. What did not hold was
+# the measuring tape: an exact-literal, UPPERCASE-only, per-RAW-line blacklist. Three
+# characters defeated it, with the widget still fully functional and the suite at 28/28:
+#
+#     fetch(`${P}/appro` + 've')            // no raw line contains 'api/production/approve'
+#     fetch('/api/exec' + 'ution/orders')   // no raw line contains '/api/execution'
+#     <button>Comprar ahora</button>        // 'Comprar' != 'COMPRAR'
+#
+# The /replay lock (BL-34) had already solved exactly this and its primitive now lives in
+# `tests/support/js_source_scan.py`: `scan_view` returns a NORMALISED view of the file with
+# comments dropped, `+`-concatenated literals merged (N pieces, mixed quotes, across
+# newlines, comments between pieces), `\xNN`/`\uNNNN` escapes decoded, template `${…}`
+# holes closed, `${IDENT}` substituted when IDENT is bound exactly once to a literal
+# string, accents stripped and everything casefolded — while still mapping every character
+# back to its original line. Searching THAT view is what makes the three mutations above
+# red. Keeping a second copy of the tape here is what let the two locks disagree about what
+# "contains an endpoint" means in the first place (K-035); the tape's own self-tests are
+# `test_scan_view_collapses_the_known_evasions` (/replay module) and
+# `test_brace_depth_ignores_comments_and_strings` (here).
+#
+# HONEST LIMIT (this is defence in depth, not a proof) — what still gets through:
+#   ✘ strings assembled at RUNTIME: `atob('…')`, `String.fromCharCode(…)`,
+#     `['appro','ve'].join('')`, `x['app'+'rove']` as a computed member, a URL that arrives
+#     from props/config/env — static analysis cannot evaluate them
+#   ✘ indirection the const pass cannot see: an identifier bound TWICE to different values
+#     (dropped on purpose — guessing which binding wins would invent false positives, and a
+#     lock that cries wolf gets deleted), imported from another module, chained through a
+#     second const, or held in an object member `CFG.base`
+#   ✘ homoglyphs: a Cyrillic 'а' in `/аpi/…` survives NFKD unchanged (the request would
+#     404, so it is not a working attack, but this lock does not prove that)
+#   ✘ the thesaurus: `\bcomprar\b|\bvender\b` is the Spanish order-verb copy this product
+#     actually ships. 'Adquirir', 'Tomar posición', 'Ir largo' are NOT matched here (the
+#     BL-01 marketing scan below catches several of those shapes, also imperfectly)
+#   ✘ English 'buy'/'sell' are deliberately NOT verbs here: `Buy & Hold` is the honest
+#     baseline label on these very surfaces, and a blacklist that fires on honest code is
+#     a blacklist someone deletes
+#   ✘ semantics: absence of a token is not absence of a capability
+
+#: Endpoints that mutate approval / deployment / promotion / execution state. Matched on
+#: the normalised view, so they are written lowercase and WITHOUT the leading slash —
+#: that is what makes `'/api' + '/production/approve'` and `` `${base}api/execution` ``
+#: both hit. Kept in sync with the /replay list: the same capability class is forbidden on
+#: both read-only surfaces, and two divergent lists would be two different rules.
 FORBIDDEN_ACTION_TOKENS = [
     "api/production/approve",
     "api/production/deploy",
-    "/api/execution",
-    "onApprove",
-    "onReject",
+    "api/registry/promote",
+    "api/execution",
+    "api/trading/order",
+    # Approval/rejection callbacks: the wiring, even when the endpoint string lives
+    # elsewhere. Lowercase because the view is casefolded (`onApprove` ≡ `ONAPPROVE`).
+    "onapprove",
+    "onreject",
+    "handleapprove",
+    "handlereject",
 ]
 
-# Order verbs as UI text (word-bounded, case-sensitive — Spanish uppercase CTA style).
-_ORDER_VERBS = re.compile(r"\b(COMPRAR|VENDER)\b")
+#: Order verbs as UI text: word-bounded and matched on the normalised (casefolded,
+#: accent-stripped) view, so `COMPRAR`, `Comprar ahora` and `comprar` are the same thing.
+#: Word bounds are what keep this honest in the other direction too — it must not fire on
+#: a substring of an unrelated identifier.
+_ORDER_VERBS = re.compile(r"\b(comprar|vender)\b")
 
 # Comment-only lines are tolerated (explanatory prose is not an action capability).
+# Still used for the RAW-line scans that must see quotes (opaque dynamic imports), where
+# the normalised view is the wrong tool: it removes the very quote that distinguishes
+# `import('@/x')` from `import(mod)`.
 _COMMENT_LINE = re.compile(r"^\s*(//|\*|/\*|\{/\*)")
 
 
-def _non_comment_offenders(path: Path) -> list[str]:
-    """Return 'file:line: token' hits for forbidden tokens outside comment lines."""
-    offenders: list[str] = []
+def _action_capability_offenders(path: Path) -> list[str]:
+    """'file:line: <what> :: <snippet>' hits for forbidden action capabilities in one file.
+
+    Searched on `scan_view(src)` — see the S-08 note above. Comments are dropped by the
+    primitive itself (prose naming `/api/production/approve` is documentation, not a
+    capability), which is strictly stronger than the old comment-only-LINE skip: a trailing
+    `// …` on a code line used to be scanned as code, and a `/* */` spanning lines used to
+    hide nothing.
+    """
     rel = path.relative_to(ROOT).as_posix()
-    for lineno, line in enumerate(
-        path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1
-    ):
-        if _COMMENT_LINE.match(line):
-            continue
-        for token in FORBIDDEN_ACTION_TOKENS:
-            if token in line:
-                offenders.append(f"{rel}:{lineno}: {token}")
-        m = _ORDER_VERBS.search(line)
-        if m:
-            offenders.append(f"{rel}:{lineno}: {m.group(0)}")
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    text, lines = _scan_view(raw)
+    raw_lines = raw.splitlines()
+
+    def snippet(lineno: int) -> str:
+        return raw_lines[lineno - 1].strip()[:110] if 0 < lineno <= len(raw_lines) else ""
+
+    offenders: list[str] = []
+    for token in FORBIDDEN_ACTION_TOKENS:
+        for m in re.finditer(re.escape(token), text):
+            ln = _line_of(lines, m.start())
+            offenders.append(f"{rel}:{ln}: endpoint/callback {token!r} :: {snippet(ln)}")
+    for m in _ORDER_VERBS.finditer(text):
+        ln = _line_of(lines, m.start())
+        offenders.append(
+            f"{rel}:{ln}: verbo de orden {m.group(0)!r} :: {snippet(ln)}"
+        )
     return offenders
 
 
@@ -978,10 +968,22 @@ def test_forecasting_has_no_action_capabilities():
     paths. The mutation that used to pass — a new `ForecastingApprovePanel.tsx`
     under `components/gm/views/` mounted inside ForecastingView's JSX — now fails
     here, because importing it is what puts it inside the muralla.
+
+    S-08: the MATCHER is the shared normalised view (`tests/support/js_source_scan.py`),
+    not an exact-literal per-line scan. The perimeter fix alone was not enough: the same
+    widget, written as ``fetch(`${P}/appro` + 've')`` / `fetch('/api/exec' + 'ution/orders')`
+    with a lowercase `Comprar ahora` button, left this suite at 28/28 green in ANY
+    directory. Same capability, zero red. See the S-08 note above for what the tape still
+    does NOT catch.
+
+    ROJO: crear components/gm/views/ForecastingRogueWidget.tsx (o el MISMO fichero en
+      lib/telemetry/, da igual el directorio) con
+      ``fetch(`${P}/appro` + 've')``, `fetch('/api/exec' + 'ution/orders')` y un botón
+      "Comprar ahora", importado y renderizado desde ForecastingView.
     """
     offenders: list[str] = []
     for f in _forecasting_surface_files():
-        offenders.extend(_non_comment_offenders(f))
+        offenders.extend(_action_capability_offenders(f))
     assert not offenders, (
         "Forecasting surfaces grew action capabilities (forbidden outside comments):\n  "
         + "\n  ".join(offenders)
@@ -991,7 +993,7 @@ def test_forecasting_has_no_action_capabilities():
 def test_legacy_forecasting_same_rules():
     """BL-06: the legacy ForecastingDashboard.tsx obeys the same muralla — legacy pages
     are still served (admin-only /legacy) and must not be the back door."""
-    offenders = _non_comment_offenders(LEGACY_DASHBOARD)
+    offenders = _action_capability_offenders(LEGACY_DASHBOARD)
     assert not offenders, (
         "Legacy ForecastingDashboard.tsx grew action capabilities:\n  "
         + "\n  ".join(offenders)
@@ -1011,23 +1013,33 @@ _IMPORT_LINE = re.compile(r"^\s*(import\b|export\s*\{|\}\s*from\s)")
 
 
 def _surface_marketing_offenders(path: Path, *, apply_exemptions: bool = True) -> list[str]:
-    """'file:line: /pattern/' hits of FORBIDDEN_MARKETING in a surface file,
-    matched on accent-stripped casefolded text (same _norm as the SSOT check),
-    skipping comment and import lines (BL-06 precedent)."""
+    """'file:line: /pattern/' hits of FORBIDDEN_MARKETING in a surface file.
+
+    S-08: matched on the SAME normalised view as the action-capability scan
+    (`tests/support/js_source_scan.py::scan_view`), not per raw line. The old per-line
+    `_norm(line)` scan carried the identical concatenation hole: `'opere con ' + 'confianza'`
+    is two harmless lines and one marketing sentence, and the surfaces build most of their
+    copy exactly that way (`lib/i18n/gm.ts` is concatenated literals end to end). Comments
+    are dropped by the primitive; import lines are skipped explicitly, because a module
+    path only names an identifier.
+    """
     offenders: list[str] = []
     rel = path.relative_to(ROOT).as_posix()
-    for lineno, line in enumerate(
-        path.read_text(encoding="utf-8", errors="replace").splitlines(), start=1
-    ):
-        if _COMMENT_LINE.match(line) or _IMPORT_LINE.match(line):
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    raw_lines = raw.splitlines()
+    import_lines = {
+        n for n, line in enumerate(raw_lines, start=1) if _IMPORT_LINE.match(line)
+    }
+    text, lines = _scan_view(raw)
+    for pat in FORBIDDEN_MARKETING:
+        if apply_exemptions and (rel, pat) in MARKETING_EXEMPTIONS:
             continue
-        text = _norm(line)
-        for pat in FORBIDDEN_MARKETING:
-            if not re.search(pat, text):
+        for m in re.finditer(pat, text):
+            lineno = _line_of(lines, m.start())
+            if lineno in import_lines:
                 continue
-            if apply_exemptions and (rel, pat) in MARKETING_EXEMPTIONS:
-                continue
-            offenders.append(f"{rel}:{lineno}: /{pat}/ :: {line.strip()[:110]}")
+            snippet = raw_lines[lineno - 1].strip()[:110] if 0 < lineno <= len(raw_lines) else ""
+            offenders.append(f"{rel}:{lineno}: /{pat}/ :: {snippet}")
     return offenders
 
 

@@ -48,23 +48,31 @@ So the perimeter is split:
 Every waiver is itself checked (`test_perimeter_waivers_are_all_still_needed`): a waiver
 that stops matching fails, so a stale waiver cannot silently cover the next real offender.
 
-EVASIONS COVERED (learned from the BL-06 defect: exact-literal blacklists are trivial to dodge)
-----------------------------------------------------------------------------------------------
-The scan runs over a NORMALISED view of each file, not over raw lines:
-  ✔ case            `/API/Production/Approve`, `APROBAR`
-  ✔ accents         `Aprobación` ≡ `Aprobacion` (NFKD, combining marks dropped)
-  ✔ concatenation   `fetch('/api/produc' + 'tion/approve')`, across newlines, N pieces,
-                    mixed quote styles (`'a' + "b" + \x60c\x60`), and with comments
-                    between the pieces
-  ✔ escapes         `'/api/production/appro\x76e'`, `'approve'`
-  ✔ template holes  `` `/api/produc${''}tion/approve` `` (static parts are joined; the
-                    interpolated code is still scanned, just separately)
-  ✔ new directory   any file, anywhere, the moment `app/replay/page.tsx` reaches it
-  ✔ opaque imports  `import(name)` is rejected outright instead of silently skipped —
-                    static analysis cannot follow it, so it would be a hole in the muralla
+EVASIONS COVERED (exact-literal blacklists are trivial to dodge)
+---------------------------------------------------------------
+The scan runs over a NORMALISED view of each file, not over raw lines. That view is built
+by `tests/support/js_source_scan.py::scan_view`, which is SHARED with the BL-06
+/forecasting muralla (`test_forecasting_caveat_present.py`): the primitive used to be
+duplicated, BL-06's copy was a raw exact-literal scan, and a three-character concatenation
+walked through it while its suite stayed 28/28 green. One concept, one implementation
+(K-035). Its full contract — and its limits — live in that module's docstring:
+  ✔ case             `/API/Production/Approve`, `APROBAR`
+  ✔ accents          `Aprobación` ≡ `Aprobacion` (NFKD, combining marks dropped)
+  ✔ concatenation    `fetch('/api/produc' + 'tion/approve')`, across newlines, N pieces,
+                     mixed quote styles (`'a' + "b" + \x60c\x60`), comments between pieces
+  ✔ escapes          `'/api/production/appro\x76e'`, `'approve'`
+  ✔ template holes   `` `/api/produc${''}tion/approve` `` (static parts joined)
+  ✔ const indirect.  `const P = '/api/production'; fetch(\x60${P}/appro\x60 + 've')` — a
+                     `${IDENT}` bound exactly once to a literal is substituted inline
+  ✔ new directory    any file, anywhere, the moment `app/replay/page.tsx` reaches it
+  ✔ opaque imports   `import(name)` is rejected outright instead of silently skipped —
+                     static analysis cannot follow it, so it would be a hole in the muralla
 NOT COVERED (stated, not hidden — this is defence in depth, not a proof):
   ✘ runtime-assembled specifiers: `String.fromCharCode(...)`, `atob('...')`,
     `['appro','ve'].join('')`, `x['app'+'rove']`, a URL read from config/props at runtime
+  ✘ indirection the const pass cannot see: an identifier bound twice to different values
+    (dropped on purpose — guessing would invent false positives), imported from another
+    module, chained through a second const, or held in an object member
   ✘ homoglyphs inside a URL path (a Cyrillic 'а' in `/аpi/...` would not match — the
     request would also 404, so it is not a working attack, but the lock does not prove it)
   ✘ a rogue widget added INSIDE the exempted dual-variant file
@@ -76,10 +84,13 @@ and the Playwright spec.
 from __future__ import annotations
 
 import re
-import unicodedata
 from pathlib import Path
 
 import pytest
+
+from tests.support.js_source_scan import line_of as _line_of
+from tests.support.js_source_scan import mask_code as _mask_code
+from tests.support.js_source_scan import scan_view as _scan_view
 
 ROOT = Path(__file__).resolve().parents[2]
 DASHBOARD = (ROOT / "usdcop-trading-dashboard").resolve()
@@ -173,185 +184,18 @@ def _rel(path: Path) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Normalised scan view — the anti-evasion layer (see module docstring)
+# Normalised scan view — the anti-evasion layer
 # ---------------------------------------------------------------------------
-
-_ESCAPES = {"n": " ", "r": " ", "t": " ", "b": " ", "f": " ", "v": " ", "0": " "}
-
-
-def _decode_js_escapes(body: str) -> str:
-    """Resolve `\\xNN`, `\\uNNNN`, `\\u{...}` and simple backslash escapes.
-
-    `'/api/production/appro\\x76e'` must read as `/api/production/approve`, otherwise the
-    blacklist is defeated by one escape sequence.
-    """
-    out: list[str] = []
-    i, n = 0, len(body)
-    while i < n:
-        c = body[i]
-        if c != "\\" or i + 1 >= n:
-            out.append(c)
-            i += 1
-            continue
-        nxt = body[i + 1]
-        if nxt == "x" and re.match(r"[0-9a-fA-F]{2}", body[i + 2:i + 4] or ""):
-            out.append(chr(int(body[i + 2:i + 4], 16)))
-            i += 4
-        elif nxt == "u" and body[i + 2:i + 3] == "{":
-            end = body.find("}", i + 3)
-            hexs = body[i + 3:end] if end != -1 else ""
-            if end != -1 and re.fullmatch(r"[0-9a-fA-F]{1,6}", hexs):
-                out.append(chr(int(hexs, 16)))
-                i = end + 1
-            else:                        # pragma: no cover — malformed escape
-                out.append(nxt)
-                i += 2
-        elif nxt == "u" and re.match(r"[0-9a-fA-F]{4}", body[i + 2:i + 6] or ""):
-            out.append(chr(int(body[i + 2:i + 6], 16)))
-            i += 6
-        else:
-            out.append(_ESCAPES.get(nxt, nxt))
-            i += 2
-    return "".join(out)
-
-
-def _skip_ws_and_comments(src: str, i: int) -> int:
-    """Index of the next significant character at/after `i` (whitespace + comments skipped).
-
-    Comments matter here: `'/api/produc' /* nope */ + 'tion/approve'` must still merge.
-    """
-    n = len(src)
-    while i < n:
-        if src[i].isspace():
-            i += 1
-        elif src.startswith("//", i):
-            j = src.find("\n", i)
-            i = n if j == -1 else j
-        elif src.startswith("/*", i):
-            j = src.find("*/", i + 2)
-            i = n if j == -1 else j + 2
-        else:
-            break
-    return i
-
-
-def _read_string(src: str, i: int) -> tuple[str, str, int]:
-    """Read the literal starting at `src[i]`.
-
-    Returns `(static_body, interpolated_code, end_index)`. For template literals the
-    static chunks are JOINED (so `` `/api/produc${''}tion/approve` `` collapses to the
-    real path) and the `${...}` code is returned separately so it is still scanned, just
-    not glued into the path.
-    """
-    quote = src[i]
-    n = len(src)
-    j = i + 1
-    body: list[str] = []
-    interp: list[str] = []
-    while j < n:
-        c = src[j]
-        if c == "\\":
-            body.append(src[j:j + 2])
-            j += 2
-            continue
-        if c == quote:
-            j += 1
-            break
-        if c == "\n" and quote != "`":   # unterminated literal — stop at EOL
-            break
-        if quote == "`" and c == "$" and src[j + 1:j + 2] == "{":
-            depth, k = 0, j + 1
-            while k < n:
-                if src[k] == "{":
-                    depth += 1
-                elif src[k] == "}":
-                    depth -= 1
-                    if depth == 0:
-                        k += 1
-                        break
-                k += 1
-            interp.append(src[j + 2:k - 1])
-            j = k
-            continue
-        body.append(c)
-        j += 1
-    return _decode_js_escapes("".join(body)), " ".join(interp), j
-
-
-def _scan_view(src: str) -> tuple[str, list[int]]:
-    """Return `(text, lines)`: `src` with comments dropped, adjacent string literals merged
-    across `+` (any quote style, across newlines, comments between pieces), escapes decoded,
-    accents stripped and casefolded. `lines[k]` is the original 1-based line of `text[k]`.
-
-    Comments are DROPPED rather than scanned: explanatory prose naming `/api/production/approve`
-    is documentation, not a capability (same rule as BL-06). The docstring of this very module
-    would otherwise fail its own lock.
-    """
-    chars: list[str] = []
-    lines: list[int] = []
-
-    def emit(s: str, ln: int) -> None:
-        for ch in s:
-            nfkd = unicodedata.normalize("NFKD", ch)
-            for c2 in nfkd:
-                if unicodedata.combining(c2):
-                    continue
-                for c3 in c2.casefold():
-                    chars.append(c3)
-                    lines.append(ln)
-
-    i, n, line = 0, len(src), 1
-    while i < n:
-        c = src[i]
-        if c == "\n":
-            emit("\n", line)
-            line += 1
-            i += 1
-            continue
-        if src.startswith("//", i):
-            j = src.find("\n", i)
-            i = n if j == -1 else j
-            continue
-        if src.startswith("/*", i):
-            j = src.find("*/", i + 2)
-            j = n if j == -1 else j + 2
-            line += src.count("\n", i, j)
-            i = j
-            continue
-        if c in "\"'`":
-            start_line = line
-            body, interp, j = _read_string(src, i)
-            line += src.count("\n", i, j)
-            i = j
-            extra = [interp]
-            # Fold every `+ '<literal>'` that follows into the SAME body: this is the
-            # `'/api/produc' + 'tion/approve'` evasion, and it is the whole reason this
-            # function exists instead of a per-line regex.
-            while True:
-                k = _skip_ws_and_comments(src, i)
-                if k >= n or src[k] != "+":
-                    break
-                k2 = _skip_ws_and_comments(src, k + 1)
-                if k2 >= n or src[k2] not in "\"'`":
-                    break
-                body2, interp2, j2 = _read_string(src, k2)
-                line += src.count("\n", i, j2)
-                body += body2
-                extra.append(interp2)
-                i = j2
-            emit(body, start_line)
-            emit(" ", start_line)        # never glue a literal to the next identifier
-            for e in extra:
-                if e.strip():
-                    emit(e + " ", start_line)
-            continue
-        emit(c, line)
-        i += 1
-    return "".join(chars), lines
-
-
-def _line_of(lines: list[int], idx: int) -> int:
-    return lines[idx] if 0 <= idx < len(lines) else 0
+# `_scan_view` / `_line_of` / `_mask_code` are imported from
+# `tests/support/js_source_scan.py`: the SAME primitive backs the BL-06 muralla over
+# /forecasting. It used to live here only, and BL-06 had a raw exact-literal matcher that
+# `'/api/exec' + 'ution/orders'` walked straight through. One concept, one implementation —
+# two copies of a measuring tape means one of them is lying (K-035), and the self-test
+# below (`test_scan_view_collapses_the_known_evasions`) now guards the shared copy for
+# both locks.
+#
+# What it collapses and — just as important — what it does NOT (runtime-assembled
+# strings, homoglyphs, semantics) is documented in that module's docstring.
 
 
 # ---------------------------------------------------------------------------
@@ -480,11 +324,17 @@ def test_replay_perimeter_is_derived_not_hardcoded():
 
 
 def test_scan_view_collapses_the_known_evasions():
-    """Self-test of the anti-evasion primitive. A blacklist whose measuring tape can be
-    bent by a `+` is not a blacklist — BL-06 shipped exactly that. Every string below is a
-    concrete mutation that defeated a naive literal scan.
+    """Self-test of the anti-evasion primitive SHARED with the BL-06 /forecasting lock
+    (`tests/support/js_source_scan.py`). A blacklist whose measuring tape can be bent by a
+    `+` is not a blacklist — BL-06 shipped exactly that, and stayed 28/28 green while a
+    widget approved, ordered and said "Comprar ahora". Every string below is a concrete
+    mutation that defeated a naive literal scan.
 
-    ROJO: quitar el plegado de concatenación (o el decodificador de escapes) de _scan_view.
+    This test guards the tape for BOTH locks now: break the folding and this goes red, no
+    matter which surface the offending widget was going to live on.
+
+    ROJO: quitar el plegado de concatenación, la sustitución de consts o el decodificador
+    de escapes de tests/support/js_source_scan.py::scan_view.
     """
     cases = [
         "fetch('/api/produc' + 'tion/approve')",
@@ -494,6 +344,10 @@ def test_scan_view_collapses_the_known_evasions():
         "fetch('/api/production/appro\\x76e')",
         "fetch('/api/production/\\u0061pprove')",
         "fetch(`/api/produc${''}tion/approve`)",
+        # Indirection through a single-binding string const — one extra variable used to
+        # defeat everything above (the BL-06 headline evasion).
+        "const P = '/api/production';\nfetch(`${P}/appro` + 've')",
+        "let P = '/api/produc' + 'tion';\nfetch(`${P}/approve`)",
     ]
     for src in cases:
         text, _ = _scan_view(src)
@@ -505,6 +359,13 @@ def test_scan_view_collapses_the_known_evasions():
     assert "aprobacion" in text
     # Comments are documentation, not capability (this module's own docstring relies on it).
     text, _ = _scan_view("// llama a /api/production/approve\nconst x = 1;")
+    assert "api/production/approve" not in text
+    # ...including a commented-out const binding: it must NOT feed the substitution map.
+    text, _ = _scan_view("// const P = '/api/production';\nfetch(`${P}/appro` + 've')")
+    assert "api/production/approve" not in text
+    # An OPAQUE interpolation is scanned separately, never glued into the path: the tape
+    # must not manufacture a hit that the source does not contain.
+    text, _ = _scan_view("fetch(`${runtimeBase}/approve`)")
     assert "api/production/approve" not in text
     # Line attribution survives the transformation.
     text, lines = _scan_view("const a = 1;\nfetch('/api/produc'\n + 'tion/approve');\n")
@@ -599,56 +460,6 @@ SHARED_SECTION = (
 
 #: Vote-2 surfaces that may only ever mount behind the gate.
 _VOTE2_MOUNTS = ("<ApprovalPanel", "<DeployPanel")
-
-
-def _mask_code(src: str) -> str:
-    """`src` with comments and string bodies blanked out, same length.
-
-    Brace/paren balance is the measuring tape of every structural check below; counting
-    braces that live inside a comment or a string makes it trivially bendable (a single
-    `/* } */` rebalances any conditional). Blanking keeps every index identical.
-    """
-    out = list(src)
-    n = len(src)
-
-    def blank(a: int, b: int) -> None:
-        for k in range(a, min(b, n)):
-            if out[k] not in "\r\n":
-                out[k] = " "
-
-    i = 0
-    while i < n:
-        c = src[i]
-        if src.startswith("//", i):
-            j = src.find("\n", i)
-            j = n if j == -1 else j
-            blank(i, j)
-            i = j
-            continue
-        if src.startswith("/*", i):
-            j = src.find("*/", i + 2)
-            j = n if j == -1 else j + 2
-            blank(i, j)
-            i = j
-            continue
-        if c in "\"'`":
-            quote = c
-            j = i + 1
-            while j < n:
-                if src[j] == "\\":
-                    j += 2
-                    continue
-                if src[j] == quote:
-                    j += 1
-                    break
-                if src[j] == "\n" and quote != "`":
-                    break
-                j += 1
-            blank(i, j)
-            i = j
-            continue
-        i += 1
-    return "".join(out)
 
 
 def _balanced_block(src: str, open_idx: int, opener: str = "{", closer: str = "}") -> tuple[int, int]:
