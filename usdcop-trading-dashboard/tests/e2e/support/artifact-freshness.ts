@@ -57,11 +57,18 @@ function git(args: string[]): string {
   return execFileSync('git', args, { encoding: 'utf8', cwd: process.cwd() }).replace(/\s+$/, '')
 }
 
-/** Ultimo commit que toco el dashboard, que es el suelo minimo que el build debe cubrir. */
+/**
+ * Rutas que ACABAN DENTRO de la imagen. Los tests no se compilan ni se sirven, asi que un
+ * commit que solo toca `tests/` no deja el artefacto rancio — exigirselo convierte el guard
+ * en ruido y el ruido termina en que alguien lo desactiva.
+ */
+const SERVED_PATHS = ['app', 'components', 'lib', 'hooks', 'middleware.ts', 'next.config.js', 'public']
+
+/** Ultimo commit que toco codigo SERVIDO, que es el suelo minimo que el build debe cubrir. */
 export function lastDashboardCommit(): { sha: string; at: Date; subject: string } {
   // `%H %ct %s`: sha y epoch no contienen espacios, asi que un split acotado basta
   // y evita meter un caracter de control literal en el fuente.
-  const out = git(['log', '-1', '--format=%H %ct %s', '--', '.'])
+  const out = git(['log', '-1', '--format=%H %ct %s', '--', ...SERVED_PATHS])
   const [sha, ct, ...rest] = out.split(' ')
   const subject = rest.join(' ')
   return { sha, at: new Date(Number(ct) * 1000), subject }
@@ -69,7 +76,7 @@ export function lastDashboardCommit(): { sha: string; at: Date; subject: string 
 
 /** Fuentes del dashboard modificadas y sin commitear: tampoco pueden estar en el build. */
 export function uncommittedSources(): string[] {
-  const out = git(['status', '--porcelain', '--', 'app', 'components', 'lib', 'middleware.ts'])
+  const out = git(['status', '--porcelain', '--', ...SERVED_PATHS])
   return out ? out.split('\n').map((l) => l.slice(3).trim()).filter(Boolean) : []
 }
 
