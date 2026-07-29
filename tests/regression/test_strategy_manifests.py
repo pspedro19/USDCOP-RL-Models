@@ -250,6 +250,20 @@ ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MIN_SNAPSHOT_AS_OF = dt.date(2020, 1, 1)
 PENDING_RE = re.compile(r"^pending-(BL-\d+)$")
 
+# Un aplazamiento solo vale mientras el trabajo que lo justifica sigue abierto.
+_ESTADOS_CERRADOS = {"DONE", "IMPLEMENTED", "APPROVED", "CLOSED"}
+
+
+def _frontmatter_status(md_path):
+    """Lee `status:` del front-matter de un BL. Devuelve '' si no lo declara."""
+    texto = md_path.read_text(encoding="utf-8")
+    if not texto.startswith("---"):
+        return ""
+    cabecera = texto.split("---", 2)[1]
+    hit = re.search(r"^status:\s*(\S+)", cabecera, re.M)
+    return hit.group(1).strip().upper() if hit else ""
+
+
 
 def _manifests_with_components() -> list[tuple[Path, dict]]:
     out = []
@@ -420,10 +434,22 @@ def test_component_declares_forecast_lineage_key():
                 f"{where}: {keys[0]}={value!r} no es ni una lista de trial_ids ni un "
                 "aplazamiento con la forma 'pending-BL-<n>'")
             bl = match.group(1)
-            assert list(BACKLOG.glob(f"{bl}-*.md")), (
+            duenos = list(BACKLOG.glob(f"{bl}-*.md"))
+            assert duenos, (
                 f"{where}: aplaza el linaje a {bl}, que NO existe en "
                 f"{BACKLOG.relative_to(ROOT)} — un placeholder que no apunta a trabajo "
                 "real es una deuda invisible")
+
+            # El aplazamiento CADUCA. Exigir solo que el fichero exista no cierra nada: un
+            # fichero existe para siempre, asi que `pending-BL-10` seguiria siendo valido
+            # despues de que BL-10 cerrara. Lo encontro una verificacion propia el
+            # 2026-07-28, y contradecia lo que yo mismo habia anunciado por el canal.
+            estado = _frontmatter_status(duenos[0])
+            assert estado not in _ESTADOS_CERRADOS, (
+                f"{where}: sigue aplazando el linaje a {bl}, pero {bl} ya esta en "
+                f"'{estado}'. Un aplazamiento a trabajo TERMINADO no es una deuda "
+                "declarada: es un placeholder rancio. Sustituye el valor por los "
+                "forecast_trial_ids reales del ledger.")
 
 
 @pytest.mark.xfail(
