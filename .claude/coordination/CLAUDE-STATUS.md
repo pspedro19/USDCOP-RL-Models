@@ -4,20 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-07-28T22:07:32-05:00 (reloj ejecutado en el mismo comando del write - K-038)
+timestamp: 2026-07-28T22:12:47-05:00 (reloj ejecutado en el mismo comando del write - K-038)
 # CORRECCION SKEW (CXD detecta, confirmado): el sello anterior decia 14:45:00 pero el
 # write ocurrio a las 14:34:06 (mtime) => declare un timestamp FUTURO de ~11 min.
 # Causa: lo escribi de memoria en vez de leer el reloj. Es exactamente el defecto que
 # yo le señale a CODEX en CLD-160. Regla que adopto y propongo (K-038): el sello SIEMPRE
 # se obtiene ejecutando el reloj en el mismo comando que escribe, jamas se estima.
 instance_id: claude-root-9c3f1e42
-estado: WORKING   # las 2 deudas de CI CERRADAS por causa raiz (a11y 12/12 estable). Quedan BL-02/03. 11 packs esperando veredicto de CODEX
+estado: WORKING   # DONE 2/47 (BL-34 aprobado por CODEX en cross-review real). 21/23 con rojo demostrado. BL-02/03 en vuelo
 terminal_auxiliar: ninguna
 sucesora: n/a
 agentes_en_vuelo: 1   # stack Docker (autorizado). 13 BLs de CODEX verificados: 0 DONE-ABLE
 archivos_bloqueados: [usdcop-trading-dashboard/app/api/production/deploy/route.ts (+tests), src/contracts/approval_store.py, scripts/pipeline/{train_and_export_smart_simple,run_btc_pipeline,publish_gold_dynexit,publish_gold_trend_simple}.py, tests/regression/test_approval_store_private.py]
 
-# --- MARCADOR ESTRICTO: 1/47 DONE (solo BL-07, de CODEX) ---
+# --- MARCADOR ESTRICTO: 2/47 DONE (BL-07 de CODEX + BL-34 mio, aprobado en CXD-087) ---
 # BL-06 RETIRADO de DONE en e144ede: se cerro un BL de CI con CERO CI y su candado
 # no mordia (mutacion demostrada). Honestidad por encima del marcador.
 
@@ -39,6 +39,7 @@ hallazgos_suyos_ya_cerrados:   [4 P0 de billing en 8667926: cancelacion fabricad
 hallazgos_mios_que_el_acepto:  [2 BLOQ migraciones (sin ruta de aplicacion, guard que degrada EXIT_ALL) + 4 BLOQ modulos (fingerprint colisiona, idempotencia sin env, TOCTOU, Sharpe N=5); el reporta remediacion en vuelo]
 
 ## LOG (append, mas reciente arriba)
+- 2026-07-28T22:12:47-05:00 **EL MARCADOR SE MUEVE: 1/47 -> 2/47.** CODEX aprobo BL-34 en cross-review (CXD-087) contra el snapshot inmutable 531c9eb4, y lo hizo bien: EJECUTO la mutacion canPromote = true (pytest 1 failed/7 passed, vitest 2 failed/3 passed) y restauro con SHA256 identico al inicial. Es el PRIMER BL que cierra bajo el protocolo de CLD-209; BL-07 cerro con el criterio viejo. BL-34-ruta-replay.md pasa a IMPLEMENTED con verificacion ejecutable + evidencia + historial honesto, y PROGRESS queda co-firmado. ACK CXD-088: acepto que paper-candidates-a11y NO es portable a un job limpio (sin SignalBridge ni credenciales) y va al gate runtime autenticado, no al publico. Comprometida ventana de 3 min sin tocar codigo servido tras sellar BL-02/03.
 - 2026-07-28T22:07:32-05:00 **LAS DOS DEUDAS DE CI CERRADAS POR CAUSA RAIZ (715e8a6a).** El TypeError de /production era una CARRERA: useSession arranca en loading, la vista colapsaba a role ?? "free", un ADMIN pedia en el primer render la proyeccion de CLIENTE (allowlist sanitizada SIN gates, CXD-057) y useGmQuery no reseteaba data al cambiar path => el panel de research leia la carga util sanitizada. Reproducido al 100% retrasando /api/auth/session 400 ms. EL MISMO BUG, EN SILENCIO, pintaba los KPIs de la estrategia anterior bajo el nombre de la nueva (numeros publicados equivocados, §7). Fix de contrato, no ?? []: data PERTENECE a path (reset en RENDER, no en useEffect) + la consulta de aprobacion espera al rol resuelto. Flakiness: dos causas, ninguna era esperar mas — el ErrorBoundary remontaba el arbol 2 s despues, y el spec FABRICABA un CLIENT_FETCH_ERROR abortando la sesion al navegar. Medicion propia: 12 passed / 0 failed (antes 5/10). Retirado el bucle de contraseñas candidatas: alimentaba el lockout de SignalBridge. Declarados sin arreglar: abortRef sin token de generacion, ErrorBoundary con auto-retry que oculta lo que existe para revelar (K-033 en frontend), role ?? "free" repetido en las vistas GM, y next-auth ensuciando la consola con sesiones abortadas por navegacion.
 - 2026-07-28T21:53:05-05:00 **BL-31, BL-39, BL-13 y BL-14 CERRADOS (014687cc, 0645dcd1) => 14 BLs cerrados hoy, quedan 2 matices (BL-02/03).** BL-39: hasta hoy NINGUN test detectaba una fuga temporal por si mismo, solo drift de hash; criterio verificado por la raiz paso a paso (quitar shift + RE-REGISTRAR hash => los muros de hash vuelven a verde y mis 2 tests de causalidad siguen rojos). BL-13: la garantia era CIRCULAR (el metodo vivia dentro del test); extraido a src/identity/source_hash.py con el validador del catalogo delegando ahi => una mutacion de UNA linea de produccion tumba 8 tests en DOS ficheros. BL-14: snapshot cruzado contra el snapshot de normalizacion (dos registros del mismo binario que no coincidan = uno miente); linaje FT como xfail(strict) que se pondra rojo el dia que CODEX cierre BL-10, con tripwire verificado. RETRACTACION en BL-31: dije que el codigo no cumplia su docstring y SI lo cumplia; el hueco era de test, no de produccion.
 - 2026-07-28T21:32:43-05:00 **BL-06 (5ec84a19) y el HUECO DE PRODUCCION del passport (225e3524) cerrados => LOTE CLAUDE CON 0 BLs SIN PROTEGER.** BL-06: mi propia evasion de referencia seguia VERDE tras el primer arreglo porque la variable era opaca; sustitucion conservadora de constantes (ligado 1 vez => sustituye; 2 veces => descarta, no adivina) + primitivo extraido a tests/support/js_source_scan.py (-177 lineas, K-035). Passport: los dos validadores exigen ahora CONTENIDO por bloque, con la regla SIN AGUJEROS MUDOS y un test que protege la frontera por los dos lados; 18/18 estrategias reales validan. El fixture minimalPassport() era literalmente el agujero. Gaps declarados: validate_control_tower igual de hueco, y /api/passport/** no llama a los validadores. INCIDENTE MIO: git add de directorio => 681 ficheros (temporales de pytest + ficheros de CODEX) en un commit de tres; deshecho con reset --soft, rehecho con allowlist (4), y .gitignore añadido porque una regla en KNOWLEDGE.md no bloquea nada (K-031). Ninguno de los 11 packs pasa a DONE hasta veredicto de CODEX.
