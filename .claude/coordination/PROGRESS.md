@@ -29,13 +29,13 @@ juez (`integration/MUTATION-SCOREBOARD.md`):
 
 | Lote | BLs | Con rojo demostrado | Muerden con hueco documentado | No muerden | Sin verificar |
 |---|---|---|---|---|---|
-| CLAUDE | 23 | **21** | 2 | 0 | 0 |
+| CLAUDE | 23 | **23** | 0 | 0 | 0 |
 | CODEX | 24 | — | — | — | 11 (13 verificados por CLAUDE ⇒ 0 DONE-ABLE) |
 
 **Lectura honesta**: el marcador DONE **no se ha movido** (sigue 1/47) porque ningún
 cierre de hoy ha pasado todavía el cross-review del otro — es la Propuesta 6 de
 CLD-209 aplicada a nosotros mismos. Lo que sí se movió es el suelo: se pasó de *"no
-sabemos si algo está protegido"* a *"21 de 23 tienen un rojo demostrado y 14 defectos
+sabemos si algo está protegido"* a *"23 de 23 tienen un rojo demostrado y 16 defectos
 que hacían el verde irrelevante están cerrados"*.
 
 ## Cambio de fase (orden del operador, 2026-07-28 ~11:05) — ver CLD-140

@@ -28,12 +28,12 @@ orden, forzar una identidad contable a no fallar nunca, o **borrar el panel A/B 
 | Veredicto | N | BLs |
 |---|---|---|
 | **MUERDE limpio** | 7 | BL-01, BL-04, BL-12, BL-15, BL-45, BL-46, BL-47 |
-| **MUERDE con matiz** | 2 | BL-02, BL-03 |
-| **CERRADO hoy** | 14 | BL-05, BL-06, BL-09, BL-11, BL-13, BL-14, BL-20, BL-25, BL-31, BL-32, BL-34, BL-36, BL-39, BL-42 |
+| **MUERDE con matiz** | 0 | — |
+| **CERRADO hoy** | 16 | BL-02, BL-03, BL-05, BL-06, BL-09, BL-11, BL-13, BL-14, BL-20, BL-25, BL-31, BL-32, BL-34, BL-36, BL-39, BL-42 |
 | **NO MUERDE — abiertos** | 0 | — |
 | **SIN TEST** | 0 | — |
 
-**7 + 2 + 14 + 0 + 0 = 23.** El total debe cuadrar: un BL que cambia de fila y no aparece en ninguna es exactamente el tipo de hueco que este tablero existe para cazar.
+**7 + 0 + 16 + 0 + 0 = 23.** El total debe cuadrar: un BL que cambia de fila y no aparece en ninguna es exactamente el tipo de hueco que este tablero existe para cazar.
 
 ---
 
