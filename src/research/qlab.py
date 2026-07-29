@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -15,6 +16,8 @@ from typing import Any, Iterator, Mapping
 import yaml
 
 GENESIS_HASH = "0" * 64
+TRIAL_ID_PATTERN = re.compile(r"^(FT|AT)-\d{4}$")
+CONTENT_HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
 class QLabError(RuntimeError):
@@ -25,6 +28,20 @@ def _canonical(payload: Mapping[str, Any]) -> bytes:
     return json.dumps(
         payload, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
+
+
+def _utc_datetime(value: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (AttributeError, ValueError) as exc:
+        raise QLabError("audit timestamps must be valid ISO-8601 values") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise QLabError("audit timestamps must be timezone-aware")
+    return parsed.astimezone(timezone.utc)
+
+
+def _utc_iso(value: str) -> str:
+    return _utc_datetime(value).isoformat().replace("+00:00", "Z")
 
 
 @contextmanager
@@ -69,6 +86,9 @@ class TrialCharge:
     source: str | None = None
     code_hash: str | None = None
     data_hash: str | None = None
+    available_at_field: str | None = None
+    n_rows: int | None = None
+    max_available_at: str | None = None
     note: str | None = None
 
 
@@ -89,6 +109,59 @@ class TrialLedger:
         return rows
 
     def charge(self, charge: TrialCharge) -> dict[str, Any]:
+        match = (
+            TRIAL_ID_PATTERN.fullmatch(charge.trial_id)
+            if isinstance(charge.trial_id, str)
+            else None
+        )
+        expected_family = (
+            "FT" if charge.kind == "forecast" else "AT" if charge.kind == "action" else None
+        )
+        if match is None or expected_family is None or match.group(1) != expected_family:
+            raise QLabError(
+                "trial_id must match ^(FT|AT)-\\d{4}$ and agree with "
+                "forecast=FT or action=AT"
+            )
+        if not charge.cutoff:
+            raise QLabError("screening trials require an explicit cutoff")
+
+        audit_values = (
+            charge.available_at_field,
+            charge.n_rows,
+            charge.max_available_at,
+        )
+        if charge.source is not None:
+            if any(value is None for value in audit_values):
+                raise QLabError(
+                    "sourced screening trials require available_at_field, "
+                    "n_rows and max_available_at"
+                )
+            if charge.available_at_field != "available_at":
+                raise QLabError("sourced screening trials require canonical available_at")
+            if (
+                not isinstance(charge.n_rows, int)
+                or isinstance(charge.n_rows, bool)
+                or charge.n_rows < 1
+            ):
+                raise QLabError("sourced screening trials require n_rows >= 1")
+            if (
+                not isinstance(charge.data_hash, str)
+                or CONTENT_HASH_PATTERN.fullmatch(charge.data_hash) is None
+            ):
+                raise QLabError("sourced screening trials require a canonical sha256 hash")
+            cutoff_instant = _utc_datetime(charge.cutoff)
+            maximum_instant = _utc_datetime(str(charge.max_available_at))
+            if (
+                _utc_iso(charge.cutoff) != charge.cutoff
+                or _utc_iso(str(charge.max_available_at))
+                != charge.max_available_at
+            ):
+                raise QLabError("audit timestamps must use canonical UTC Z form")
+            if maximum_instant > cutoff_instant:
+                raise QLabError("max_available_at cannot exceed cutoff")
+        elif any(value is not None for value in audit_values):
+            raise QLabError("audit fields require a sourced screening trial")
+
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with _exclusive_lock(self.path.with_suffix(".lock")):
             rows = self.rows()
@@ -107,16 +180,14 @@ class TrialLedger:
                     "source": charge.source,
                     "code_hash": charge.code_hash,
                     "data_hash": charge.data_hash,
+                    "available_at_field": charge.available_at_field,
+                    "n_rows": charge.n_rows,
+                    "max_available_at": charge.max_available_at,
                     "note": charge.note,
                 }
                 if any(existing.get(key) != value for key, value in immutable.items()):
                     raise QLabError(f"{charge.trial_id} already exists with a different payload")
                 return existing
-            prefix = "FT-" if charge.kind == "forecast" else "AT-" if charge.kind == "action" else None
-            if prefix is None or not charge.trial_id.startswith(prefix):
-                raise QLabError("trial_id prefix must match forecast=FT or action=AT")
-            if not charge.cutoff:
-                raise QLabError("screening trials require an explicit cutoff")
             payload: dict[str, Any] = {
                 "trial_id": charge.trial_id,
                 "family": charge.family,
@@ -131,6 +202,9 @@ class TrialLedger:
                 "source": charge.source,
                 "code_hash": charge.code_hash,
                 "data_hash": charge.data_hash,
+                "available_at_field": charge.available_at_field,
+                "n_rows": charge.n_rows,
+                "max_available_at": charge.max_available_at,
                 "note": charge.note,
                 "charged_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "N_family": sum(row.get("family") == charge.family for row in rows) + 1,

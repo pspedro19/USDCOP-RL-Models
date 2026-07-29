@@ -9,25 +9,78 @@ import hashlib
 import json
 import sys
 from collections.abc import Mapping, Sequence
+from datetime import date, datetime, time
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.research.point_in_time import ResearchEnvironment, read_point_in_time
+from src.research.point_in_time import (
+    PointInTimeViolation,
+    ResearchEnvironment,
+    normalize_utc,
+    read_point_in_time,
+)
 from src.research.qlab import FamilyStore, TrialCharge, TrialLedger
 
 FAMILIES = FamilyStore(ROOT / "registries" / "families")
 LEDGER = TrialLedger(ROOT / "registries" / "ledger.jsonl")
+AVAILABLE_AT_FIELD = "available_at"
+TEXT_SOURCE_SUFFIXES = frozenset({".jsonl", ".json", ".csv"})
 
 
-def _normalize_cutoff(value: str) -> str:
-    """Make date-only CLI cutoffs explicit and timezone-aware."""
+def _asset_timezone(asset: str) -> ZoneInfo:
+    asset_key = asset.strip().lower()
+    if not asset_key or not asset_key.replace("_", "").replace("-", "").isalnum():
+        raise SystemExit("asset must be a canonical identifier")
+    profile_path = ROOT / "config" / "assets" / f"{asset_key}.yaml"
+    if not profile_path.is_file():
+        raise SystemExit(f"asset profile does not exist: {asset_key}")
+    try:
+        profile = yaml.safe_load(profile_path.read_text(encoding="utf-8")) or {}
+        timezone_name = profile["session"]["timezone"]
+    except (KeyError, TypeError, yaml.YAMLError) as exc:
+        raise SystemExit(
+            f"asset profile {asset_key} does not declare session.timezone"
+        ) from exc
+    if str(profile.get("asset_id", "")).lower() != asset_key:
+        raise SystemExit(f"asset profile identity mismatch: {asset_key}")
+    try:
+        return ZoneInfo(str(timezone_name))
+    except ZoneInfoNotFoundError as exc:
+        raise SystemExit(
+            f"asset profile {asset_key} declares an unknown session.timezone"
+        ) from exc
+
+
+def _utc_z(value: datetime | str) -> str:
+    return normalize_utc(value).isoformat().replace("+00:00", "Z")
+
+
+def _normalize_cutoff(value: str, *, asset: str) -> str:
+    """Resolve date-only cutoffs at the asset's local end-of-day."""
     if len(value) == 10:
-        return f"{value}T23:59:59.999999Z"
-    return value
+        try:
+            local_date = date.fromisoformat(value)
+        except ValueError as exc:
+            raise PointInTimeViolation("cutoff must be an ISO-8601 date or instant") from exc
+        local_boundary = datetime.combine(
+            local_date, time.max, tzinfo=_asset_timezone(asset)
+        )
+        return _utc_z(local_boundary)
+    return _utc_z(value)
+
+
+def _canonical_source_digest(source_path: Path) -> str:
+    payload = source_path.read_bytes()
+    if source_path.suffix.lower() in TEXT_SOURCE_SUFFIXES:
+        payload = payload.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return "sha256:" + hashlib.sha256(payload).hexdigest()
 
 
 def _source_path(value: str) -> Path:
@@ -105,9 +158,7 @@ def _parser() -> argparse.ArgumentParser:
         required=True,
         help="Point-in-time evidence file (.jsonl/.json/.csv/.parquet)",
     )
-    screen.add_argument("--available-at-field", default="available_at")
     screen.add_argument("--code-hash")
-    screen.add_argument("--data-hash")
     screen.add_argument("--note")
 
     for name, target in (("freeze", "FROZEN"), ("promote", "PROMOTED"), ("close", "CLOSED")):
@@ -136,26 +187,36 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if args.command == "screen":
         family = FAMILIES.load(args.family_id)
+        declared_asset = str(family.get("asset", "")).strip().lower()
+        requested_asset = args.asset.strip().lower()
+        if requested_asset != declared_asset:
+            raise SystemExit(
+                f"screening asset {requested_asset} does not match "
+                f"family asset {declared_asset}"
+            )
         state = str(family.get("state", "DECLARED")).upper()
         if state not in {"DECLARED", "SCREENING"}:
             raise SystemExit(f"family state {state} does not admit new screening trials")
-        cutoff = _normalize_cutoff(args.cutoff)
+        cutoff = _normalize_cutoff(args.cutoff, asset=declared_asset)
         source_path = _source_path(args.source)
         rows = read_point_in_time(
             _rows_from_source,
             cutoff=cutoff,
             environment=ResearchEnvironment.SCREENING,
-            available_at_field=args.available_at_field,
+            available_at_field=AVAILABLE_AT_FIELD,
             source_path=source_path,
         )
         if not rows:
             raise SystemExit("screening source has zero rows at the declared cutoff")
-        source_digest = "sha256:" + hashlib.sha256(source_path.read_bytes()).hexdigest()
+        source_digest = _canonical_source_digest(source_path)
+        max_available_at = _utc_z(
+            max(normalize_utc(row[AVAILABLE_AT_FIELD]) for row in rows)
+        )
         row = LEDGER.charge(
             TrialCharge(
                 trial_id=args.trial_id,
                 family=args.family_id,
-                asset=args.asset,
+                asset=declared_asset,
                 cluster=str(family["cluster_id"]),
                 kind=str(family["kind"]),
                 variant=args.variant,
@@ -163,7 +224,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 result=args.result,
                 source=str(source_path),
                 code_hash=args.code_hash,
-                data_hash=args.data_hash or source_digest,
+                data_hash=source_digest,
+                available_at_field=AVAILABLE_AT_FIELD,
+                n_rows=len(rows),
+                max_available_at=max_available_at,
                 note=args.note,
             )
         )
