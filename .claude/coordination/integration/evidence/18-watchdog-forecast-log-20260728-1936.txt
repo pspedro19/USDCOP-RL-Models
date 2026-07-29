@@ -1,0 +1,17 @@
+﻿00:25:01 [WARNING] CatBoost: Predictions are constant
+00:25:02 [WARNING] CatBoost: Predictions are constant
+00:25:02 [WARNING] CatBoost: Predictions are constant
+00:25:02 [WARNING] CatBoost: Predictions are constant
+00:25:02 [WARNING] CatBoost: Predictions are constant
+00:25:03 [WARNING] CatBoost: Predictions are constant
+00:25:03 [WARNING] CatBoost: Predictions are constant
+00:25:15 [INFO] Hybrid model fitted: alpha=0.3
+00:25:15 [WARNING] XGBoost: Scale factor capped at 10.0x
+00:25:34 [INFO] Hybrid model fitted: alpha=0.3
+00:25:34 [WARNING] XGBoost: Scale factor capped at 10.0x
+00:25:46 [INFO] Hybrid model fitted: alpha=0.3
+00:25:46 [WARNING] XGBoost: Scale factor capped at 10.0x
+00:26:05 [INFO] Hybrid model fitted: alpha=0.3
+00:26:05 [WARNING] XGBoost: Scale factor capped at 10.0x
+---SIZE---
+84 /tmp/watchdog_forecasting.log

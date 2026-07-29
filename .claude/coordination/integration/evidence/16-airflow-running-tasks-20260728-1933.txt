@@ -1,0 +1,2 @@
+﻿ news_daily_pipeline | ingest_all_sources | running | 07-29 00:12
+

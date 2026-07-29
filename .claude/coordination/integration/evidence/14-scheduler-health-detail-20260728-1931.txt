@@ -1,0 +1,5 @@
+﻿Status=unhealthy FailingStreak=17
+  [exit=-1] start=2026-07-29T00:23:15.362142451Z
+  out: Health check exceeded timeout (10s)
+  [exit=-1] start=2026-07-29T00:23:57.615304299Z
+  out: Health check exceeded timeout (10s)

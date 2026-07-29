@@ -1,0 +1,25 @@
+﻿    PID    PPID %CPU     ELAPSED COMMAND
+    218       1 1160       12:19 python3 /opt/airflow/scripts/pipeline/generate_weekly_forecasts.py
+   2797       0 66.6       00:00 ps -eo pid,ppid,pcpu,etime,args --sort=-pcpu
+   2764     181 62.9       00:01 airflow scheduler - DagFileProcessor /opt/airflow/dags/forecast_h5_l4b_production_deploy.py
+   2750     181 47.8       00:03 airflow scheduler - DagFileProcessor /opt/airflow/dags/l6_production_monitoring.py
+      7       1  9.0       12:43 /usr/local/bin/python /home/airflow/.local/bin/airflow scheduler
+    181       7  2.3       12:24 airflow scheduler -- DagFileProcessorManager
+    199     186  0.8       12:23 airflow task runner: news_daily_pipeline ingest_all_sources scheduled__2026-07-28T12:00:00+00:00 2287
+    186      54  0.7       12:24 airflow task supervisor: ['airflow', 'tasks', 'run', 'news_daily_pipeline', 'ingest_all_sources', 'scheduled__2026-07-28T12:00:00+00:00', '--local', '--subdir', 'DAGS_FOLDER/news_daily_pipeline.py']
+     46       7  0.3       12:24 airflow executor -- LocalExecutor
+     43       7  0.0       12:25 gunicorn: master [gunicorn]
+     81       7  0.0       12:24 airflow worker -- LocalExecutor
+     57       7  0.0       12:24 airflow worker -- LocalExecutor
+    153       7  0.0       12:24 airflow worker -- LocalExecutor
+    165       7  0.0       12:24 airflow worker -- LocalExecutor
+     77       7  0.0       12:24 airflow worker -- LocalExecutor
+    149       7  0.0       12:24 airflow worker -- LocalExecutor
+    132       7  0.0       12:24 airflow worker -- LocalExecutor
+    160       7  0.0       12:24 airflow worker -- LocalExecutor
+     73       7  0.0       12:24 airflow worker -- LocalExecutor
+     64       7  0.0       12:24 airflow worker -- LocalExecutor
+    177       7  0.0       12:24 airflow worker -- LocalExecutor
+    169       7  0.0       12:24 airflow worker -- LocalExecutor
+    145       7  0.0       12:24 airflow worker -- LocalExecutor
+    121       7  0.0       12:24 airflow worker -- LocalExecutor

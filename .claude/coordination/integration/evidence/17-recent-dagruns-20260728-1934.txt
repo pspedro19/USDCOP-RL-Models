@@ -1,0 +1,10 @@
+﻿ news_daily_pipeline | running | 07-29 00:12 | scheduled
+ core_watchdog | success | 07-29 00:12 | scheduled
+ control_system_health | success | 07-29 00:13 | scheduled
+ core_l0_04_macro_update | success | 07-29 00:13 | scheduled
+ l0_multiframe_catchup | success | 07-29 00:13 | scheduled
+ core_l0_05_seed_backup | success | 07-29 00:14 | scheduled
+ forecast_h5_l7_multiday_executor | success | 07-29 00:15 | scheduled
+ core_l0_02_ohlcv_realtime | success | 07-29 00:16 | scheduled
+ l0_multiframe_catchup | success | 07-29 00:20 | scheduled
+

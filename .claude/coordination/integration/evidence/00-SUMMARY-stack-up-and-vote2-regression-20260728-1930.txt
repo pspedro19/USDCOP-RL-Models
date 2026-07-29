@@ -1,0 +1,168 @@
+EVIDENCE SUMMARY — stack bring-up + Vote-2 artifact-move regression check
+Taken: 2026-07-28 19:09..19:29 COT (2026-07-29 00:09..00:29 UTC)
+Operator authorized: docker up, logs, playwright, screenshots. READ-ONLY verification.
+No vote emitted. No deploy triggered. No volumes removed. No data/seeds/bundles modified.
+No commits. 0 trials.
+
+--------------------------------------------------------------------------------
+START STATE
+--------------------------------------------------------------------------------
+docker ps -a          -> 0 containers (stack was fully DOWN before this session).
+docker volume ls      -> 109 volumes present, incl. usdcop-rl-models_postgres_data.
+                         => the previously-reported runaway scheduler container no
+                         longer existed; it was NOT killed by this session.
+compose validation    -> docker compose -f docker-compose.compact.yml config --services
+                         exit 0, 18 services (matches stack-operations skill).
+Brought up with       -> docker compose -f docker-compose.compact.yml up -d (= make compact)
+
+--------------------------------------------------------------------------------
+SERVICE HEALTH (real healthcheck status, not "running")   [13-service-health-table]
+--------------------------------------------------------------------------------
+healthy (12): trading-mlflow, usdcop-airflow-webserver, usdcop-analytics-api,
+              usdcop-backtest-api, usdcop-dashboard, usdcop-grpc-predictor,
+              usdcop-minio, usdcop-postgres-timescale, usdcop-redis,
+              usdcop-redpanda, usdcop-signalbridge, usdcop-trading-api
+no healthcheck (4): usdcop-kafka-consumer, usdcop-kafka-producer,
+              usdcop-redpanda-console (running), usdcop-minio-init (exited 0, one-shot)
+UNHEALTHY (1): usdcop-airflow-scheduler   <-- see below
+exited-with-healthcheck (1): usdcop-airflow-init (exit 0, one-shot; "unhealthy" is
+              an artifact of a healthcheck on a completed init container — benign)
+
+Postgres has real data: usdcop_m5_ohlcv=2,205,658 ; macro_indicators_daily=26,326 ;
+sb_users=25.  [04-postgres-rowcounts]
+
+--------------------------------------------------------------------------------
+AIRFLOW SCHEDULER — REPRODUCED, ROOT-CAUSED, NOT RESTARTED
+--------------------------------------------------------------------------------
+Timeline: healthy at T+1min  ->  unhealthy from ~T+3min onward.
+At 19:28 COT: Health=unhealthy, FailingStreak=23, CPU=1526.81%, PIDs=171.
+Healthcheck log: "Health check exceeded timeout (10s)" (exit=-1), repeatedly.
+
+Root cause (ps inside container, [15-scheduler-processes]):
+  PID 218  PPID 1  %CPU 1160  ELAPSED 12:19
+  python3 /opt/airflow/scripts/pipeline/generate_weekly_forecasts.py
+
+PPID=1 => ORPHANED. No corresponding row in task_instance (only
+news_daily_pipeline/ingest_all_sources is a tracked running task).
+
+Spawned by: core_watchdog.auto_heal (ran 00:12 UTC, state=success) via
+airflow/dags/core_watchdog.py:541-549
+    elif action == "run_generate_weekly_forecasts":
+        subprocess.Popen([...generate_weekly_forecasts.py], ...)   # fire-and-forget
+The Airflow task returns success immediately; the heavy child keeps running,
+untracked, inside the SCHEDULER container (LocalExecutor), saturating all cores and
+starving the 10s healthcheck.
+
+Job is progressing normally (real ~30-45 min model training), /tmp/watchdog_forecasting.log
+advancing: "Hybrid model fitted: alpha=0.3" at 00:28:38. So it is SELF-LIMITING,
+not a hang or leak.
+
+Structural risks (not fixed, per instructions):
+  - No duplicate guard on the Popen. core_watchdog runs hourly 08-13 COT Mon-Fri; if
+    forecasting is still stale on the next tick, a SECOND copy can be spawned -> pile-up.
+  - No CPU/nice limit; runs in the scheduler container, so it degrades the scheduler.
+  - Orphaned (PPID=1): Airflow has no visibility, no retry, no kill path.
+  - Healthcheck timeout 10s is too tight to survive a saturated host.
+NOT RESTARTED. NOT KILLED. Reported only, per explicit order.
+
+--------------------------------------------------------------------------------
+VOTE 2 / approval_state MOVE TO data/approvals/  — VERDICT: PATH SURVIVES
+--------------------------------------------------------------------------------
+Artifact location (host): data/approvals/ contains 5 files:
+  approval_state.json, approval_state_btc_hodl_b1.json, approval_state_btc_trend_b2.json,
+  approval_state_gold_dynamic_exit.json, approval_state_gold_trend_simple.json
+Old public location usdcop-trading-dashboard/public/data/production/ contains NO
+approval_state* file => move is complete, no stale duplicate to shadow it.
+
+Wiring verified in docker-compose.compact.yml:
+  APPROVALS_DATA_DIR: /app/data/approvals
+  ./data/approvals:/app/data/approvals:rw     (rw is required: Vote 2 writes)
+
+Container view [06]: dashboard sees all 5 files at /app/data/approvals;
+printenv APPROVALS_DATA_DIR = /app/data/approvals.
+
+TS store resolution executed INSIDE the dashboard container with the real env and
+filesystem, replicating lib/approvals/store.ts exactly [12]:
+  CWD=/app ; APPROVALS_ROOT=/app/data/approvals
+  sid=null              -> FOUND approval_state.json  strategy=smart_simple_v11 status=PENDING_APPROVAL gates=6
+  sid=smart_simple_v11  -> FOUND approval_state.json  (load-bearing singleton fallback — the case that used to 404)
+  sid=btc_trend_b2      -> FOUND approval_state_btc_trend_b2.json gates=6
+  sid=bogus_strategy    -> NULL   (fails honestly)
+  sid=../../etc/passwd  -> NULL   (traversal blocked)
+
+Python/DAG-side resolution executed INSIDE the scheduler container [11]:
+  APPROVALS_DIR=/opt/airflow/data/approvals ; DIR_EXISTS=True ; SINGLETON_EXISTS=True
+  STRATEGY=smart_simple_v11 STATUS=PENDING_APPROVAL GATES_N=6 HAS_BACKTEST_METRICS=True
+  Multi-strategy fallback (_approval_file) reproduced: smart_simple_v11 -> singleton,
+  btc_trend_b2/gold_trend_simple -> scoped files, bogus -> non-existent (honest fail).
+
+Airflow DAG import [08][09]:
+  airflow dags list-import-errors  -> "No data found"  (ZERO import errors)
+  forecast_h5_l4b_production_deploy REGISTERED, paused=False.
+
+HTTP layer:
+  GET /api/health                 -> 200 healthy (trading_api ok, signalbridge ok, data_files ok)
+  GET /api/production/status      -> 401 anonymous ; 403 with a real 'free' session
+  GET /api/production/approval    -> 401 anonymous ; 403 with a real 'free' session
+  => routes are ALIVE and RBAC-gated (deny-by-default working). No 404, no 500.
+  Pages: / 200, /login 200, /dashboard 307->login, /production 307->login.
+  Dashboard logs: NO ENOENT and NO approval-related error since boot.
+
+GAP (explicitly not verified): no authenticated 200 from /api/production/approval or
+/api/production/status. Both require signals:read / research:read; the 'free' guest
+session (the only session obtainable without handling a password) lacks both. Obtaining
+an admin session required extracting a bootstrap password from the container env, which
+the permission classifier BLOCKED; I did not work around it. What remains unproven is
+only the gate->handler composition; the handler's own resolution was proven in-container
+with the exact code, and the gate was proven by the 401/403.
+
+--------------------------------------------------------------------------------
+NEW BREAKAGE FOUND (only visible with the stack up)
+--------------------------------------------------------------------------------
+1) sb_users SCHEMA MISMATCH — dashboard-native credentials login is BROKEN.
+   Live sb_users columns: id, email, hashed_password, name, is_active, is_verified,
+   created_at, updated_at, last_login, status, role, must_reset_password, approved_by,
+   approved_at, rejected_at, rejection_reason, entitlements, is_test  (18 cols).
+   Confirmed absent: email_verified=false, two_factor_enabled=false.
+   lib/auth/user-repository.ts SELECTs `email_verified, two_factor_enabled, is_active`
+   in SIX queries (lines 52, 78, 105, 148, 221, 324) and reads row.email_verified (364).
+   Runtime proof in dashboard logs [19]:
+     [PostgreSQL] Query error: error: column "email_verified" does not exist
+     [UserRepository] findByEmail error / findByUsername error
+     [AuthService] Login error: column "email_verified" does not exist
+   Severity: the login PAGE uses SignalBridge (/api/execution/auth/login) as PRIMARY
+   auth and NextAuth CredentialsProvider only as SECONDARY fallback, so normal UI login
+   is not necessarily blocked — but the fallback is dead, and any caller using the
+   NextAuth credentials provider directly gets 401 for every user regardless of password.
+   This also means sb_users has drifted from what the dashboard repository expects.
+   NOT FIXED (live infra, per instructions).
+
+2) core_watchdog fire-and-forget Popen (see scheduler section) — orphaned, untracked,
+   unbounded, no duplicate guard. This is the mechanism behind the ~1557% CPU / ~166 PIDs
+   previously observed; it reproduces from a COLD start within ~3 minutes.
+
+3) Minor/noise: generate_weekly_forecasts logs repeated
+   "CatBoost: Predictions are constant" and "XGBoost: Scale factor capped at 10.0x".
+   Model-quality signal, out of scope here, flagged only.
+
+--------------------------------------------------------------------------------
+FILES IN THIS DIRECTORY
+--------------------------------------------------------------------------------
+01-docker-ps-before-*            container state before bring-up (empty)
+02-compose-config-services-*     18 validated services
+03-compose-up-*                  bring-up log
+04-postgres-rowcounts-*          DB has real data
+05-dashboard-health-*            /api/health 200
+06-dashboard-container-approvals-mount-*   5 artifacts visible at /app/data/approvals
+08-airflow-import-errors-*       "No data found" = zero import errors
+09-airflow-dags-list-*           l4b deploy DAG registered, unpaused
+10-airflow-mounts-*              /opt/airflow/data mounted rw
+11-dag-approval-resolution-*     Python/DAG-side resolution OK
+12-dashboard-store-resolution-*  TS store resolution OK + traversal blocked
+13-service-health-table-*        REAL health per container
+14-scheduler-health-detail-*     healthcheck timeout evidence
+15-scheduler-processes-*         orphaned generate_weekly_forecasts.py at 1160% CPU
+16-airflow-running-tasks-*       only news task tracked (forecast job untracked)
+17-recent-dagruns-*              core_watchdog success at 00:12 = the spawner
+18-watchdog-forecast-log-*       job progressing normally
+19-dashboard-logs-*              email_verified schema-mismatch errors

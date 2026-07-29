@@ -1,0 +1,1 @@
+﻿{"status":"healthy","timestamp":"2026-07-29T00:12:22.183Z","service":"usdcop-dashboard","checks":[{"name":"trading_api","status":"ok","latency_ms":10},{"name":"signalbridge","status":"ok","latency_ms":6},{"name":"data_files","status":"ok"}]}

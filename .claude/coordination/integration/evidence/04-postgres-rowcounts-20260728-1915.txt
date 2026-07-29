@@ -1,0 +1,7 @@
+﻿           t            |    n    
+------------------------+---------
+ usdcop_m5_ohlcv        | 2205658
+ macro_indicators_daily |   26326
+ sb_users               |      25
+(3 rows)
+

@@ -1,0 +1,7 @@
+CWD = /app
+APPROVALS_ROOT = /app/data/approvals
+sid=null               -> FOUND approval_state.json strategy=smart_simple_v11 status=PENDING_APPROVAL gates=6
+sid=smart_simple_v11   -> FOUND approval_state.json strategy=smart_simple_v11 status=PENDING_APPROVAL gates=6
+sid=btc_trend_b2       -> FOUND approval_state_btc_trend_b2.json strategy=btc_trend_b2 status=PENDING_APPROVAL gates=6
+sid=bogus_strategy     -> NULL
+sid=../../etc/passwd   -> NULL

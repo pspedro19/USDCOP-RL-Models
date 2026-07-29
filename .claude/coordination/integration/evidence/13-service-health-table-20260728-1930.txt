@@ -1,0 +1,24 @@
+﻿
+Name                      State   Health         ExitCode Restarts
+----                      -----   ------         -------- --------
+trading-mlflow            running healthy               0 0       
+usdcop-airflow-webserver  running healthy               0 0       
+usdcop-analytics-api      running healthy               0 0       
+usdcop-backtest-api       running healthy               0 0       
+usdcop-dashboard          running healthy               0 0       
+usdcop-grpc-predictor     running healthy               0 0       
+usdcop-minio              running healthy               0 0       
+usdcop-postgres-timescale running healthy               0 0       
+usdcop-redis              running healthy               0 0       
+usdcop-redpanda           running healthy               0 0       
+usdcop-signalbridge       running healthy               0 0       
+usdcop-trading-api        running healthy               0 0       
+usdcop-kafka-consumer     running no-healthcheck        0 0       
+usdcop-kafka-producer     running no-healthcheck        0 0       
+usdcop-minio-init         exited  no-healthcheck        0 0       
+usdcop-redpanda-console   running no-healthcheck        0 0       
+usdcop-airflow-init       exited  unhealthy             0 0       
+usdcop-airflow-scheduler  running unhealthy             0 0       
+
+
+

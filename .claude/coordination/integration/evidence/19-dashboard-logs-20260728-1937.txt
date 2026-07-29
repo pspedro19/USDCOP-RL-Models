@@ -1,0 +1,260 @@
+﻿   ▲ Next.js 15.5.20
+   - Local:        http://localhost:3000
+   - Network:      http://0.0.0.0:3000
+
+ ✓ Starting...
+ ✓ Ready in 577ms
+docker : [PostgreSQL] Query error: error: column "email_verified" does not 
+exist
+En línea: 2 Carácter: 1
++ docker logs usdcop-dashboard 2>&1 | Out-File -Encoding utf8 "$ev\19-d ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([PostgreSQL] Qu... does not e 
+   xist:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+    at async g (.next/server/app/api/admin/impersonate/route.js:1:8433)
+    at async i.findByUsername (.next/server/chunks/5929.js:12:234)
+    at async k.login (.next/server/chunks/5929.js:37:1592)
+    at async Object.authorize (.next/server/chunks/5929.js:37:8003)
+    at async Object.i (.next/server/chunks/1601.js:10:46876)
+    at async q (.next/server/chunks/1601.js:10:32833)
+    at async g (.next/server/chunks/1601.js:1:1944)
+    at async a.length.b (.next/server/chunks/1601.js:1:3385) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '93',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3665',
+  routine: 'errorMissingColumn'
+}
+[UserRepository] findByUsername error: error: column "email_verified" does 
+not exist
+    at async g (.next/server/app/api/admin/impersonate/route.js:1:8433)
+    at async i.findByUsername (.next/server/chunks/5929.js:12:234)
+    at async k.login (.next/server/chunks/5929.js:37:1592)
+    at async Object.authorize (.next/server/chunks/5929.js:37:8003)
+    at async Object.i (.next/server/chunks/1601.js:10:46876)
+    at async q (.next/server/chunks/1601.js:10:32833)
+    at async g (.next/server/chunks/1601.js:1:1944)
+    at async a.length.b (.next/server/chunks/1601.js:1:3385) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '93',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3665',
+  routine: 'errorMissingColumn'
+}
+[AuthService] Login error: error: column "email_verified" does not exist
+    at async g (.next/server/app/api/admin/impersonate/route.js:1:8433)
+    at async i.findByUsername (.next/server/chunks/5929.js:12:234)
+    at async k.login (.next/server/chunks/5929.js:37:1592)
+    at async Object.authorize (.next/server/chunks/5929.js:37:8003)
+    at async Object.i (.next/server/chunks/1601.js:10:46876)
+    at async q (.next/server/chunks/1601.js:10:32833)
+    at async g (.next/server/chunks/1601.js:1:1944)
+    at async a.length.b (.next/server/chunks/1601.js:1:3385) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '93',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3665',
+  routine: 'errorMissingColumn'
+}
+[PostgreSQL] Query error: error: column "email_verified" does not exist
+    at async g (.next/server/app/api/admin/impersonate/route.js:1:8433)
+    at async i.findByUsername (.next/server/chunks/5929.js:12:234)
+    at async k.login (.next/server/chunks/5929.js:37:1592)
+    at async Object.authorize (.next/server/chunks/5929.js:37:8003)
+    at async Object.i (.next/server/chunks/1601.js:10:46876)
+    at async q (.next/server/chunks/1601.js:10:32833)
+    at async g (.next/server/chunks/1601.js:1:1944)
+    at async a.length.b (.next/server/chunks/1601.js:1:3385) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '93',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3665',
+  routine: 'errorMissingColumn'
+}
+[UserRepository] findByUsername error: error: column "email_verified" does 
+not exist
+    at async g (.next/server/app/api/admin/impersonate/route.js:1:8433)
+    at async i.findByUsername (.next/server/chunks/5929.js:12:234)
+    at async k.login (.next/server/chunks/5929.js:37:1592)
+    at async Object.authorize (.next/server/chunks/5929.js:37:8003)
+    at async Object.i (.next/server/chunks/1601.js:10:46876)
+    at async q (.next/server/chunks/1601.js:10:32833)
+    at async g (.next/server/chunks/1601.js:1:1944)
+    at async a.length.b (.next/server/chunks/1601.js:1:3385) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '93',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3665',
+  routine: 'errorMissingColumn'
+}
+[AuthService] Login error: error: column "email_verified" does not exist
+    at async g (.next/server/app/api/admin/impersonate/route.js:1:8433)
+    at async i.findByUsername (.next/server/chunks/5929.js:12:234)
+    at async k.login (.next/server/chunks/5929.js:37:1592)
+    at async Object.authorize (.next/server/chunks/5929.js:37:8003)
+    at async Object.i (.next/server/chunks/1601.js:10:46876)
+    at async q (.next/server/chunks/1601.js:10:32833)
+    at async g (.next/server/chunks/1601.js:1:1944)
+    at async a.length.b (.next/server/chunks/1601.js:1:3385) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '93',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3665',
+  routine: 'errorMissingColumn'
+}
+[PostgreSQL] Query error: error: column "email_verified" does not exist
+    at async g (.next/server/app/api/admin/impersonate/route.js:1:8433)
+    at async i.findByEmail (.next/server/chunks/5929.js:6:199)
+    at async k.login (.next/server/chunks/5929.js:37:1592)
+    at async Object.authorize (.next/server/chunks/5929.js:37:8003)
+    at async Object.i (.next/server/chunks/1601.js:10:46876)
+    at async q (.next/server/chunks/1601.js:10:32833)
+    at async g (.next/server/chunks/1601.js:1:1944)
+    at async a.length.b (.next/server/chunks/1601.js:1:3385) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '93',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3665',
+  routine: 'errorMissingColumn'
+}
+[UserRepository] findByEmail error: error: column "email_verified" does 
+not exist
+    at async g (.next/server/app/api/admin/impersonate/route.js:1:8433)
+    at async i.findByEmail (.next/server/chunks/5929.js:6:199)
+    at async k.login (.next/server/chunks/5929.js:37:1592)
+    at async Object.authorize (.next/server/chunks/5929.js:37:8003)
+    at async Object.i (.next/server/chunks/1601.js:10:46876)
+    at async q (.next/server/chunks/1601.js:10:32833)
+    at async g (.next/server/chunks/1601.js:1:1944)
+    at async a.length.b (.next/server/chunks/1601.js:1:3385) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '93',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3665',
+  routine: 'errorMissingColumn'
+}
+[AuthService] Login error: error: column "email_verified" does not exist
+    at async g (.next/server/app/api/admin/impersonate/route.js:1:8433)
+    at async i.findByEmail (.next/server/chunks/5929.js:6:199)
+    at async k.login (.next/server/chunks/5929.js:37:1592)
+    at async Object.authorize (.next/server/chunks/5929.js:37:8003)
+    at async Object.i (.next/server/chunks/1601.js:10:46876)
+    at async q (.next/server/chunks/1601.js:10:32833)
+    at async g (.next/server/chunks/1601.js:1:1944)
+    at async a.length.b (.next/server/chunks/1601.js:1:3385) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42703',
+  detail: undefined,
+  hint: undefined,
+  position: '93',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '3665',
+  routine: 'errorMissingColumn'
+}

@@ -1,0 +1,9 @@
+APPROVALS_DIR = /opt/airflow/data/approvals
+ENV_APPROVALS_DATA_DIR = None
+DIR_EXISTS = True
+SINGLETON_EXISTS = True
+STRATEGY = smart_simple_v11
+STATUS = PENDING_APPROVAL
+GATES_N = 6
+HAS_BACKTEST_METRICS = True
+SCOPED = ['approval_state_btc_hodl_b1.json', 'approval_state_btc_trend_b2.json', 'approval_state_gold_dynamic_exit.json', 'approval_state_gold_trend_simple.json']
