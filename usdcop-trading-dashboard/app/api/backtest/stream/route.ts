@@ -55,23 +55,46 @@ const SSE_HEADERS = {
 } as const;
 
 /**
+ * Closed set of client-visible reasons. Adding a member is a contract change; anything
+ * outside this union can never reach the browser.
+ */
+type UnavailableReason =
+  | 'backend_unreachable'
+  | 'backend_error_response'
+  | 'backend_timeout'
+  | 'backend_empty_response';
+
+/** Short token that ties the client's 503 to the full server-side log line. */
+function newCorrelationId(): string {
+  const raw = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2);
+  return raw.replace(/-/g, '').slice(0, 8).padEnd(8, '0');
+}
+
+/**
  * Fail-closed response for a dead/erroring inference backend.
  *
  * Nothing has been flushed to the client at this point (the upstream stream is piped
  * through only on success), so we can still set a real status: `503`. The body carries
- * the same SSE `error` frame a mid-stream failure would emit, so a consumer reading the
- * body gets the reason either way.
+ * EXACTLY ONE SSE frame, of type `error` — never a `result`, never a `trade`.
+ *
+ * The frame is SANITIZED: closed-set `reason` + `correlation_id`, no upstream URL and no
+ * upstream body. `data` is rendered verbatim to the user by `backtest.service.ts`
+ * (`String(event.data)`), so leaking the internal host there would put it on screen.
  */
-function backendUnavailable(detail: string): Response {
-  console.error(`[Stream] Inference backend unavailable — responding 503: ${detail}`);
+function backendUnavailable(reason: UnavailableReason, serverDetail: string): Response {
+  const correlationId = newCorrelationId();
+  console.error(
+    `[Stream] inference_backend_unavailable ref=${correlationId} reason=${reason} — ${serverDetail}`,
+  );
   // `data` is a STRING on purpose: the SSE consumer (`backtest.service.ts`, `case 'error'`)
   // does `String(event.data)`, so an object would surface to the user as "[object Object]".
   // The machine-readable code travels alongside it, at the frame's top level.
   const payload = JSON.stringify({
     type: 'error',
     error: 'inference_backend_unavailable',
-    detail,
-    data: `inference_backend_unavailable: ${detail}`,
+    reason,
+    correlation_id: correlationId,
+    data: `inference_backend_unavailable: ${reason} (ref ${correlationId})`,
   });
   return new Response(
     `data: ${payload}\n\n`,
@@ -175,6 +198,7 @@ export async function GET(request: NextRequest) {
     }
 
     return backendUnavailable(
+      response.ok ? 'backend_empty_response' : 'backend_error_response',
       response.ok
         ? `${endpoint} responded ${response.status} with an empty body`
         : `${endpoint} responded ${response.status}`,
@@ -182,8 +206,12 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     // NEVER swallow this: the empty `catch {}` that used to live here is precisely
     // what allowed fabricated equity curves to be served as real for months.
-    const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-    return backendUnavailable(`${endpoint} unreachable (${reason})`);
+    const cause = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    const aborted = error instanceof Error && error.name === 'AbortError';
+    return backendUnavailable(
+      aborted ? 'backend_timeout' : 'backend_unreachable',
+      `${endpoint} ${aborted ? 'timed out after 5000ms' : 'unreachable'} (${cause})`,
+    );
   }
 }
 
@@ -260,13 +288,18 @@ export async function POST(request: NextRequest) {
     }
 
     return backendUnavailable(
+      response.ok ? 'backend_empty_response' : 'backend_error_response',
       response.ok
         ? `${endpoint} responded ${response.status} with an empty body`
         : `${endpoint} responded ${response.status}`,
     );
   } catch (error) {
     // NEVER swallow this: see the note in GET.
-    const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-    return backendUnavailable(`${endpoint} unreachable (${reason})`);
+    const cause = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    const aborted = error instanceof Error && error.name === 'AbortError';
+    return backendUnavailable(
+      aborted ? 'backend_timeout' : 'backend_unreachable',
+      `${endpoint} ${aborted ? 'timed out after 5000ms' : 'unreachable'} (${cause})`,
+    );
   }
 }

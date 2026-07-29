@@ -112,15 +112,34 @@ function transformTrade(trade: InferenceServiceTrade) {
 }
 
 /**
- * FAIL-CLOSED response for a dead / erroring inference backend.
- * Carries the REAL reason — an error that is silenced is an error that survives.
+ * Closed set of client-visible reasons. Adding a member is a contract change; anything
+ * outside this union can never reach the browser.
  */
-function backendUnavailable(detail: string) {
-  console.error(`[Replay API] Inference backend unavailable — responding 503: ${detail}`);
+type UnavailableReason = 'backend_unreachable' | 'backend_error_response' | 'backend_timeout';
+
+/** Short token that ties the client's 503 to the full server-side log line. */
+function newCorrelationId(): string {
+  const raw = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2);
+  return raw.replace(/-/g, '').slice(0, 8).padEnd(8, '0');
+}
+
+/**
+ * FAIL-CLOSED response for a dead / erroring inference backend.
+ *
+ * The REAL reason is never silenced — an error that is silenced is an error that
+ * survives — but it is SPLIT: the closed-set `reason` + `correlation_id` go to the
+ * client, the upstream URL / status / body go to the server log only.
+ */
+function backendUnavailable(reason: UnavailableReason, serverDetail: string) {
+  const correlationId = newCorrelationId();
+  console.error(
+    `[Replay API] inference_backend_unavailable ref=${correlationId} reason=${reason} — ${serverDetail}`,
+  );
   return NextResponse.json(
     {
       ...createApiResponse(null, 'none', 'inference_backend_unavailable'),
-      detail,
+      reason,
+      correlation_id: correlationId,
     },
     { status: 503, headers: { 'Cache-Control': 'no-store, max-age=0' } },
   );
@@ -252,6 +271,7 @@ export const POST = withAuth(async (request) => {
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
         return backendUnavailable(
+          'backend_error_response',
           `${INFERENCE_SERVICE_URL}/api/v1/backtest responded ${response.status}` +
             (errorText ? `: ${errorText.slice(0, 500)}` : ''),
         );
@@ -292,6 +312,7 @@ export const POST = withAuth(async (request) => {
 
       if (fetchError instanceof Error && fetchError.name === 'AbortError') {
         return backendUnavailable(
+          'backend_timeout',
           `${INFERENCE_SERVICE_URL}/api/v1/backtest timed out after ${INFERENCE_TIMEOUT_MS}ms`,
         );
       }
@@ -299,8 +320,11 @@ export const POST = withAuth(async (request) => {
       // Connection refused / fetch failed → fail closed, with the real reason.
       const msg = fetchError instanceof Error ? fetchError.message : '';
       if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
-        const reason = fetchError instanceof Error ? `${fetchError.name}: ${msg}` : String(fetchError);
-        return backendUnavailable(`${INFERENCE_SERVICE_URL}/api/v1/backtest unreachable (${reason})`);
+        const cause = fetchError instanceof Error ? `${fetchError.name}: ${msg}` : String(fetchError);
+        return backendUnavailable(
+          'backend_unreachable',
+          `${INFERENCE_SERVICE_URL}/api/v1/backtest unreachable (${cause})`,
+        );
       }
 
       throw fetchError;

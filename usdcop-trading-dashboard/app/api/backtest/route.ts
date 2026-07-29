@@ -21,10 +21,34 @@ function wantsDemo(request: NextRequest, body: Record<string, unknown>): boolean
   return request.nextUrl.searchParams.get('mode') === 'demo' || body?.mode === 'demo';
 }
 
-function backendUnavailable(detail: string) {
-  console.error(`[Backtest API] Inference backend unavailable — responding 503: ${detail}`);
+/**
+ * Closed set of client-visible reasons. Adding a member is a contract change; anything
+ * outside this union can never reach the browser.
+ */
+type UnavailableReason = 'backend_unreachable' | 'backend_error_response' | 'backend_timeout';
+
+/** Short token that ties the client's 503 to the full server-side log line. */
+function newCorrelationId(): string {
+  const raw = globalThis.crypto?.randomUUID?.() ?? Math.random().toString(16).slice(2);
+  return raw.replace(/-/g, '').slice(0, 8).padEnd(8, '0');
+}
+
+/**
+ * FAIL-CLOSED 503.
+ *
+ * The client gets a SANITIZED motive: a closed-set `reason` plus a `correlation_id`.
+ * The upstream URL, its status line and its response body stay in the server log — they
+ * name an internal host/port and can echo back arbitrary upstream text, which is useful
+ * to an attacker mapping the network and useless to the browser (nothing renders it; the
+ * UI only shows the error code). An operator joins the two halves through `correlation_id`.
+ */
+function backendUnavailable(reason: UnavailableReason, serverDetail: string) {
+  const correlationId = newCorrelationId();
+  console.error(
+    `[Backtest API] inference_backend_unavailable ref=${correlationId} reason=${reason} — ${serverDetail}`,
+  );
   return NextResponse.json(
-    { success: false, error: 'inference_backend_unavailable', detail },
+    { success: false, error: 'inference_backend_unavailable', reason, correlation_id: correlationId },
     { status: 503, headers: { 'Cache-Control': 'no-store, max-age=0' } },
   );
 }
@@ -83,12 +107,17 @@ export async function POST(request: NextRequest) {
 
     const errorText = await response.text().catch(() => '');
     return backendUnavailable(
+      'backend_error_response',
       `${BACKEND_URL}/v1/backtest responded ${response.status}${errorText ? `: ${errorText.slice(0, 500)}` : ''}`,
     );
   } catch (error) {
     // NEVER swallow this silently: an empty `catch {}` is what let the synthetic
     // fallback masquerade as a real backtest for months.
-    const reason = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-    return backendUnavailable(`${BACKEND_URL}/v1/backtest unreachable (${reason})`);
+    const cause = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    const aborted = error instanceof Error && error.name === 'AbortError';
+    return backendUnavailable(
+      aborted ? 'backend_timeout' : 'backend_unreachable',
+      `${BACKEND_URL}/v1/backtest ${aborted ? 'timed out after 30000ms' : 'unreachable'} (${cause})`,
+    );
   }
 }
