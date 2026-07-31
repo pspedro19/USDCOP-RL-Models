@@ -75,6 +75,36 @@ def _json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _public_path(reference: Any, *, field: str) -> Path:
+    """Resolve a registry reference without allowing it to escape ``PUBLIC``."""
+    if not isinstance(reference, str) or not reference.strip():
+        raise ValueError(f"{field} must be a non-empty relative path")
+    public_root = PUBLIC.resolve()
+    candidate = (public_root / reference).resolve()
+    try:
+        candidate.relative_to(public_root)
+    except ValueError as exc:
+        raise ValueError(
+            f"{field} must resolve under the configured PUBLIC root"
+        ) from exc
+    return candidate
+
+
+def _source_uri(path: Path) -> str:
+    """Keep production URIs unchanged and isolated-test URIs machine-independent."""
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(ROOT.resolve()).as_posix()
+    except ValueError:
+        try:
+            relative = resolved.relative_to(PUBLIC.resolve())
+        except ValueError as exc:  # defensive: callers must use _public_path first
+            raise ValueError(
+                "source path must be under the repository or configured PUBLIC root"
+            ) from exc
+        return f"public-data:///{relative.as_posix()}"
+
+
 def _metric_values(
     summary: dict[str, Any], strategy_id: str
 ) -> Iterable[tuple[str, float]]:
@@ -125,15 +155,19 @@ def inventory(
     population = [str(strategy["strategy_id"]) for strategy in registry.get("strategies", [])]
     for strategy in registry.get("strategies", []):
         strategy_id = str(strategy["strategy_id"])
-        manifest_path = PUBLIC / str(strategy["manifest"])
+        manifest_path = _public_path(
+            strategy.get("manifest"), field=f"{strategy_id}.manifest"
+        )
         if not manifest_path.is_file():
-            missing.append(f"{strategy_id}: missing {manifest_path.relative_to(ROOT)}")
+            missing.append(f"{strategy_id}: missing {_source_uri(manifest_path)}")
             continue
         manifest = _json(manifest_path)
         for backtest in manifest.get("backtests", []):
-            summary_path = PUBLIC / str(backtest["summary"])
+            summary_path = _public_path(
+                backtest.get("summary"), field=f"{strategy_id}.backtest.summary"
+            )
             if not summary_path.is_file():
-                missing.append(f"{strategy_id}: missing {summary_path.relative_to(ROOT)}")
+                missing.append(f"{strategy_id}: missing {_source_uri(summary_path)}")
                 continue
             summary = _json(summary_path)
             version = str(backtest.get("model_version") or strategy.get("active_version") or "unknown")
@@ -148,7 +182,7 @@ def inventory(
                         year=year,
                         name=metric_name,
                         value=value,
-                        source=str(summary_path.relative_to(ROOT)).replace("\\", "/"),
+                        source=_source_uri(summary_path),
                     )
                 )
             # Baselines are part of the anti-survivorship population too.  They
@@ -167,15 +201,17 @@ def inventory(
                             year=year,
                             name=metric_name,
                             value=value,
-                            source=str(summary_path.relative_to(ROOT)).replace("\\", "/"),
+                            source=_source_uri(summary_path),
                         )
                     )
             trades_ref = backtest.get("trades")
             if not trades_ref:
                 continue
-            trades_path = PUBLIC / str(trades_ref)
+            trades_path = _public_path(
+                trades_ref, field=f"{strategy_id}.backtest.trades"
+            )
             if not trades_path.is_file():
-                missing.append(f"{strategy_id}: missing {trades_path.relative_to(ROOT)}")
+                missing.append(f"{strategy_id}: missing {_source_uri(trades_path)}")
                 continue
             trades_doc = _json(trades_path)
             for raw_trade in trades_doc.get("trades", []):
@@ -196,7 +232,7 @@ def inventory(
                             equity_at_entry=float(raw_trade["equity_at_entry"]),
                             leverage=float(raw_trade.get("leverage", 1.0)),
                             currency="USD",
-                            source=str(trades_path.relative_to(ROOT)).replace("\\", "/"),
+                            source=_source_uri(trades_path),
                         )
                     )
                 except (KeyError, TypeError, ValueError) as exc:

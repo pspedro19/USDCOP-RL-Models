@@ -1020,6 +1020,14 @@ def test_catalog_backfill_inventory_includes_archived_baseline_and_trades(
 ) -> None:
     import scripts.data.backfill_catalog_facts as backfill
 
+    production_ref = (
+        backfill.ROOT
+        / "usdcop-trading-dashboard/public/data/strategies/example/summary.json"
+    )
+    assert backfill._source_uri(production_ref) == (
+        "usdcop-trading-dashboard/public/data/strategies/example/summary.json"
+    )
+
     public = tmp_path / "public"
     strategy_root = public / "strategies" / "archived_s"
     (strategy_root / "backtests" / "1.0.0").mkdir(parents=True)
@@ -1077,6 +1085,39 @@ def test_catalog_backfill_inventory_includes_archived_baseline_and_trades(
     assert any(fact.status == "archived" for fact in metrics)
     assert any("::baseline::buy_and_hold" in fact.strategy_id for fact in metrics)
     assert len(trade_facts) == 1
+    sources = {fact.source for fact in metrics} | {fact.source for fact in trade_facts}
+    assert sources == {
+        "public-data:///strategies/archived_s/backtests/1.0.0/summary_2025.json",
+        "public-data:///strategies/archived_s/backtests/1.0.0/trades_2025.json",
+    }
+    assert str(tmp_path).replace("\\", "/") not in "\n".join(sources)
+
+
+def test_catalog_backfill_inventory_rejects_path_outside_public(
+    tmp_path, monkeypatch
+) -> None:
+    import scripts.data.backfill_catalog_facts as backfill
+
+    public = tmp_path / "public"
+    public.mkdir()
+    outside = tmp_path / "outside.json"
+    outside.write_text("{}", encoding="utf-8")
+    registry = {
+        "strategies": [
+            {
+                "strategy_id": "escape_s",
+                "asset_id": "asset_a",
+                "status": "archived",
+                "manifest": "../outside.json",
+            }
+        ]
+    }
+    registry_path = public / "registry.json"
+    registry_path.write_text(json.dumps(registry), encoding="utf-8")
+    monkeypatch.setattr(backfill, "PUBLIC", public)
+
+    with pytest.raises(ValueError, match="manifest must resolve under the configured PUBLIC root"):
+        backfill.inventory(registry_path)
 
 
 def test_sql_contracts_have_no_invalid_float_isfinite_and_are_append_only() -> None:
