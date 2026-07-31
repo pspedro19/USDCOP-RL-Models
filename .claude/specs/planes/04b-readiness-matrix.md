@@ -1,7 +1,7 @@
 ---
 kind: audit
 status: PARTIAL
-version: 1.1.0
+version: 1.1.1
 last_verified: 2026-07-31
 supersedes: []
 code_anchors:
@@ -105,9 +105,10 @@ cuenta como verde.
 
 - Gate propio BL-33: `3 failed` contra la matriz decorativa original y `3 passed` después del
   registro verificable.
-- Batería factual amplia: `202 passed, 3 failed, 1 skipped`. Los fallos no se atribuyen a BL-33:
-  dos exponen deriva del constructor de `MetricEngine` y uno expone drift del digest `fabric-v1`.
-  Quedan visibles en `RISK-06` y `TECH-06`.
+- Batería factual amplia (segunda invocación): `199 passed, 3 failed, 1 skipped`; sumada al gate
+  propio anterior, el agregado es `202 passed, 3 failed, 1 skipped`. Los fallos no se atribuyen a
+  BL-33: dos exponen deriva del constructor de `MetricEngine` y uno expone drift del digest
+  `fabric-v1`. Quedan visibles en `RISK-06` y `TECH-06`.
 - Focal exacto de pre-trade, idempotencia, broker timeout, kill actions y fencing: `7 passed`.
 - Contrato RBAC y cobertura RBAC: verdes. Frontmatter: `992 passed`. Enlaces relativos:
   `664 internal links resolve`.

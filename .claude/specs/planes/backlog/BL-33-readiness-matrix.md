@@ -1,7 +1,7 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.1.0
+version: 1.1.1
 last_verified: 2026-07-31
 supersedes: []
 code_anchors:
@@ -39,7 +39,9 @@ Después de reconstruir el registro pasó `3/3`.
 
 El corte factual adicional produjo:
 
-- `202 passed, 3 failed, 1 skipped` en contratos, safety, kill switch, ledger, restore y approvals;
+- `199 passed, 3 failed, 1 skipped` en la batería amplia de contratos, safety, kill switch, ledger,
+  restore y approvals; el agregado con los `3 passed` del gate propio es `202 passed, 3 failed,
+  1 skipped`;
 - focal exacto pre-trade/fencing: `7 passed`;
 - frontmatter: `992 passed`;
 - links relativos: `664 internal links resolve`;
