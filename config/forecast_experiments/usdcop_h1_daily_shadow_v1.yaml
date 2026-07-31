@@ -1,0 +1,183 @@
+_meta:
+  version: "1.0.0"
+  experiment_id: "usdcop_h1_daily_shadow_v1"
+  parent_rule: "usdcop_h1_regime_shadow_v2"
+  registered_on: "2026-07-22"
+  status: "prospective_daily_transport_shadow"
+  signal_authorized: false
+  capital_authorized: false
+
+asset:
+  id: "usdcop"
+  symbol: "USD/COP"
+  timezone: "America/Bogota"
+  market_session: "08:00-12:55"
+
+research_question: >-
+  Does the frozen H1 v2 model, fitted once per ISO week and evaluated at every
+  completed USD/COP session, retain directional skill without selecting or
+  tuning on historical daily-origin outcomes?
+
+prospective_protocol:
+  first_eligible_date: "2026-07-27"
+  first_eligible_iso_week: "2026-W31"
+  latest_information_seen_before_registration: "2026-07-22"
+  commit_weekdays: [0, 1, 2, 3, 4]
+  commit_not_before_local_time: "15:30"
+  commit_current_local_date_only: true
+  require_origin_date_equals_local_commit_date: true
+  missed_session_policy: "MISS_PERMANENTLY_NEVER_BACKFILL"
+  require_unmatured_target_at_commit: true
+  target_horizon_sessions: 1
+  model_retraining_frequency: "once_per_iso_week"
+  training_anchor: "last_available_session_of_prior_iso_week"
+  immutable_predictions: true
+  separate_append_only_outcomes: true
+  hash_chain: "sha256_canonical_json"
+  snapshot_each_committed_session: true
+  minimum_elapsed_calendar_months_before_review: 12
+  minimum_committed_sessions_before_review: 252
+  minimum_matured_base_predictions_before_review: 252
+  minimum_matured_selective_signals_before_review: 100
+  interim_review_base_predictions: 100
+  interim_review_can_authorize_capital: false
+
+data:
+  baseline_cutoff: "2026-07-22"
+  baseline_deep_file: "data/experiments/usdcop_h1_daily_shadow_v1/asset_daily_ohlcv_through_2026-07-22.parquet"
+  baseline_deep_sha256: "bc6d05b375c56b70f0863df6222ee5f99427d2e0a0a5d37f28d6b77912adf438"
+  baseline_current_file: "data/experiments/usdcop_h1_daily_shadow_v1/usdcop_daily_ohlcv_through_2026-07-22.parquet"
+  baseline_current_sha256: "d4ee969a072535502dab0dfd2b7646e4ef5dfb221f5e1a1fdd7e7f496825a54d"
+  baseline_manifest: "data/experiments/usdcop_h1_daily_shadow_v1/manifest.json"
+  baseline_manifest_sha256: "da8fccd8371f73e8696a4d26ddc91b1db060a5d3ecea44b9833909b039a4c702"
+  live_current_file: "seeds/latest/usdcop_daily_ohlcv.parquet"
+  live_append_rule: "accept_only_dates_strictly_after_baseline_cutoff"
+  historical_revision_policy: "ignore_live_revisions_on_or_before_baseline_cutoff"
+  decision_input_availability: "after core_l0_05_seed_backup completes at 15:00 America/Bogota"
+  require_current_session_m5_snapshot: true
+  m5_table: "usdcop_m5_ohlcv"
+  m5_symbol: "USD/COP"
+  expected_m5_bars: 60
+  minimum_m5_bars: 60
+  required_last_local_bar_time: "12:55"
+  research_availability_class: "reconstructed_history_plus_true_forward_snapshots"
+
+model:
+  family: "balanced_logistic_regression"
+  feature_group: "long_price"
+  c: 0.1
+  class_weight: "balanced"
+  max_iter: 2000
+  random_state: 23
+  half_life_sessions: 1260
+  training_mode: "weekly_expanding_matured_labels_fixed_within_iso_week"
+  imputer: "training_median"
+  scaler: "training_standard"
+  probability_threshold: 0.50
+  implementation: "scripts.analysis.usdcop_directional_edge_tournament.Variant+fit_model"
+  features:
+    - "return_1d"
+    - "return_5d"
+    - "return_10d"
+    - "return_20d"
+    - "volatility_5d"
+    - "volatility_10d"
+    - "volatility_20d"
+    - "rsi_14d"
+    - "ma_ratio_20d"
+    - "ma_ratio_50d"
+
+regime_gate:
+  trend_z_formula: "return_20d / (volatility_20d * sqrt(20))"
+  trend_z_threshold: 0.50
+  volatility_reference: "rolling_252_session_median_shifted_1_session"
+  allowed_states: ["range__low_vol", "trend_up__high_vol"]
+  disallowed_action: "FLAT"
+  fallback_direction: null
+
+pre_registration_evidence:
+  exact_daily_origin_rule_historically_evaluated: false
+  historical_daily_outcomes_may_select_or_modify_rule: false
+  inherited_weekly_candidate_classification: "exploratory_not_confirmed"
+  weekly_audit_2020_2024:
+    signals: 95
+    directional_accuracy: 0.557895
+    balanced_accuracy: 0.552394
+    lift_vs_causal_majority: 0.126316
+    lift_block_bootstrap_ci95: [-0.021053, 0.273684]
+    lift_block_bootstrap_one_sided_p: 0.052047
+  interpretation: >-
+    The weekly evidence motivated this fixed transport test but cannot be
+    represented as evidence for daily origins. Only post-registration records
+    count toward the daily experiment.
+
+primary_estimand:
+  population: "all prospectively committed daily origins"
+  metric: "base_direction directional accuracy and balanced accuracy"
+  null: "directional independence"
+  required_test: "Pesaran-Timmermann one-sided"
+  paired_baseline: "causal expanding-window majority direction fixed at weekly retraining anchor"
+
+secondary_estimand:
+  population: "regime-allowed non-FLAT daily origins"
+  metric: "selective directional accuracy, balanced accuracy and net value"
+  interpretation: "secondary; cannot replace a failed all-origin primary result"
+
+promotion_gates:
+  minimum_base_directional_accuracy: 0.55
+  minimum_base_balanced_accuracy: 0.55
+  minimum_selective_directional_accuracy: 0.55
+  minimum_selective_balanced_accuracy: 0.55
+  minimum_up_recall: 0.40
+  minimum_down_recall: 0.40
+  minimum_lift_vs_causal_majority: 0.0
+  lift_block_bootstrap_one_sided_p_max: 0.05
+  lift_block_bootstrap_ci95_lower_min_exclusive: 0.0
+  pesaran_timmermann_p_max: 0.05
+  maximum_prediction_class_rate: 0.85
+  minimum_prediction_class_rate: 0.15
+  require_brier_better_than_causal_prior: true
+  require_time_uniform_lower_da_bound_gt: 0.50
+  require_positive_net_value_after_costs: true
+  require_multiple_testing_control: true
+  require_no_contract_causality_or_integrity_failures: true
+  require_risk_coverage_report: true
+
+implementation_integrity:
+  registration_file: "reports/usdcop_h1_daily_shadow_v1/registration.json"
+  generator: "scripts/pipeline/generate_usdcop_h1_daily_shadow_v1.py"
+  evaluator: "scripts/validation/evaluate_usdcop_h1_daily_shadow_v1.py"
+  validator: "scripts/validation/validate_usdcop_h1_daily_shadow_v1.py"
+  hashed_dependencies:
+    - "scripts/pipeline/generate_usdcop_h1_regime_shadow_v2.py"
+    - "scripts/analysis/usdcop_directional_edge_tournament.py"
+    - "scripts/analysis/usdcop_long_history_directional_tournament.py"
+    - "scripts/analysis/usdcop_causal_regime_gate.py"
+    - "scripts/validation/evaluate_usdcop_h1_shadow_v2.py"
+  refuse_code_hash_drift: true
+  refuse_contract_hash_drift: true
+  forbid_manual_clock_override: true
+
+outputs:
+  directory: "reports/usdcop_h1_daily_shadow_v1"
+  prediction_ledger: "predictions.jsonl"
+  outcome_ledger: "outcomes.jsonl"
+  snapshot_directory: "snapshots"
+  index: "usdcop-trading-dashboard/public/forecasting/usdcop/h1_daily_shadow_index.json"
+
+trial_accounting:
+  new_primary_trials: 1
+  directional_trials_before: 48
+  directional_trials_after_registration: 49
+  global_trials_before: 109
+  global_trials_after_registration: 110
+
+governance:
+  acceptance_standard: "config/forecast_experiments/institutional_directional_acceptance_v1.yaml"
+  research_only: true
+  dashboard_label: "H1 DAILY PROSPECTIVE SHADOW — NOT AUTHORIZED"
+  modification_policy: >-
+    Any model, feature, threshold, gate, training cadence, data assembly,
+    origin frequency or commit-rule change creates a new experiment_id and
+    resets every prospective statistic.
+  current_model_can_be_promoted_without_new_evidence: false

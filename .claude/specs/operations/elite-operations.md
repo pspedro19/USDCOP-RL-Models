@@ -111,7 +111,22 @@ Migration:  049_regime_gate_columns.sql   # (048 is reconciliation_tables; audit
 18:35-22:00   H1-L7 Executor (narrowed from 13:00-19:00)
 19:00         Analysis L8 (ExternalTaskSensor on News)
 20:00         Seed Backup
+20:30         forecast_h1_regime_shadow_v2   — prospective H1 regime ledger (research-only;
+              only Friday may append a prediction, other weekdays append the next-session outcome)
+20:35         forecast_h1_daily_shadow_v1    — prospective daily-origin H1 ledger (research-only)
 ```
+
+> **The two shadow ledgers are the pre-registered FORWARD judges** the quant constitution §1/§5
+> leans on — they never authorize signal or capital (`signal_authorized`/`capital_authorized`
+> are pinned false and their DAGs verify it). They are placed **after** the 20:00 seed backup on
+> purpose: they read the day's closed session. They overlap the H1-L7 executor window
+> (`*/5 18-22`), which is harmless only while the H1 production track stays paused — if H1 is
+> ever unpaused, re-check this slot.
+>
+> **`forecast_h1_regime_shadow` (v1) is WITHDRAWN, not scheduled work.** The HYPOTHESIS-REGISTRY
+> records it retired with 0 predictions and 0 outcomes; its module is still on disk and its
+> generator writes the *same* ledger index v2 now owns, so it is in `DEPRECATED_DAGS`. Do not
+> re-activate it: one run would overwrite v2's prospective chain.
 
 **Event-driven (no schedule, safe unpaused):**
 ```

@@ -80,6 +80,7 @@ CORE_L0_OHLCV_REALTIME = "core_l0_02_ohlcv_realtime"
 CORE_L0_MACRO_BACKFILL = "core_l0_03_macro_backfill"
 CORE_L0_MACRO_UPDATE = "core_l0_04_macro_update"
 CORE_L0_SEED_BACKUP = "core_l0_05_seed_backup"
+CORE_L0_USDCOP_FORWARD_MACRO_PIT = "core_l0_04_usdcop_forward_macro_pit"
 
 
 # =============================================================================
@@ -154,6 +155,22 @@ FORECAST_H1_L6_PAPER_MONITOR = "forecast_h1_l6_paper_monitor"
 # L7 - Execution (smart executor with trailing stops)
 FORECAST_H1_L7_SMART_EXECUTOR = "forecast_h1_l7_smart_executor"
 
+# --- H1 prospective shadow ledgers (research-only, never authorize signal or capital) ---
+# These are the pre-registered FORWARD judges the quant constitution §1/§5 relies on: they
+# append-only commit predictions and outcomes, and they are NOT part of the H1 production track.
+# v2 supersedes v1 — see below and `.claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md`.
+FORECAST_H1_REGIME_SHADOW_V2 = "forecast_h1_regime_shadow_v2"
+FORECAST_H1_DAILY_SHADOW_V1 = "forecast_h1_daily_shadow_v1"
+# WITHDRAWN experiment. HYPOTHESIS-REGISTRY records "V1 se retiró con 0 predicciones y 0
+# outcomes" (class_weight divergence, mutable history, unpinned hashes). Its module is still on
+# disk and its generator writes the SAME ledger index that v2 now owns
+# (`h1_regime_shadow_index.json`, whose own `supersedes` field names this experiment), so it is
+# kept DEPRECATED here and fenced fail-closed in the module itself.
+FORECAST_H1_REGIME_SHADOW_V1 = "forecast_h1_regime_shadow"
+# DEPRECATED_DAGS is bound above with the RL-L4 ids, before this constant exists, so the
+# withdrawn shadow is folded in here rather than duplicating the literal string up there.
+DEPRECATED_DAGS = DEPRECATED_DAGS | frozenset({FORECAST_H1_REGIME_SHADOW_V1})
+
 # --- H5 Weekly Pipeline (renamed from FORECAST_H5_L5A_*/L5B_*/L5C_* → correct layer assignments) ---
 # L3 - Training (weekly retraining of Ridge + BR, H=5)
 FORECAST_H5_L3_WEEKLY_TRAINING = "forecast_h5_l3_weekly_training"
@@ -213,6 +230,7 @@ FORECAST_WEEKLY_GENERATION = "forecast_weekly_generation"
 FORECAST_ASSET_ANALYSIS_WEEKLY = "forecast_asset_analysis_weekly"
 FORWARD_LEDGER_WEEKLY = "forward_ledger_weekly"  # Fri 19:00 UTC forward-evidence ledger (2026-07-21)
 L0_MULTIFRAME_CATCHUP = "l0_multiframe_catchup"  # hourly M5/1h/4h/daily/monthly catch-up + matview refresh (2026-07-22)
+CONTROL_SYSTEM_HEALTH = "control_system_health"  # BL-25 tres relojes (datos/modelo/PnL), :30 13-18 UTC Mon-Fri (2026-07-27)
 
 # Config-driven, emitted per enabled asset by airflow/dags/asset_pipeline_factory.py
 # from config/assets/pipelines.yaml — never hardcode; derive with get_asset_dag_ids().
@@ -307,6 +325,7 @@ DAG_DEPENDENCIES: Dict[str, List[str]] = {
     CORE_L0_MACRO_BACKFILL: [],
     CORE_L0_MACRO_UPDATE: [],
     CORE_L0_SEED_BACKUP: [],  # Runs after OHLCV realtime + macro update complete
+    CORE_L0_USDCOP_FORWARD_MACRO_PIT: [],
 
     # RL Pipeline
     RL_L1_FEATURE_REFRESH: [RL_L5_PRODUCTION_INFERENCE],
@@ -346,6 +365,9 @@ DAG_DEPENDENCIES: Dict[str, List[str]] = {
     NEWS_WEEKLY_DIGEST: [NEWS_DAILY_PIPELINE],  # Depends on daily ingestion
     NEWS_MAINTENANCE: [],  # Runs on schedule (Sunday)
     ANALYSIS_L8_DAILY_GENERATION: [NEWS_DAILY_PIPELINE],  # Must run AFTER last news ingestion
+
+    # Platform / Ops
+    CONTROL_SYSTEM_HEALTH: [],  # BL-25: reads facts/snapshots; promotion DAGs read its snapshot
 }
 
 
@@ -354,12 +376,13 @@ DAG_DEPENDENCIES: Dict[str, List[str]] = {
 # =============================================================================
 
 DAG_TAGS: Dict[str, List[str]] = {
-    # Core Infrastructure (shared) — 4 L0 DAGs
+    # Core Infrastructure (shared) — 6 L0 DAGs
     CORE_L0_OHLCV_BACKFILL: ["core", "l0", "data", "ohlcv", "backfill"],
     CORE_L0_OHLCV_REALTIME: ["core", "l0", "data", "ohlcv", "realtime"],
     CORE_L0_MACRO_BACKFILL: ["core", "l0", "data", "macro", "backfill"],
     CORE_L0_MACRO_UPDATE: ["core", "l0", "data", "macro", "update"],
     CORE_L0_SEED_BACKUP: ["core", "l0", "backup", "seed"],
+    CORE_L0_USDCOP_FORWARD_MACRO_PIT: ["core", "l0", "data", "macro", "pit", "forward"],
 
     # RL Pipeline
     RL_L1_FEATURE_REFRESH: ["rl", "l1", "feature", "5min"],
@@ -392,6 +415,9 @@ DAG_TAGS: Dict[str, List[str]] = {
     FORECAST_H1_L5_VOL_TARGETING: ["forecast", "h1", "l5", "vol-targeting", "daily"],
     FORECAST_H1_L6_PAPER_MONITOR: ["forecast", "h1", "l6", "paper-trading", "daily"],
     FORECAST_H1_L7_SMART_EXECUTOR: ["forecast", "h1", "l7", "execution", "trailing-stop"],
+    FORECAST_H1_REGIME_SHADOW_V2: ["forecast", "h1", "research", "shadow", "usdcop", "pit", "forward-ledger"],
+    FORECAST_H1_DAILY_SHADOW_V1: ["forecast", "h1", "research", "shadow", "usdcop", "pit", "forward-ledger"],
+    FORECAST_H1_REGIME_SHADOW_V1: ["forecast", "h1", "research", "shadow", "usdcop", "deprecated"],
 
     # H5 Weekly Pipeline
     FORECAST_H5_L3_WEEKLY_TRAINING: ["forecast", "h5", "l3", "training", "weekly", "linear"],
@@ -412,6 +438,9 @@ DAG_TAGS: Dict[str, List[str]] = {
     # Shared Monitoring
     CORE_L6_ALERT_MONITOR: ["core", "l6", "alert", "system"],
     CORE_L6_WEEKLY_REPORT: ["core", "l6", "report", "weekly"],
+
+    # Platform / Ops
+    CONTROL_SYSTEM_HEALTH: ["control", "monitoring", "three-clocks", "system-health", "bl-25"],
 }
 
 
@@ -475,12 +504,13 @@ def get_layer(dag_id: str) -> DagLayer:
 def get_all_dag_ids() -> List[str]:
     """Get all registered DAG IDs in execution order."""
     return [
-        # Core L0 (4 DAGs)
+        # Core L0 (6 DAGs)
         CORE_L0_OHLCV_BACKFILL,
         CORE_L0_OHLCV_REALTIME,
         CORE_L0_MACRO_BACKFILL,
         CORE_L0_MACRO_UPDATE,
         CORE_L0_SEED_BACKUP,
+        CORE_L0_USDCOP_FORWARD_MACRO_PIT,
         # RL Pipeline
         RL_L1_FEATURE_REFRESH,
         RL_L1_MODEL_PROMOTION,
@@ -505,6 +535,10 @@ def get_all_dag_ids() -> List[str]:
         FORECAST_H1_L5_VOL_TARGETING,
         FORECAST_H1_L6_PAPER_MONITOR,
         FORECAST_H1_L7_SMART_EXECUTOR,
+        # H1 prospective shadow ledgers (research-only). FORECAST_H1_REGIME_SHADOW_V1 is
+        # DEPRECATED (withdrawn experiment) and therefore absent from this order.
+        FORECAST_H1_REGIME_SHADOW_V2,
+        FORECAST_H1_DAILY_SHADOW_V1,
         # H5 Weekly Pipeline
         FORECAST_H5_L3_WEEKLY_TRAINING,
         FORECAST_H5_L4_BACKTEST_PROMOTION,
@@ -530,6 +564,7 @@ def get_all_dag_ids() -> List[str]:
         FORECAST_ASSET_ANALYSIS_WEEKLY,
         FORWARD_LEDGER_WEEKLY,
         L0_MULTIFRAME_CATCHUP,
+        CONTROL_SYSTEM_HEALTH,
     ]
 
 
@@ -605,6 +640,7 @@ L0_MACRO_UPDATE = CORE_L0_MACRO_UPDATE
 L0_MACRO_BACKFILL = CORE_L0_MACRO_BACKFILL
 L0_MACRO_DAILY = CORE_L0_MACRO_UPDATE  # Legacy name (was CORE_L0_MACRO_DAILY)
 L0_SEED_BACKUP = CORE_L0_SEED_BACKUP
+L0_USDCOP_FORWARD_MACRO_PIT = CORE_L0_USDCOP_FORWARD_MACRO_PIT
 
 # L1 aliases
 L1_FEATURE_REFRESH = RL_L1_FEATURE_REFRESH
@@ -638,12 +674,13 @@ __all__ = [
     "DagPipeline",
     "DagLayer",
     "DagType",
-    # Core L0 IDs (5 DAGs)
+    # Core L0 IDs (6 DAGs)
     "CORE_L0_OHLCV_BACKFILL",
     "CORE_L0_OHLCV_REALTIME",
     "CORE_L0_MACRO_BACKFILL",
     "CORE_L0_MACRO_UPDATE",
     "CORE_L0_SEED_BACKUP",
+    "CORE_L0_USDCOP_FORWARD_MACRO_PIT",
     # News Engine & Analysis IDs
     "NEWS_DAILY_PIPELINE",
     "NEWS_ALERT_MONITOR",

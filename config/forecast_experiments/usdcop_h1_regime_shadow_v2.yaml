@@ -1,0 +1,160 @@
+_meta:
+  version: "2.0.0"
+  experiment_id: "usdcop_h1_regime_shadow_v2"
+  supersedes: "usdcop_h1_regime_shadow_v1"
+  replacement_reason: >-
+    V1 live code used an unweighted logit although the selected research model
+    was balanced, did not bind model-code hashes, read mutable pre-registration
+    history, and allowed retroactive commits. V1 produced zero predictions.
+  registered_on: "2026-07-22"
+  status: "prospective_shadow"
+  signal_authorized: false
+  capital_authorized: false
+
+asset:
+  id: "usdcop"
+  symbol: "USD/COP"
+  timezone: "America/Bogota"
+
+prospective_protocol:
+  first_eligible_iso_week: "2026-W31"
+  latest_research_audit_week: "2026-W30"
+  commit_weekday: 4
+  commit_not_before_local_time: "15:30"
+  commit_current_iso_week_only: true
+  missed_week_policy: "MISS_PERMANENTLY_NEVER_BACKFILL"
+  require_unmatured_target_at_commit: true
+  require_origin_date_equals_local_commit_date: true
+  origin_frequency: "last_available_session_current_iso_week"
+  target_horizon_sessions: 1
+  immutable_predictions: true
+  separate_append_only_outcomes: true
+  hash_chain: "sha256_canonical_json"
+  snapshot_each_committed_week: true
+  minimum_calendar_weeks_before_promotion_review: 104
+  minimum_matured_signals_before_promotion_review: 100
+  interim_review_signals: 30
+  interim_review_can_authorize_capital: false
+
+data:
+  baseline_cutoff: "2026-07-21"
+  baseline_deep_file: "data/experiments/usdcop_h1_regime_shadow_v2/asset_daily_ohlcv_through_2026-07-21.parquet"
+  baseline_deep_sha256: "bc6d05b375c56b70f0863df6222ee5f99427d2e0a0a5d37f28d6b77912adf438"
+  baseline_current_file: "data/experiments/usdcop_h1_regime_shadow_v2/usdcop_daily_ohlcv_through_2026-07-21.parquet"
+  baseline_current_sha256: "3d528ee39197fa6536d7c73820f415ee6aa1f5a1cfded2ae3c85474ae592149d"
+  baseline_manifest: "data/experiments/usdcop_h1_regime_shadow_v2/manifest.json"
+  live_current_file: "seeds/latest/usdcop_daily_ohlcv.parquet"
+  live_append_rule: "accept_only_dates_strictly_after_baseline_cutoff"
+  historical_revision_policy: "ignore_live_revisions_on_or_before_baseline_cutoff"
+  research_availability_class: "reconstructed_not_true_pit"
+  weekly_input_snapshot: "full_processed_frame_plus_source_hashes"
+
+model:
+  family: "balanced_logistic_regression"
+  feature_group: "long_price"
+  c: 0.1
+  class_weight: "balanced"
+  max_iter: 2000
+  random_state: 23
+  half_life_sessions: 1260
+  training_mode: "weekly_expanding_matured_labels"
+  imputer: "training_median"
+  scaler: "training_standard"
+  probability_threshold: 0.50
+  implementation: "scripts.analysis.usdcop_directional_edge_tournament.Variant+fit_model"
+  features:
+    - "return_1d"
+    - "return_5d"
+    - "return_10d"
+    - "return_20d"
+    - "volatility_5d"
+    - "volatility_10d"
+    - "volatility_20d"
+    - "rsi_14d"
+    - "ma_ratio_20d"
+    - "ma_ratio_50d"
+
+regime_gate:
+  trend_z_formula: "return_20d / (volatility_20d * sqrt(20))"
+  trend_z_threshold: 0.50
+  volatility_reference: "rolling_252_session_median_shifted_1_session"
+  allowed_states: ["range__low_vol", "trend_up__high_vol"]
+  disallowed_action: "FLAT"
+  fallback_direction: null
+
+pre_registration_evidence:
+  evidence_classification: "exploratory_candidate_not_confirmed"
+  selection_period: "2015-2019"
+  selected_model_passed_original_eligibility_gate: false
+  combined_gate_passed_selection_metric_gate: false
+  audit_2020_2024:
+    signals: 95
+    coverage: 0.363985
+    directional_accuracy: 0.557895
+    balanced_accuracy: 0.552394
+    lift_vs_causal_majority: 0.126316
+    lift_block_bootstrap_ci95: [-0.021053, 0.273684]
+    lift_block_bootstrap_one_sided_p: 0.052047
+  annual_instability_disclosed:
+    2020_da: 0.50
+    2021_da: 0.75
+    2022_da: 0.478261
+    2023_da: 0.75
+    2024_da: 0.428571
+  audit_2025:
+    signals: 11
+    directional_accuracy: 0.636364
+  audit_2026_through_w30:
+    signals: 5
+    directional_accuracy: 0.60
+  interpretation: >-
+    Historical evidence is unstable and insufficient. V2 exists to obtain a
+    genuinely prospective answer, not to claim that the model is already good.
+
+promotion_gates:
+  minimum_directional_accuracy: 0.55
+  minimum_balanced_accuracy: 0.55
+  minimum_up_recall: 0.40
+  minimum_down_recall: 0.40
+  minimum_lift_vs_causal_majority: 0.0
+  lift_block_bootstrap_one_sided_p_max: 0.05
+  lift_block_bootstrap_ci95_lower_min: 0.0
+  pesaran_timmermann_p_max: 0.05
+  maximum_prediction_class_rate: 0.85
+  minimum_prediction_class_rate: 0.15
+  maximum_brier_score: 0.25
+  require_positive_net_value_after_costs: true
+  require_multiple_testing_control: true
+  require_no_contract_causality_or_integrity_failures: true
+  require_risk_coverage_report: true
+
+implementation_integrity:
+  registration_file: "reports/usdcop_h1_regime_shadow_v2/registration.json"
+  generator: "scripts/pipeline/generate_usdcop_h1_regime_shadow_v2.py"
+  hashed_dependencies:
+    - "scripts/analysis/usdcop_directional_edge_tournament.py"
+    - "scripts/analysis/usdcop_long_history_directional_tournament.py"
+    - "scripts/analysis/usdcop_causal_regime_gate.py"
+  refuse_code_hash_drift: true
+  refuse_contract_hash_drift: true
+  parity_reference:
+    research_artifact: "reports/usdcop_long_history_directional_tournament_predictions.csv"
+    research_artifact_sha256: "9652c7b06c5bf5962020b6e43c73a93f52e2bb5be7de2d7e09b25c89a5d68b74"
+    origin_date: "2024-12-27"
+    probability_up: 0.5327702437214819
+    model_variant_key: "long_price|C=0.1|balanced|hl=1260"
+
+outputs:
+  directory: "reports/usdcop_h1_regime_shadow_v2"
+  prediction_ledger: "predictions.jsonl"
+  outcome_ledger: "outcomes.jsonl"
+  snapshot_directory: "snapshots"
+  index: "usdcop-trading-dashboard/public/forecasting/usdcop/h1_regime_shadow_index.json"
+
+governance:
+  research_only: true
+  dashboard_label: "H1 REGIME SHADOW V2 — NOT AUTHORIZED"
+  modification_policy: >-
+    Any model, feature, threshold, gate, data assembly or commit-rule change
+    creates a new experiment_id and resets all prospective evidence.
+  current_model_can_be_promoted_without_new_evidence: false

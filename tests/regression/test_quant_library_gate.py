@@ -38,6 +38,26 @@ QUARANTINED = {
 pytestmark = pytest.mark.skipif(not VENDOR.is_dir(), reason="quant skill library not vendored")
 
 
+def _tracked_skill_files() -> set[str]:
+    """Repo-relative POSIX paths git actually tracks under `.claude/skills/`.
+
+    This is what a clean checkout — and therefore CI — will contain. Anything on disk
+    but absent here exists only on one machine.
+    """
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "ls-files", "--", ".claude/skills"],
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:  # not a git checkout — fail closed, do not silently pass
+        pytest.fail(f"git ls-files failed, cannot tell adopted skills apart: {result.stderr.strip()}")
+    return {line.strip() for line in result.stdout.splitlines() if line.strip()}
+
+
 def _promoted() -> set[str]:
     return {p.name for p in SKILLS.iterdir() if p.is_dir()}
 
@@ -166,16 +186,42 @@ def test_promoted_skills_shipping_code_also_ship_tests():
 
     What is NOT accepted is executable code with neither.
     """
+    tracked = _tracked_skill_files()
     offenders = []
     for skill_dir in sorted((ROOT / ".claude" / "skills").iterdir()):
         scripts = skill_dir / "scripts"
         if not scripts.is_dir():
+            continue
+        # "Promoted" means THIS REPO adopted the skill, which is observable exactly one
+        # way: at least one of its files is tracked. A skill installed locally from the
+        # marketplace has zero tracked files, is absent from a clean checkout, and can
+        # never reach CI — so failing on it reports a defect that does not exist in the
+        # repo while telling the reader nothing they can fix by committing anything.
+        # Measured 2026-07-31: every adopted skill shipping modules (9 finance skills +
+        # xasset-alpha-engine) already satisfies this gate; the only offender was
+        # `webapp-testing`, with 0 tracked files.
+        adopted = any(f.startswith(f".claude/skills/{skill_dir.name}/") for f in tracked)
+        if not adopted:
             continue
         modules = [
             p for p in scripts.rglob("*.py")
             if "tests" not in p.parts and p.name != "__init__.py"
         ]
         if not modules:
+            continue
+        # Narrowing the scope above would open a hole if it stopped there: an adopted
+        # skill could ship UNTRACKED modules and buy silence. CI cannot see those either,
+        # so they are an offence in their own right, not an exemption.
+        untracked_modules = [
+            m for m in modules
+            if m.relative_to(ROOT).as_posix() not in tracked
+        ]
+        if untracked_modules:
+            offenders.append(
+                f"{skill_dir.name}: UNTRACKED modules "
+                f"{sorted(m.name for m in untracked_modules)} - `git add` them; "
+                "a clean checkout does not have them, so no test can cover them"
+            )
             continue
         has_tests = bool(list(scripts.rglob("test_*.py")))
         has_verify = any(
@@ -186,8 +232,10 @@ def test_promoted_skills_shipping_code_also_ship_tests():
             offenders.append(f"{skill_dir.name} ({len(modules)} modules)")
 
     assert not offenders, (
-        "promoted skills ship executable code with neither tests nor a --verify "
-        f"self-check: {offenders}. `.claude` is in norecursedirs, so this code is "
-        "invisible to CI. Copy the tests across when promoting, add --verify, or "
-        "vendor the skill instead of promoting it."
+        f"adopted skills ship executable code CI cannot verify: {offenders}. "
+        "`.claude` is in norecursedirs, so a default pytest run never sees these "
+        "modules; specs-gate only runs `.claude/skills/*/scripts/tests` explicitly. "
+        "Either ship tests / a --verify self-check, track the modules, or vendor the "
+        "skill instead of promoting it. (Skills with no tracked file at all are local "
+        "installs, not adoptions, and are out of scope by construction.)"
     )

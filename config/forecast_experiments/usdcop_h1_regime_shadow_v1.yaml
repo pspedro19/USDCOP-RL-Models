@@ -1,0 +1,113 @@
+_meta:
+  version: "1.0.0"
+  experiment_id: "usdcop_h1_regime_shadow_v1"
+  description: "Pre-registered prospective H1 directional shadow after causal regime-gate audit"
+  registered_on: "2026-07-22"
+  status: "prospective_shadow"
+  signal_authorized: false
+  capital_authorized: false
+
+asset:
+  id: "usdcop"
+  symbol: "USD/COP"
+  timezone: "America/Bogota"
+
+prospective_protocol:
+  first_eligible_iso_week: "2026-W31"
+  latest_research_audit_week: "2026-W30"
+  origin_frequency: "last_available_session_per_iso_week"
+  decision_timing: "after USD/COP session close"
+  commit_schedule: "Friday 15:30 America/Bogota"
+  commit_weekday: 4
+  target_horizon_sessions: 1
+  label_maturity_rule: "target_date_lte_evaluation_date"
+  immutable_predictions: true
+  allow_retrospective_overwrite: false
+  minimum_calendar_weeks_before_promotion_review: 104
+  minimum_matured_signals_before_promotion_review: 100
+  interim_review_signals: 30
+  interim_review_can_authorize_capital: false
+
+data:
+  history_start: "2000-01-01"
+  floating_regime_basis: "Colombia abandoned the exchange-rate band on 1999-09-25"
+  deep_history_file: "data/backups/features/asset_daily_ohlcv.parquet"
+  deep_history_symbol: "USD/COP"
+  deep_history_source: "twelvedata_daily_deep"
+  current_history_file: "seeds/latest/usdcop_daily_ohlcv.parquet"
+  splice_rule: "deep_history_before_current_min_date_then_current_history"
+
+model:
+  family: "balanced_logistic_regression"
+  c: 0.1
+  max_iter: 2000
+  random_state: 23
+  half_life_sessions: 1260
+  training_mode: "weekly_expanding_matured_labels"
+  imputer: "median"
+  scaler: "standard"
+  probability_threshold: 0.50
+  features:
+    - "return_1d"
+    - "return_5d"
+    - "return_10d"
+    - "return_20d"
+    - "volatility_5d"
+    - "volatility_10d"
+    - "volatility_20d"
+    - "rsi_14d"
+    - "ma_ratio_20d"
+    - "ma_ratio_50d"
+
+regime_gate:
+  trend_z_formula: "return_20d / (volatility_20d * sqrt(20))"
+  trend_z_threshold: 0.50
+  volatility_reference: "rolling_252_session_median_shifted_1_session"
+  allowed_states:
+    - "range__low_vol"
+    - "trend_up__high_vol"
+  disallowed_action: "FLAT"
+  fallback_direction: null
+
+pre_registration_evidence:
+  selection_period: "2015-2019"
+  untouched_algorithmic_audit_period: "2020-2024"
+  audit_2020_2024:
+    signals: 95
+    coverage: 0.363985
+    directional_accuracy: 0.557895
+    balanced_accuracy: 0.552394
+    up_recall: 0.592593
+    down_recall: 0.512195
+    lift_vs_causal_majority: 0.126316
+    lift_block_bootstrap_ci95: [-0.021053, 0.273684]
+    lift_block_bootstrap_one_sided_p: 0.052047
+  audit_2025:
+    signals: 11
+    directional_accuracy: 0.636364
+    balanced_accuracy: 0.633333
+  audit_2026_through_w30:
+    signals: 5
+    directional_accuracy: 0.60
+    balanced_accuracy: 0.666667
+  evidence_classification: "promising_not_statistically_confirmed"
+
+promotion_gates:
+  minimum_directional_accuracy: 0.55
+  minimum_balanced_accuracy: 0.55
+  minimum_up_recall: 0.40
+  minimum_down_recall: 0.40
+  minimum_lift_vs_causal_majority: 0.0
+  lift_block_bootstrap_one_sided_p_max: 0.05
+  lift_block_bootstrap_ci95_lower_min: 0.0
+  maximum_prediction_class_rate: 0.85
+  minimum_prediction_class_rate: 0.15
+  require_positive_net_value_after_costs: true
+  require_multiple_testing_control: true
+  require_no_contract_or_causality_failures: true
+
+governance:
+  research_only: true
+  dashboard_label: "H1 REGIME SHADOW — NOT AUTHORIZED"
+  modification_policy: "Any model, feature, threshold, gate, state or data-splice change creates a new experiment_id and resets prospective evidence."
+  current_model_can_be_promoted_without_new_evidence: false
