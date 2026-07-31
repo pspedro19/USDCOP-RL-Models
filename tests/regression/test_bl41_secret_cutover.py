@@ -7,12 +7,14 @@ PostgreSQL credential value is part of the proposed target.
 
 from __future__ import annotations
 
+import hashlib
 from copy import deepcopy
 from pathlib import Path
 
 import yaml
 
 from scripts.validation.check_bl41_secret_cutover import (
+    EVIDENCE_KINDS,
     cutover_may_proceed,
     main,
     validate_document,
@@ -30,6 +32,29 @@ def _document() -> dict[str, object]:
     return payload
 
 
+def _attach_typed_evidence(payload: dict[str, object], root: Path) -> None:
+    preconditions = payload["preconditions"]
+    assert isinstance(preconditions, dict)
+    for name, condition in preconditions.items():
+        assert isinstance(condition, dict)
+        relative = Path(".claude") / "evidence" / "bl41" / f"{name}.json"
+        artifact = root / relative
+        artifact.parent.mkdir(parents=True, exist_ok=True)
+        artifact.write_text(
+            f'{{"precondition":"{name}","result":"PASS"}}\n',
+            encoding="utf-8",
+        )
+        digest = "sha256:" + hashlib.sha256(artifact.read_bytes()).hexdigest()
+        condition["ready"] = True
+        condition["evidence"] = {
+            "subject": name,
+            "kind": EVIDENCE_KINDS[name],
+            "artifact_path": relative.as_posix(),
+            "sha256": digest,
+            "observed_at": "2026-07-31T14:00:00-05:00",
+        }
+
+
 def test_repository_contract_is_valid_but_stays_blocked() -> None:
     payload = _document()
     assert validate_document(payload) == []
@@ -45,7 +70,8 @@ def test_cutover_cannot_be_enabled_while_any_precondition_is_false() -> None:
     payload["status"] = "READY_FOR_CUTOVER"
 
     errors = validate_document(payload)
-    assert any("all preconditions" in error for error in errors)
+    assert any("static preflight metadata cannot authorize" in error for error in errors)
+    assert any("status must remain BLOCKED_OPERATOR" in error for error in errors)
     assert cutover_may_proceed(payload) is False
 
 
@@ -59,22 +85,57 @@ def test_ready_precondition_requires_nonempty_evidence() -> None:
     assert any("external_secret_store_canary" in error and "evidence" in error for error in errors)
 
 
-def test_all_evidence_including_operator_authorization_is_required() -> None:
+def test_typed_evidence_can_be_bound_but_never_authorizes_cutover(tmp_path: Path) -> None:
     payload = _document()
-    preconditions = payload["preconditions"]
-    assert isinstance(preconditions, dict)
-    for name, condition in preconditions.items():
-        condition["ready"] = True
-        condition["evidence"] = f"evidence/bl41/{name}.json"
-    payload["status"] = "READY_FOR_CUTOVER"
-    payload["cutover_allowed"] = True
+    _attach_typed_evidence(payload, tmp_path)
 
     assert validate_document(payload) == []
-    assert cutover_may_proceed(payload) is True
+    assert validate_repository_state(payload, tmp_path) == []
+    assert cutover_may_proceed(payload) is False
 
     without_operator = deepcopy(payload)
     without_operator["preconditions"]["operator_authorization"]["evidence"] = None
-    assert cutover_may_proceed(without_operator) is False
+    errors = validate_document(without_operator)
+    assert any("operator_authorization.evidence" in error for error in errors)
+
+
+def test_plain_ok_evidence_cannot_buy_cutover_authority() -> None:
+    payload = _document()
+    preconditions = payload["preconditions"]
+    assert isinstance(preconditions, dict)
+    for condition in preconditions.values():
+        assert isinstance(condition, dict)
+        condition["ready"] = True
+        condition["evidence"] = "ok"
+    payload["status"] = "READY_FOR_CUTOVER"
+    payload["cutover_allowed"] = True
+
+    errors = validate_document(payload)
+    assert sum("evidence must be a typed mapping" in error for error in errors) == 6
+    assert any("static preflight metadata cannot authorize" in error for error in errors)
+    assert cutover_may_proceed(payload) is False
+
+
+def test_evidence_subject_path_and_hash_are_bound(tmp_path: Path) -> None:
+    payload = _document()
+    _attach_typed_evidence(payload, tmp_path)
+    preconditions = payload["preconditions"]
+    assert isinstance(preconditions, dict)
+    canary = preconditions["external_secret_store_canary"]
+    assert isinstance(canary, dict)
+    evidence = canary["evidence"]
+    assert isinstance(evidence, dict)
+
+    evidence["subject"] = "operator_authorization"
+    assert any("subject must match" in error for error in validate_document(payload))
+    evidence["subject"] = "external_secret_store_canary"
+    evidence["sha256"] = "sha256:" + "0" * 64
+    assert any(
+        "sha256 does not match artifact" in error
+        for error in validate_repository_state(payload, tmp_path)
+    )
+    evidence["artifact_path"] = ".env"
+    assert any("environment or credential file" in error for error in validate_document(payload))
 
 
 def test_target_rejects_secret_material_columns_and_public_schema() -> None:

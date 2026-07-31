@@ -1,7 +1,7 @@
 ---
 kind: audit
 status: PARTIAL
-version: 1.1.1
+version: 1.2.0
 last_verified: 2026-07-31
 supersedes: []
 code_anchors:
@@ -26,6 +26,11 @@ Esta matriz evalúa el repositorio y la evidencia operativa disponible. `VERIFIE
 a control probado en producción, certificación, auditoría independiente ni autorización legal.
 La matriz **no autoriza capital**, no promueve modelos y no convierte el sistema en el Caso B de
 administración de dinero de terceros.
+
+La existencia de un enlace no prueba correspondencia. El gate mantiene un target-set revisado para
+cada `Control ID`: sustituir la evidencia de una fila por otro archivo existente —por ejemplo
+`LICENSE`— falla aunque el enlace resuelva. Un cambio legítimo de evidencia modifica registro y pin
+en el mismo review; esto evita convertir “archivo presente” en “afirmación demostrada”.
 
 ## Semántica de estado
 
@@ -105,6 +110,9 @@ cuenta como verde.
 
 - Gate propio BL-33: `3 failed` contra la matriz decorativa original y `3 passed` después del
   registro verificable.
+- Cross-review `CLD-267`: reemplazar `INV-04` por un enlace existente a `LICENSE` dejó el gate
+  anterior verde. El R2 pinnea los targets revisados de todas las filas; gate ampliado `5 passed` y
+  la misma sustitución ahora produce un error de correspondencia sobre `INV-04`.
 - Batería factual amplia (segunda invocación): `199 passed, 3 failed, 1 skipped`; sumada al gate
   propio anterior, el agregado es `202 passed, 3 failed, 1 skipped`. Los fallos no se atribuyen a
   BL-33: dos exponen deriva del constructor de `MetricEngine` y uno expone drift del digest

@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Validate the static BL-41 cutover contract without contacting DB or Vault.
+"""Validate the static BL-41 preflight contract without contacting DB or Vault.
 
-The gate validates whether repository metadata is internally safe.  It cannot
-attest external readiness and deliberately treats a blocked contract as a valid
-state.  Enabling cutover requires every named precondition, nonempty evidence,
-and explicit operator authorization.
+Repository metadata can describe and bind evidence, but it cannot authorize a
+credential cutover.  This gate therefore accepts the blocked state and rejects
+``cutover_allowed: true`` unconditionally.  A future runtime gate must verify
+the external systems and the operator action independently.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import sys
 from collections.abc import Mapping, Sequence
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -49,9 +51,30 @@ REFERENCE_FIELDS = {
     "created_at",
     "updated_at",
 }
+EVIDENCE_KINDS = {
+    "external_secret_store_canary": "external_secret_store_canary",
+    "legacy_credential_tables_empty_under_lock": "locked_relation_count",
+    "runtime_roles_non_superuser": "database_role_catalog",
+    "migration_runner_fail_closed": "migration_runner_dry_run",
+    "consumers_cutover_coordinated": "consumer_cutover_ack",
+    "operator_authorization": "operator_change_approval",
+}
+EVIDENCE_FIELDS = {
+    "subject",
+    "kind",
+    "artifact_path",
+    "sha256",
+    "observed_at",
+}
+EVIDENCE_ROOT = Path(".claude/evidence/bl41")
+SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 FORBIDDEN_SECRET_KEY = re.compile(
     r"(^|_)(api_key|api_secret|encrypted|ciphertext|passphrase|password|access_token|"
     r"refresh_token|secret_value|credential_value|fingerprint|mask)(_|$)",
+    flags=re.IGNORECASE,
+)
+FORBIDDEN_EVIDENCE_FILENAMES = re.compile(
+    r"^(?:\.env(?:\..*)?|credentials.*\.json|service-account.*\.json)$",
     flags=re.IGNORECASE,
 )
 
@@ -72,14 +95,61 @@ def _string_set(value: object) -> set[str] | None:
     return set(value)
 
 
-def _has_evidence(value: object) -> bool:
-    if isinstance(value, str):
-        return bool(value.strip())
-    if isinstance(value, Mapping):
-        return bool(value)
-    if isinstance(value, Sequence) and not isinstance(value, str | bytes):
-        return bool(value)
-    return False
+def _evidence_path_error(value: object) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return "artifact_path must be a nonempty repository-relative path"
+    relative = Path(value)
+    if relative.is_absolute() or relative.drive or ".." in relative.parts:
+        return "artifact_path must stay inside the repository"
+    lowered_parts = {part.lower() for part in relative.parts}
+    if "secrets" in lowered_parts or ".git" in lowered_parts:
+        return "artifact_path may not target secrets or Git internals"
+    if FORBIDDEN_EVIDENCE_FILENAMES.fullmatch(relative.name):
+        return "artifact_path may not target an environment or credential file"
+    if relative.suffix.lower() in {".pem", ".key"}:
+        return "artifact_path may not target private-key material"
+    if not relative.is_relative_to(EVIDENCE_ROOT):
+        return "artifact_path must live under .claude/evidence/bl41"
+    return None
+
+
+def _evidence_errors(name: str, value: object) -> list[str]:
+    evidence = _mapping(value)
+    if evidence is None:
+        return [f"precondition {name}.evidence must be a typed mapping"]
+
+    errors: list[str] = []
+    fields = set(evidence)
+    if fields != EVIDENCE_FIELDS:
+        errors.append(
+            f"precondition {name}.evidence fields must be {sorted(EVIDENCE_FIELDS)}"
+        )
+    if evidence.get("subject") != name:
+        errors.append(f"precondition {name}.evidence subject must match the precondition")
+    if evidence.get("kind") != EVIDENCE_KINDS.get(name):
+        errors.append(f"precondition {name}.evidence kind is not the reviewed kind")
+
+    path_error = _evidence_path_error(evidence.get("artifact_path"))
+    if path_error:
+        errors.append(f"precondition {name}.evidence {path_error}")
+
+    digest = evidence.get("sha256")
+    if not isinstance(digest, str) or SHA256.fullmatch(digest) is None:
+        errors.append(f"precondition {name}.evidence sha256 must be sha256:<64 lowercase hex>")
+
+    observed_at = evidence.get("observed_at")
+    if not isinstance(observed_at, str):
+        errors.append(f"precondition {name}.evidence observed_at must be an ISO timestamp")
+    else:
+        try:
+            parsed = datetime.fromisoformat(observed_at.replace("Z", "+00:00"))
+        except ValueError:
+            parsed = None
+        if parsed is None or parsed.tzinfo is None or parsed.utcoffset() is None:
+            errors.append(
+                f"precondition {name}.evidence observed_at must include a UTC offset"
+            )
+    return errors
 
 
 def _secret_material_key_paths(value: object, prefix: str = "root") -> list[str]:
@@ -108,6 +178,7 @@ def validate_document(payload: object) -> list[str]:
     expected_scalars = {
         "schema_version": "1.0.0",
         "backlog_id": "BL-41",
+        "gate_mode": "STATIC_PREFLIGHT_ONLY",
         "decision_contract": "C-007",
         "planned_migration": "database/migrations/069_secret_external_account.sql",
     }
@@ -133,31 +204,30 @@ def validate_document(payload: object) -> list[str]:
         errors.append(f"forbidden secret-material key: {path}")
 
     preconditions = _mapping(document.get("preconditions"))
-    all_ready = False
     if preconditions is None:
         errors.append("preconditions must be a mapping")
     else:
         missing = REQUIRED_PRECONDITIONS - set(preconditions)
         if missing:
             errors.append(f"missing preconditions: {sorted(missing)}")
+        extra = set(preconditions) - REQUIRED_PRECONDITIONS
+        if extra:
+            errors.append(f"unexpected preconditions: {sorted(extra)}")
 
-        readiness: list[bool] = []
         for name, raw_condition in preconditions.items():
             condition = _mapping(raw_condition)
             if condition is None:
                 errors.append(f"precondition {name} must be a mapping")
-                readiness.append(False)
                 continue
             ready = condition.get("ready")
             if not isinstance(ready, bool):
                 errors.append(f"precondition {name}.ready must be boolean")
-                readiness.append(False)
                 continue
-            readiness.append(ready)
-            if ready and not _has_evidence(condition.get("evidence")):
-                errors.append(f"precondition {name} is ready without nonempty evidence")
-
-        all_ready = bool(readiness) and len(readiness) == len(preconditions) and all(readiness)
+            evidence = condition.get("evidence")
+            if ready:
+                errors.extend(_evidence_errors(name, evidence))
+            elif evidence is not None:
+                errors.append(f"precondition {name} is not ready but carries active evidence")
 
         legacy = _mapping(preconditions.get("legacy_credential_tables_empty_under_lock"))
         relations = _string_set(legacy.get("relations")) if legacy else None
@@ -174,30 +244,22 @@ def validate_document(payload: object) -> list[str]:
     if not isinstance(allowed, bool):
         errors.append("cutover_allowed must be boolean")
     elif allowed:
-        if status != "READY_FOR_CUTOVER":
-            errors.append("enabled cutover requires status READY_FOR_CUTOVER")
-        if not all_ready:
-            errors.append("enabled cutover requires all preconditions ready with evidence")
-    elif status != "BLOCKED_OPERATOR":
-        errors.append("disabled cutover requires status BLOCKED_OPERATOR")
+        errors.append("static preflight metadata cannot authorize cutover")
+    if status != "BLOCKED_OPERATOR":
+        errors.append("static preflight status must remain BLOCKED_OPERATOR")
 
     return errors
 
 
 def cutover_may_proceed(payload: object) -> bool:
-    """Return static eligibility; this never substitutes for the operator action."""
+    """Static repository metadata never grants cutover authority."""
 
-    document = _mapping(payload)
-    return bool(
-        document
-        and document.get("cutover_allowed") is True
-        and document.get("status") == "READY_FOR_CUTOVER"
-        and not validate_document(document)
-    )
+    _ = payload
+    return False
 
 
 def validate_repository_state(payload: object, root: Path) -> list[str]:
-    """Reject a DDL file while the fail-closed contract remains blocked."""
+    """Bind ready evidence to safe repository files and reject premature DDL."""
 
     errors: list[str] = []
     document = _mapping(payload)
@@ -211,6 +273,33 @@ def validate_repository_state(payload: object, root: Path) -> list[str]:
         return ["planned_migration must be a repository-relative path"]
     if document.get("cutover_allowed") is False and (root / relative).exists():
         errors.append(f"premature migration exists while cutover is blocked: {migration}")
+
+    preconditions = _mapping(document.get("preconditions"))
+    if preconditions is None:
+        return errors
+    resolved_root = root.resolve()
+    for name, raw_condition in preconditions.items():
+        condition = _mapping(raw_condition)
+        if condition is None or condition.get("ready") is not True:
+            continue
+        evidence = _mapping(condition.get("evidence"))
+        if evidence is None:
+            continue
+        artifact_path = evidence.get("artifact_path")
+        if _evidence_path_error(artifact_path) is not None:
+            continue
+        assert isinstance(artifact_path, str)
+        artifact = (resolved_root / artifact_path).resolve()
+        if not artifact.is_relative_to(resolved_root):
+            errors.append(f"precondition {name} evidence escapes repository")
+            continue
+        if not artifact.is_file():
+            errors.append(f"precondition {name} evidence artifact does not exist: {artifact_path}")
+            continue
+        expected_digest = evidence.get("sha256")
+        actual_digest = "sha256:" + hashlib.sha256(artifact.read_bytes()).hexdigest()
+        if expected_digest != actual_digest:
+            errors.append(f"precondition {name} evidence sha256 does not match artifact")
     return errors
 
 

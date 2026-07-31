@@ -12,7 +12,6 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 MATRIX = ROOT / ".claude" / "specs" / "planes" / "04b-readiness-matrix.md"
 
@@ -44,6 +43,123 @@ ALLOWED_STATES = {
 CONTROL_ID = re.compile(r"^(TECH|RISK|EXEC|SEC|COMP|OPS|INV)-\d{2}$")
 DATE = re.compile(r"^20\d{2}-\d{2}-\d{2}$")
 LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+REVIEWED_EVIDENCE_TARGETS = {
+    "SEC-01": frozenset(
+        {
+            "backlog/BL-08-incidente-env-historial.md",
+            "../../../docs/SECURITY-env-leak-remediation.md",
+        }
+    ),
+    "SEC-02": frozenset({"03-institutional-readiness.md"}),
+    "TECH-01": frozenset({"../../../tests/regression/test_contract_mirrors.py"}),
+    "TECH-02": frozenset({"backlog/BL-17-fingerprints-canonical-writer.md"}),
+    "TECH-03": frozenset(
+        {
+            "backlog/BL-24-linaje-camino-dorado.md",
+            "backlog/BL-29-qlab-cli-cutoff-lectura.md",
+            "backlog/BL-38-market-canonical-resampleo.md",
+        }
+    ),
+    "TECH-04": frozenset(
+        {
+            "../../../tests/regression/test_restore_resyncs_sequences.py",
+            "../../../docs/operations/DISASTER_RECOVERY_PLAYBOOK.md",
+        }
+    ),
+    "TECH-05": frozenset({"backlog/BL-25-monitoreo-tres-relojes.md"}),
+    "TECH-06": frozenset({"../../../tests/unit/test_codex_safety_contracts.py"}),
+    "RISK-01": frozenset(
+        {
+            "../platform/execution-bridge.md",
+            "../../../tests/unit/test_codex_safety_contracts.py",
+        }
+    ),
+    "RISK-02": frozenset(
+        {
+            "../../../tests/regression/test_trading_flags.py",
+            "../../../tests/unit/test_command_pattern.py",
+            "backlog/BL-31-strangler-cop.md",
+        }
+    ),
+    "RISK-03": frozenset(
+        {
+            "../../../tests/regression/test_trial_ledger.py",
+            "../../rules/quant-constitution.md",
+        }
+    ),
+    "RISK-04": frozenset(
+        {
+            "backlog/BL-26-portfolio-snapshot.md",
+            "backlog/BL-27-allocator-v1-novedad.md",
+        }
+    ),
+    "RISK-05": frozenset({"03-institutional-readiness.md"}),
+    "RISK-06": frozenset(
+        {
+            "backlog/BL-18-catalogo-motor-metricas.md",
+            "../../../tests/unit/test_codex_safety_contracts.py",
+        }
+    ),
+    "EXEC-01": frozenset(
+        {
+            "../../../tests/unit/test_codex_safety_contracts.py",
+            "backlog/BL-30-execution-service-externo.md",
+        }
+    ),
+    "EXEC-02": frozenset(
+        {
+            "backlog/BL-21-event-sourcing-exec.md",
+            "backlog/BL-22-fact-position-pnl.md",
+        }
+    ),
+    "EXEC-03": frozenset(
+        {
+            "../../rules/approval-gates.md",
+            "../../../tests/regression/test_approval_store_private.py",
+        }
+    ),
+    "EXEC-04": frozenset({"backlog/BL-31-strangler-cop.md"}),
+    "EXEC-05": frozenset({"../assets/usdcop/WITHDRAWAL-PROTOCOL.md"}),
+    "SEC-03": frozenset(
+        {
+            "../../rules/rbac.md",
+            "../../../usdcop-trading-dashboard/lib/contracts/rbac.contract.ts",
+            "../../../usdcop-trading-dashboard/scripts/check-rbac-coverage.mjs",
+        }
+    ),
+    "SEC-04": frozenset({"backlog/BL-41-seguridad-db-p0.md"}),
+    "SEC-05": frozenset({"../platform/authentication.md"}),
+    "SEC-06": frozenset({"../../../docs/operations/INCIDENT_RESPONSE_PLAYBOOK.md"}),
+    "COMP-01": frozenset(
+        {
+            "../../../tests/regression/test_bl09_bl11_bl12_governance.py",
+            "../../../tests/regression/test_trial_ledger.py",
+        }
+    ),
+    "COMP-02": frozenset({"../../rules/rbac.md"}),
+    "COMP-03": frozenset({"03-institutional-readiness.md"}),
+    "COMP-04": frozenset({"03-institutional-readiness.md"}),
+    "OPS-01": frozenset({"../../../docs/operations/DISASTER_RECOVERY_PLAYBOOK.md"}),
+    "OPS-02": frozenset(
+        {
+            "../../../docs/operations/INCIDENT_RESPONSE_PLAYBOOK.md",
+            "03-institutional-readiness.md",
+        }
+    ),
+    "OPS-03": frozenset({"backlog/BL-22-fact-position-pnl.md"}),
+    "OPS-04": frozenset({"backlog/BL-25-monitoreo-tres-relojes.md"}),
+    "OPS-05": frozenset({"03-institutional-readiness.md"}),
+    "INV-01": frozenset(
+        {
+            "../../../tests/unit/test_codex_phase2_backlog.py",
+            "../../../usdcop-trading-dashboard/tests/unit/api/synthetic-backtest-honesty.test.ts",
+            "backlog/BL-43-demo-sintetica-aislada.md",
+        }
+    ),
+    "INV-02": frozenset({"03-institutional-readiness.md"}),
+    "INV-03": frozenset({"03-institutional-readiness.md"}),
+    "INV-04": frozenset({"03-institutional-readiness.md"}),
+}
 
 
 def _cells(line: str) -> list[str]:
@@ -76,6 +192,34 @@ def _register() -> list[dict[str, str]]:
         rows.append(dict(zip(REQUIRED_COLUMNS, cells, strict=True)))
     assert rows, "readiness register has no controls"
     return rows
+
+
+def _evidence_targets(row: dict[str, str]) -> frozenset[str]:
+    return frozenset(
+        raw_target.split("#", 1)[0]
+        for raw_target in LINK.findall(row["Observed evidence"])
+    )
+
+
+def _evidence_correspondence_errors(rows: list[dict[str, str]]) -> list[str]:
+    errors: list[str] = []
+    row_ids = {row["Control ID"] for row in rows}
+    reviewed_ids = set(REVIEWED_EVIDENCE_TARGETS)
+    if row_ids != reviewed_ids:
+        errors.append(
+            "reviewed evidence map differs from register ids: "
+            f"missing={sorted(row_ids - reviewed_ids)}, extra={sorted(reviewed_ids - row_ids)}"
+        )
+    for row in rows:
+        control_id = row["Control ID"]
+        expected = REVIEWED_EVIDENCE_TARGETS.get(control_id)
+        actual = _evidence_targets(row)
+        if expected is not None and actual != expected:
+            errors.append(
+                f"{control_id}: evidence targets differ from reviewed correspondence; "
+                f"expected={sorted(expected)}, actual={sorted(actual)}"
+            )
+    return errors
 
 
 def test_register_covers_all_domains_with_stable_ids_and_fail_closed_states() -> None:
@@ -121,6 +265,20 @@ def test_every_control_has_owner_date_expectation_and_existing_relative_evidence
 
     assert "BL-08-incidente-env-historial.md" in rows[0]["Observed evidence"]
     assert "03-institutional-readiness.md" in rows[1]["Observed evidence"]
+
+
+def test_every_control_uses_its_reviewed_evidence_targets() -> None:
+    assert _evidence_correspondence_errors(_register()) == []
+
+
+def test_existing_but_irrelevant_file_cannot_replace_reviewed_evidence() -> None:
+    forged = [dict(row) for row in _register()]
+    investor_reporting = next(row for row in forged if row["Control ID"] == "INV-04")
+    investor_reporting["Observed evidence"] = "[licencia](../../../LICENSE)"
+
+    errors = _evidence_correspondence_errors(forged)
+    assert len(errors) == 1
+    assert errors[0].startswith("INV-04: evidence targets differ")
 
 
 def test_matrix_defines_state_semantics_and_scope_limit() -> None:

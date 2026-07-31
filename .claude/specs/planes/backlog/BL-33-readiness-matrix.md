@@ -1,7 +1,7 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.1.1
+version: 1.2.0
 last_verified: 2026-07-31
 supersedes: []
 code_anchors:
@@ -22,6 +22,10 @@ ID estable, dominio, evidencia esperada, evidencia observada enlazada, estado fa
 fecha. Las primeras filas conservan los dos bloqueos que motivaron el BL: incidente histórico de
 secretos y segregación de identidades.
 
+La revisión adversarial `CLD-267` encontró que 34 filas aceptaban cualquier archivo existente como
+evidencia. El R2 pinnea el conjunto de targets revisados por `Control ID`; por tanto un enlace
+resoluble pero irrelevante ya no satisface correspondencia.
+
 El registro distingue explícitamente:
 
 - control probado sólo dentro del repositorio;
@@ -36,6 +40,10 @@ No autoriza capital, no afirma readiness institucional y no confunde una spec co
 El gate nuevo `tests/regression/test_readiness_matrix.py` falló `3/3` contra el stub anterior:
 faltaban las columnas auditables, los estados no tenían semántica y no existían links de evidencia.
 Después de reconstruir el registro pasó `3/3`.
+
+En cross-review, sustituir la evidencia de `INV-04` por `[licencia](../../../LICENSE)` mantuvo
+`3 passed`: el gate sólo comprobaba presencia. Tras el R2, el gate ampliado da `5 passed`; una
+sonda en memoria con la misma sustitución produce exactamente un error atribuido a `INV-04`.
 
 El corte factual adicional produjo:
 
@@ -57,7 +65,8 @@ La matriz los registra como `RISK-06` y `TECH-06`, ambos `PARTIAL`.
 
 ## Qué falta para cierre
 
-1. Cross-review de CLAUDE contra un hash inmutable; working tree sólo admite review preliminar.
+1. Cross-review de CLAUDE sobre el commit compensatorio R2; el primer review quedó
+   `APROBADO_PARCIAL` y produjo la remediación de correspondencia.
 2. Resolver o asignar formalmente los dos gaps nuevos sin cambiar digests ni APIs por conveniencia.
 3. Incorporar evidencia operativa real: simulacros, sign-off humano independiente, Vault/roles,
    RTO/RPO, reconciliación firmada y controles del Caso B cuando correspondan.

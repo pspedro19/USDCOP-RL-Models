@@ -1,7 +1,7 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.1.0
+version: 1.2.0
 last_verified: 2026-07-31
 supersedes: []
 code_anchors:
@@ -23,9 +23,11 @@ ACK condicionado.
 [SSOT fail-closed](../../../../config/governance/bl41_secret_cutover.yaml) que mantiene
 `cutover_allowed: false` y todas las precondiciones sin evidencia. El
 [validador estático](../../../../scripts/validation/check_bl41_secret_cutover.py) y su
-[gate de regresión](../../../../tests/regression/test_bl41_secret_cutover.py) impiden habilitar el
-corte si falta una precondición, una evidencia o la autorización explícita del operador. El gate no
-se conecta a PostgreSQL ni al secret store y no puede atestar readiness externa.
+[gate de regresión](../../../../tests/regression/test_bl41_secret_cutover.py) rechazan cualquier
+intento de habilitar el corte desde metadata del repositorio. El modo
+`STATIC_PREFLIGHT_ONLY` puede ordenar y ligar evidencia, pero `cutover_may_proceed()` siempre es
+falso: la autorización efectiva exige un gate runtime externo y la acción explícita del operador.
+El gate no se conecta a PostgreSQL ni al secret store y no puede atestar readiness externa.
 
 El código productivo sigue usando los flujos legacy:
 
@@ -48,7 +50,13 @@ metadatos operativos y `secret_reference`; material como API keys, ciphertext, p
 fingerprints o máscaras derivadas se rechaza por nombre. El backend del material debe ser un Vault
 o KMS externo real.
 
-Antes de cambiar `cutover_allowed`, el SSOT exige evidencia para:
+El SSOT conserva `cutover_allowed: false`. Una precondición marcada `ready: true` sólo puede portar
+una referencia tipada con `subject`, `kind`, ruta bajo `.claude/evidence/bl41`, SHA-256 y timestamp
+con offset. La ruta debe existir dentro del repositorio y su digest debe coincidir; nombres de
+archivos de entorno, credenciales o llaves privadas se rechazan antes de leer bytes. Esto liga la
+evidencia al control sin fingir que el contenido prueba un sistema externo.
+
+Las seis clases de evidencia previstas son:
 
 - canario write/read/delete contra el secret store externo;
 - relaciones legacy vacías bajo lock;
@@ -57,8 +65,10 @@ Antes de cambiar `cutover_allowed`, el SSOT exige evidencia para:
 - corte coordinado de SignalBridge y dashboard;
 - autorización explícita del operador.
 
-Marcar una condición `ready: true` con evidencia vacía también falla. El estado bloqueado es un
-resultado válido del gate; no se disfraza como error de CI ni como readiness.
+Marcar una condición `ready: true` con evidencia vacía, un string como `ok`, un `subject` ajeno o un
+hash falso falla. Incluso con las seis referencias válidas, el estado debe seguir
+`BLOCKED_OPERATOR`; el estado bloqueado es un resultado válido del gate y no se disfraza como
+readiness.
 
 ## Evidencia TDD
 
@@ -73,12 +83,14 @@ Verde después del validador y del SSOT:
 
 ```powershell
 python -m pytest tests/regression/test_bl41_secret_cutover.py -q
-# 8 passed
+# 10 passed
 ```
 
-Las sondas cubren habilitación prematura, evidencia vacía, ausencia de autorización, shape con
-material secreto, omisión de una relación legacy, DDL prematuro y naturaleza completamente
-estática del gate.
+Las sondas cubren habilitación prematura, evidencia vacía, el ataque `evidence: "ok"`, binding de
+subject/ruta/hash, ausencia de autorización, shape con material secreto, omisión de una relación
+legacy, DDL prematuro y naturaleza completamente estática del gate. La revisión adversarial
+`CLD-267` demostró que la versión anterior aceptaba seis strings `ok`; esta versión los rechaza y
+elimina por diseño cualquier autorización desde YAML.
 
 ## Fuera de alcance y bloqueos reales
 
