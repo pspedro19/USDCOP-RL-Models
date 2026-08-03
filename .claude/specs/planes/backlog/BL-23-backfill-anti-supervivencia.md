@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PLANNED
-version: 1.0.0
-last_verified: 2026-07-27
+status: PARTIAL
+version: 1.1.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/public/data/strategies
@@ -27,6 +27,18 @@ BL-22.
 
 ## Verificación
 Query: toda estrategia del registry tiene facts en sus años publicados.
+
+## Estado real verificado 2026-08-03
+
+`scripts/data/backfill_catalog_facts.py` ya recorre el registro completo sin filtrar por estado,
+incluye retiradas y baselines, y por defecto solo construye un plan. La ejecución contra el
+catálogo real terminó con `missing: []`; el candado unitario exige que cada estrategia produzca
+facts para cada año publicado y que la población conserve el orden completo del registry,
+incluyendo entradas `archived`.
+
+Permanece `PARTIAL`: no se usó `--apply`, el plan Fabric sigue sin autorización y por tanto no
+se ejecutó la query de aceptación contra PostgreSQL vivo. El modo plan no sustituye evidencia de
+persistencia.
 
 ## Notas constitución
 'Backfill exclusivo de campeonas' es decisión RECHAZADA (§31).

@@ -1141,6 +1141,35 @@ def test_catalog_backfill_inventory_includes_archived_baseline_and_trades(
     assert str(tmp_path).replace("\\", "/") not in "\n".join(sources)
 
 
+def test_catalog_backfill_covers_every_published_strategy_year() -> None:
+    """BL-23: current, retired, and baseline owners form one population."""
+    import scripts.data.backfill_catalog_facts as backfill
+
+    registry_path = backfill.PUBLIC / "registry.json"
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    metrics, _trades, missing, population = backfill.inventory(registry_path)
+
+    assert missing == []
+    registry_ids = [str(row["strategy_id"]) for row in registry["strategies"]]
+    assert population == registry_ids
+    assert any(row.get("status") == "archived" for row in registry["strategies"])
+
+    observed = {(fact.strategy_id, fact.year) for fact in metrics}
+    expected = {
+        (str(row["strategy_id"]), int(backtest["year"]))
+        for row in registry["strategies"]
+        for backtest in json.loads(
+            backfill._public_path(
+                row["manifest"], field=f"{row['strategy_id']}.manifest"
+            ).read_text(encoding="utf-8")
+        ).get("backtests", [])
+    }
+    assert observed >= expected, (
+        "every registry strategy must yield metric facts for every published year; "
+        f"missing={sorted(expected - observed)}"
+    )
+
+
 def test_catalog_backfill_inventory_rejects_path_outside_public(
     tmp_path, monkeypatch
 ) -> None:
