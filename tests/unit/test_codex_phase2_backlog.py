@@ -237,6 +237,10 @@ def test_ci_and_readiness_matrix_are_executable_honest_contracts() -> None:
 
     assert "legacy_bypass_allowlist" in validator
     assert "test_codex_phase2_backlog.py" in workflow
+    assert (
+        "python -m pytest tests/regression/test_forecasting_caveat_present.py -q"
+        in workflow
+    )
     control_domains = {
         columns[2].strip()
         for line in matrix.splitlines()

@@ -117,6 +117,8 @@ jobs:
       - name: Python frontmatter delta gate
         run: python scripts/validation/check_monitor_delta.py --monitor pytest_knowledge_frontmatter
       - run: python -m pytest tests/regression/test_strategy_manifests.py tests/regression/test_scripts_layout.py -q
+      - name: Enforce diagnostic-only forecasting surfaces
+        run: python -m pytest tests/regression/test_forecasting_caveat_present.py -q
       - run: python -m pytest tests/regression/test_approval_mutual_exclusion.py tests/unit/test_codex_phase2_backlog.py -q
       - run: python scripts/validation/check_trial_ledger.py
       - run: python scripts/validation/report_ledger_dsr.py
