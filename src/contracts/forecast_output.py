@@ -4,15 +4,32 @@ Forecast Output Contract (DIAGNOSTIC surface)
 Typed prediction record for the forecasting zoo (FABRIC §15.2 / BL-15).
 
 A ``ForecastOutput`` is a DIAGNOSTIC artifact: it estimates a price/return for a
-horizon and NOTHING else. It produces no decision, no PnL, no orders. The
-allocator/book accepts exclusively ``strategy_output`` records validated by
-contract — a ``ForecastOutput`` is rejected by TYPE before any logic runs
-(physical rejection, not convention):
+horizon and NOTHING else. It produces no decision, no PnL, no orders. A
+``ForecastOutput`` is rejected by TYPE before any logic runs (physical
+rejection, not convention):
 
 - ``diagnostic_only`` is forced to ``True`` at construction; it cannot be unset.
 - ``ForecastOutput`` shares no fields with ``StrategyTrade`` — passing its dict
   where a ``StrategyTrade`` is expected raises ``TypeError``
   (guarded by tests/unit/test_forecast_output_contract.py).
+
+QUE SE APLICA HOY, Y QUE NO (BL-15, corregido 2026-08-03)
+---------------------------------------------------------
+Hasta 2026-08-03 este bloque nombraba ``strategy_output`` como el unico registro
+admitido por el libro.  **Ese tipo no existe en ninguna parte del codigo**: era un
+nombre sin referente afirmado en presente, y un nombre sin referente no rechaza
+nada.  Lo que SI es cierto:
+
+- el rechazo de ``ForecastOutput`` por tipo es real y esta cubierto por tests;
+- el canal accionable que existe es ``UniversalSignalRecord``
+  (``src/contracts/signal_contract.py``), consumido por el motor de replay;
+- la barrera forecast->decision que de verdad se ejecuta es de **esquemas de
+  URI**, en ``src/orchestration/dataset_uri.py``: ``forecast://`` no puede
+  alimentar ``strategy/action/portfolio/exec``;
+- **ningun allocator valida todavia su entrada por contrato**:
+  ``scripts/analysis/book_construction.py`` lee trades crudos de un JSON.  Esa
+  sigue siendo la brecha viva de BL-15, y se declara en vez de insinuarse
+  cerrada.
 
 INGEST WALL (BL-15 remedio)
 ---------------------------

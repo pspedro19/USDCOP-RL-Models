@@ -4,9 +4,18 @@
  * Typed prediction record for the forecasting zoo (FABRIC §15.2 / BL-15).
  *
  * A ForecastOutput is a DIAGNOSTIC artifact: it estimates a price/return for a
- * horizon and NOTHING else — no decision, no PnL, no orders. The allocator/book
- * accepts exclusively strategy_output records; a ForecastOutput is rejected by
- * TYPE before any logic runs:
+ * horizon and NOTHING else — no decision, no PnL, no orders. A ForecastOutput is
+ * rejected by TYPE before any logic runs:
+ *
+ * QUE SE APLICA HOY, Y QUE NO (BL-15, corregido 2026-08-03) — espejo exacto del
+ * docstring de src/contracts/forecast_output.py:
+ *   Hasta 2026-08-03 este bloque nombraba strategy_output como el unico registro
+ *   admitido por el libro. Ese tipo NO EXISTE en el codigo: era un nombre sin
+ *   referente afirmado en presente. Lo cierto es que el rechazo
+ *   de ForecastOutput por tipo si es real; que el canal accionable existente es
+ *   UniversalSignalRecord (src/contracts/signal_contract.py); que la barrera que
+ *   de verdad se ejecuta es de esquemas de URI en src/orchestration/dataset_uri.py;
+ *   y que ningun allocator valida aun su entrada por contrato — brecha viva de BL-15.
  *   - `diagnostic_only` is the literal type `true` — a record claiming to be
  *     actionable does not typecheck.
  *   - The shape shares no fields with StrategyTrade (strategy.contract.ts).

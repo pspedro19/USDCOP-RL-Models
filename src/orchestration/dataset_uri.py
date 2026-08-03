@@ -64,6 +64,11 @@ def validate_dataset_edges(edges: list[dict[str, str]]) -> None:
             "exec",
         }:
             raise DatasetContractError(
+                # El muro que ESTE modulo aplica es de ESQUEMAS de URI, no de tipos:
+                # `forecast://` no puede alimentar a strategy/action/portfolio/exec.
+                # El mensaje anterior nombraba un tipo inexistente (BL-15) y
+                # describia una barrera distinta de la que aqui se ejecuta.
                 f"edge[{index}] {source} -> {target} is forbidden: "
-                "forecast_output is DIAGNOSTIC and allocator accepts strategy_output only"
+                "forecast:// is DIAGNOSTIC and must not feed "
+                "strategy/action/portfolio/exec"
             )
