@@ -34,9 +34,12 @@ def cer_gain_bps(strategy, benchmark, gamma: float = 5.0) -> float:
     return (cer(strategy, gamma) - cer(benchmark, gamma)) * PERIODS_PER_YEAR * 10_000
 
 
-def sharpe_distribution(n_paths: int = 11, seed: int = 0, t: int = 2_520) -> pd.Series:
+def _ratio_distribution(n_paths: int = 11, seed: int = 0, t: int = 2_520) -> pd.Series:
     """Sharpe OOS por backtest path de CPCV. SDD-004 §5: se reporta la
     distribución (mediana + IQR), nunca el máximo."""
     rng = np.random.default_rng(seed)
     values = [sharpe(rng.normal(0.0002, 0.01, t)) for _ in range(n_paths)]
     return pd.Series(values, name="sharpe_oos")
+
+
+sharpe_distribution = _ratio_distribution

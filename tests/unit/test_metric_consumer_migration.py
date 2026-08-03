@@ -40,3 +40,11 @@ def test_spx_sharpe_preserves_legacy_zero_for_degenerate_samples() -> None:
     assert module.sharpe(np.array([], dtype=float)) == 0.0
     assert module.sharpe(np.array([0.01], dtype=float)) == 0.0
     assert module.sharpe(np.array([0.01, 0.01], dtype=float)) == 0.0
+
+
+def test_spx_distribution_public_api_remains_available() -> None:
+    module = _economic_metrics()
+    distribution = module.sharpe_distribution(n_paths=3, seed=42, t=20)
+    assert distribution.name == "sharpe_oos"
+    assert len(distribution) == 3
+    assert np.isfinite(distribution.to_numpy()).all()
