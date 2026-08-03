@@ -125,6 +125,68 @@ def test_scoped_quality_range_config_is_closed_world(tmp_path: Path) -> None:
         QualityRuleSet.from_yaml(config)
 
 
+def test_scoped_quality_range_uses_latest_effective_regime(tmp_path: Path) -> None:
+    from src.data_quality.rules import QualityRuleSet
+    from src.market.identity import ProviderSymbol, ProviderSymbolRegistry
+
+    config = tmp_path / "ranges.yaml"
+    config.write_text(
+        """version: '1'
+price_ranges:
+  usdmxn:
+    - provider_id: twelvedata
+      valid_from: '1993-01-01T00:00:00Z'
+      bounds: [2.5, 100]
+    - provider_id: twelvedata
+      valid_from: '2010-01-01T00:00:00Z'
+      bounds: [10, 40]
+""",
+        encoding="utf-8",
+    )
+    registry = ProviderSymbolRegistry(
+        [ProviderSymbol("twelvedata", "USD/MXN", "usdmxn")]
+    )
+    rules = QualityRuleSet.from_yaml(config, identity_registry=registry)
+    old_regime_only = {"open": 5, "high": 5, "low": 5, "close": 5}
+
+    assert rules.evaluate_provider_bar(
+        "twelvedata",
+        "USD/MXN",
+        old_regime_only,
+        observed_at=datetime(2009, 12, 31, tzinfo=timezone.utc),
+    ).accepted
+    decision = rules.evaluate_provider_bar(
+        "twelvedata",
+        "USD/MXN",
+        old_regime_only,
+        observed_at=datetime(2010, 1, 1, tzinfo=timezone.utc),
+    )
+    assert not decision.accepted
+    assert decision.rule_id == "bar.range.usdmxn"
+
+
+def test_scoped_quality_range_rejects_duplicate_provider_cutoff(tmp_path: Path) -> None:
+    from src.data_quality.rules import QualityRuleSet
+
+    config = tmp_path / "ranges.yaml"
+    config.write_text(
+        """version: '1'
+price_ranges:
+  usdmxn:
+    - provider_id: twelvedata
+      valid_from: '2010-01-01T00:00:00Z'
+      bounds: [10, 40]
+    - provider_id: TWELVEDATA
+      valid_from: '2010-01-01T00:00:00Z'
+      bounds: [11, 41]
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="duplicate scoped price range"):
+        QualityRuleSet.from_yaml(config)
+
+
 def _target(environment: str = "paper", currency: str = "USD"):
     from src.portfolio.target import TargetBuilder, TargetExposure
 

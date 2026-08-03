@@ -1,7 +1,7 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.1.0
+version: 1.1.1
 last_verified: 2026-08-03
 supersedes: []
 code_anchors:
@@ -27,6 +27,10 @@ El evaluador exige alias canónico, proveedor y timestamp timezone-aware. Provee
 instante anterior al corte, contexto ausente o llamada directa sin contexto quedan en
 `QUARANTINED`; no se recortan ni corrigen precios silenciosamente. Los rangos legacy no scoped
 siguen admitidos para no inventar proveedor/fecha de instrumentos aún no migrados.
+
+Cuando un proveedor tiene varios regímenes, se aplica el corte `valid_from` más reciente que ya
+esté vigente. Dos reglas del mismo proveedor con el mismo corte se rechazan al cargar la
+configuración; no se resuelven por orden accidental del YAML.
 
 ## Qué falta exactamente
 

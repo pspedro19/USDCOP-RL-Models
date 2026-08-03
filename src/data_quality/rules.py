@@ -59,9 +59,17 @@ class QualityRuleSet:
         for instrument_id, rules in (scoped_price_ranges or {}).items():
             if not isinstance(instrument_id, str) or not instrument_id.strip() or not rules:
                 raise ValueError(f"invalid scoped price ranges for {instrument_id!r}")
+            regime_keys: set[tuple[str, datetime]] = set()
             for rule in rules:
                 if not isinstance(rule, ScopedPriceRange):
                     raise ValueError(f"invalid scoped price range for {instrument_id!r}")
+                regime_key = (rule.provider_id.strip().lower(), rule.valid_from)
+                if regime_key in regime_keys:
+                    raise ValueError(
+                        f"duplicate scoped price range for {instrument_id!r}: "
+                        f"{regime_key[0]} at {rule.valid_from.isoformat()}"
+                    )
+                regime_keys.add(regime_key)
             self._scoped_price_ranges[instrument_id.strip().lower()] = tuple(rules)
         self.identity_registry = identity_registry
 
@@ -241,7 +249,7 @@ class QualityRuleSet:
                 for rule in scoped_rules
                 if rule.provider_id == normalized_provider and instant >= rule.valid_from
             ]
-            if len(matches) != 1:
+            if not matches:
                 return QualityDecision(
                     False,
                     "QUARANTINED",
@@ -251,9 +259,10 @@ class QualityRuleSet:
                         "provider_id": normalized_provider,
                         "observed_at": instant.isoformat(),
                     },
-                    "exactly one provider/time price range must apply",
+                    "a provider/time price range must apply",
                 )
-            limits = (matches[0].low, matches[0].high)
+            active_rule = max(matches, key=lambda rule: rule.valid_from)
+            limits = (active_rule.low, active_rule.high)
         else:
             limits = self._price_ranges.get(canonical_id)
         if limits is None:
