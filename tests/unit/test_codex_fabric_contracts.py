@@ -97,6 +97,21 @@ def test_fabric_factory_config_builds_and_preserves_action_diagnostic_wall() -> 
     )
 
 
+def test_backfill_factory_requires_explicit_as_of() -> None:
+    from src.orchestration.factories import DagSpec, FactoryKind, TaskSpec
+
+    spec = DagSpec(
+        dag_id="backfill__usdcop__missing_cutoff",
+        kind=FactoryKind.BACKFILL,
+        owner_id="usdcop",
+        schedule=None,
+        tasks=(TaskSpec(task_id="load", callable_path="jobs.load"),),
+    )
+
+    with pytest.raises(ValueError, match="backfill requires an explicit as_of"):
+        spec.assert_constitutional()
+
+
 def test_semantic_diff_ignores_only_declared_volatile_fields() -> None:
     from src.orchestration.semantic_diff import compare
 
@@ -106,6 +121,29 @@ def test_semantic_diff_ignores_only_declared_volatile_fields() -> None:
     )
     assert result.equal
     assert result.first_difference is None
+
+
+def test_semantic_diff_preserves_nonvolatile_factory_structure() -> None:
+    from src.orchestration.semantic_diff import compare
+
+    left = {
+        "dag_id": "asset__usdcop__data",
+        "schedule": "0 12 * * 1-5",
+        "tasks": [{"task_id": "extract"}],
+        "generated_at": "old",
+    }
+    right = {
+        "dag_id": "asset__usdcop__data",
+        "schedule": "0 13 * * 1-5",
+        "tasks": [{"task_id": "publish"}],
+        "generated_at": "new",
+    }
+
+    result = compare(left, right)
+
+    assert not result.equal
+    assert result.left_hash != result.right_hash
+    assert result.first_difference == "$.schedule: value differs"
 
 
 def test_snapshot_rejects_signal_not_available_at_cutoff() -> None:
