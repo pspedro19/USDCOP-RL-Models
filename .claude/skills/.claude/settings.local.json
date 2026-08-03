@@ -80,7 +80,11 @@
       "Bash(awk -F/ '{if\\($1==\".claude\"\\) print \".claude/\"$2; else if\\($1==\"usdcop-trading-dashboard\"\\) print \"dashboard/\"$2; else print $1}')",
       "Bash(grep -iE \"\\(^|/\\)\\\\.env|secret|credential|\\\\.pem$|\\\\.key$|id_rsa|token|password\")",
       "Bash(git commit -m '@ *)",
-      "Bash(awk -F/ '{if\\($1==\"usdcop-trading-dashboard\"\\) print \"dashboard/\"$2; else print $1}')"
+      "Bash(awk -F/ '{if\\($1==\"usdcop-trading-dashboard\"\\) print \"dashboard/\"$2; else print $1}')",
+      "Bash(python -m pytest tests/regression/test_backlog_status_is_honest.py tests/regression/test_quant_library_gate.py tests/regression/test_knowledge_inventory.py tests/regression/test_h1_shadow_ledger_ownership.py tests/regression/test_dag_registry_deprecated.py -q)",
+      "Bash(grep -iE \"\\(^|/\\)\\\\.env\\($|\\\\.\\)|secret|credential|\\\\.pem$|\\\\.key$|id_rsa|\\\\.p12$|\\\\.pfx$\")",
+      "Bash(git push *)",
+      "Bash(git fetch *)"
     ]
   }
 }
