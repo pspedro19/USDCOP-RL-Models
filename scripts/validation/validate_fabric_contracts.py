@@ -19,6 +19,13 @@ SSOT_EXEMPTIONS = {
 METRIC_NAME_MARKERS = ("sharpe", "calmar")
 
 
+def is_runtime_python_path(relative_path: Path) -> bool:
+    return relative_path.name != "conftest.py" and not any(
+        part == "tests" or part.startswith("test_")
+        for part in relative_path.parts
+    )
+
+
 class _MetricDefinitionVisitor(ast.NodeVisitor):
     def __init__(self, relative_path: Path) -> None:
         self.relative_path = relative_path
@@ -53,7 +60,7 @@ def discover_metric_bypasses(repo_root: Path = REPO_ROOT) -> set[str]:
             continue
         for path in root.rglob("*.py"):
             relative_path = path.relative_to(repo_root)
-            if relative_path in SSOT_EXEMPTIONS:
+            if relative_path in SSOT_EXEMPTIONS or not is_runtime_python_path(relative_path):
                 continue
             try:
                 tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))

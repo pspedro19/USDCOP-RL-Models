@@ -37,3 +37,11 @@ def test_allowlist_cannot_expand_without_retiring_an_entry() -> None:
     ) == [
         "allowlist expanded: 1 entries exceeds frozen ceiling 0"
     ]
+
+
+def test_metric_inventory_excludes_tests_but_not_similarly_named_runtime() -> None:
+    validator = _validator()
+    assert not validator.is_runtime_python_path(Path("src/engine/test_strategy.py"))
+    assert not validator.is_runtime_python_path(Path("tests/unit/strategy.py"))
+    assert validator.is_runtime_python_path(Path("src/engine/strategy_test.py"))
+    assert validator.is_runtime_python_path(Path("services/analytics.py"))
