@@ -51,6 +51,21 @@ MIGRATION_PLANS = {
             "082_checkout_order_retry_transition.sql",
         )
     ),
+    # Fresh-clone platform schema.  This deliberately uses the consolidated H5
+    # migration (050) instead of replaying its superseded 043/044 path, and
+    # keeps optional extensions such as pgvector (047) out of the baseline.
+    "platform-bootstrap-v1": tuple(
+        PROJECT_ROOT / "database" / "migrations" / name
+        for name in (
+            "045_newsengine_initial.sql",
+            "046_weekly_analysis_tables.sql",
+            "050_consolidated_h5_ddl.sql",
+            "051_asset_daily_ohlcv.sql",
+            "053_sb_user_approval.sql",
+            "054_h5_subtrades_unique.sql",
+            "055_rbac_monetization.sql",
+        )
+    ),
     "fabric-v1": tuple(
         PROJECT_ROOT / "database" / "migrations" / name
         for name in (
@@ -69,7 +84,9 @@ MIGRATION_PLANS = {
         )
     ),
 }
-REVIEW_GATED_PLANS = frozenset({"commerce-v1", "fabric-v1"})
+REVIEW_GATED_PLANS = frozenset(
+    {"commerce-v1", "platform-bootstrap-v1", "fabric-v1"}
+)
 # These values are changed only in the same reviewed commit that changes a
 # gated migration plan.  A digest supplied by the operator is a second factor,
 # not a way for modified on-disk SQL to authorize itself.
@@ -104,6 +121,16 @@ LEGACY_REQUIRED_TABLES = {
 
     # Metrics
     "metrics.model_performance": "Model performance metrics",
+}
+
+PLATFORM_BOOTSTRAP_REQUIRED_TABLES = {
+    "public.forecast_h5_signals": "H5 ensemble signals",
+    "public.forecast_h5_subtrades": "H5 subtrade ledger",
+    "public.news_articles": "NewsEngine articles",
+    "public.weekly_analysis": "Weekly analysis output",
+    "public.asset_daily_ohlcv": "Multi-asset daily bars",
+    "public.audit_log": "Append-only authorization audit ledger",
+    "public.user_exchange_keys": "Per-user encrypted exchange-key records",
 }
 
 FABRIC_REQUIRED_TABLES = {
@@ -159,6 +186,7 @@ FABRIC_REQUIRED_TABLES = {
 
 REQUIRED_TABLES_BY_PLAN = {
     "legacy-init": LEGACY_REQUIRED_TABLES,
+    "platform-bootstrap-v1": PLATFORM_BOOTSTRAP_REQUIRED_TABLES,
     "commerce-v1": {
         "public.checkout_orders": "Immutable sealed checkout quotes",
         "public.billing_events": "Provider-event idempotency ledger",
@@ -183,11 +211,21 @@ async def get_connection():
     """Get database connection."""
     import asyncpg
 
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        return await asyncpg.connect(dsn=database_url)
+
+    password = os.getenv("POSTGRES_PASSWORD")
+    if password is None:
+        raise RuntimeError(
+            "database connection is not configured: set DATABASE_URL or "
+            "POSTGRES_PASSWORD with POSTGRES_HOST/PORT/USER/DB"
+        )
     return await asyncpg.connect(
         host=os.getenv("POSTGRES_HOST", "localhost"),
         port=int(os.getenv("POSTGRES_PORT", "5432")),
         user=os.getenv("POSTGRES_USER", "admin"),
-        password=os.getenv("POSTGRES_PASSWORD", ""),
+        password=password,
         database=os.getenv("POSTGRES_DB", "usdcop_trading"),
     )
 

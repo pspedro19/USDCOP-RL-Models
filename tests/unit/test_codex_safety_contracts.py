@@ -852,3 +852,62 @@ def test_fabric_migration_plan_is_explicit_and_review_gated() -> None:
     digest = module.get_plan_digest("fabric-v1")
     assert digest == module.PINNED_PLAN_DIGESTS["fabric-v1"]
     assert module.plan_is_authorized("fabric-v1", digest)
+
+
+def test_platform_bootstrap_plan_is_explicit_minimal_and_unpinned() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_bootstrap", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("platform-bootstrap-v1")]
+    assert names == [
+        "045_newsengine_initial.sql",
+        "046_weekly_analysis_tables.sql",
+        "050_consolidated_h5_ddl.sql",
+        "051_asset_daily_ohlcv.sql",
+        "053_sb_user_approval.sql",
+        "054_h5_subtrades_unique.sql",
+        "055_rbac_monetization.sql",
+    ]
+    assert not {"043_forecast_h5_tables.sql", "044_smart_simple_columns.sql", "047_pgvector_embeddings.sql", "048_reconciliation_tables.sql", "049_regime_gate_columns.sql"} & set(names)
+    assert "platform-bootstrap-v1" in module.REVIEW_GATED_PLANS
+    assert "platform-bootstrap-v1" not in module.PINNED_PLAN_DIGESTS
+    assert not module.plan_is_authorized("platform-bootstrap-v1", None)
+    assert not module.plan_is_authorized(
+        "platform-bootstrap-v1", module.get_plan_digest("platform-bootstrap-v1")
+    )
+
+
+def test_migrator_prefers_database_url_and_requires_explicit_fallback_password(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_connection", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    calls: list[dict[str, object]] = []
+
+    async def connect(**kwargs: object) -> object:
+        calls.append(kwargs)
+        return object()
+
+    monkeypatch.setitem(sys.modules, "asyncpg", types.SimpleNamespace(connect=connect))
+    monkeypatch.setenv("DATABASE_URL", "postgresql://configured.example/db")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "ignored-fallback")
+    asyncio.run(module.get_connection())
+    assert calls == [{"dsn": "postgresql://configured.example/db"}]
+
+    calls.clear()
+    monkeypatch.delenv("DATABASE_URL")
+    monkeypatch.delenv("POSTGRES_PASSWORD")
+    with pytest.raises(RuntimeError, match="DATABASE_URL or POSTGRES_PASSWORD"):
+        asyncio.run(module.get_connection())
+    assert calls == []
