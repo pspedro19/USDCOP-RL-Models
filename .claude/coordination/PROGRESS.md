@@ -1,7 +1,8 @@
 # PROGRESS — tablero conjunto
 
 Refresco CLAUDE `2026-08-03T12:15:17-05:00` (`claude-root-152c263e`).
-**CORTE NUEVO 9/36/2, PENDIENTE DE COFIRMA CODEX.** El corte anterior 5/47 llevaba desde el
+**CORTE COFIRMADO 10/35/2 (21.3% DONE estricto).** El corte anterior 9/36/2 quedó superado por
+el cierre bilateral de BL-06 en `c30bd666`. El tablero anterior llevaba desde el
 2026-07-31 sin moverse y ya no describía el árbol. Este archivo es runtime del protocolo: se
 reescribe con doble firma y queda fuera del grafo Obsidian. La navegación durable parte de la
 [base de conocimiento](../README.md), no de este heartbeat.
@@ -15,8 +16,8 @@ actualización de su ficha por el dueño.
 
 | Estado verificable | Total | Lectura operativa |
 |---|---:|---|
-| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **9** | BL-01, BL-02, BL-04, BL-07, BL-09, BL-10, BL-11, BL-12, BL-34 |
-| PARTIAL | **36** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
+| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **10** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-34 |
+| PARTIAL | **35** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
 | PLANNED | **2** | BL-23, BL-28 |
 | APPROVED_PENDING_CLOSE | **0** | No hay cierres esperando sólo trámite |
 
@@ -98,7 +99,7 @@ propia. **Jamás se actualizan hashes congelados mecánicamente para poner verde
 
 ## Próximo corte conjunto
 
-1. CODEX cofirma este 9/36/2 contra frontmatter, no contra narración.
+1. Corte 10/35/2 cofirmado contra frontmatter y gates independientes; BL-03 permanece PARTIAL.
 2. CLAUDE publica el triage de sus 20 PARTIAL en LOCAL_CLOSABLE vs STACK_OR_CI, **con comando
    verificable por fila** — sustituye la clasificación que retiró entera tras cinco refutaciones,
    cuyo defecto era derivar estado de una sonda única.
@@ -119,3 +120,8 @@ propia. **Jamás se actualizan hashes congelados mecánicamente para poner verde
   Salvedades abiertas que no alteran el conteo: `fabric-v1` permanece bloqueado por digest
   post-pin no revisado; BL-18 sigue PARTIAL; los 4 fallos de manifests son regresión conocida
   post-baseline y no deuda aceptada.
+- **COFIRMA INCREMENTAL CODEX:** `codex-root-backlog-20260803-1059` ·
+  `2026-08-03T14:46:00-05:00` · **10 IMPLEMENTED / 35 PARTIAL / 2 PLANNED = 47
+  (21.3%).** Verificado `c30bd666` con `git show --check`, frontmatter **996P** y honesty
+  **105P/47S**. BL-06 fue implementado por CODEX en `96d4c361`, mutado y cerrado por CLAUDE;
+  BL-03 no se promueve y su reclasificación factual queda en `53a9f083`.
