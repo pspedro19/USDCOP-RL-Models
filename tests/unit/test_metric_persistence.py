@@ -4,11 +4,19 @@ from datetime import datetime, timezone
 
 import pytest
 
-from src.metrics.engine import MetricContractError, MetricEvent
+from src.metrics.errors import MetricContractError
 from src.metrics.persistence import persist_metric_event
 
 
-def _event(**changes: object) -> MetricEvent:
+class _Event:
+    def __init__(self, **values: object) -> None:
+        self.__dict__.update(values)
+
+    def to_record(self) -> dict[str, object]:
+        return dict(self.__dict__)
+
+
+def _event(**changes: object) -> _Event:
     values = {
         "metric_event_id": "dd49d8dd-9604-5f3b-ac7a-4f30adce8574",
         "event_time": "2026-08-03T16:00:00Z",
@@ -31,7 +39,7 @@ def _event(**changes: object) -> MetricEvent:
         "lineage": {"source": "paper-ledger"},
     }
     values.update(changes)
-    return MetricEvent(**values)
+    return _Event(**values)
 
 
 class _Connection:

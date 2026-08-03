@@ -16,6 +16,7 @@ import yaml
 
 from src.identity.canonical import CanonicalizationError, canonical_json_bytes
 from src.metrics.annualization import AnnualizationRegistry
+from src.metrics.errors import MetricContractError
 
 from src.metrics.formulas import (
     calmar_ratio,
@@ -23,10 +24,6 @@ from src.metrics.formulas import (
     max_drawdown,
     sharpe_ratio,
 )
-
-
-class MetricContractError(ValueError):
-    """A metric request does not satisfy its catalog contract."""
 
 
 class MetricEnvironment(StrEnum):

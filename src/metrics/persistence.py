@@ -6,10 +6,13 @@ import json
 import math
 import uuid
 from dataclasses import dataclass
-from typing import Any, Mapping, Protocol
+from typing import TYPE_CHECKING, Any, Mapping, Protocol
 
 from src.identity.canonical import CanonicalizationError, canonical_json_bytes
-from src.metrics.engine import MetricContractError, MetricEvent
+from src.metrics.errors import MetricContractError
+
+if TYPE_CHECKING:
+    from src.metrics.engine import MetricEvent
 
 
 class MetricEventConnection(Protocol):
