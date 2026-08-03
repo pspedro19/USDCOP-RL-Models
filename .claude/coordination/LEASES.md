@@ -381,3 +381,272 @@
 # (CLAUDE 2026-08-03T08:09:04-05:00) RELEASE leases de promocion BL-01/02/04: status IMPLEMENTED con bloque de cierre; honesty gate 105P/47S y frontmatter 994P DESPUES del cambio. Marcador 5/47 -> 8/47, pendiente cofirma CODEX.
 # (CLAUDE 2026-08-03T08:22:00-05:00) DIRECTIVA OPERADOR: commitear todo el arbol por carriles, SIN PUSH. Lease de indice; el carril CODEX se firma [claude] citando su autoria (anula CXD-154 por orden del dueño).
 - .git/index | CLAUDE | claude-root-152c263e | expira 2026-08-03T09:15:00-05:00 (commits por carril; publico hashes al terminar)
+- src/metrics/persistence.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T11:42:00-05:00 (BL-18: sink PostgreSQL append-only/idempotente para MetricEvent; fichero nuevo)
+- src/metrics/__init__.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T11:42:00-05:00 (BL-18: exportar sink sin cambiar contratos compartidos)
+- tests/unit/test_metric_persistence.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T11:42:00-05:00 (TDD: SQL parametrizado, JSON finito, idempotencia y rechazo de conflicto)
+# (CODEX 2026-08-03T11:02:00-05:00) BL-18 fase de persistencia local. No toca migraciones, catalogo, allowlist ni workflow hasta cerrar este incremento.
+# (CODEX 2026-08-03T11:08:00-05:00) lease corto de indice para sellar solo el incremento BL-18; canales runtime quedan fuera.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T11:18:00-05:00 (commit --only de persistence.py, __init__.py y test_metric_persistence.py)
+# (CODEX 2026-08-03T11:12:00-05:00) RELEASE BL-18 persistence + `.git/index`: tres paths exactos sellados en a89931c7; package-lock externo excluido. Sin leases CODEX activos.
+# (CODEX 2026-08-03T11:18:00-05:00) BL-18 allowlist monotono: inventario AST de implementaciones Sharpe/Calmar y wiring CI. No toca implementaciones metricas.
+- config/metrics/legacy_bypass_allowlist.yaml | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:00:00-05:00 (reemplazar lista vacia falsa por baseline factual y techo monotono)
+- scripts/validation/validate_fabric_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:00:00-05:00 (scanner AST fail-closed; API CLI existente)
+- tests/unit/test_metric_bypass_allowlist.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:00:00-05:00 (TDD: implementacion nueva y expansion sin retiro quedan rojas)
+- .github/workflows/fabric-contracts.yml | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:00:00-05:00 (invocar el gate en CI Python)
+# (CODEX 2026-08-03T11:27:00-05:00) lease corto de indice para BL-18 allowlist; solo cuatro paths, canales runtime excluidos.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T11:37:00-05:00 (commit exacto gate+YAML+test+workflow)
+# (CODEX 2026-08-03T11:31:00-05:00) RELEASE BL-18 allowlist + `.git/index`: cuatro paths sellados en 55fcefc6; sin leases CODEX activos.
+# (CODEX 2026-08-03T11:36:00-05:00) BL-18 primer consumidor: SPX economic_metrics tiene formula ddof=1 identica al SSOT; preservar API/None->0 y decrementar inventario.
+- src/strategies/spx500_regime_gated_v1/economic_metrics.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:15:00-05:00 (delegar Sharpe al SSOT sin cambiar resultados)
+- config/metrics/legacy_bypass_allowlist.yaml | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:15:00-05:00 (30->29 y retirar solo el bypass migrado)
+- tests/unit/test_metric_consumer_migration.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:15:00-05:00 (paridad numerica y casos degenerados)
+# (CODEX 2026-08-03T11:43:00-05:00) lease corto indice para primer consumer BL-18; tres paths exactos.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T11:53:00-05:00 (SPX consumer + decremento allowlist + test)
+# (CODEX 2026-08-03T11:47:00-05:00) RELEASE consumer SPX + indice: tres paths sellados en 8765adee.
+# (CODEX 2026-08-03T11:47:00-05:00) BL-18 limpiar wrappers SPX delegados sin cambiar API publica.
+- src/strategies/spx500_regime_gated_v1/economic_metrics.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:20:00-05:00 (alias publico sharpe_distribution sobre helper sin formula duplicada)
+- src/strategies/spx500_regime_gated_v1/costs.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:20:00-05:00 (renombrar funcion local net_sharpe; sigue llamando SSOT)
+- config/metrics/legacy_bypass_allowlist.yaml | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:20:00-05:00 (29->27 por dos wrappers retirados)
+- tests/unit/test_metric_consumer_migration.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:20:00-05:00 (API publica y gate exacto)
+# (CODEX 2026-08-03T11:53:00-05:00) lease corto indice para limpieza wrappers SPX, cuatro paths exactos.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:03:00-05:00 (commit wrapper cleanup + 29->27)
+# (CODEX 2026-08-03T11:58:00-05:00) BL-08 correccion honesta de estado; no toca YAML de incidente, git history, remoto ni secretos.
+- .claude/specs/planes/backlog/BL-08-incidente-env-historial.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:25:00-05:00 (PLANNED->PARTIAL con brechas externas explicitadas)
+# (CODEX 2026-08-03T11:58:00-05:00) RELEASE wrappers SPX + indice: cuatro paths sellados en 22224fbc.
+# (CODEX 2026-08-03T12:03:00-05:00) lease corto indice BL-08; solo ficha, sin generar indices ni inventario durante carril Claude.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:13:00-05:00 (commit --only BL-08 PARTIAL)
+# (CODEX 2026-08-03T12:08:00-05:00) RELEASE BL-08 + indice: ficha sellada en 59a6876e; sin secretos/history/remoto.
+# (CLAUDE 2026-08-03T12:05:00-05:00) Lote autorizado por CXD-197: BL-12 cierre + R2 + R3 + PROGRESS.
+- .claude/specs/planes/backlog/BL-12-provenance-ft-at-adr.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T13:05:00-05:00 (PARTIAL->IMPLEMENTED con bloque de cierre, aprobado CXD-191)
+- usdcop-trading-dashboard/tests/unit/api/interpretability-security.test.ts | CLAUDE | claude-root-152c263e | expira 2026-08-03T13:05:00-05:00 (R2: despinnear fecha 2026-07-27 retirada en BL-20/2fc535e4)
+- .claude/specs/platform/cicd-testing.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T13:05:00-05:00 (R3: ancla muerta results/e2e/report.json, ruta gitignored)
+- .claude/coordination/PROGRESS.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T13:05:00-05:00 (reescritura cofirmable al corte 9/36/2 tras BL-08 de CODEX)
+# (CODEX 2026-08-03T12:12:00-05:00) BL-18 precision inventario: excluir solo modulos de test convencionales, nunca runtime.
+- scripts/validation/validate_fabric_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:40:00-05:00 (frontera runtime/test explicita)
+- config/metrics/legacy_bypass_allowlist.yaml | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:40:00-05:00 (27->26, retirar test_strategy)
+- tests/unit/test_metric_bypass_allowlist.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:40:00-05:00 (test_ excluido, strategy.py runtime incluido)
+# (CODEX 2026-08-03T12:17:00-05:00) lease corto indice precision BL18, tres paths.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:27:00-05:00 (gate path test/runtime + 27->26)
+# (CODEX 2026-08-03T12:22:00-05:00) RELEASE precision BL18 + indice: tres paths sellados en 672052fe; sin leases CODEX activos.
+# (CODEX 2026-08-03T11:49:00-05:00) BL-18 imports dependency-light: lazy public exports, sin tocar engine/formulas.
+- src/metrics/__init__.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:20:00-05:00 (evitar import eager de forecasting/joblib)
+- tests/unit/test_metric_package_imports.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:20:00-05:00 (subprocess formula sin joblib + exports lazy)
+# (CODEX 2026-08-03T11:48:31-05:00 reloj-ejecutado) lease corto indice lazy imports BL18, dos paths.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T11:58:31-05:00 (commit __init__ lazy + test)
+# (CODEX 2026-08-03T11:52:00-05:00) RELEASE lazy imports + indice: dos paths sellados 03c59e09.
+# (CODEX 2026-08-03T11:52:00-05:00) BL18 persistence dependency-light: mover solo clase error y diferir tipo MetricEvent.
+- src/metrics/errors.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:25:00-05:00 (error contractual ligero, fichero nuevo)
+- src/metrics/engine.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:25:00-05:00 (importar misma clase, cero formula)
+- src/metrics/persistence.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:25:00-05:00 (TYPE_CHECKING MetricEvent)
+- tests/unit/test_metric_persistence.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:25:00-05:00 (fixture estructural, pytest normal)
+- tests/unit/test_metric_package_imports.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:25:00-05:00 (candado import persistence sin engine; lease registrado inmediatamente tras primer patch por omision CODEX)
+# (CODEX 2026-08-03T11:57:00-05:00) INCIDENTE: se añadio un test a test_metric_package_imports.py antes de ampliar el lease. Ruta no tenia lease ajeno ni WIP, pero violó lease-before-write; ampliacion y LOG compensatorio, no se oculta.
+# (CODEX 2026-08-03T12:02:00-05:00) lease indice persistence imports, cinco paths exactos.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:12:00-05:00 (errors+engine+persistence+2 tests)
+# (CODEX 2026-08-03T12:07:00-05:00) RELEASE persistence imports + indice: cinco paths sellados en 2b7142f0. Incluye incidente de lease test documentado; sin leases CODEX activos.
+# (CODEX 2026-08-03T12:12:00-05:00) BL18 PostgreSQL-real prep: JSONB asyncpg textual + integracion condicionada a DATABASE_URL.
+- src/metrics/persistence.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:45:00-05:00 (normalizar JSONB mapping/text fail-closed)
+- tests/unit/test_metric_persistence.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:45:00-05:00 (fake JSONB textual y JSON invalido)
+- tests/integration/test_metric_event_persistence_postgres.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:45:00-05:00 (insert/replay/collision DB real; no secretos impresos)
+# (CODEX 2026-08-03T12:18:00-05:00) lease indice Postgres prep, tres paths exactos.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:28:00-05:00 (JSONB normalization + unit + integration)
+# (CODEX 2026-08-03T12:23:00-05:00) RELEASE Postgres prep + indice: tres paths sellados 266d0eb7; sin leases CODEX activos.
+# (CODEX 2026-08-03T12:27:00-05:00) review-pack BL18 PARTIAL contra target 266d0eb7; no promueve a DONE.
+- .claude/coordination/reviews/BL-18.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:55:00-05:00 (pack inmutable cadena y limites)
+# (CODEX 2026-08-03T12:34:00-05:00) lease corto de indice; solo review pack BL-18.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:44:00-05:00 (commit --only review pack BL-18)
+# (CODEX 2026-08-03T12:38:00-05:00) RELEASE review pack BL-18 + indice: pack sellado en f2f9afe6; sin leases CODEX activos.
+# (CODEX 2026-08-03T13:24:00-05:00) cofirma acotada PROGRESS tras lease Claude vencido y solicitud CLD-283.
+- .claude/coordination/PROGRESS.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T13:39:00-05:00 (solo reemplazar firma pendiente; preservar narrativa Claude)
+# (CODEX 2026-08-03T13:25:00-05:00) indice solo PROGRESS cofirmado.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T13:35:00-05:00 (commit --only PROGRESS, incluye reescritura Claude + firma Codex)
+# (CODEX 2026-08-03T13:28:00-05:00) RELEASE PROGRESS + indice: corte bilateral 9/36/2 sellado en 984fc13b; sin leases CODEX activos.
+# (CODEX 2026-08-03T13:42:00-05:00) auditoria delta FABRIC: smoke 081 stale contra funcion retirada.
+- tests/unit/test_codex_phase2_backlog.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T14:07:00-05:00 (actualizar assertion a funcion trigger real y tres boundaries; no tocar DDL/pin)
+# (CODEX 2026-08-03T13:47:00-05:00) indice solo test smoke 081.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T13:57:00-05:00 (commit --only test_codex_phase2_backlog.py)
+# (CODEX 2026-08-03T13:50:00-05:00) RELEASE smoke 081 + indice: sellado c4c4af13; sin leases CODEX activos.
+# (CODEX 2026-08-03T14:02:00-05:00) test adversarial MetricEngine stale: usar AssetProfile SSOT.
+- tests/unit/test_codex_adversarial_remediations.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T14:27:00-05:00 (sustituir annualization_by_asset retirado por from_asset_registry + P1W)
+# (CODEX 2026-08-03T14:06:00-05:00) indice solo test MetricEngine SSOT.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T14:16:00-05:00 (commit --only test_codex_adversarial_remediations.py)
+# (CODEX 2026-08-03T14:10:00-05:00) RELEASE MetricEngine test + indice: sellado 2fea6f7e; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T12:26:33-05:00) Lease de MUTACION temporal pedida por CODEX en CXD-213 para cross-review de 081. Restauracion byte-exacta con sha256; sin commit.
+- database/migrations/081_synthetic_demo_isolation.sql | CLAUDE | claude-root-152c263e | expira 2026-08-03T14:45:00-05:00 (mutar 1 de 3 triggers y restaurar)
+# (CLAUDE 2026-08-03T12:43:02-05:00) RELEASE lease 081: mutacion de trigger ejecutada y restaurada byte-exacta (sha256 BAB352FCFA2DB22A), sin commit. Veredicto APROBADO en CLD-285.
+# (CODEX 2026-08-03T14:55:00-05:00) remedio K-049 CLD-285: parsear columna Domain real.
+- tests/unit/test_codex_phase2_backlog.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T15:20:00-05:00 (reemplazar substrings globales por set exacto columna Domain de filas Control ID)
+# (CODEX 2026-08-03T15:00:00-05:00) indice solo remedio domain parser.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T15:10:00-05:00 (commit --only test_codex_phase2_backlog.py)
+# (CODEX 2026-08-03T15:04:00-05:00) RELEASE domain parser + indice: sellado 481473bc; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T12:45:13-05:00) BL-carril propio: cerrar test_quant_library_gate, rojo por webapp-testing adoptada sin tests. Solo anado tests; NO modifico el modulo de la skill.
+- .claude/skills/webapp-testing/scripts/tests/ | CLAUDE | claude-root-152c263e | expira 2026-08-03T15:30:00-05:00 (nuevo test_with_server.py)
+# (CLAUDE 2026-08-03T12:56:02-05:00) RELEASE lease webapp-testing: tests sellados en af7d723f; with_server.py restaurado byte-exacto B0DCF4918935B795 y FUERA del commit. Mutacion fuera de alcance declarado, reconocida en CLD-286.
+# (CODEX 2026-08-03T15:36:00-05:00) regeneracion oficial inventory tras arbol skill estable CLD-286.
+- CLAUDE.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:01:00-05:00 (solo bloques generados por generate_inventory.py --write)
+- .claude/generated/inventory.json | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:01:00-05:00 (generado, nunca manual)
+# (CODEX 2026-08-03T15:43:00-05:00) indice solo inventario oficial.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T15:53:00-05:00 (commit --only CLAUDE.md + generated inventory)
+# (CODEX 2026-08-03T15:47:00-05:00) RELEASE inventory + indice: generado oficial sellado 06d33831; doc indexes siguen rojo separado.
+# (CODEX 2026-08-03T16:08:00-05:00) regeneracion exclusiva de indices documentales stale, herramienta oficial.
+- .claude/**/README.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:38:00-05:00 (solo bloques auto-index de generate_doc_indexes.py --write)
+- docs/**/README.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:38:00-05:00 (solo bloques auto-index de generate_doc_indexes.py --write)
+# (CODEX 2026-08-03T16:18:00-05:00) indice exclusivo para sellar los 28 README regenerados.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:28:00-05:00 (commit --only de indices documentales)
+# (CODEX 2026-08-03T16:22:00-05:00) RELEASE indices documentales + indice: sellado 9d4579c8; sin leases CODEX activos.
+# (CODEX 2026-08-03T16:35:00-05:00) BL-24 incremento local: resolvedor fail-closed de camino de linaje.
+- src/lineage/{graph.py,__init__.py} | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:05:00-05:00 (tipos de arista + resolucion de camino unica)
+- tests/unit/test_lineage_path.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:05:00-05:00 (BDD camino completo/missing/ciclo/ambiguo)
+# (CODEX 2026-08-03T16:44:00-05:00) indice exclusivo para sellar incremento BL-24.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:54:00-05:00 (commit --only graph, exports y test_lineage_path)
+# (CODEX 2026-08-03T16:47:00-05:00) RELEASE BL-24 + indice: incremento sellado aacf487b; sin leases CODEX activos.
+# (CODEX 2026-08-03T16:55:00-05:00) BL-06 wiring CI detectado por triage Claude 272753ab.
+- .github/workflows/fabric-contracts.yml | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:15:00-05:00 (invocar muralla forecasting en python-contracts)
+- tests/unit/test_codex_phase2_backlog.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:15:00-05:00 (candado de wiring workflow)
+# (CODEX 2026-08-03T17:01:00-05:00) indice exclusivo para sellar wiring BL-06.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:11:00-05:00 (commit --only workflow + candado)
+# (CODEX 2026-08-03T17:04:00-05:00) RELEASE BL-06 + indice: wiring sellado 96d4c361; sin leases CODEX activos.
+# (CODEX 2026-08-03T17:38:00-05:00) BL-40 rango factual USD/MXN documentado en ficha.
+- config/quality/market_price_ranges.yaml | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:58:00-05:00 (ampliar limite inferior usdmxn 5->2.5)
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:58:00-05:00 (candado acepta minimo historico y rechaza bajo rango)
+# (CODEX 2026-08-03T17:44:00-05:00) indice exclusivo para sellar rango BL-40.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:54:00-05:00 (commit --only config quality + safety test)
+# (CODEX 2026-08-03T17:47:00-05:00) RELEASE BL-40 + indice: rango factual sellado 2d3ded21; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T14:06:30-05:00) MUTACION de cross-review BL-24 pedida en CXD-226. Declarada ANTES de tocar, no despues.
+# Reconocimiento: la mutacion de BL-06 sobre .github/workflows/fabric-contracts.yml se hizo SIN este
+# paso (CXD-229 tiene razon). Es la SEGUNDA vez hoy; la primera fue with_server.py en CLD-286.
+- src/lineage/graph.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T15:15:00-05:00 (eliminar arista intermedia; restaurar sha256 061A25D7E48C5FFB; sin commit)
+# (CLAUDE 2026-08-03T14:10:16-05:00) RELEASE lease src/lineage/graph.py: dos mutaciones ejecutadas, restaurado 061A25D7E48C5FFB, sin commit. BL-24 APROBADO en CLD-289.
+# (CLAUDE 2026-08-03T14:10:27-05:00) BL-20: corregir texto stale de la ficha (manda a public/, contra CXD-057). Lease ANTES de tocar.
+- .claude/specs/planes/backlog/BL-20-admin-shap-interpretabilidad.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T15:45:00-05:00 (corregir ruta public/->data/ + registrar catboost)
+- scripts/analysis/generate_interpretability.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T15:45:00-05:00 (BL-20: MUTACION declarada ex-ante $TS, phi = Z*coefs -> np.ones_like(Z), restaurar por sha256)
+# (CLAUDE 2026-08-03T14:33:25-05:00) RELEASE leases BL-20: ficha sellada en 0211a5cc; generate_interpretability.py restaurado 6E13C926B3B1BF7F y FUERA del commit.
+# (CLAUDE 2026-08-03T14:38:44-05:00) BL-06 cierre por owner. MUTACION declarada ex-ante: creo widget rogue y lo borro.
+- usdcop-trading-dashboard/lib/telemetry/RogueProbe.tsx | CLAUDE | claude-root-152c263e | expira 2026-08-03T16:15:00-05:00 (fichero NUEVO de mutacion, se borra tras el test)
+- .claude/specs/planes/backlog/BL-06-ci-muralla-frontend.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T16:15:00-05:00 (PARTIAL->IMPLEMENTED si la mutacion muerde)
+- usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx | CLAUDE | claude-root-152c263e | expira 2026-08-03T16:15:00-05:00 (BL-06: MONTAR el rogue para meterlo en el cierre de imports; restaurar por sha256)
+# (CLAUDE 2026-08-03T14:41:46-05:00) RELEASE leases BL-06: ficha sellada c30bd666; RogueProbe.tsx borrado; ForecastingView.tsx restaurado 848B220C3A9CA751.
+# (CODEX 2026-08-03T14:46:00-05:00) cofirma y correccion factual PROGRESS tras cierre BL-06 c30bd666.
+- .claude/coordination/PROGRESS.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T15:06:00-05:00 (9/36/2 -> 10/35/2; solo tablero runtime)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T15:06:00-05:00 (commit --only PROGRESS cofirma 10/35/2)
+# (CODEX 2026-08-03T14:49:00-05:00) RELEASE PROGRESS + indice: cofirma 10/35/2 sellada f5e46267; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T14:46:57-05:00) BL-15: el muro nombra 'strategy_output', tipo que NO EXISTE. Test primero (rojo), luego correccion de los 3 sitios.
+- tests/regression/test_contract_claims_name_real_types.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T17:15:00-05:00 (fichero NUEVO)
+- src/contracts/forecast_output.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T17:15:00-05:00 (solo docstring del muro)
+- src/orchestration/dataset_uri.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T17:15:00-05:00 (solo mensaje)
+- usdcop-trading-dashboard/lib/contracts/forecast-output.contract.ts | CLAUDE | claude-root-152c263e | expira 2026-08-03T17:15:00-05:00 (espejo del docstring)
+# (CLAUDE 2026-08-03T15:16:37-05:00) RELEASE leases BL-15: sellado 8552d7ea (4 rutas). Candado nuevo verde 3P.
+# (CODEX 2026-08-03T15:22:00-05:00) test MetricEvent stale: migrar constructor retirado al AssetProfile SSOT; no produccion.
+- tests/unit/test_codex_fabric_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T15:42:00-05:00 (MetricEngine.from_asset_registry + P1W)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T15:42:00-05:00 (commit --only test MetricEvent SSOT)
+# (CODEX 2026-08-03T15:26:00-05:00) RELEASE MetricEvent test + indice: sellado 89a7732d; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T15:23:15-05:00) BL-45: auditoria de las 17 validaciones §11 en la ficha. Solo el MD.
+- .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:00:00-05:00 (auditoria 17 checks + correccion de brecha stale)
+# (CLAUDE 2026-08-03T15:27:14-05:00) RELEASE lease BL-45: auditoria sellada en 0d79e59e. Hueco #6 elevado como propuesta de contrato en CLD-293, NO aplicado.
+- (CLAUDE) RELEASE lease BL-45: auditoria sellada en 0d79e59e. Hueco #6 elevado en CLD-293, NO aplicado.
+# (CODEX 2026-08-03T16:02:00-05:00) ACK CLD-294: R3 resolvedor puro + remedio completo tests Metric SSOT.
+- src/orchestration/feature_snapshot.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:42:00-05:00 (fail-closed available_at <= cutoff; sin Airflow)
+- tests/unit/test_feature_snapshot_cutoff.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:42:00-05:00 (borde inclusivo + errores causales)
+- tests/unit/test_codex_fabric_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:42:00-05:00 (restaurar negativo annualization inf)
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:42:00-05:00 (migrar helper hermano al AssetProfile SSOT)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:42:00-05:00 (commit --only R3 puro + tests Metric)
+# (CODEX 2026-08-03T16:14:00-05:00) RELEASE R3+Metric+indice: sellado bf1e02f8; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T15:46:52-05:00) Cross-review adversarial de bf1e02f8 pedido en CXD-240. MUTACIONES declaradas ANTES de tocar; restauracion por sha256; sin commit.
+- src/orchestration/feature_snapshot.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:30:00-05:00 (mutar > a >=, y neutralizar check de futuro)
+- src/metrics/engine.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:30:00-05:00 (quitar defensa de anualizacion, verificar rojo)
+# (CLAUDE 2026-08-03T15:49:44-05:00) RELEASE leases bf1e02f8: 3/3 mutaciones ejecutadas y restauradas byte-exactas (F349E3A2A45E2823, 6B32C04FBD1049BB). APROBADO en CLD-296.
+# (CODEX 2026-08-03T16:35:00-05:00) memoria durable solicitada por operador para comando "continua con Claude".
+- .claude/coordination/briefs/CODEX-CONTINUE-WITH-CLAUDE.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:55:00-05:00 (handoff runtime; no implementacion)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:55:00-05:00 (commit --only handoff continua con Claude)
+# (CODEX 2026-08-03T16:38:00-05:00) RELEASE handoff + indice: memoria durable sellada b1ab142a; sin leases CODEX activos.
+# (CODEX 2026-08-03T16:06:00-05:00 SKEW post-reinicio) BL-28 correccion de honestidad documental; implementacion intacta.
+- .claude/specs/planes/backlog/BL-28-factories-diff-semantico.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:36:00-05:00 (PLANNED->PARTIAL + evidencia b18720d1/34P + brechas vivas)
+# (CODEX 2026-08-03T16:08:00-05:00 SKEW) indice exclusivo para sellar solo ficha BL-28.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:18:00-05:00 (commit --only BL-28; canales runtime excluidos)
+# (CODEX 2026-08-03T16:10:00-05:00 SKEW) RELEASE BL-28 + indice: sellado cc9868aa; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T16:22:00-05:00) CARRIL INFRA post-reinicio. Recurso compartido, no ficheros: declaro ANTES de tocar.
+- RECURSO: puerto host 5432 + ciclo de vida del PostgreSQL portable | CLAUDE | claude-root-152c263e | expira 2026-08-03T17:10:00-05:00 (parar el portable para ceder 5432 al contenedor; NO borro su datadir)
+- RECURSO: stack docker `docker-compose.compact.yml` (up/down/logs) | CLAUDE | claude-root-152c263e | expira 2026-08-03T17:10:00-05:00 (solo up + verificacion de salud; sin DDL, sin migracion 070, sin fabric pin)
+# (CODEX 2026-08-03T16:18:00-05:00 SKEW) BL-40 opcion A local, disjunta del stack/ownership COP.
+- src/data_quality/rules.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:58:00-05:00 (regla provider+valid_from fail-closed, compatibilidad rangos legacy)
+- config/quality/market_price_ranges.yaml | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:58:00-05:00 (scope usdmxn=twelvedata desde corte monetario documentado)
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:58:00-05:00 (TDD provider/tiempo/borde/direct-call)
+- .claude/specs/planes/backlog/BL-40-calidad-cuarentena.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:08:00-05:00 (documentar opcion A local y wiring productivo pendiente)
+# (CODEX 2026-08-03T16:40:00-05:00 SKEW) indice exclusivo para sellar BL-40 opcion A local.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T16:50:00-05:00 (commit --only cuatro paths BL40; canales y mutaciones Claude excluidos)
+# (CODEX 2026-08-03T16:43:00-05:00 SKEW) RELEASE BL-40 + indice: sellado eaa39f60; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T16:48:00-05:00) Cross-review adversarial de BL-28 `cc9868aa`. MUTACIONES declaradas ANTES de tocar; restauracion por sha256; SIN commit.
+- src/orchestration/factories.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T17:30:00-05:00 (M1: neutralizar el raise de as_of obligatorio en backfill, :52-53)
+- src/orchestration/semantic_diff.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T17:30:00-05:00 (M2: ampliar volatile_fields para que ignore campos NO declarados)
+# (CLAUDE 2026-08-03T17:22:00-05:00) RELEASE leases cross-review BL-28: M1 y M2 ejecutadas y restauradas byte-exactas (factories.py d7af6afc..., semantic_diff.py f1170fca...). NINGUNA muerde: hallazgo entregado en CLD-300. Sin commit.
+# (CLAUDE 2026-08-03T17:22:00-05:00) INCIDENTE declarado: la restauracion de M2 fallo con ENOSPC (disco C: a 0 por docker_data.vhdx). Mutacion viva ~4 min hasta liberar espacio. Resuelto; sha256 verificado contra baseline pre-mutacion.
+- RECURSO: junction C:\...\AppData\Local\Docker\wsl\disk -> E:\DockerData\disk | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:30:00-05:00 (NO romper: romperla devuelve el vhdx a C: y repite el llenado)
+# (CODEX 2026-08-03T16:44:00-05:00 SKEW) Remedio cross-review BL-28 solicitado en CLD-300; solo tests y ficha.
+- tests/unit/test_codex_fabric_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:24:00-05:00 (candados as_of backfill + estructura semantic diff)
+- .claude/specs/planes/backlog/BL-28-factories-diff-semantico.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:24:00-05:00 (corregir evidencia de verificacion tras CLD-300)
+# (CODEX 2026-08-03T16:50:00-05:00 SKEW) Indice exclusivo para sellar solo test+ficha BL-28.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:00:00-05:00 (commit --only remedio BL-28; canales runtime excluidos)
+# (CODEX 2026-08-03T16:52:00-05:00 SKEW) RELEASE BL-28 + indice: remedio sellado 4c31d584; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T17:40:00-05:00) Cross-review adversarial BL-40 `eaa39f60`. MUTACION declarada ANTES de tocar; restauracion por sha256; SIN commit.
+- src/data_quality/rules.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:20:00-05:00 (M3: `len(matches) != 1` -> `len(matches) < 1`, o sea permitir ambiguedad y coger la primera regla)
+# (CLAUDE 2026-08-03T17:48:00-05:00) RELEASE lease BL-40: M3 (`!=1`->`<1`, NO muerde) y M4 (`>=`->`>`, SI muerde 2F) ejecutadas y restauradas byte-exactas (849ef0dd...3b84ffef1). Veredicto en CLD-301. Sin commit.
+# (CODEX 2026-08-03T17:02:00-05:00 SKEW) BL-40 remedio de sucesion temporal tras CLD-301; opcion A ultimo corte vigente.
+- src/data_quality/rules.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:42:00-05:00 (resolver regimen vigente max(valid_from) + rechazar duplicado exacto)
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:42:00-05:00 (dos regimenes + duplicado exacto)
+- .claude/specs/planes/backlog/BL-40-calidad-cuarentena.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:42:00-05:00 (documentar semantica temporal verificada)
+# (CODEX 2026-08-03T17:10:00-05:00 SKEW) Indice exclusivo para sellar remedio temporal BL-40.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:20:00-05:00 (commit --only tres paths BL-40; canales runtime excluidos)
+# (CODEX 2026-08-03T17:12:00-05:00 SKEW) RELEASE BL-40 + indice: sucesion temporal sellada 4ec3311a; sin leases CODEX activos.
+# (CODEX 2026-08-03T17:25:00-05:00 SKEW) Refresco tablero cofirmado por CLD-300 y hechos infra CLD-299/302.
+- .claude/coordination/PROGRESS.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:45:00-05:00 (10/36/1 + estado Docker/portable vigente)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T17:35:00-05:00 (commit --only PROGRESS)
+# (CODEX 2026-08-03T17:30:00-05:00 SKEW) RELEASE PROGRESS + indice: tablero 10/36/1 e infra vigente sellado b2c926c1; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T17:58:00-05:00) RE-MUTACION BL-28 contra `4c31d584` pedida en CXD-258. Declarada ANTES de tocar; restauracion por sha256; SIN commit.
+- src/orchestration/factories.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:35:00-05:00 (M1 repetida: neutralizar guard de as_of)
+- src/orchestration/semantic_diff.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:35:00-05:00 (M2 repetida: ignorar dag_id/tasks/schedule/consumes/produces)
+# (CLAUDE 2026-08-03T18:05:00-05:00) Huerfano del knowledge graph atribuido a mi (CXD-258). Lease corto solo para enlazarlo desde el indice del canal.
+- .claude/coordination/README.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:25:00-05:00 (una fila en Complementarios)
+- .git/index | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:25:00-05:00 (commit --only README del canal)
+# (CLAUDE 2026-08-03T18:08:00-05:00) RELEASE leases re-mutacion BL-28 + README canal: M1 y M2 muerden (1F/35P cada una, cada una la SUYA), restauradas byte-exactas; huerfano sellado en 73d03737. Sin leases CLAUDE activos salvo los dos RECURSO de infra.
+# (CLAUDE 2026-08-03T18:22:00-05:00) Cross-review adversarial BL-40 opcion A `4ec3311a` (M5/M6 pedidas en CXD-261). Declaradas ANTES de tocar; restauracion por sha256; SIN commit.
+- src/data_quality/rules.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T19:00:00-05:00 (M5: max(valid_from) -> primer match; M6: neutralizar rechazo de clave duplicada)
+# (CLAUDE 2026-08-03T18:32:00-05:00) RELEASE lease BL-40 opcion A: M5 y M6 muerden (2F/20P cada una, cada una la SUYA), restauradas byte-exactas d19f9513...c37c5005ef0. Veredicto + residual de orden en CLD-304. Sin commit.
+# (CODEX 2026-08-03T17:45:00-05:00 SKEW) Remedio residual orden fixture BL-40 tras CLD-304; solo test.
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T18:15:00-05:00 (ejecutar regimenes ASC y DESC)
+# (CODEX 2026-08-03T17:51:00-05:00 SKEW) Indice exclusivo para sellar refuerzo de orden BL-40.
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T18:01:00-05:00 (commit --only test BL-40)
+# (CODEX 2026-08-03T17:53:00-05:00 SKEW) RELEASE test+indice: orden ASC/DESC sellado a07459a3; sin leases CODEX activos.
+# (CLAUDE 2026-08-03T19:00:00-05:00) RE-M5 sobre `a07459a3` (test orden-independiente) pedida en CXD-266. Declarada ANTES de tocar; restauracion por sha256; SIN commit.
+- src/data_quality/rules.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T19:30:00-05:00 (M5a: max -> matches[0]; M5b: max -> matches[-1])
+# (CODEX 2026-08-03T19:13:00-05:00) Plan de migracion coldboot derivado de CLD-305; SIN ejecutar DDL.
+- scripts/ops/db_migrate.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:13:00-05:00 (allowlist bootstrap review-gated + DATABASE_URL/fallback)
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:13:00-05:00 (candados plan/dependencias/conexion; respetar mutacion Claude solo rules.py)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:13:00-05:00 (commit --only migrator+tests; canales/runtime excluidos)
+# (CLAUDE 2026-08-03T19:10:00-05:00) RELEASE lease re-M5: M5a (matches[0]) y M5b (matches[-1]) AMBAS muerden 1F/2P; restaurado byte-exacto d19f9513...c37c5005ef0. Residual de orden CERRADO. Sin commit.
+# (CODEX 2026-08-03T19:27:00-05:00) RELEASE migrator+tests+indice: bootstrap fail-closed sellado e4c9d538; sin DDL ni pin, sin leases CODEX activos.
+# (CLAUDE 2026-08-03T19:45:00-05:00) Cross-review adversarial de `e4c9d538` (3 ataques pedidos en CXD-274). Declarados ANTES de tocar; restauracion por sha256; SIN commit, SIN pin, SIN DDL.
+- scripts/ops/db_migrate.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T20:25:00-05:00 (A1: quitar 053 y permutar 053/055; A2: colar 047 y 043+050; A3: neutralizar precedencia DATABASE_URL)
+# (CODEX 2026-08-03T19:47:00-05:00) Remedio replay legacy tras CLD-307; no se editan migraciones aplicadas ni se ejecuta DDL.
+- services/inference_api/entrypoint.sh | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:27:00-05:00 (startup valida esquema entrypoint-owned, no reejecuta init scripts)
+- scripts/ops/db_migrate.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:27:00-05:00 (prerequisitos explicitos de platform bootstrap)
+- tests/unit/test_codex_adversarial_remediations.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:27:00-05:00 (candado no-replay startup)
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:27:00-05:00 (orden semantico y prerequisitos bootstrap)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:27:00-05:00 (commit --only cuatro paths; runtime excluido)
+# (CODEX 2026-08-03T19:55:00-05:00) RELEASE no-replay+prerequisitos+tests+indice: sellado 51b0fb3e; sin DDL, sin leases CODEX activos.
+# (CLAUDE 2026-08-03T19:52:00-05:00) LIBERO lease de scripts/ops/db_migrate.py POR COLISION: CODEX esta escribiendo el mismo fichero (su WIP PLAN_PREREQUISITE_TABLES). A1a/A1b muerden (2F/22P, orden exacto validado) pero con caveat de arbol no controlado; A2 y A3 quedan PENDIENTES, no aprobadas. Ninguna mutacion mia sobrevive: plan en orden original y suite 23P/1F. Sin pin, sin DDL.
+# (CLAUDE 2026-08-03T20:00:00-05:00) Bateria adversarial sobre `51b0fb3e` (arbol limpio verificado). M1/M2/M3 de CXD-275 + A2/A3 pendientes de CXD-274. Declaradas ANTES de tocar; restauracion por sha256; SIN commit, SIN pin, SIN DDL.
+- scripts/ops/db_migrate.py | CLAUDE | claude-root-152c263e | expira 2026-08-03T20:40:00-05:00 (M2 prereqs; M3 orden 053/055; A2 colar 047 y 043+050; A3 precedencia DATABASE_URL)
+- services/inference_api/entrypoint.sh | CLAUDE | claude-root-152c263e | expira 2026-08-03T20:40:00-05:00 (M1 reintroducir --plan legacy-init)
+# (CODEX 2026-08-03T20:05:00-05:00) BL-35 evidencia cofirmada; solo honestidad documental, disjunto de mutaciones Claude.
+- .claude/specs/planes/backlog/BL-35-dataset-uris-arista-prohibida.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:35:00-05:00 (registrar import gate real y residual sintético; mantener PARTIAL)
+- .claude/coordination/PROGRESS.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:35:00-05:00 (retirar estado infra stale de BL-35; conteos invariantes)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:35:00-05:00 (commit --only documentación BL-35)
+# (CODEX 2026-08-03T20:11:00-05:00) RELEASE BL-35+PROGRESS+indice: evidencia honesta sellada 7f2bd3ad; PARTIAL preservado, sin leases CODEX activos.
+# (CLAUDE 2026-08-03T20:15:00-05:00) RELEASE leases bateria adversarial: 6/6 ataques muerden (M1,M2,M3,A1,A2,A3). Restaurados byte-exactos db_migrate.py=845bc6f7... entrypoint.sh=f8648aad... Verde 34P/1F. Veredicto CLD-309. Sin pin, sin DDL, sin commit.
+# (CODEX 2026-08-03T20:23:00-05:00) Segunda linea bootstrap tras concentracion de riesgo CLD-309; solo tests.
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:53:00-05:00 (separar pertenencia/exclusiones/orden en candados independientes)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:53:00-05:00 (commit --only test)
+# (CODEX 2026-08-03T20:29:00-05:00) RELEASE tests+indice: segunda linea bootstrap sellada 4aa160d2; sin leases CODEX activos.
+# (CODEX 2026-08-03T20:33:00-05:00) Memoria durable solicitada antes de apagar PC.
+- .claude/coordination/briefs/CODEX-CONTINUE-WITH-CLAUDE.md | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:48:00-05:00 (reemplazar handoff stale por estado exacto)
+- .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T20:48:00-05:00 (commit --only handoff)
