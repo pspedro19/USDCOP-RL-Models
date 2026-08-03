@@ -873,20 +873,52 @@ def test_platform_bootstrap_plan_is_explicit_minimal_and_unpinned() -> None:
         "054_h5_subtrades_unique.sql",
         "055_rbac_monetization.sql",
     ]
-    assert names.index("053_sb_user_approval.sql") < names.index(
-        "055_rbac_monetization.sql"
-    )
     assert module.PLAN_PREREQUISITE_TABLES["platform-bootstrap-v1"] == (
         "public.sb_users",
         "public.usdcop_m5_ohlcv",
         "public.macro_indicators_daily",
     )
-    assert not {"043_forecast_h5_tables.sql", "044_smart_simple_columns.sql", "047_pgvector_embeddings.sql", "048_reconciliation_tables.sql", "049_regime_gate_columns.sql"} & set(names)
     assert "platform-bootstrap-v1" in module.REVIEW_GATED_PLANS
     assert "platform-bootstrap-v1" not in module.PINNED_PLAN_DIGESTS
     assert not module.plan_is_authorized("platform-bootstrap-v1", None)
     assert not module.plan_is_authorized(
         "platform-bootstrap-v1", module.get_plan_digest("platform-bootstrap-v1")
+    )
+
+
+def test_platform_bootstrap_excludes_superseded_and_optional_migrations() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_exclusions", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = {item.name for item in module.get_migration_files("platform-bootstrap-v1")}
+    forbidden = {
+        "043_forecast_h5_tables.sql",
+        "044_smart_simple_columns.sql",
+        "047_pgvector_embeddings.sql",
+        "048_reconciliation_tables.sql",
+        "049_regime_gate_columns.sql",
+        "052_crypto_native_data.sql",
+    }
+    assert names.isdisjoint(forbidden)
+
+
+def test_platform_bootstrap_orders_user_role_before_rbac_expansion() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_role_order", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("platform-bootstrap-v1")]
+    assert names.index("053_sb_user_approval.sql") < names.index(
+        "055_rbac_monetization.sql"
     )
 
 
