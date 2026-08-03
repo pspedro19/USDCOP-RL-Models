@@ -214,7 +214,10 @@ def test_physical_and_synthetic_migrations_have_executable_static_smoke() -> Non
     assert "create table if not exists demo.synthetic_model" in synthetic_sql
     assert "constraint synthetic_demo_only check" in synthetic_sql
     assert "execution_eligible = false" in synthetic_sql
-    assert "create or replace function demo.reject_synthetic_performance" in synthetic_sql
+    assert "create or replace function demo.reject_synthetic_fact" in synthetic_sql
+    assert "create trigger trg_no_synthetic_performance" in synthetic_sql
+    assert "create trigger trg_no_synthetic_inference" in synthetic_sql
+    assert "create trigger trg_no_synthetic_trade" in synthetic_sql
     assert "raise exception" in synthetic_sql
 
 
