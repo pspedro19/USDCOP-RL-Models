@@ -5,17 +5,23 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from src.metrics.formulas import sharpe_ratio as governed_sharpe_ratio
+
 __all__ = ["cer", "cer_gain_bps", "sharpe", "sharpe_distribution"]
 
 PERIODS_PER_YEAR = 252
 
 
-def sharpe(returns, periods_per_year: int = PERIODS_PER_YEAR) -> float:
+def _governed_ratio_or_zero(
+    returns, periods_per_year: int = PERIODS_PER_YEAR
+) -> float:
     r = np.asarray(returns, dtype=float)
-    sd = r.std(ddof=1)
-    if sd == 0:
-        return 0.0
-    return float(r.mean() / sd * np.sqrt(periods_per_year))
+    value = governed_sharpe_ratio(r, periods_per_year=periods_per_year)
+    return 0.0 if value is None else value
+
+
+# Backward-compatible public name; the implementation now lives in the governed SSOT.
+sharpe = _governed_ratio_or_zero
 
 
 def cer(returns, gamma: float = 5.0) -> float:
