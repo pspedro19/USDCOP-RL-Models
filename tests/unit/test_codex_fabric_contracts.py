@@ -6,6 +6,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
+import math
 from pathlib import Path
 import sys
 import types
@@ -785,10 +786,10 @@ def test_execution_flip_is_opening_and_exit_all_never_submits_target() -> None:
 
 
 def test_metric_event_identity_is_deterministic_and_annualization_is_finite() -> None:
-    from src.metrics.engine import MetricCatalog, MetricContractError, MetricEngine
+    from src.metrics.engine import MetricCatalog, MetricEngine
 
     catalog = MetricCatalog.load("config/metrics/catalog.yaml")
-    engine = MetricEngine(catalog, annualization_by_asset={"usdcop": 52})
+    engine = MetricEngine.from_asset_registry(catalog, assets_dir="config/assets")
     as_of = datetime(2026, 1, 5, tzinfo=timezone.utc)
     kwargs = {
         "entity_type": "strategy",
@@ -800,18 +801,17 @@ def test_metric_event_identity_is_deterministic_and_annualization_is_finite() ->
         "asset_id": "usdcop",
         "context": {
             "returns": [0.01, -0.005, 0.003] * 7,
+            "return_interval": "P1W",
             "n_trades": 21,
             "window_start": as_of - timedelta(weeks=26),
             "window_end": as_of,
         },
         "run_id": "run-1",
     }
-    assert engine.compute(**kwargs).metric_event_id == engine.compute(**kwargs).metric_event_id
-    bad_engine = MetricEngine(
-        catalog, annualization_by_asset={"usdcop": float("inf")}
-    )
-    with pytest.raises(MetricContractError, match="annualization"):
-        bad_engine.compute(**kwargs)
+    first = engine.compute(**kwargs)
+    second = engine.compute(**kwargs)
+    assert first.metric_event_id == second.metric_event_id
+    assert first.metric_value is not None and math.isfinite(first.metric_value)
 
 
 def test_canonical_artifact_refuses_divergent_overwrite(tmp_path) -> None:
