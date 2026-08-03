@@ -20,7 +20,7 @@ code_anchors:
 No existe ninguna superficie de interpretabilidad. Consola admin v2 (CTR-ADMIN-CONSOLE-001) tiene secciones independientes donde encaja. Modelos: zoo 9 (ridge/BR lineales; xgb/lgbm/catboost tree) + componente Ridge/BR de v11; rule-based sin ML (MA200/SMA/hodl).
 
 ## Qué falta exactamente
-1) Generador `scripts/analysis/generate_interpretability.py` por (surface, asset, model_id, version) → `public/data/interpretability/**`: SOLO test-folds; SHAP lineal (coef×(x−μ) del scaler train-only) para ridge/BR, TreeSHAP para árboles; cortes global/por-régimen/temporal(por año); kill-rules visibles (signo que cambia entre décadas o contradice prior). 2) Rule-based: ATRIBUCIÓN DE REGLAS etiquetada 'atribución, no SHAP' (qué gate decidió cada día, % tiempo activa, PnL beta/timing — reusa BL-07). 'Ambas según aplique' (decisión operador). 3) UI: sección admin nueva con selector superficie→asset→modelo→versión; RBAC admin-only + entrada en rbac.contract.ts.
+1) Generador `scripts/analysis/generate_interpretability.py` por (surface, asset, model_id, version) → `data/interpretability/**` (**fuera de `public/`** — ver §7 abajo; la ruta `public/` que decía este bullet era un bug prometido): SOLO test-folds; SHAP lineal (coef×(x−μ) del scaler train-only) para ridge/BR, TreeSHAP para árboles; cortes global/por-régimen/temporal(por año); kill-rules visibles (signo que cambia entre décadas o contradice prior). 2) Rule-based: ATRIBUCIÓN DE REGLAS etiquetada 'atribución, no SHAP' (qué gate decidió cada día, % tiempo activa, PnL beta/timing — reusa BL-07). 'Ambas según aplique' (decisión operador). 3) UI: sección admin nueva con selector superficie→asset→modelo→versión; RBAC admin-only + entrada en rbac.contract.ts.
 
 ## Impacto frontend
 Sección nueva en `/admin`; `npm run rbac:check` verde; header fijo: 'SHAP explica el modelo, no el mercado'.
@@ -71,10 +71,13 @@ Ejecutado 2026-07-28: `pytest usdcop-trading-dashboard/tests/test_interpretabili
 
 ```
 comando: python -m pytest tests/unit/test_interpretability_artifacts.py -q
-verde:   20 passed
+verde:   21 passed  (eran 20 hasta 2026-08-03: el test #21 exige `catboost`, ausente en la
+         maquina del operador, y sin el la ruta TreeSHAP degradaba a `tree_shap_unavailable`
+         en vez de ejercitarse. Instalado catboost 1.2.10 => 21 passed)
 
-muta:    scripts/analysis/generate_interpretability.py:467
-         phi = Z * coefs  ->  phi = np.ones_like(Z)
+muta:    scripts/analysis/generate_interpretability.py:565  (decia :467; el codigo se movio
+         y la linea vieja ya no era la contribucion lineal — verificado 2026-08-03)
+         `return Zi * coefs, intercept, coefs` -> `return np.ones_like(Zi), intercept, coefs`
 espera:  3 failed — aditividad (sum(mean_shap)+base=21 vs mean(pred)=-1.55e-05),
          no-degeneracion (mean_abs_shap constante en las 21 features) y
          acoplamiento al modelo (amplificar x1e6 un coeficiente no cambia el ranking)
