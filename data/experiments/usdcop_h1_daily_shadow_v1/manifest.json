@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_id": "usdcop_h1_daily_shadow_v1",
+  "created_at_utc": "2026-07-22T22:49:55.848652+00:00",
+  "cutoff": "2026-07-22",
+  "historical_availability_class": "reconstructed_not_true_pit",
+  "launch_rule": "NO_HISTORICAL_DAILY_PERFORMANCE_EVALUATION",
+  "source_files": {
+    "data/experiments/usdcop_h1_regime_shadow_v2/asset_daily_ohlcv_through_2026-07-21.parquet": "bc6d05b375c56b70f0863df6222ee5f99427d2e0a0a5d37f28d6b77912adf438",
+    "seeds/latest/usdcop_daily_ohlcv.parquet": "04c33106173b129ee3239a76854d21c2f6f6bcfec523b5679c7f7497340f831e"
+  },
+  "source_current_mtime_utc": "2026-07-22T20:01:55.224131+00:00",
+  "files": {
+    "asset_daily_ohlcv_through_2026-07-22.parquet": {
+      "rows": 7762,
+      "start": "1989-11-09T00:00:00+00:00",
+      "end": "2020-01-01T00:00:00+00:00",
+      "sha256": "bc6d05b375c56b70f0863df6222ee5f99427d2e0a0a5d37f28d6b77912adf438"
+    },
+    "usdcop_daily_ohlcv_through_2026-07-22.parquet": {
+      "rows": 1700,
+      "start": "2019-12-18T00:00:00+00:00",
+      "end": "2026-07-22T00:00:00+00:00",
+      "sha256": "d4ee969a072535502dab0dfd2b7646e4ef5dfb221f5e1a1fdd7e7f496825a54d"
+    }
+  }
+}

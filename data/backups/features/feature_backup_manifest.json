@@ -1,122 +1,122 @@
 {
-  "created_at": "2026-07-21T19:53:06.917147+00:00",
+  "created_at": "2026-07-29T00:17:12.153020+00:00",
   "tables": {
     "news_articles": {
       "status": "ok",
-      "rows": 57,
-      "sha256": "bdeb638afdcd4f1e66d6ccac47a7c400dadc6b5f333e15da4a7cf40de49f3a80",
-      "latest": "2026-07-21 17:43:55+00:00",
+      "rows": 132,
+      "sha256": "3cfb069216918f30ddc5c047d5675a01bc7f768f3d09e254239f72015aa51866",
+      "latest": "2026-07-28 11:00:00+00:00",
       "file": "news_articles.parquet"
     },
     "news_feature_snapshots": {
       "status": "ok",
-      "rows": 4,
-      "sha256": "77885a6b99497883fecac8e984c4d2c9f50f91df806b20348a2ddb7b8604a608",
-      "latest": "2026-07-21 00:00:00",
+      "rows": 8,
+      "sha256": "4ded8c64176c678224865ddabc5ed76d001563ac10110f24b54718205bbf70a7",
+      "latest": "2026-07-28 00:00:00",
       "file": "news_feature_snapshots.parquet"
     },
     "weekly_analysis": {
       "status": "ok",
       "rows": 0,
-      "sha256": "d26aacd21c645ef7eb8fd47f2aab0fcd7e768cdb6afafddde3d81a6bc35e7dcb",
+      "sha256": "c04169e99922003f3eb5f00c30b87c9e91f477d5f15792d12b4f54280aa3ec8b",
       "latest": null,
       "file": "weekly_analysis.parquet"
     },
     "daily_analysis": {
       "status": "ok",
       "rows": 0,
-      "sha256": "1def5260915fbe27bfeb7458b3461a0407fcc50e676a3d238e3a40eaee7993e9",
+      "sha256": "b30197d39893fbba8d507919f78bf9823caefad2f57488067600c3c22fe49241",
       "latest": null,
       "file": "daily_analysis.parquet"
     },
     "forecast_h5_predictions": {
       "status": "ok",
       "rows": 18,
-      "sha256": "234da8b5c251856998a8c28216d88761207ed264c05d970834ab1c834887b1c5",
+      "sha256": "8a6348ddfa86e33dd1cf00322e847a46af93d79b3866855c2845dbbc3b3c4054",
       "latest": "2026-07-07 04:38:31.127306+00:00",
       "file": "forecast_h5_predictions.parquet"
     },
     "forecast_h5_signals": {
       "status": "ok",
       "rows": 10,
-      "sha256": "d578d4f5f3fc4f7e2f1ab1970bcc86eee1085e8679ea18bdc3362ed262e572ad",
+      "sha256": "5175a134dc472f8041493e7bab1c3da1a438c585daed0e3e097c269085274228",
       "latest": "2026-07-07 00:00:00",
       "file": "forecast_h5_signals.parquet"
     },
     "forecast_h5_executions": {
       "status": "ok",
       "rows": 8,
-      "sha256": "156820a4ef33488dc6b7861fb0c3cfe5c12b1a5696ae5ef8b47464ff8cd7b262",
+      "sha256": "3205eb9f3d2facc859161ef725310c3c91b92457a23aa6b2fc1f1436e7f10475",
       "latest": "2026-07-05 22:54:54.605434+00:00",
       "file": "forecast_h5_executions.parquet"
     },
     "forecast_h5_subtrades": {
       "status": "ok",
       "rows": 8,
-      "sha256": "7cb166b09889f010379ada062d003ba405ab8e068aec3248835bc7ea5612be1b",
+      "sha256": "059517f476ee420d98fa62d49ee3d53cb13238ef67347e97c37114f0d849d75e",
       "latest": "2026-07-05 22:54:54.605434+00:00",
       "file": "forecast_h5_subtrades.parquet"
     },
     "forecast_h5_paper_trading": {
       "status": "ok",
       "rows": 8,
-      "sha256": "03d10aad32fe4095e4f984b0a9778a77f2c5c90035a7a6d558e69040aa08f23a",
+      "sha256": "64c7c701b4ce28570ffcd88a47b34caa36ab70cbebfe55021c6260ceeae080a0",
       "latest": "2026-07-05 22:54:54.605434+00:00",
       "file": "forecast_h5_paper_trading.parquet"
     },
     "asset_daily_ohlcv": {
       "status": "ok",
-      "rows": 54093,
-      "sha256": "c420e2a0137116e7c335eb718302040dfcef37ed5dee80041d32e11559c86d52",
-      "latest": "2026-07-21 21:00:00+00:00",
+      "rows": 60432,
+      "sha256": "d8e00c0df0402d5dfba42abf588f42e449e2fde9aee3d9d87d096487d9710463",
+      "latest": "2026-07-29 00:00:00+00:00",
       "file": "asset_daily_ohlcv.parquet"
     },
     "usdcop_m5_ohlcv": {
       "status": "ok",
-      "rows": 2197621,
-      "sha256": "2ab0e4d40cd25e7cfb1e2f2e5ba2ff53945c944d3791e470d5c140485b51505a",
-      "latest": "2026-07-21 19:20:00+00:00",
+      "rows": 2206214,
+      "sha256": "ba88a87e1a298eb9cb734ba5c3c7679a729825bc172b6b420f0908bfe7a86f36",
+      "latest": "2026-07-29 00:10:00+00:00",
       "file": "usdcop_m5_ohlcv.parquet"
     },
     "asset_native_ohlcv": {
       "status": "ok",
-      "rows": 299886,
-      "sha256": "78f45cde4e3df7250733e2b52725b8b895f93fb4a2558ab259acddfb119a524d",
-      "latest": "2026-07-21 19:00:00+00:00",
+      "rows": 286428,
+      "sha256": "ed70f3db3360ae7d0a9b67f7bfd65ccb153b091bf926eb96e65eff79ea1840e4",
+      "latest": "2026-07-29 00:00:00+00:00",
       "file": "asset_native_ohlcv.parquet"
     },
     "market_ingestion_manifest": {
       "status": "ok",
-      "rows": 1853,
-      "sha256": "1f2a225c838611d05a9d833793493001b05b3a7d5037a0776b5dbe2ef52f3839",
-      "latest": "2026-07-21 19:20:45.645175+00:00",
+      "rows": 3775,
+      "sha256": "5032dfc633633e70a488651fc3256d7f3cd5109f482f943fe73b838b8845e1dc",
+      "latest": "2026-07-29 00:14:36.822425+00:00",
       "file": "market_ingestion_manifest.parquet"
     },
     "crypto_derivatives_daily": {
       "status": "ok",
       "rows": 2506,
-      "sha256": "ff7c2fd032f3f361a7535d77433ba42cfc7caf94a27a6b6af82c79716d3fda5b",
+      "sha256": "27516da85920bcd21e2b74d4203da05aa148b50ab6958a41190fab3989dd69cc",
       "latest": "2026-07-20 00:00:00",
       "file": "crypto_derivatives_daily.parquet"
     },
     "macro_indicators_monthly": {
       "status": "ok",
-      "rows": 282,
-      "sha256": "846f3676eb3c6c5ec2ca0699cb8b8d689efd68cc7d8af9216d930726e1d5228b",
+      "rows": 864,
+      "sha256": "20b0aa1f1342da93fd7eb938571f57cd55e5747e12453228bd77e558f59625ee",
       "latest": "2026-06-01 00:00:00",
       "file": "macro_indicators_monthly.parquet"
     },
     "macro_indicators_quarterly": {
       "status": "ok",
       "rows": 38,
-      "sha256": "8b60a533b741cea013222b1837e33c0ad773a044f68dbf8690dc0ad0af26a2d8",
+      "sha256": "9fe3cfa04575698ece5944ca4bb44306db9ef206c7404991dddbc7ab89a33b6c",
       "latest": "2025-06-30 00:00:00",
       "file": "macro_indicators_quarterly.parquet"
     },
     "audit_log": {
       "status": "ok",
       "rows": 54,
-      "sha256": "760c40206387cdcce441aabdb3f698a60cc783624a745ca729051a57f0af5889",
+      "sha256": "d9e7e63538dd333d1ff8df8ab38d6bacc3cd40974f38bf8f213dc1834a1372ec",
       "latest": "2026-07-21 02:54:15.720348+00:00",
       "file": "audit_log.parquet"
     }

@@ -9,7 +9,7 @@
   "week_end": "2026-04-05",
   "weekly_summary": {
     "headline": "Bitcoin · Semana 14 de 2026",
-    "markdown": "### Bitcoin — Semana 14 (2026-03-30 → 2026-04-05)\n\nEl cierre semanal de BTC/USDT fue **69034.18 USD**, un cambio de **+4.58%** en la semana (rango 65712.12–69310.00). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 69034.18. RSI(14)=51 (neutral). Soporte 65000.00, resistencia 76000.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: The Pew Charitable Trusts, Bitcoin Foundation, CoinDesk.",
+    "markdown": "### Bitcoin — Semana 14 (2026-03-30 → 2026-04-05)\n\nEl cierre semanal de BTC/USDT fue **69034.18 USD**, un cambio de **+4.58%** en la semana (rango 65712.12–69310.00). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 69034.18. RSI(14)=51 (neutral). Soporte 65000.00, resistencia 76000.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: The Pew Charitable Trusts, Yahoo Finance, Bitcoin Foundation.",
     "sentiment": "bullish",
     "ohlcv": {
       "open": 66010.93,
@@ -40,7 +40,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-03-31",
@@ -58,7 +58,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-04-01",
@@ -76,7 +76,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-04-02",
@@ -94,7 +94,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-04-03",
@@ -112,7 +112,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-04-04",
@@ -130,7 +130,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-04-05",
@@ -148,7 +148,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6157,22 +6157,20 @@
     "avg_sentiment": 0.0,
     "source_breakdown": {
       "The Pew Charitable Trusts": 1,
-      "Bitcoin Foundation": 3,
-      "CoinDesk": 8,
-      "ig.com": 1,
+      "Yahoo Finance": 13,
+      "Bitcoin Foundation": 5,
       "FOREX.com": 1,
-      "Investopedia": 1,
-      "Forbes": 2,
+      "CoinDesk": 6,
+      "ig.com": 1,
       "Fortune": 2,
-      "Yahoo Finance": 8,
-      "US News Money": 1,
+      "Forbes": 1,
+      "U.S. News - Money": 1,
       "Bitcoin Magazine": 1,
       "Texas Public Radio | TPR": 1,
-      "TradingView": 5,
-      "Caledonian Record": 1,
+      "Investopedia": 1,
+      "TradingView": 3,
       "Barron's": 2,
-      "24/7 Wall St.": 1,
-      "Finance Magnates": 1
+      "Yahoo Finance Singapore": 1
     }
   },
   "news_intelligence": {
@@ -6195,9 +6193,9 @@
         "representative_titles": [
           "Bitcoin’s (BTC) parabolic era may be over as old peaks are tested - CoinDesk",
           "Bitcoin, XRP Prices Fall. Strategy’s Latest Move Reveals Cryptos’ Dilemma. - Barron's",
+          "Bitcoin Price Flashes Warning as Nearly Half of Supply Sits at a Loss - Yahoo Finance",
           "Bitcoin Price Posts Worst Q1 Since 2018 - Bitcoin Foundation",
-          "​​Bitcoin Price Outlook: ETF Outflows, Quantum Concerns Keep BTC Under Pressure​ - ig.com",
-          "After a Tough Quarter for Crypto and Bitcoin, Is a Market 'Bottom' Finally in Sight? - Investopedia"
+          "​​Bitcoin Price Outlook: ETF Outflows, Quantum Concerns Keep BTC Under Pressure​ - ig.com"
         ],
         "narrative_summary": "",
         "articles": [
@@ -6233,6 +6231,25 @@
               "Fall",
               "Strategy",
               "Latest"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Flashes Warning as Nearly Half of Supply Sits at a Loss - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxNOGVaTklMZE5zNkpJenlRTHczNWJpbmtPdHhUT2x3SXlxdHJqSFFoeEZjd2NDankxQUV6UFgyTklSMjBxTE5semJxb21malMyNWRJNXY2Tm5SMVpPbGdzTUpSWENPYUNmOWVRU0RtcVlKZTUzTF95enNQNWI2dFFWU0daWVMwQkdZZnkxcXRNMUdxckRzOW5UMExMdDhpWEhvR0tF?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Tue, 31 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Flashes",
+              "Warning",
+              "Nearly"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6276,44 +6293,6 @@
             "factuality": "unknown"
           },
           {
-            "title": "After a Tough Quarter for Crypto and Bitcoin, Is a Market 'Bottom' Finally in Sight? - Investopedia",
-            "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxOWUFEeE1qREduRUxzbktBWC1XZ21LSGpncng5b05jRlVlYm5NbWVvR1N5aUJfb1RhZ3pNaDcyOEtKb3JSSVlBYXduWTU3TVl2emo1cUV0UkxJU0FTcFN6NXZwd3Z2Yzd3OFdWSElOaEVuR0hJWlI0RTMxc1N0bzVqQlJlOUZCR0U0dzlYdWFrRTdzZlpQakVIVVBKX3pRX1Y4dlBMeG5uc1IxckZSZ3hxVUpMM0FhTkp4WThobE12V0VWQkltdkJvLQ?oc=5",
-            "source": "Investopedia",
-            "date": "Tue, 31 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "After",
-              "Tough",
-              "Quarter",
-              "Crypto",
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Price Prediction: Can Bitcoin Reach $1,000,000 by 2025? - Forbes",
-            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxNUmhZMEJEVDBCM2wxR1hFWFJyeEFlODVIamFNSTNKNWR6bWxycVNZSFhsR0FTSXQ5U2RRbnB0QlVFRzRadU9nQVZPdnI2ZHJpUXQ1MG5ROXBqdzdjdkQyZnRTYkxCek5uUV9jZjBHY0psVDFITlYwX05YN2xaeHBIbHhPUEE?oc=5",
-            "source": "Forbes",
-            "date": "Wed, 01 Ap",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Price",
-              "Prediction",
-              "Reach",
-              "Forbes"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
             "title": "Current price of Bitcoin for April 3, 2026 - Fortune",
             "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE03QXp3NGlNbHVjN3lCT0p5YlBUQUpWU3NRLXVoWHlWTm1yT0xPcHRaRThsZnNVMGdJY1c4NGxGZ29zenllZkRVQ04wcE1ncDkyZUppM2dvUXM0QUVDb2tpSGVnUFI5N1k?oc=5",
             "source": "Fortune",
@@ -6327,25 +6306,6 @@
               "Bitcoin",
               "April",
               "Fortune"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "What ending the Iran war would mean for Bitcoin’s price - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOYzJXQ25NSkprSXZ4eGJEWE55Sk83d01qNFBGZFJmb05QTnRFdGUwUlV1XzE2Q0tTNmVMbmwtbFdpTnNkWTJvOGNRMjY2Qk1uRm1HTVhhakM2YmI0Qzl0UFRKamtMY01DM1cyXzBzSEp6QUh2M3JZcE1ETEcxTTVFemd6WTJMSnE3N256ZW4tcnZHWU5EeFNQNDBR?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Wed, 01 Ap",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "What",
-              "Iran",
-              "Bitcoin",
-              "Yahoo",
-              "Finance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6370,10 +6330,10 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price Prediction as Miners Spend $80,000 to Produce One Bitcoin - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxOWElnTmpZeXh0QTJycDV2V2w5QS1qTmltOFZYVzBocDh2ejQ2N2ZGcjJIb1gwNVBMLTUyNzBpNDdmMjUzSjNLMXFhUkpXRUIxeDJpdHBuNmF5SEFvRHo2dmVxcjNqVDBPaTF0TW5wM1pBM3owVFlFYVVGZVdDREZvM2VnQzh2cVdmN3hwUzVxQnM0MnBlamFWdm5aNG05YWpBRmhrdg?oc=5",
+            "title": "Bitcoin Price: Powell Just Spoke and the Jobs Report Drops April 3 — Here’s What Could Finally Move BTC - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxPLW10a2tpZzZMN2dLdGJacWpyMEk0UFE5bl9qdjJXR0JzX0RMUlN6ZFRRR3N5NGpiNFl5V3FVelBiWVV6OWx4R1ZKajdhUmx3bDliNjl5NFk3ekx0V0xWZ0JhdVNWby1JOHR6eDdZSTNzd0V4bkMyQ2tYcUEzcmNQU0k2ZnZNMkJfNVJrLUxocl9GMl9CTWJGc1hsdGQ?oc=5",
             "source": "Yahoo Finance",
-            "date": "Wed, 01 Ap",
+            "date": "Tue, 31 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
@@ -6381,9 +6341,9 @@
             "keywords": [
               "Bitcoin",
               "Price",
-              "Prediction",
-              "Miners",
-              "Spend"
+              "Powell",
+              "Just",
+              "Spoke"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6407,28 +6367,9 @@
             "factuality": "unknown"
           },
           {
-            "title": "What Is a Strategic Bitcoin Reserve? - Bitcoin Foundation",
-            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQZnRfWGpWNDgzX2RzR2M1ZHhVenprTkVDYWdrZDlLUEs0cVRtSFNXb0pMTEZoclo4YzRPT0x5YUZJSFl3emp4RGhXRE9aejZ6dmpkX2lxZlRjSEU2akxWdFFVMVd0ejAxSWdsbzBrV1lYekxhc040MHFlcHJfNVhCNFhvSUc3dw?oc=5",
+            "title": "Bitcoin Miners Riot and MARA Sell BTC Amid Energy Price Spike - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPaTJYdzFKZU9INjJFOS1Rak01Y2xWbWpsejRDdHY4MEJTRnM5dWxHNUp4TnZQZnpzMzhCVGxyZkFrSGZSSXl3Y25HMExYdzN1OTlFWXAtam1lS3pmSmFtQlJBd0d0SE9MS1M2MFNHdV9MRGM1WHpLdjFGV051MHhVZENrWQ?oc=5",
             "source": "Bitcoin Foundation",
-            "date": "Sun, 05 Ap",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "What",
-              "Strategic",
-              "Reserve",
-              "Foundation"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Price: BTC Just Had Its First Green Month Since September — Can April Build on the Momentum? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxNeFI2cUtZR0dmNXdrWnVBdmpfam9ESmpKR3ZRNVk0RTN6a29VSFNjdU5sZWtlb29vSUpLaE1YVzczZEZPN1dkUHVPMkVvazMxVWhQR2JTY1FxcGJjUnMyOW5nTnVwbEZhWnBRbGprYXpaeHFDdHhEN09IOXJON00xcjRWeHFrOWJ1RjBfYmRxSlgwZjlxbWc?oc=5",
-            "source": "Yahoo Finance",
             "date": "Fri, 03 Ap",
             "language": "en",
             "tone": 0.0,
@@ -6436,10 +6377,48 @@
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
+              "Miners",
+              "Riot",
+              "Sell",
+              "Amid"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Prediction as Miners Spend $80,000 to Produce One Bitcoin - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxOWElnTmpZeXh0QTJycDV2V2w5QS1qTmltOFZYVzBocDh2ejQ2N2ZGcjJIb1gwNVBMLTUyNzBpNDdmMjUzSjNLMXFhUkpXRUIxeDJpdHBuNmF5SEFvRHo2dmVxcjNqVDBPaTF0TW5wM1pBM3owVFlFYVVGZVdDREZvM2VnQzh2cVdmN3hwUzVxQnM0MnBlamFWdm5aNG05YWpBRmhrdg?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Wed, 01 Ap",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
               "Price",
-              "Just",
-              "First",
-              "Green"
+              "Prediction",
+              "Miners",
+              "Spend"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "What ending the Iran war would mean for Bitcoin’s price - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOYzJXQ25NSkprSXZ4eGJEWE55Sk83d01qNFBGZFJmb05QTnRFdGUwUlV1XzE2Q0tTNmVMbmwtbFdpTnNkWTJvOGNRMjY2Qk1uRm1HTVhhakM2YmI0Qzl0UFRKamtMY01DM1cyXzBzSEp6QUh2M3JZcE1ETEcxTTVFemd6WTJMSnE3N256ZW4tcnZHWU5EeFNQNDBR?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Wed, 01 Ap",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "What",
+              "Iran",
+              "Bitcoin",
+              "Yahoo",
+              "Finance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6464,8 +6443,8 @@
             "factuality": "unknown"
           },
           {
-            "title": "Cathie Wood has brutal response to 50% Bitcoin crash - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOdlBsRm9hX3dHeml5bzRKLWMtMWRxd2NmWDNjSnBpaXFwck1tamZ3dk0wSDctYlB5djlHX180ZTNHM0lhc1dmTVBrV19vc2drcV82cDV6S1IxaFhzc19FSUYzUG5FYlBjYWxiOXNmTk9HOXM1UVF6ekU3ZUVfNXdzajJHaHp5S2lxd3JmNF80RzZ5alZyRDVJaEtLMA?oc=5",
+            "title": "Bitcoin Price: BTC Just Had Its First Green Month Since September — Can April Build on the Momentum? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxNeFI2cUtZR0dmNXdrWnVBdmpfam9ESmpKR3ZRNVk0RTN6a29VSFNjdU5sZWtlb29vSUpLaE1YVzczZEZPN1dkUHVPMkVvazMxVWhQR2JTY1FxcGJjUnMyOW5nTnVwbEZhWnBRbGprYXpaeHFDdHhEN09IOXJON00xcjRWeHFrOWJ1RjBfYmRxSlgwZjlxbWc?oc=5",
             "source": "Yahoo Finance",
             "date": "Fri, 03 Ap",
             "language": "en",
@@ -6473,30 +6452,102 @@
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Cathie",
-              "Wood",
               "Bitcoin",
-              "Yahoo",
-              "Finance"
+              "Price",
+              "Just",
+              "First",
+              "Green"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "A Repeating Bitcoin Price Drop Pattern Just Started Its Third Act - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxOMDZYWVoydDhuUFBxeXVHMGJ2YldUa1RjSWd6YlBmazRJQ0dBRERNWEx1S0pVMWJkdTRwcTVMLWZ3Z2djRlVubVA5ajZ1MjRFdGZqYW5FVzAybzZuQmFPQ2tuN053QUZNZ3hEbWxCQjI5ZDlBLTE2Y2V0cEZ4WWs3VHhiOEN6TnFFN1dENEt2SkVqNUt4Q2ZVd3BYMGQ5YnlOWklz?oc=5",
+            "title": "Bitcoin Price Prediction: What To Expect From BTC In April 2026 - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxPVXlQMUNab3ZCMTltX0Z6ZlByNWdCblhnZG9YTXNSQ05VeXNZT01IVlk1a3d4alpkeG02RURWeVBtbHVQWmplR190NkxZSWNDQmtmR29oZnpHUVRhd29UTlV1ZlFkTTN6Zm1nSEF2TFFZYzRuTEhvQ21NOVhDRmVDOU5lWmdMU00wWkEwMUpRbHBMZVV6VDNQTl96ZkdzWnZkUXc?oc=5",
             "source": "Yahoo Finance",
-            "date": "Fri, 03 Ap",
+            "date": "Mon, 30 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Repeating",
               "Bitcoin",
               "Price",
-              "Drop",
-              "Pattern"
+              "Prediction",
+              "What",
+              "Expect"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Prediction: Can Bitcoin Reach $1,000,000 by 2025? - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxNUmhZMEJEVDBCM2wxR1hFWFJyeEFlODVIamFNSTNKNWR6bWxycVNZSFhsR0FTSXQ5U2RRbnB0QlVFRzRadU9nQVZPdnI2ZHJpUXQ1MG5ROXBqdzdjdkQyZnRTYkxCek5uUV9jZjBHY0psVDFITlYwX05YN2xaeHBIbHhPUEE?oc=5",
+            "source": "Forbes",
+            "date": "Wed, 01 Ap",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Prediction",
+              "Reach",
+              "Forbes"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Trump Just Signaled Military Escalation Against Iran and Bitcoin Price Dropped 6% in Hours: Is $60,000 Next? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPcUZYNm1rblVvODdTbkxGbzNwSGFEVWV3ZTU4SlJFcnNmWWh6UlJxM1pod0Z0UG9tVmY1ZzhYNjVydllQdVpQbG1WVzEwdFZxWUFadW44TTRMbHVqNlRYZFlIaXpCb2kyRldJcGNvOHFLRlFjVzFfTXZiQVBxZWRDNlNHT0JiaUthazgxNTRqSV9GeWpNT0V4bktzZFlkbGQyRG1BeFh3OA?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 02 Ap",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Trump",
+              "Just",
+              "Signaled",
+              "Military",
+              "Escalation"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price analysis: BTC has never had a seven-month losing steak, but that could change - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPWXBNNmZiSXR2cmRMcERQanA2TzA2U2VlYkNuUm9ZbVlDbWk3SHJ3WWEyOW9mSE4yXy0wZGRCV0xycnlfMHlQb2FzODhmTFpqRkNCY09KN2RIelA1TVlzcUJvTlR5U3VjdnZRSEhNWTlkZFNYYmlMeEtiWjhyc0lRYXU2U2NDWkg5U18zODRQR3BCQmM3SFY2VlJsLThQTDJjYVRuVGh1RGhSUU9JRU5jdkU3eF9kNW1oaVhr?oc=5",
+            "source": "CoinDesk",
+            "date": "Tue, 31 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "What Is a Strategic Bitcoin Reserve? - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQZnRfWGpWNDgzX2RzR2M1ZHhVenprTkVDYWdrZDlLUEs0cVRtSFNXb0pMTEZoclo4YzRPT0x5YUZJSFl3emp4RGhXRE9aejZ6dmpkX2lxZlRjSEU2akxWdFFVMVd0ejAxSWdsbzBrV1lYekxhc040MHFlcHJfNVhCNFhvSUc3dw?oc=5",
+            "source": "Bitcoin Foundation",
+            "date": "Sun, 05 Ap",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "What",
+              "Strategic",
+              "Reserve",
+              "Foundation"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6517,16 +6568,20 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price analysis: BTC has never had a seven-month losing steak, but that could change - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPWXBNNmZiSXR2cmRMcERQanA2TzA2U2VlYkNuUm9ZbVlDbWk3SHJ3WWEyOW9mSE4yXy0wZGRCV0xycnlfMHlQb2FzODhmTFpqRkNCY09KN2RIelA1TVlzcUJvTlR5U3VjdnZRSEhNWTlkZFNYYmlMeEtiWjhyc0lRYXU2U2NDWkg5U18zODRQR3BCQmM3SFY2VlJsLThQTDJjYVRuVGh1RGhSUU9JRU5jdkU3eF9kNW1oaVhr?oc=5",
-            "source": "CoinDesk",
-            "date": "Tue, 31 Ma",
+            "title": "Trump Brothers' American Bitcoin Hits BTC Milestone as Stock Falls to Lowest Price Since IPO - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxNd0FNQTc5SXZyYmFiUG90U29EdXlFWlp6NTJJRXlTVTlQaFA2dEJyUUQ2VzIwdW5VMjY2SDBiRzBRZ2ZyQjNid3l2eHFaSzF1aVNOcmI5M1B0amJpYmVkWDMtSDhMSC1GV2V6Z0JjTGw3UkNwLVNKTGdQY3FhbnZTV21UWDFjdWRyQmdqWVU4elRuaWlZbV8zaEllc1ZTOUQ0VHNv?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 30 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Bitcoin"
+              "Trump",
+              "Brothers",
+              "American",
+              "Bitcoin",
+              "Hits"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6570,6 +6625,25 @@
             "factuality": "unknown"
           },
           {
+            "title": "After a Tough Quarter for Crypto and Bitcoin, Is a Market 'Bottom' Finally in Sight? - Investopedia",
+            "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxOWUFEeE1qREduRUxzbktBWC1XZ21LSGpncng5b05jRlVlYm5NbWVvR1N5aUJfb1RhZ3pNaDcyOEtKb3JSSVlBYXduWTU3TVl2emo1cUV0UkxJU0FTcFN6NXZwd3Z2Yzd3OFdWSElOaEVuR0hJWlI0RTMxc1N0bzVqQlJlOUZCR0U0dzlYdWFrRTdzZlpQakVIVVBKX3pRX1Y4dlBMeG5uc1IxckZSZ3hxVUpMM0FhTkp4WThobE12V0VWQkltdkJvLQ?oc=5",
+            "source": "Investopedia",
+            "date": "Tue, 31 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "After",
+              "Tough",
+              "Quarter",
+              "Crypto",
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Crypto selloff deepens with $400 million liquidations and rising short interest - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMi0AFBVV95cUxQakF2dzZ5VWoydVY1aHBBYlpQNEc1MlhaN0ZYWmk0NnctN1dRQk44VkdTbzc1RWtyUXJJNmpUemdEY3E2dmpyWnBEMXRBZEdrY1FPRnZwQkYyOWVyRzhNVzAyQzVoLTJpeTZYZ3dkWHh1UkxqM042bkNWTEh6TkhQYTFZNmNnVjEySlZLWHY5R1ZjRi1vY0pIMTV5cF9QX0dCb0pVeWY2WG8tbC05WW1zRVpGcUtLdkNhWDhKdk9MVTNvbnlQWG9Hc3FMUHIweVpN?oc=5",
             "source": "CoinDesk",
@@ -6580,37 +6654,6 @@
             "relevance": 0.2,
             "keywords": [
               "Crypto"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin heads into holiday weekend exposed as ETF and CME flows go offline - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxPeF9IYjdDNVV6UjVmczNwWUVUQlVtTnNPTVNJZ3Y0dEE3UEpkbUdWR2wtaENWNTA0ZlU5TWtKUXpWLUFhZ0RSLVJ3X0FNRlZCVVpXTUlhazFrUzNKb0YydE1ZNE5LTmhZU3N5WGMtbjlDTWtrWHlVZ3lPZmdKX2psd0dnT1pWSUNsbmpZVzdFcHRsQTV4a2sxUFAxSDYxQ3dkRWx0bFlXZkljSVprRHNkLVBDSEFadVR3UGc?oc=5",
-            "source": "CoinDesk",
-            "date": "Thu, 02 Ap",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin whales are selling the most aggressively on record while ETFs and Strategy keep buying - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxQTjhXd0tnM01EckZqYlU3VGpmeXIwWHpwc21FVkNyYXZ1ci1kV2xsRmtqQzNZUkhpbWhUTVFITF9razhpWF9laFA4UDJqVHlFRXZGRmp5M0hLR3Q4dEt2TnVFb3ItSWpmaWo2aU9oQUJaX0RySVJuN1h6X2ZxQlZOb29ta2tKVHdUNUdydmZXemluMkxYbXIxcDE2dGlGQmNBVUtpZVZNUEF4VEoteVF4TVlVMWwtU2pKU04zZWV2eUEtNExqbjMxczBOTQ?oc=5",
-            "source": "CoinDesk",
-            "date": "Sat, 04 Ap",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Strategy"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6631,37 +6674,53 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price prediction 2030: 5-year bitcoin forecast - Caledonian Record",
-            "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxNS0FxRlc3NTBFd2c1elZubUMwZFd4N1hRUWFEOFdJbEhIeDMwMm1kMzVYcS14Ui1PZ2dib0dKTmI1VzhjOTRwS2hJQlVLNmF1TTNZeUN2R2ZPakh1NlJOTzBlR1I4MFEteDlzbU0wME4ydXdjVGhQOXdLYS1YQlh6WjRQT25WWXRobXpMTGtQTy1nX1dHSC1DcjZXREpYYUhNMFB5UFJoRHZKRmo1TVFXY0k3bXpRZFo1bEtJb0FIZm9fTWNvZkVUNmpGX3Axb0R2ZGc?oc=5",
-            "source": "Caledonian Record",
+            "title": "David Bailey's Nakamoto Unloads 5% of Bitcoin Holdings - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTE5uOXl2WV9pY0M4STVha09RTGUwNTlLbXd3eWNRR0pZNTZubkQ4NGF5d2dydzU1QWVYYXQxcm1UQkdHQWp6a2E4R1VoS19KQW05NVRVbmdPbGQwUUFBNU5TRm44N1lmSGlMMGlGZVRsMA?oc=5",
+            "source": "Bitcoin Foundation",
+            "date": "Tue, 31 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "David",
+              "Bailey",
+              "Nakamoto",
+              "Unloads"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin heads into holiday weekend exposed as ETF and CME flows go offline - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxPeF9IYjdDNVV6UjVmczNwWUVUQlVtTnNPTVNJZ3Y0dEE3UEpkbUdWR2wtaENWNTA0ZlU5TWtKUXpWLUFhZ0RSLVJ3X0FNRlZCVVpXTUlhazFrUzNKb0YydE1ZNE5LTmhZU3N5WGMtbjlDTWtrWHlVZ3lPZmdKX2psd0dnT1pWSUNsbmpZVzdFcHRsQTV4a2sxUFAxSDYxQ3dkRWx0bFlXZkljSVprRHNkLVBDSEFadVR3UGc?oc=5",
+            "source": "CoinDesk",
             "date": "Thu, 02 Ap",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Bitcoin",
-              "Caledonian",
-              "Record"
+              "Bitcoin"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Flashes 'Warning Sign' With Nearly Half of BTC Supply Sitting at a Loss: Report - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxOQnYwVmhTMjhDRkg1dDhHMWxhX3lXSi1Kemx4b0ZFcml0bGIwVGc2eHVOUWVLSkVyM3ZuaFgwSTFqMDJ1M3djX25nQnBSWUJidkFqZm5yTDZNVm1OWW1Ub3JJbGtPQ05aOEpiQ05tSllMY1JKa19wX2RhNGhycGNycHRmUl9RQ0VUcGxac2NObWFfcHA4LW4zN1R6LWVRenphMGc?oc=5",
+            "title": "Bitcoin rebound soon? Four factors fuel the price right now - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOcklvaFRySUZRaFMzRl92X0tyMWZtXzk4bTUzQ0VBbFlqeXpXWUYwOXFzTVFrTHZjM0wxcE9wU3FEQlhMdzNZYlo4bUJIclZWUG81RTFWay1EUnNvNmp6ckdsM3FRdjQ1MEdiUlMxaWFtanR5TWE2UEF2WXlleTdMRmJkTmZ2WVItcEJZX29FTV9FV2tZd1ctM3g4UThULTg?oc=5",
             "source": "Yahoo Finance",
-            "date": "Mon, 30 Ma",
+            "date": "Tue, 31 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Flashes",
-              "Warning",
-              "Sign",
-              "With"
+              "Four",
+              "Yahoo",
+              "Finance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6686,16 +6745,39 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price models point to $40K–$50K as potential BTC bottom - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxNQmZaZVI4eFFfUkdRY0VETWtjd0s1bU5FQjF5bU5zVkdlakF0aHlGcFIxV0NRM2xFS3JTQURFQ2FvcGtMTTA1RkF3SkcyZDB0VEhPWE9ZVTZuZ3BqYmFFNEUxUWJ0SWk0Z3JQaU16bkM2cUNwS0FjVHlhdUNaV2l1VWtsQkRCS0V0aHFPYlprNG8xWGJ2U0F0R2dTNThwaU9WZWprZERPN1BSdE45Qkc4MWVjVFp1SWRJSnl1Zm9CdnFKdm8?oc=5",
-            "source": "TradingView",
+            "title": "Cathie Wood has brutal response to 50% Bitcoin crash - Yahoo Finance Singapore",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQWkhwRUpjZkhEVEJkdU16eFRJTFNWamh0NXIzQWJzTEF5TUNaWGNvQUFsRlJIQUp5MlNjX2RJSE1HYXYtUnBMOHlPblJPZUZXcU95VFlyZFRPd25CMVNOWUhPV3pkVUxLVlY1VkU5Yzl6aXRLYUFoamZMZGx4U1ZKZ0RnY0RkQQ?oc=5",
+            "source": "Yahoo Finance Singapore",
+            "date": "Fri, 03 Ap",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Cathie",
+              "Wood",
+              "Bitcoin",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin's Price Bottom Is $46,000, According To 'Old School' Models — Are They Accurate? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxNRm1Ma29RMGNGdnFNX2ZQU2hWX3RHeWtNZ3RNaHB6MG03NEpwLUtVU1pvR2VSaVdBc1RhZlpuQTc0cVc1d24zU29tWjdzWVNJck00bVZORmhnZUVyb2h5MHc2cEktQjEwM3E5bFVHLVh3MHB1SnF6clZ0SUdqSG9pSVFKQm8zenVFTzBkTFBVOTFpNy1hd1Zvbg?oc=5",
+            "source": "Yahoo Finance",
             "date": "Mon, 30 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Bitcoin"
+              "Bitcoin",
+              "Price",
+              "Bottom",
+              "According",
+              "School"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6716,90 +6798,16 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price: Powell Just Spoke and the Jobs Report Drops April 3 — Here's What Could Finally Move BTC - 24/7 Wall St.",
-            "url": "https://news.google.com/rss/articles/CBMi2wFBVV95cUxQdjhSS1V1d1MwRlp6SnNsdmFRQkdGek9hTmpJZXZxT2JILUNINk5zQk1telRnbDZKUUsxVlpmcENlVElKb0YxVE5heTdDMWM1N1JtUVUzZm9tU2xwNUlTYkJiU0pXQWJqeUtMZ2ZUMkhCLXBtMFE0WFVXSE9SaUZrREpFQUxpSm84REUyV0tYM1dmelVFMllDendQNEdvSkpkU1lTamVXZzdTTGpQekhwcUVST1FzSmJkQU91S1hTd1VDblpRYWhpWVVaV0p2V0lpN09LVXk3Q09NQVk?oc=5",
-            "source": "24/7 Wall St.",
-            "date": "Tue, 31 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Price",
-              "Powell",
-              "Just",
-              "Spoke"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "'Number Goes Up'—Morgan Stanley BTC ETF Has Bulls Targeting $200K - Forbes",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxQS1Y1b1lyNjZRa1ZFRmZNVFEtbS1BU2lHY2IwS3FLTHpkUmJET3NNeWNoR21idTQzVE5vZUViOWViOWFMelc5YnNzc1Y1MURxY0xsN2ZIUURfSVBoQ3lWeVpMRW1wRkc0UEpfRFAyOHJxRFI3SmJhSTZBOVhERktETDlIVjI5Y005Q1haN1BNOEh3UnpuaGlDZ2ZHc1FrODQ3c0hSa1ZEc1BhWUtobVpZMVdEUHA4QWZfRnc?oc=5",
-            "source": "Forbes",
+            "title": "Bitcoin price models point to $40K–$50K as potential BTC bottom - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxNQmZaZVI4eFFfUkdRY0VETWtjd0s1bU5FQjF5bU5zVkdlakF0aHlGcFIxV0NRM2xFS3JTQURFQ2FvcGtMTTA1RkF3SkcyZDB0VEhPWE9ZVTZuZ3BqYmFFNEUxUWJ0SWk0Z3JQaU16bkM2cUNwS0FjVHlhdUNaV2l1VWtsQkRCS0V0aHFPYlprNG8xWGJ2U0F0R2dTNThwaU9WZWprZERPN1BSdE45Qkc4MWVjVFp1SWRJSnl1Zm9CdnFKdm8?oc=5",
+            "source": "TradingView",
             "date": "Mon, 30 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Number",
-              "Goes",
-              "Morgan",
-              "Stanley",
-              "Bulls"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "Bitcoin whale selling cools as $60K becomes the focus for BTC price - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxPcmw2SmJndjc5WDlqVXRJRmU4REdCUExMczFHZkpPT21tQk50X2NNdTNUdTVZUF9aUEFCWDI4VDVIeTFoWDhMUmRONl8zdUFvTjZVZlRlSkc2QUE0RGd6eXZPZWxCYmwxc2t0QVlYZUVGMVNXeXlLSWRzeE5VLV9HaW95WDI0ZExoeWdYZ2ZtdnJybTdmdkJiYU5rUjBWLV9DTFhpZlU3eFRhYnRlRWszOHJlUUhNZEFyc2tEbk5aWTBvdjliVFRxUjNn?oc=5",
-            "source": "TradingView",
-            "date": "Tue, 31 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
               "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Price Recovery Slips, Sellers Tighten Grip on Market - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxOeGd5M2VJc1BpWHR2TlRIY0oySThlV0FtNXl4RGZyd3J5dDl6NGNpa2pveVFwYmF0QlAzOE1EWVRLRkt4eXRWUEd5NmNnNjc0Uk91V1FUazFmU2hDVDl3azdPenJZc1VPSTcyQUdPcUh2cUt5S0NLOWxUeS11Qnhqc3hmVHZRNWxSLVljQkkwdXZDR1dKMDQ2X3BVVGxDOVVaSDlZNDl6XzJJT1p3RFdIYnQ5QVpodFJR?oc=5",
-            "source": "TradingView",
-            "date": "Wed, 01 Ap",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Price",
-              "Recovery",
-              "Slips",
-              "Sellers"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin price news: BTC climbs off of worst levels on Strait of Hormuz hopes - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxOc18xY3BXVlN3U0FLVUUzVHhJMzhjRG80WE9XUEU0ZEhJdm5UYVRaTl80X1BRalZYZUZ1d1hIOE85ODRKYlczNVNqenFnRnBrRHZLNGJoS19NMzNuQ0xPQ0NGWlVCVnkxLUdoNF92SG40RXhjUHhBZHF4Vm5Ib1l3VVZ4el9hS2I0NWpZUXNXRDdLTVBLM3BOR3lCa1AwaGpSZUoxbGJtSURLRV9ReVBQR3NUdTdsdTlmT1ZESkJ5TlJJeDdTbS1wcDMtWVdrMUJXRGEzVGFB?oc=5",
-            "source": "CoinDesk",
-            "date": "Thu, 02 Ap",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Strait",
-              "Hormuz"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6816,7 +6824,7 @@
         "representative_titles": [
           "States Weigh Pros and Cons of Investing in Cryptocurrency - The Pew Charitable Trusts",
           "Q2 2026 Bitcoin Outlook: More Pain to Come Before the Cycle Bottoms? - FOREX.com",
-          "7 Best Cryptocurrency ETFs to Buy - US News Money"
+          "7 Best Cryptocurrency ETFs to Buy - U.S. News - Money"
         ],
         "narrative_summary": "",
         "articles": [
@@ -6860,9 +6868,9 @@
             "factuality": "unknown"
           },
           {
-            "title": "7 Best Cryptocurrency ETFs to Buy - US News Money",
+            "title": "7 Best Cryptocurrency ETFs to Buy - U.S. News - Money",
             "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxONGotQ2NadUQwc2FCQkdaMWt4UFdHT0d6TjZpQ20ydTNkem1pWDQzb0NiOTM2UGJfUFFZR3QzVHFYWG5hTmk3TnVDTFFGYVpZUkExYzlKZ0o4QXBaUUdYdHdDVWNnNXQ4UHhKSXRJMDZMS0xBeFpCbW5kUThqZkZEYQ?oc=5",
-            "source": "US News Money",
+            "source": "U.S. News - Money",
             "date": "Tue, 31 Ma",
             "language": "en",
             "tone": 0.0,
@@ -6881,53 +6889,51 @@
       },
       {
         "cluster_id": 2,
-        "label": "Risk Premium",
+        "label": "Commodities",
         "article_count": 2,
         "avg_sentiment": 0.0,
-        "dominant_category": "risk_premium",
+        "dominant_category": "commodities",
         "bias_distribution": {},
         "representative_titles": [
-          "Bitcoin Price Rises as War Escalates. Why Cryptos Are Havens Once Again. - Barron's",
-          "How Low Can Bitcoin Go? After Worst Quarter Since 2018, BTC Price Predictions Remain Bearish - Finance Magnates"
+          "Goldman Sachs Says Bitcoin Bottom Is Near. Is It Time to Buy? - Yahoo Finance",
+          "Bitcoin Price: The Oil Reserves Keeping Markets Alive Are About to Run Out — Why BTC Could Be in Trouble - Yahoo Finance"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Bitcoin Price Rises as War Escalates. Why Cryptos Are Havens Once Again. - Barron's",
-            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxQeHQzZUxPVlFlV0xSZTlESUY4YTB0Z3NZaGJpRVdQeXd1Nk1ZbUQyZ0M3ZGJ6S1VoR0hzNjYySXc2TUJHQlplQUxfb2o4YWJaOHpMUGRDUzJGdy1HZWl4NlhxWTYta0E1REFnZVpmNEZxRlNOeExfUU82VFNSankxTURB?oc=5",
-            "source": "Barron's",
-            "date": "Mon, 30 Ma",
+            "title": "Goldman Sachs Says Bitcoin Bottom Is Near. Is It Time to Buy? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxNOE5BV09aT1FJcTRudkREWDlrTXhjVS0zU2RFMXcxQ3NFUzJqa0huU1U1a00tSmJkZFUwdFpnbXVzSXZUT2tSOThYZm16UlByS08xRm53S2stRmQ2YS0zY09MVGJIa2k0TGlpMmdVMllzQ2RMcVpCVXBoelllRlZheDc2SmpuM2lteFhrVEh1enowWDllbU1RTUhlTnF0bkU?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Sat, 04 Ap",
             "language": "en",
             "tone": 0.0,
-            "category": "risk_premium",
-            "relevance": 0.5,
+            "category": "commodities",
+            "relevance": 0.2,
             "keywords": [
-              "TES",
+              "Goldman",
+              "Sachs",
+              "Says",
               "Bitcoin",
-              "Price",
-              "Rises",
-              "Escalates",
-              "Cryptos"
+              "Bottom"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "How Low Can Bitcoin Go? After Worst Quarter Since 2018, BTC Price Predictions Remain Bearish - Finance Magnates",
-            "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxNMlhrcVAtLWlGbk1MODl5MVd6eDBNOFFzcGpVa2xXTHVCcFIyTzhIckVGclBseDRybFZ2Vm5VVWdOOEJqcXoxc3ZXSjJoTGc4enVBQmV4UUxQaTFMNkxOTWU0cjZmd2JyNFZ6WDE0Ul9JdjVaNkhIWFlBMTZDMGdBQXNIeGxkUEJtQzFaV2xhRjExdXpteC1YU3VfVm8tXzBGU0pxOUZkQnVsOXh1LXhIZnNDRDFYV0d4cGhsaVhXcTBkRVl1NDIwZUNNaw?oc=5",
-            "source": "Finance Magnates",
-            "date": "Tue, 31 Ma",
+            "title": "Bitcoin Price: The Oil Reserves Keeping Markets Alive Are About to Run Out — Why BTC Could Be in Trouble - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNMVl5czA0Q0k3ZXhfdDQ5Q2lLWFFyN250R3V5Qkk1SXJaWDcyUTZNNEw2aE5jUjlnLWdvV3BNRHBZazF3X2FPMzVaMkR5RlI5LW1MdVJnVm1SMFEwUjgza1BXa2hpSWxQaHNKZ2R3WnZKTURNNFVOeTRrSmlJYnNqUGU1OUZsVnVxRGVGMWw3S3dYZUZGbFpRcWZkMW13ZlVD?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Sat, 04 Ap",
             "language": "en",
             "tone": 0.0,
-            "category": "risk_premium",
-            "relevance": 0.5,
+            "category": "commodities",
+            "relevance": 0.2,
             "keywords": [
-              "TES",
               "Bitcoin",
-              "After",
-              "Worst",
-              "Quarter",
-              "Since"
+              "Price",
+              "Reserves",
+              "Keeping",
+              "Markets"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -7013,21 +7019,20 @@
         "factuality": "unknown"
       },
       {
-        "title": "How Low Can Bitcoin Go? After Worst Quarter Since 2018, BTC Price Predictions Remain Bearish - Finance Magnates",
-        "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxNMlhrcVAtLWlGbk1MODl5MVd6eDBNOFFzcGpVa2xXTHVCcFIyTzhIckVGclBseDRybFZ2Vm5VVWdOOEJqcXoxc3ZXSjJoTGc4enVBQmV4UUxQaTFMNkxOTWU0cjZmd2JyNFZ6WDE0Ul9JdjVaNkhIWFlBMTZDMGdBQXNIeGxkUEJtQzFaV2xhRjExdXpteC1YU3VfVm8tXzBGU0pxOUZkQnVsOXh1LXhIZnNDRDFYV0d4cGhsaVhXcTBkRVl1NDIwZUNNaw?oc=5",
-        "source": "Finance Magnates",
+        "title": "Bitcoin Price Flashes Warning as Nearly Half of Supply Sits at a Loss - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxNOGVaTklMZE5zNkpJenlRTHczNWJpbmtPdHhUT2x3SXlxdHJqSFFoeEZjd2NDankxQUV6UFgyTklSMjBxTE5semJxb21malMyNWRJNXY2Tm5SMVpPbGdzTUpSWENPYUNmOWVRU0RtcVlKZTUzTF95enNQNWI2dFFWU0daWVMwQkdZZnkxcXRNMUdxckRzOW5UMExMdDhpWEhvR0tF?oc=5",
+        "source": "Yahoo Finance",
         "date": "Tue, 31 Ma",
         "language": "en",
         "tone": 0.0,
-        "category": "risk_premium",
-        "relevance": 0.5,
+        "category": "general",
+        "relevance": 0.2,
         "keywords": [
-          "TES",
           "Bitcoin",
-          "After",
-          "Worst",
-          "Quarter",
-          "Since"
+          "Price",
+          "Flashes",
+          "Warning",
+          "Nearly"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -7052,25 +7057,6 @@
         "factuality": "unknown"
       },
       {
-        "title": "​​Bitcoin Price Outlook: ETF Outflows, Quantum Concerns Keep BTC Under Pressure​ - ig.com",
-        "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPeEhSbkpGNldyYlp5MDJIWGNLWEk0RmNBcl81TnVRd0VRTVVQcDBLb2dEcnBhRlF6TUlvcVRVdnR1Q1dxSk42d2tPcXdGM2UtTlpEc1JOZGhtOHIzR1QyZXJ0dHc5MlRDaGxuZkFDSDY0MUYtUGZuYzdGc0hpM1hLaUtKVXdXdGZLM1BoYmFjQkVSYmQtRms4Z3hVREJkcGZLSzdJNVNLX08wSXVFMXktaUNLZWk?oc=5",
-        "source": "ig.com",
-        "date": "Thu, 02 Ap",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Bitcoin",
-          "Price",
-          "Outlook",
-          "Outflows",
-          "Quantum"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "Q2 2026 Bitcoin Outlook: More Pain to Come Before the Cycle Bottoms? - FOREX.com",
         "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxON1MyaG04NGlHUG1PaVpBSklfNGJSdkt4cjlvN3RvZnFLcEwzLWpRR0lPcWxfUmFQNnkyVnZHTWxMY2ZzWlZpcmFlTTlwYW1KUkN5UW1GMGU3Z2NGaGlIaWRFNWI1ZzJXOUFETXZLTVZieXItdkZHN3JuWUN4NXo0UjFiNGphcm5wRXIzZ205aDFXUFBBS1Q5ZWZEQWQ3YlN6RVJ1WUlQS3VySWVCdVJ6Qk41Z9IBvwFBVV95cUxPWGZkSEt2S3F5TVhLc2RMNG1RMWdjd0tBdHAtcFRoSXBYTGRUX0x2U0lvbjllVnI4X1VHa3AwUWd4aUs5VjZTeUVPWG1YYzU5VHByZ3BBR3R4WjBvdHA2Sld4Wjd2b0ZnaHFYMlIxRWFkdDFZa3BWN29GaVA0UVltbDJlU3JSb1pTajdGcHJsMDZUSnZCQTlTRHBYMDVHZUdHS2tseVpaQnFfTmdzOU9ZTzdRSm1MeVlTbjNkc0c2OA?oc=5",
         "source": "FOREX.com",
@@ -7090,29 +7076,10 @@
         "factuality": "unknown"
       },
       {
-        "title": "After a Tough Quarter for Crypto and Bitcoin, Is a Market 'Bottom' Finally in Sight? - Investopedia",
-        "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxOWUFEeE1qREduRUxzbktBWC1XZ21LSGpncng5b05jRlVlYm5NbWVvR1N5aUJfb1RhZ3pNaDcyOEtKb3JSSVlBYXduWTU3TVl2emo1cUV0UkxJU0FTcFN6NXZwd3Z2Yzd3OFdWSElOaEVuR0hJWlI0RTMxc1N0bzVqQlJlOUZCR0U0dzlYdWFrRTdzZlpQakVIVVBKX3pRX1Y4dlBMeG5uc1IxckZSZ3hxVUpMM0FhTkp4WThobE12V0VWQkltdkJvLQ?oc=5",
-        "source": "Investopedia",
-        "date": "Tue, 31 Ma",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "After",
-          "Tough",
-          "Quarter",
-          "Crypto",
-          "Bitcoin"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Bitcoin Price Prediction: Can Bitcoin Reach $1,000,000 by 2025? - Forbes",
-        "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxNUmhZMEJEVDBCM2wxR1hFWFJyeEFlODVIamFNSTNKNWR6bWxycVNZSFhsR0FTSXQ5U2RRbnB0QlVFRzRadU9nQVZPdnI2ZHJpUXQ1MG5ROXBqdzdjdkQyZnRTYkxCek5uUV9jZjBHY0psVDFITlYwX05YN2xaeHBIbHhPUEE?oc=5",
-        "source": "Forbes",
-        "date": "Wed, 01 Ap",
+        "title": "​​Bitcoin Price Outlook: ETF Outflows, Quantum Concerns Keep BTC Under Pressure​ - ig.com",
+        "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPeEhSbkpGNldyYlp5MDJIWGNLWEk0RmNBcl81TnVRd0VRTVVQcDBLb2dEcnBhRlF6TUlvcVRVdnR1Q1dxSk42d2tPcXdGM2UtTlpEc1JOZGhtOHIzR1QyZXJ0dHc5MlRDaGxuZkFDSDY0MUYtUGZuYzdGc0hpM1hLaUtKVXdXdGZLM1BoYmFjQkVSYmQtRms4Z3hVREJkcGZLSzdJNVNLX08wSXVFMXktaUNLZWk?oc=5",
+        "source": "ig.com",
+        "date": "Thu, 02 Ap",
         "language": "en",
         "tone": 0.0,
         "category": "general",
@@ -7120,32 +7087,67 @@
         "keywords": [
           "Bitcoin",
           "Price",
-          "Prediction",
-          "Reach",
-          "Forbes"
+          "Outlook",
+          "Outflows",
+          "Quantum"
         ],
-        "bias_label": "center-right",
-        "factuality": "high"
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Goldman Sachs Says Bitcoin Bottom Is Near. Is It Time to Buy? - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxNOE5BV09aT1FJcTRudkREWDlrTXhjVS0zU2RFMXcxQ3NFUzJqa0huU1U1a00tSmJkZFUwdFpnbXVzSXZUT2tSOThYZm16UlByS08xRm53S2stRmQ2YS0zY09MVGJIa2k0TGlpMmdVMllzQ2RMcVpCVXBoelllRlZheDc2SmpuM2lteFhrVEh1enowWDllbU1RTUhlTnF0bkU?oc=5",
+        "source": "Yahoo Finance",
+        "date": "Sat, 04 Ap",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Goldman",
+          "Sachs",
+          "Says",
+          "Bitcoin",
+          "Bottom"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Current price of Bitcoin for April 3, 2026 - Fortune",
+        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE03QXp3NGlNbHVjN3lCT0p5YlBUQUpWU3NRLXVoWHlWTm1yT0xPcHRaRThsZnNVMGdJY1c4NGxGZ29zenllZkRVQ04wcE1ncDkyZUppM2dvUXM0QUVDb2tpSGVnUFI5N1k?oc=5",
+        "source": "Fortune",
+        "date": "Fri, 03 Ap",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Current",
+          "Bitcoin",
+          "April",
+          "Fortune"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
       }
     ],
     "source_diversity": {
       "The Pew Charitable Trusts": 1,
-      "CoinDesk": 8,
+      "CoinDesk": 6,
       "Barron's": 2,
-      "Finance Magnates": 1,
-      "Bitcoin Foundation": 3,
-      "ig.com": 1,
+      "Yahoo Finance": 13,
+      "Bitcoin Foundation": 5,
       "FOREX.com": 1,
-      "Investopedia": 1,
-      "Forbes": 2,
+      "ig.com": 1,
       "Fortune": 2,
-      "Yahoo Finance": 8,
-      "US News Money": 1,
+      "Forbes": 1,
+      "U.S. News - Money": 1,
       "Bitcoin Magazine": 1,
       "Texas Public Radio | TPR": 1,
-      "TradingView": 5,
-      "Caledonian Record": 1,
-      "24/7 Wall St.": 1
+      "Investopedia": 1,
+      "TradingView": 3,
+      "Yahoo Finance Singapore": 1
     }
   },
   "political_bias_analysis": {
@@ -7153,19 +7155,19 @@
       "left": 0,
       "center-left": 0,
       "center": 0,
-      "center-right": 2,
+      "center-right": 1,
       "right": 0,
-      "unknown": 38
+      "unknown": 39
     },
     "bias_diversity_score": 0.0,
     "factuality_distribution": {
-      "high": 2,
+      "high": 1,
       "mixed": 0,
       "low": 0,
-      "unknown": 38
+      "unknown": 39
     },
     "cluster_bias_assessments": [],
-    "flagged_articles": 2,
+    "flagged_articles": 1,
     "bias_narrative": "",
     "total_analyzed": 40
   },
@@ -7179,5 +7181,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-20T22:48:59.305086+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }

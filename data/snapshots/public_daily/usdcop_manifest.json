@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "asset_id": "usdcop",
+  "ticker": "COP=X",
+  "source": "yahoo_finance_public_adapter",
+  "retrieved_at": "2026-07-21T15:22:47.527801+00:00",
+  "start": "2020-01-01",
+  "end": "2026-07-21",
+  "rows": 1705,
+  "data_path": "data\\snapshots\\public_daily\\usdcop_daily.parquet",
+  "sha256": "545947a806fd2ca5496b0fae1e093803d4737ca6991a2d6936d2b1cbf9135eb4",
+  "availability_policy": "reconstructed_close_plus_conservative_lag",
+  "pit_vintage": false,
+  "promotion_eligible": false,
+  "reason": "Public adapter lacks historical provider revision vintages."
+}

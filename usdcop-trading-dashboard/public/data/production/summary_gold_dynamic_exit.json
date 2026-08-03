@@ -6,7 +6,7 @@
   "asset": "XAU/USD",
   "mode": "paper",
   "chart_symbol": "XAUUSD",
-  "n_trading_days": 134,
+  "n_trading_days": 144,
   "strategies": {
     "gold_dynamic_exit": {
       "final_equity": 10271.29,
@@ -18,7 +18,7 @@
       "profit_factor": null,
       "n_long": 7,
       "n_short": 0,
-      "trading_days": 134,
+      "trading_days": 144,
       "exit_reasons": {
         "trailing_stop": 3,
         "signal_off": 4
@@ -26,7 +26,7 @@
       "insufficient_trades": true
     },
     "buy_and_hold": {
-      "total_return_pct": -3.86
+      "total_return_pct": -7.11
     }
   },
   "n_trades": 7,

@@ -11,8 +11,12 @@ name: specs-gate
 on:
   pull_request:
     paths:
+      - '.obsidian/**'
       - '.claude/**'
+      - 'README.md'
+      - 'AGENTS.md'
       - 'CLAUDE.md'
+      - 'docs/**'
       - 'airflow/dags/**'
       - 'usdcop-trading-dashboard/app/**'
       - 'usdcop-trading-dashboard/lib/contracts/**'
@@ -22,7 +26,10 @@ on:
       - 'config/pipeline_ssot.yaml'
       - 'database/migrations/**'
       - 'config/assets/**'
+      - 'scripts/diagnostics/generate_doc_indexes.py'
       - 'scripts/diagnostics/generate_inventory.py'
+      - 'scripts/validation/check_knowledge_graph.py'
+      - 'scripts/validation/check_knowledge_links.py'
       - 'tests/regression/test_knowledge_*.py'
   push:
     branches: [main]
@@ -44,6 +51,9 @@ jobs:
       # Never call --write here; a knowledge gate that writes can launder drift.
       - name: Inventory is generated from source and in sync
         run: python scripts/diagnostics/generate_inventory.py --check
+
+      - name: Directory indexes are generated and in sync
+        run: python scripts/diagnostics/generate_doc_indexes.py --check
 
       - name: Every document is typed, anchored and current
         run: python -m pytest tests/regression/test_knowledge_frontmatter.py -q
@@ -68,6 +78,15 @@ jobs:
 
       - name: Markdown links resolve
         run: python scripts/validation/check_knowledge_links.py
+
+      - name: Markdown link parser contract holds
+        run: python -m pytest tests/regression/test_knowledge_links.py -q
+
+      - name: Governed knowledge is reachable and the Obsidian vault is scoped
+        run: python scripts/validation/check_knowledge_graph.py
+
+      - name: Knowledge graph validator contract holds
+        run: python -m pytest tests/regression/test_knowledge_graph.py -q
 
       # Promoted skills ship executable code, and `.claude` is in `norecursedirs`
       # so the default run never sees it. An explicit path still collects.

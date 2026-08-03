@@ -44,7 +44,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-19",
@@ -66,7 +66,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-20",
@@ -88,7 +88,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-21",
@@ -110,7 +110,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-22",
@@ -132,7 +132,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-23",
@@ -154,7 +154,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-24",
@@ -176,7 +176,7 @@
         "note": "Bitcoin · Trend-follower (B2) · régimen: markdown",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6186,45 +6186,46 @@
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": -0.005,
+    "avg_sentiment": 0.0,
     "source_breakdown": {
-      "Bitcoin Foundation": 6,
+      "Bitcoin Foundation": 7,
       "Fortune": 5,
-      "Yahoo Finance": 10,
-      "Bloomberg.com": 2,
+      "Yahoo Finance": 7,
+      "Bloomberg": 2,
+      "CoinDesk": 8,
       "Forbes": 1,
-      "CoinDesk": 6,
-      "TradingView": 4,
-      "ig.com": 1,
+      "TradingView": 3,
       "ThinkMarkets": 1,
-      "24/7 Wall St.": 2,
-      "Finance Magnates": 1,
-      "Investor's Business Daily": 1
+      "ig.com": 1,
+      "Finance Magnates": 2,
+      "Investor's Business Daily": 1,
+      "24/7 Wall St.": 1,
+      "Centre Daily Times": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
     "relevant_articles": 40,
-    "avg_sentiment": -0.005,
+    "avg_sentiment": 0.0,
     "sentiment_distribution": {
       "positive": 0,
-      "negative": 1,
-      "neutral": 39
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
         "cluster_id": 0,
         "label": "General",
-        "article_count": 38,
-        "avg_sentiment": -0.005,
+        "article_count": 36,
+        "avg_sentiment": 0.0,
         "dominant_category": "general",
         "bias_distribution": {},
         "representative_titles": [
           "Bitcoin Price Could Reach $255K This Year in Decay Channel Model - Bitcoin Foundation",
           "Current price of Bitcoin for May 20, 2026 - Fortune",
-          "Will Bitcoin Price Go Below $40,000? Five Reasons Benjamin Cowen Claims BTC Has Not Yet Hit Bottom - Yahoo Finance",
-          "Bitcoin Grows More Dependent on Saylor’s Buying Machine - Bloomberg.com",
-          "Current price of Bitcoin for May 21, 2026 - Fortune"
+          "How High Could Bitcoin (BTC) Realistically Go This Cycle? - Yahoo Finance",
+          "Bitcoin Grows More Dependent on Saylor’s Buying Machine - Bloomberg",
+          "BitMEX Co-Founder Cuts Bitcoin Price Forecast From $500K to $125K - Bitcoin Foundation"
         ],
         "narrative_summary": "",
         "articles": [
@@ -6265,28 +6266,28 @@
             "factuality": "unknown"
           },
           {
-            "title": "Will Bitcoin Price Go Below $40,000? Five Reasons Benjamin Cowen Claims BTC Has Not Yet Hit Bottom - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQTlo1WmtrRHZQU1ozWVZxeW9XaVZFcXRfcDlWMUJrTkNmaDVJamhYMFVoT1FPc212Z2k2MWwwOTluSGI0RGU4ZF8yazU0V1lSYnh1eFhDUlRkMTYxMjJMZFVibnN1MkJmOTBwNmhGRlVOekJGcEowRlpVMjdJSmxuUVYwVEpjUFRrRk1Xa1E3SThWemNLY0E?oc=5",
+            "title": "How High Could Bitcoin (BTC) Realistically Go This Cycle? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxNRzBqNWhlelNiLVk5Q0NLeEVHbC1iNVdLQzRVQ0VPRFF1b3ZYTzBPNnc4b1hyWTFfQ1ZqZmtnWXFSXzBfemltZmo3cFFVYV9WdllUZ21iLWZtWkg5azRmUTFJX1JLWi1jaWJWNlJVS1dCem1EZEdDTGRJUVhzUkVtd3ZPS2YwVEZuWWR2c0hVTDYtSXZ3M1Z1bFZURkg1T1A1YVVWaVRB?oc=5",
             "source": "Yahoo Finance",
-            "date": "Mon, 18 Ma",
+            "date": "Wed, 20 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Will",
+              "High",
+              "Could",
               "Bitcoin",
-              "Price",
-              "Below",
-              "Five"
+              "Realistically",
+              "This"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Grows More Dependent on Saylor’s Buying Machine - Bloomberg.com",
+            "title": "Bitcoin Grows More Dependent on Saylor’s Buying Machine - Bloomberg",
             "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNWEJqOGpHV3FReG0wOExBcTN4TlVldEZTelQ0ZUZveXhiUTJGZUtCZTBpNmpFQUNEenpEU3ZkUUtjcGJkV3BKdVc0RVpWM1RhTkROb3RBVTNHaHBDTXFfQzlhY3YzYXBYTGg4UDdNTG1rWTBZZkxYX2tGaFhvMFR5c1lpQ0xCcEttTGtWc1pPTUJTVXl0UDFXYk5WajZVbFNITnZoUjMzWjhSQkpzY09OVUdPS3k?oc=5",
-            "source": "Bloomberg.com",
+            "source": "Bloomberg",
             "date": "Wed, 20 Ma",
             "language": "en",
             "tone": 0.0,
@@ -6301,6 +6302,25 @@
             ],
             "bias_label": "center-right",
             "factuality": "high"
+          },
+          {
+            "title": "BitMEX Co-Founder Cuts Bitcoin Price Forecast From $500K to $125K - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxQaGpOMlBpcDdsVkpwM3pQNWFIa0hwSW9hSUdtYURVNi13OTVTWjRLWURsRmR6QTN1UE03aTdxUUtFSy1oMGQzUGNWV21GX1VjYV84akI0M094RVlJaFpHMXZ0aHlfekRrcEdJMDVlMXNxdVB6ZjRuWG1LdW1yN2pZRDh4cXI?oc=5",
+            "source": "Bitcoin Foundation",
+            "date": "Mon, 18 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Founder",
+              "Cuts",
+              "Price",
+              "Forecast"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
             "title": "Current price of Bitcoin for May 21, 2026 - Fortune",
@@ -6320,20 +6340,35 @@
             "factuality": "unknown"
           },
           {
-            "title": "BitMEX Co-Founder Cuts Bitcoin Price Forecast From $500K to $125K - Bitcoin Foundation",
-            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxQaGpOMlBpcDdsVkpwM3pQNWFIa0hwSW9hSUdtYURVNi13OTVTWjRLWURsRmR6QTN1UE03aTdxUUtFSy1oMGQzUGNWV21GX1VjYV84akI0M094RVlJaFpHMXZ0aHlfekRrcEdJMDVlMXNxdVB6ZjRuWG1LdW1yN2pZRDh4cXI?oc=5",
+            "title": "Ether (ETH) price dips, altcoins struggle as crypto traders await a bitcoin (BTC) move - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxNWTNtSktDQkM4UmViLTlEdlNtSGhzUUhaRDEzX2h6MjJBc1FWOXE4ZWNSS3pLcWJydHpULWp1SXNabTBZb05qRVpKWUhxS0pqY1Y1TExSRld1eGZmSmJOUy0zNmlyaFBLa1YyUGxjbkh1WlBLTzdnd09QX3YxclREZ0taSzduamJCOFlsU2dCRzdYV0IwbnR6NzBZbXJDb0dSbE5Rd2lPSXMtSW5jZlh5Q294OUxNYnExZmIxWnZYcFdZUQ?oc=5",
+            "source": "CoinDesk",
+            "date": "Tue, 19 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Ether"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Hashrate Hits All-Time Highs in 2026: Why Price Is Disconnecting From Fundamentals - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxQN1JuVkZ0SWNlTXlNYXowdjVNY0xCNlNoZlUydUFyb0w1bmJYandSSTdRMlM4blhGNmR3S1NNb0p6cXkyek1Jd2xZdHcwUGk3VlhaTVl1ZTBrU1h1MHFSSlhVMk9xaVkzcHUwdDk5V2xrVVNvUXppYV9Sd0ZpZzN2VzRacWZLazJZeWltSG9ZaDZpUUxHQWl0TVJrU3dRM09JeXF4MHdkek9aSVp3VV8xc0lIOGQ4cEctZ2JUaS1ZUlJIOHlKaWNQeTlIdVdiUQ?oc=5",
             "source": "Bitcoin Foundation",
-            "date": "Mon, 18 Ma",
+            "date": "Tue, 19 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Founder",
-              "Cuts",
-              "Price",
-              "Forecast"
+              "Hashrate",
+              "Hits",
+              "Time",
+              "Highs"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6356,25 +6391,6 @@
             "factuality": "unknown"
           },
           {
-            "title": "How High Could Bitcoin (BTC) Realistically Go This Cycle? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxNRzBqNWhlelNiLVk5Q0NLeEVHbC1iNVdLQzRVQ0VPRFF1b3ZYTzBPNnc4b1hyWTFfQ1ZqZmtnWXFSXzBfemltZmo3cFFVYV9WdllUZ21iLWZtWkg5azRmUTFJX1JLWi1jaWJWNlJVS1dCem1EZEdDTGRJUVhzUkVtd3ZPS2YwVEZuWWR2c0hVTDYtSXZ3M1Z1bFZURkg1T1A1YVVWaVRB?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Wed, 20 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "High",
-              "Could",
-              "Bitcoin",
-              "Realistically",
-              "This"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
             "title": "Current price of Bitcoin for May 19, 2026 - Fortune",
             "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE1hZ1NJX0xPLWFPcWhOTTZDQy1DLXVFa3ZzazhMRGU2OXY2N0hXSnFiVGdNR2lCSmtGNkZwV1dLaUhQQk5DcnozVV80NXpWdGstTkg5LXZ0cGxKOWFoMWxXU3lOcXZ1Z1U?oc=5",
             "source": "Fortune",
@@ -6387,135 +6403,6 @@
               "Current",
               "Bitcoin",
               "Fortune"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "JPMorgan: Ethereum and Altcoins Will Continue to Lag Behind Bitcoin - Bitcoin Foundation",
-            "url": "https://news.google.com/rss/articles/CBMic0FVX3lxTE5rRnpXMG5JLUhrRElWUk9xejcyRjJSNlJIbkJJanZiZkNZTHVDMUszWTc0TW1mYzZvS3JjdndGTkZXQXFvTjc1RjQ3OXlzVklwRHY5VjExQldydTYwaVVud0p2Q055bXZKazlOcUpSR3BLZFk?oc=5",
-            "source": "Bitcoin Foundation",
-            "date": "Wed, 20 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Ethereum",
-              "Altcoins",
-              "Will",
-              "Continue"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Current price of Bitcoin for May 18, 2026 - Fortune",
-            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBLaHltc3JMWWVfcWs3amlTcGtpa2FqQWFwMXRhMjFiTGV3MDJOeHpfLXBRZHNtMFp1MWtnQnVCd2MzejM3ckxYWjBNS3JaTkZoZ0VLWDZXZ19aS2N2bUFuWWtQR1ZEQTg?oc=5",
-            "source": "Fortune",
-            "date": "Mon, 18 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Current",
-              "Bitcoin",
-              "Fortune"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin’s Drop Below $77,000 Hides Three Bullish Signals - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxQaTRmenNHNzZhRy16RHBoR1FDekh1dndKRlFyOXpWcWFwMWQyeWlzYXp3RTBTTl9uTXFVQ0xDUWVpaDFZMFVaSDZIZUM1WUZzeFJyTGNXeGZoLVFwRmJ3SjEwR1d1S3VtUi0zOXJvYUJhVk9ROHlpXzAwYlN6YXhjdEd6czNRVE5zYmhkVmxuaWFXLVUx?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Tue, 19 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Drop",
-              "Below",
-              "Hides",
-              "Three"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin and Recession Signals in 2026: Is BTC Entering a Macro Slowdown Phase? - Bitcoin Foundation",
-            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxOR0Z1U0xBbHNqR3V4dGU5VmpLNWQzaFdMYU9PU1Zrbzl2SlBhZE1FWFdRN1ZCNWdJRXdiWFpiZEZrY1N3WW8tSWNORm1QS1JKMjJrRDYxTXQzeEdWc0RKYUR5N3BPN2MzWjRTZk5TVDZPZ1k5M0NXRzhoY2luWE9Kb2VmVno5SWduMXZfLXFjYm9xWkxjNm04THVIRXhER3JERFNWcjZmQWVQN2FfdE8tZmowbU4xcEw2U2JYeg?oc=5",
-            "source": "Bitcoin Foundation",
-            "date": "Tue, 19 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Recession",
-              "Signals",
-              "Entering",
-              "Macro"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Two Potential Scenarios for Bitcoin Price: More Pain Ahead? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxOb1ZybzlQUHlWcGtDY0gxQ0RYSEIwaGVCVUVhR1hGMmFENGxlOEhQbHl4b3NUWmFvUWdlY19kZFlnNnpxWHRoZnN6MnA3WU1rM3U4TTA1UjdpaklLLU9QWnFpdVRfWFZUN01sRXhNclIzZ0xnQTluQkZGOUpCODlaYmw1TGVrdGI1aGt5RGdzUi1xaklBMVdoM1Yxek51bS15UUd1Zg?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Thu, 21 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Potential",
-              "Scenarios",
-              "Bitcoin",
-              "Price",
-              "More"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin and ethereum prices today, Monday, May 18, 2026: Prices are down and moving lower this morning - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMihAJBVV95cUxQbmtlc2F4MG5kSGpFYXlRa2xfUW9YN3JhWUliM0NENm5yeTFZM0pJaTZNUG13MXJmUzVmOFlZazlWZVA5a2xLSDd2eDVqMDZXNGFYcjVBZHdFWXVOc3pfNWxqTExVUkpXeDVTZURqdTN3OHJGQnNESDBYNlE4RzVYcF91VG1mM2I3RV94LU1qRDBOalJ3elRneGVjbGtSc19uVGpvZVlFejhRb3lXazNOMFFUM3BGNmtuR0FuTEVzRmt3S3VSRHd5X1ZIcDg0WVdHUi1PS0RHS3RxbFBncW82OERCbTdGTGZFMXJTT1pMM1BNWmRPeHlwUFZvMmVaNm02SmNONw?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Mon, 18 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Monday",
-              "Prices",
-              "Yahoo",
-              "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin price plunges under $77K, erasing $661M - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxNTWhJSlF5ancwWUt2T0FyR0lFU1Bwd2xJRGdNVVZ0cE8wU0x4V3VpZFBCbnExNnZzS2VISW9FZGVHWVZoV3ZuT2dQRmZ0d3EzLWVSMVpkMDNRNzR5M0d6NFZYSTBfdUtUTFZfVEpTRnlwY3NreUhpV1ZBTzFGREtvcWFhLTZQNWMwNDdDaEV0N0d1bVk5bVE?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Mon, 18 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Yahoo",
-              "Finance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6540,8 +6427,25 @@
             "factuality": "unknown"
           },
           {
-            "title": "Will Bitcoin (BTC) Crash to $50,000? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxPWmp3NHNuUGFNWWtqV3doYmlQckw3WS1SYUZJU2JpY1VUZm5MV2ozWjVMU1NFbjhkZXFlQm5adzk0a1l6bm9ERUFVSXQxLWQ3WXZyT2VqM0tvMTI0M01JNGc2aXhOMVc3NXZmRU5TbWgzOVpaeEJoZ1JZNl9jSDM3ZXk4QXNCcF91ZDlEeGVqazA0Yjg?oc=5",
+            "title": "Current price of Bitcoin for May 18, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBLaHltc3JMWWVfcWs3amlTcGtpa2FqQWFwMXRhMjFiTGV3MDJOeHpfLXBRZHNtMFp1MWtnQnVCd2MzejM3ckxYWjBNS3JaTkZoZ0VLWDZXZ19aS2N2bUFuWWtQR1ZEQTg?oc=5",
+            "source": "Fortune",
+            "date": "Mon, 18 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Current",
+              "Bitcoin",
+              "Fortune"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin and ethereum prices today, Monday, May 18, 2026: Prices are down and moving lower this morning - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMihAJBVV95cUxQbmtlc2F4MG5kSGpFYXlRa2xfUW9YN3JhWUliM0NENm5yeTFZM0pJaTZNUG13MXJmUzVmOFlZazlWZVA5a2xLSDd2eDVqMDZXNGFYcjVBZHdFWXVOc3pfNWxqTExVUkpXeDVTZURqdTN3OHJGQnNESDBYNlE4RzVYcF91VG1mM2I3RV94LU1qRDBOalJ3elRneGVjbGtSc19uVGpvZVlFejhRb3lXazNOMFFUM3BGNmtuR0FuTEVzRmt3S3VSRHd5X1ZIcDg0WVdHUi1PS0RHS3RxbFBncW82OERCbTdGTGZFMXJTT1pMM1BNWmRPeHlwUFZvMmVaNm02SmNONw?oc=5",
             "source": "Yahoo Finance",
             "date": "Mon, 18 Ma",
             "language": "en",
@@ -6549,11 +6453,30 @@
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Will",
               "Bitcoin",
-              "Crash",
+              "Monday",
+              "Prices",
               "Yahoo",
               "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Two Potential Scenarios for Bitcoin Price: More Pain Ahead? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxOb1ZybzlQUHlWcGtDY0gxQ0RYSEIwaGVCVUVhR1hGMmFENGxlOEhQbHl4b3NUWmFvUWdlY19kZFlnNnpxWHRoZnN6MnA3WU1rM3U4TTA1UjdpaklLLU9QWnFpdVRfWFZUN01sRXhNclIzZ0xnQTluQkZGOUpCODlaYmw1TGVrdGI1aGt5RGdzUi1xaklBMVdoM1Yxek51bS15UUd1Zg?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 21 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Potential",
+              "Scenarios",
+              "Bitcoin",
+              "Price",
+              "More"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6578,24 +6501,9 @@
             "factuality": "high"
           },
           {
-            "title": "Bitcoin recovers to $77,400, but futures data hints traders are cutting exposure - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxOYWpNLXJPSkV0OU1MbXRqOTRGLUt5Y3g1ODdjQ2pOcFExVTk1Y2o5ZlJONWhnVXpUWTk4bnBsUGZlcFFDZHA5MGhvUElLb1BIVzZyZHFMUUhNaU5RakJWeG5IbE15QmpEdm5wVzkwQ3ZTcjJIRG0zRzlJcWdXM3FMWGZuS040QnVkaGZmZXNBcXM4bmcxZEgyMXJ1R0wzVnBUSy1tQQ?oc=5",
-            "source": "CoinDesk",
-            "date": "Wed, 20 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Price Stabilizes Above $76K, Traders Await Next Major Move - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxOZl9SRWNRQmFwM295YTlHWkZwam5yeFVQbktaZW9uSHZNSUlQQzMtYUF1OUY5aVVZWFFkZG1IdTVGRlVhQ3BhMTRIQWRMbmctcHhaS2JnYURCek82T2pyeE9ObjFRUUN5SndPX19TTTdObjdBaTd0RTVCelkxTmYzRk5XeHd6M09URE5XLVNERGY5MnFxM2tfU2ZsZ0FrbVdXTzlOWi1kY1o3cExqTC1sbGlvT1d3endSaXQtUkl6UQ?oc=5",
-            "source": "TradingView",
+            "title": "Bitcoin and Recession Signals in 2026: Is BTC Entering a Macro Slowdown Phase? - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxOR0Z1U0xBbHNqR3V4dGU5VmpLNWQzaFdMYU9PU1Zrbzl2SlBhZE1FWFdRN1ZCNWdJRXdiWFpiZEZrY1N3WW8tSWNORm1QS1JKMjJrRDYxTXQzeEdWc0RKYUR5N3BPN2MzWjRTZk5TVDZPZ1k5M0NXRzhoY2luWE9Kb2VmVno5SWduMXZfLXFjYm9xWkxjNm04THVIRXhER3JERFNWcjZmQWVQN2FfdE8tZmowbU4xcEw2U2JYeg?oc=5",
+            "source": "Bitcoin Foundation",
             "date": "Tue, 19 Ma",
             "language": "en",
             "tone": 0.0,
@@ -6603,27 +6511,44 @@
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Price",
-              "Stabilizes",
-              "Above",
-              "Traders"
+              "Recession",
+              "Signals",
+              "Entering",
+              "Macro"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "BTC News: Mark Cuban says he sold most of his bitcoin after losing faith in hedge narrative - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMi3gFBVV95cUxNa2lUeFZZb211OUFCSno2M0lWaWNfVlZzYmhhMXhUazAzWGNLdFdDSE9wZnp4QmdkdVdSSWxCZ3laY2U1anBaXzVWRkFMSWV4bkRMZFNyUGNxTFNBT3F0SjVTUXNXbDBkdWRSX1hQUW1laDNLWDFqSjd2WEdUbGRlQUlRMTNBTnRsdnc0a2MyTi1ZTTJ4S1BwUS1EaUNPdDRzV3hVd3pKeG9oc2pYcHBDS1kwNDFqcHNBSGF3b1pBMWdNTTlTRTQ5MmhtcE9lN01ZSnZWeHNVV29PNUx0VHc?oc=5",
-            "source": "CoinDesk",
-            "date": "Thu, 21 Ma",
+            "title": "Bitcoin Slides Under $77K as Crypto Liquidations Top $672M Amid Bond Sell-Off - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxNVllvbWVDT2FqUUVMdWZXd1VtLUl0Snh4VGtQb1Fsc3RGYUMwakxrQXpPWjg3OU1GMGRmclVQVGg3THpfUkFNaFp1WWJIZHVVMm5OeUJnQlZ1TldWay1FMy1oYTFWM1FtUk5rUTlmakxhZjJwbGJtSUVNSC1abzhpNldtdTk3NmhVRkZTVzFibFdBazA3NEJhNC1hUk4?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 18 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "News",
-              "Mark",
-              "Cuban"
+              "Bitcoin",
+              "Slides",
+              "Under",
+              "Crypto",
+              "Liquidations"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin tanks to $74,300 as spot ETFs bleed $2.26 billion in two weeks - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxOaWVYOEx1RUx4bDZYZDJGWGItcjFBQXZkbmU5RVVoNWZuRXJHR2hiTTk1ZVpUbnNURm8xemt6RDlfQ0ZTYktCSlVlMHBwODlzZnZYd2QydzdjVjRoZm8yWWZRWURvRnphYzAydEg1V2FyWHNDTDEtNzlleDV3ZDdwTlZQei1uQjB1UXdLUWQ3ZnVfMzQ0N2hjX0pFaXhnVXhDektvUGxLNDVpMW1rbHBiMTR1MVR5T2Zod2c?oc=5",
+            "source": "CoinDesk",
+            "date": "Sat, 23 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6648,6 +6573,38 @@
             "factuality": "unknown"
           },
           {
+            "title": "Bitcoin recovers to $77,400, but futures data hints traders are cutting exposure - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxOYWpNLXJPSkV0OU1MbXRqOTRGLUt5Y3g1ODdjQ2pOcFExVTk1Y2o5ZlJONWhnVXpUWTk4bnBsUGZlcFFDZHA5MGhvUElLb1BIVzZyZHFMUUhNaU5RakJWeG5IbE15QmpEdm5wVzkwQ3ZTcjJIRG0zRzlJcWdXM3FMWGZuS040QnVkaGZmZXNBcXM4bmcxZEgyMXJ1R0wzVnBUSy1tQQ?oc=5",
+            "source": "CoinDesk",
+            "date": "Wed, 20 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "BTC News: Mark Cuban says he sold most of his bitcoin after losing faith in hedge narrative - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMi3gFBVV95cUxNa2lUeFZZb211OUFCSno2M0lWaWNfVlZzYmhhMXhUazAzWGNLdFdDSE9wZnp4QmdkdVdSSWxCZ3laY2U1anBaXzVWRkFMSWV4bkRMZFNyUGNxTFNBT3F0SjVTUXNXbDBkdWRSX1hQUW1laDNLWDFqSjd2WEdUbGRlQUlRMTNBTnRsdnc0a2MyTi1ZTTJ4S1BwUS1EaUNPdDRzV3hVd3pKeG9oc2pYcHBDS1kwNDFqcHNBSGF3b1pBMWdNTTlTRTQ5MmhtcE9lN01ZSnZWeHNVV29PNUx0VHc?oc=5",
+            "source": "CoinDesk",
+            "date": "Thu, 21 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "News",
+              "Mark",
+              "Cuban"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Bitcoin price analysis: BTC likely bottomed at $60K amid milder bear market, K33 Research says - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxQUTROZDl5QkRTbnhkU3lFYmx4Yk94WmJmSW1qMXdTaU00bmJTcnRoNGRoWUhpWlpIWFRWVjhHeUM3bWlOWDR2Sjl5TFVOX0NqWlZmQ21vSTlKSk0tZnRIVlJabWNOOWdXS3NXY0NqUU1IVzBxS0F4VnFmdk9rNEFWRTJMS2hSTExmTDdBYTJVbmdGdzNQbW4zUXd2Y3JpejZVWjRCb2xhZmVXTHVhNGRGQ2VqQnlvZnMyZ1hhMDFmYTRTTk9mNGIxRWVibWt1WlJ6VU55NG0wUXB3dw?oc=5",
             "source": "CoinDesk",
@@ -6664,20 +6621,39 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Depot Hack: $3.6M in BTC Stolen After Corporate Wallet Breach Exposes Crypto ATM Risks - Bitcoin Foundation",
-            "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxNcWhvRmVTeEl6aEhzUWZsRWU1c3BTRWlMZ0R0VG1jMVZkWC16RF9YX1Y2RjVfRXp0ZWpzRzZoUXI2SF9yc3c2ZVRQVWFZUV9KUFk3M0FZbjZvTS1WaE1kTGRiYzE3VE9MT3VMOXJvX0tvQVpYRFpONFhtSHU4MkhCS0VpRzdnMDBuaWNEMGVTTG8xUzRrdXJJTzBrSGk0dkdlLXFCblFmZS1IWEtPZVJzQ251TEpXS1pFbGVoWU9FREdYVjFPWlprY0RNN3Vzc3ExVkE?oc=5",
-            "source": "Bitcoin Foundation",
-            "date": "Mon, 18 Ma",
+            "title": "Bitcoin Price Stabilizes Above $76K, Traders Await Next Major Move - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxOZl9SRWNRQmFwM295YTlHWkZwam5yeFVQbktaZW9uSHZNSUlQQzMtYUF1OUY5aVVZWFFkZG1IdTVGRlVhQ3BhMTRIQWRMbmctcHhaS2JnYURCek82T2pyeE9ObjFRUUN5SndPX19TTTdObjdBaTd0RTVCelkxTmYzRk5XeHd6M09URE5XLVNERGY5MnFxM2tfU2ZsZ0FrbVdXTzlOWi1kY1o3cExqTC1sbGlvT1d3endSaXQtUkl6UQ?oc=5",
+            "source": "TradingView",
+            "date": "Tue, 19 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Depot",
-              "Hack",
-              "Stolen",
-              "After"
+              "Price",
+              "Stabilizes",
+              "Above",
+              "Traders"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "What is Bitcoin Pizza Day? History & BTC Price - ThinkMarkets",
+            "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxNMVZFRHFBdnNRbjVuaTJkeW1fb25JOFNzZFV1U1RLQnZZb1NQNnJkY29TOU90V3RiYmRyNmxVcElGMWJ6Q3ZHMUQ5d29pWE01Qm9xMngyQnhKeUYzTGhOMjFyWmJvU1JmR1VEMlNDWHZUb3NwaXRtRkI0MFJVNWc2dmpoTlVOeGVr?oc=5",
+            "source": "ThinkMarkets",
+            "date": "Tue, 19 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "What",
+              "Bitcoin",
+              "Pizza",
+              "History",
+              "Price"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6688,7 +6664,7 @@
             "source": "ig.com",
             "date": "Mon, 18 Ma",
             "language": "en",
-            "tone": -0.2,
+            "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
@@ -6721,22 +6697,6 @@
             "factuality": "unknown"
           },
           {
-            "title": "Strategy (MSTR) news: Company purchased more than $2 billion of BTC last week - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxPOG0yNXBYNXhXY2hYRnJ4ZWRVa0lNSF9xNTZoenN6a2xhZHBGZWlmdTk5WXRlRF9Wem5QbmNDRW12VVN2QU10ZWJVb3BzUW91cWZGbnNmVjYyc0ZKNlpZMnpyOERZS04xUlh0UWVnUGdfbW5WUDdaV0M4SkhCS0t0T3djTUJXYVZJNlhIcjUyQjhXMUFMQlNLcmw5RDVRMFE5dHJWQ2RTWTQza0JxS3ZJMVVWYUJraVdqWGc?oc=5",
-            "source": "CoinDesk",
-            "date": "Mon, 18 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Strategy",
-              "Company"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
             "title": "BTC bounces to $77,200, ETH, XRP follow suit as Senate curbs Trump's Iran war powers - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxQdmJWNXA0cGd4THE5eTF0U0NNZVowTE5heGFRWW5DMzFKUVRJU2NudGFDZXZRZURBcHdka0dyN2d2bW9SbllXR1J2VFNnMmlVSmdPS1BqMW5XOWszejVucEVmeXNPWTNUb3NDNkd4YXZRbG1BbUxrRlRCdzF6OXZ6Q0JoR1VvNmpSVVZtVTRqcXZCY1dlRFlGa2xHeEwwcWVMOGM5SDd6TkdISDhrYXc?oc=5",
             "source": "CoinDesk",
@@ -6754,20 +6714,20 @@
             "factuality": "unknown"
           },
           {
-            "title": "What is Bitcoin Pizza Day? History & BTC Price - ThinkMarkets",
-            "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxNMVZFRHFBdnNRbjVuaTJkeW1fb25JOFNzZFV1U1RLQnZZb1NQNnJkY29TOU90V3RiYmRyNmxVcElGMWJ6Q3ZHMUQ5d29pWE01Qm9xMngyQnhKeUYzTGhOMjFyWmJvU1JmR1VEMlNDWHZUb3NwaXRtRkI0MFJVNWc2dmpoTlVOeGVr?oc=5",
-            "source": "ThinkMarkets",
-            "date": "Tue, 19 Ma",
+            "title": "Bitcoin Price Hits May Low; Circle Wins Upgrade As HIVE Soars - Investor's Business Daily",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxPRGwwb3RReHlvT3JEY2RXeG1FUncyUnF5VlBCRXltN1M3dmROYkROSFJtS0U0NWRMOU5tdzB0YTVpaktNTzRSY3FUS0R5SzUwOXNSQmFoMDA2Vjh5UkxIb3JZM1lxOEpaSU13YVZLTFp3alBhd1dodklXV0h6WkRsTlE1NVdFUQ?oc=5",
+            "source": "Investor's Business Daily",
+            "date": "Mon, 18 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "What",
               "Bitcoin",
-              "Pizza",
-              "History",
-              "Price"
+              "Price",
+              "Hits",
+              "Circle",
+              "Wins"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6811,6 +6771,59 @@
             "factuality": "unknown"
           },
           {
+            "title": "Bitcoin price outlook: Can BTC recover $80,000 after selloff? - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOam9ZQkk3T0gxWWVjRF9reF9oNk00R1otRjFSWEJfM1NmaTFHSG1SN01hZ0lZdV9Ra2Q1MUFnSU90Q2NxN0l2TWJ3c2JQVWZpVTk0NXRRMHhiLVNuSS1fbXdSZkhVdlZ2NUFhQ2VWYnJMRFRCb0I5ejJLRXFMeUJqOEo2Rm5va0xlZHZxSHJYUm1nRGgyRXJlN3pIWDFzdHVwWmlqRmN0aWdyaVRTUHJGYUxRSnVFdw?oc=5",
+            "source": "TradingView",
+            "date": "Tue, 19 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Depot Hack: $3.6M in BTC Stolen After Corporate Wallet Breach Exposes Crypto ATM Risks - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxNcWhvRmVTeEl6aEhzUWZsRWU1c3BTRWlMZ0R0VG1jMVZkWC16RF9YX1Y2RjVfRXp0ZWpzRzZoUXI2SF9yc3c2ZVRQVWFZUV9KUFk3M0FZbjZvTS1WaE1kTGRiYzE3VE9MT3VMOXJvX0tvQVpYRFpONFhtSHU4MkhCS0VpRzdnMDBuaWNEMGVTTG8xUzRrdXJJTzBrSGk0dkdlLXFCblFmZS1IWEtPZVJzQ251TEpXS1pFbGVoWU9FREdYVjFPWlprY0RNN3Vzc3ExVkE?oc=5",
+            "source": "Bitcoin Foundation",
+            "date": "Mon, 18 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Depot",
+              "Hack",
+              "Stolen",
+              "After"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Pizza Day, explained: The $41 pizza that became worth millions - Centre Daily Times",
+            "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE1IOExWTy00NlpKS042ZFZEWExYSWdHa3hheE5qSHh5bGU2QnZ2aHFxYU82UTBaZC1RQmh1NmFPdDZ1TVY4ZzRMcXZMelpCQV8xR2ZOZzU5cktEcWwxdjZrUFZzVUwwYjRLNGVhQzlQZXo?oc=5",
+            "source": "Centre Daily Times",
+            "date": "Fri, 22 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Pizza",
+              "Centre",
+              "Daily",
+              "Times"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Bitcoin (BTC) price may bottom in October if historical reward-halving cycle holds: Crypto Daily - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxOU1lkazRsMllrUUx5c2diOXZlLXdjMGhiUjctZEhiaGdYaU5jLTRKNEpITmloSFpwUUIyMGJMalNIVjIyMnpuZUQzdm5qdFd2T2RTQVRCVFdiNW15RTY3c3JIbzJ0RWVxbWRyb0tyRzVGTGJrZUlVUzFjWVp4UzV5ZUJFMm5aSmxsNU5EY3VvaGR6dE5yMmVhMVlIWlNyYmJsZURJYTFoMEtheXZjSEFlSkQ5VGRCajZ2?oc=5",
             "source": "CoinDesk",
@@ -6829,9 +6842,25 @@
             "factuality": "unknown"
           },
           {
-            "title": "For Bitcoin ETF Holders, a Market Recovery Is a Reason to Sell - Bloomberg.com",
+            "title": "Trump Media moved but 'did not sell' $205 million in bitcoin amid rising losses on crypto bets - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxNbzIxQkpjNkxWeGFlaUFwRG94LWI2TFlCVzVibExYa2w5ZGFIdmZqLW5TVG5EYWZYbEs4RnJtOXNzTE91bm9vdzBlUjJHcUxoVTJRTnVuTmF6UVFiQ25IV2lGRVpXMGxuWXVsZXVIcV9IbkdqajhxNVpyMS1JWHQxTHVVbDRhLTFjeDBsZUp1MzUtN3NsSXVxTW9NSWVVVTdidHl2aXlDWHJFSzVHaVpGbjZ0X1FoRHpvenZnRWxIWHBlRHZ4aTZhMg?oc=5",
+            "source": "CoinDesk",
+            "date": "Fri, 22 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Trump",
+              "Media"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "For Bitcoin ETF Holders, a Market Recovery Is a Reason to Sell - Bloomberg",
             "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxPVjQ1X1BEU2hHSEFPeXRCOGJOTV9OLVFCWkNuQ2gtbGUwX0lPNjFNblRyemZsNzB4dUMwOXViYjQwZUt4WUR6OHBNODdoejlEWlJSbHBCQUg0MkZQX21OLTNmM2hVLWswaEl6UTRqWXZqMGVPUVN4RG96THdUSGFJYXY3RFBSV0s1RXV1WUJnN3BkWEN0aERUNlB3d0VLb0ZZbFVJejJxVmJjcEFQcHRuU2t3?oc=5",
-            "source": "Bloomberg.com",
+            "source": "Bloomberg",
             "date": "Thu, 21 Ma",
             "language": "en",
             "tone": 0.0,
@@ -6846,94 +6875,19 @@
             ],
             "bias_label": "center-right",
             "factuality": "high"
-          },
-          {
-            "title": "If You’re Looking To Bitcoin Above $90,000, This Analyst Says To Watch This Bearish OB Level - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMi4gFBVV95cUxOU29FNHh0VEcycU5UWjRuR1RpckxhUVBEU25NdFE1X010QklkdVdzU2I2QnNfckFfakVac3RsQU1VTXpQYVhrT3k3SlBFX3M2Mm9hemNndnptNGtvWm1HdXpkeUNsTDNiM3NUV2hIZXhfUDNPLUlYNGRwYlgtOFZaSGliRjQ4YXhjeXIyaEN1Y2VpcVEwZGo3U0haRGRpa0U0TkRYa3VkUFJSRkV3Szd2UGd5bzdIb3ZNY2FrUVF0SWt4N3ZBcVFNRnZreGppWDUxbjFtR0RpVXUtV0gwTHhQQ2NB?oc=5",
-            "source": "TradingView",
-            "date": "Thu, 21 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "This",
-              "Looking",
-              "Bitcoin",
-              "Above",
-              "Analyst"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Price Hits May Low; Circle Wins Upgrade As HIVE Soars - Investor's Business Daily",
-            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxPRGwwb3RReHlvT3JEY2RXeG1FUncyUnF5VlBCRXltN1M3dmROYkROSFJtS0U0NWRMOU5tdzB0YTVpaktNTzRSY3FUS0R5SzUwOXNSQmFoMDA2Vjh5UkxIb3JZM1lxOEpaSU13YVZLTFp3alBhd1dodklXV0h6WkRsTlE1NVdFUQ?oc=5",
-            "source": "Investor's Business Daily",
-            "date": "Mon, 18 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Price",
-              "Hits",
-              "Circle",
-              "Wins"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Price Could Fall To $72.5K Before Next Rebound — Here’s Why - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxPeWIxTDVCekRGVGFVelRlYzBlVWZhR1pwUDB5Sk14THZlYTY5cmF5X3VtYnUyS1p5Zmg0S2xJb0hHRkY3Z2E3SEpmLU81bm1oV2lHZURaZ2xTRms3c2dkRm52SktLMExENkVWWUxoQW55UHFEQVJKVGluWHZqVEdNNGxVdHRjenl0ZjZnZ2FLWll2RlAxOFJncFhFWmUxQThmdWhkNThRd19SNXlLcTF2dEhLM3hFQnFHUnFJNlZVSQ?oc=5",
-            "source": "TradingView",
-            "date": "Sun, 24 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Price",
-              "Could",
-              "Fall",
-              "Before"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "What $5,000 Invested in Bitcoin Each Halving Cycle Is Worth Today - 24/7 Wall St.",
-            "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxObmI5TW1TckxrQUUwVHMwZUJNRmlQd1Fmc192UlFkcU5KbEhMdWNMSlllQ0JDYTNKekVaN011MVYwOFNES2VWT3NuR0labGFudkRkM2E4MUI5NTZPWHdsNlNLaEM0Z0QyV2NuZk5yUnh5VUM5aWhoalhGS1BfUTNOcGxYX3JESlVUeXZHNEF6SmVtNVpIM18zUXk5RFRxNWRJQjJqaVhacVVuMEk?oc=5",
-            "source": "24/7 Wall St.",
-            "date": "Sat, 23 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "What",
-              "Invested",
-              "Bitcoin",
-              "Each",
-              "Halving"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
           }
         ]
       },
       {
         "cluster_id": 1,
         "label": "Risk Premium",
-        "article_count": 2,
+        "article_count": 3,
         "avg_sentiment": 0.0,
         "dominant_category": "risk_premium",
         "bias_distribution": {},
         "representative_titles": [
           "Samson Mow Reiterates $1M Bitcoin Theory — Here’s 3 Reasons Why He Thinks It's Close - Yahoo Finance",
+          "Why Is Crypto Going Down? Bitcoin, XRP Price , Ethereum and Dogecoin Fall for 4th Straight Session - Finance Magnates",
           "Why Bitcoin Is Range-Bound? CLARITY Act 15-9 Vote Lifts Passage Odds to 67% - Finance Magnates"
         ],
         "narrative_summary": "",
@@ -6954,6 +6908,26 @@
               "Bitcoin",
               "Theory",
               "Here"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Why Is Crypto Going Down? Bitcoin, XRP Price , Ethereum and Dogecoin Fall for 4th Straight Session - Finance Magnates",
+            "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxNSmZEWW5OaWdNZDU5QlZXc05acW9INUFTYnJLZHo1a01QUmVwNWs5YXAtcEc1R2hNeFJOSXJLblR6d2VqcDZWMmVDRkVOVG15RTBabmtTeEJFSndYaHN3dG80d3pPV3BuNGN1VUtuSDJSWDJ2bGtTUlUwcklPRUVJYWxqMTV4NmNWQ1hXakZUeDVmRnQ4RnpvWnhoNEhkZUp0cUg4anMteUFFY211OGwyd0EzTW5TcHFKTnl3cmxXTHk4eFU2NWpPblNybHhjZU9pa1E?oc=5",
+            "source": "Finance Magnates",
+            "date": "Mon, 18 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "risk_premium",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Crypto",
+              "Going",
+              "Down",
+              "Bitcoin",
+              "Price"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6998,6 +6972,26 @@
           "Bitcoin",
           "Theory",
           "Here"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Why Is Crypto Going Down? Bitcoin, XRP Price , Ethereum and Dogecoin Fall for 4th Straight Session - Finance Magnates",
+        "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxNSmZEWW5OaWdNZDU5QlZXc05acW9INUFTYnJLZHo1a01QUmVwNWs5YXAtcEc1R2hNeFJOSXJLblR6d2VqcDZWMmVDRkVOVG15RTBabmtTeEJFSndYaHN3dG80d3pPV3BuNGN1VUtuSDJSWDJ2bGtTUlUwcklPRUVJYWxqMTV4NmNWQ1hXakZUeDVmRnQ4RnpvWnhoNEhkZUp0cUg4anMteUFFY211OGwyd0EzTW5TcHFKTnl3cmxXTHk4eFU2NWpPblNybHhjZU9pa1E?oc=5",
+        "source": "Finance Magnates",
+        "date": "Mon, 18 Ma",
+        "language": "en",
+        "tone": 0.0,
+        "category": "risk_premium",
+        "relevance": 0.5,
+        "keywords": [
+          "TES",
+          "Crypto",
+          "Going",
+          "Down",
+          "Bitcoin",
+          "Price"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -7059,28 +7053,28 @@
         "factuality": "unknown"
       },
       {
-        "title": "Will Bitcoin Price Go Below $40,000? Five Reasons Benjamin Cowen Claims BTC Has Not Yet Hit Bottom - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQTlo1WmtrRHZQU1ozWVZxeW9XaVZFcXRfcDlWMUJrTkNmaDVJamhYMFVoT1FPc212Z2k2MWwwOTluSGI0RGU4ZF8yazU0V1lSYnh1eFhDUlRkMTYxMjJMZFVibnN1MkJmOTBwNmhGRlVOekJGcEowRlpVMjdJSmxuUVYwVEpjUFRrRk1Xa1E3SThWemNLY0E?oc=5",
+        "title": "How High Could Bitcoin (BTC) Realistically Go This Cycle? - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxNRzBqNWhlelNiLVk5Q0NLeEVHbC1iNVdLQzRVQ0VPRFF1b3ZYTzBPNnc4b1hyWTFfQ1ZqZmtnWXFSXzBfemltZmo3cFFVYV9WdllUZ21iLWZtWkg5azRmUTFJX1JLWi1jaWJWNlJVS1dCem1EZEdDTGRJUVhzUkVtd3ZPS2YwVEZuWWR2c0hVTDYtSXZ3M1Z1bFZURkg1T1A1YVVWaVRB?oc=5",
         "source": "Yahoo Finance",
-        "date": "Mon, 18 Ma",
+        "date": "Wed, 20 Ma",
         "language": "en",
         "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
-          "Will",
+          "High",
+          "Could",
           "Bitcoin",
-          "Price",
-          "Below",
-          "Five"
+          "Realistically",
+          "This"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
       },
       {
-        "title": "Bitcoin Grows More Dependent on Saylor’s Buying Machine - Bloomberg.com",
+        "title": "Bitcoin Grows More Dependent on Saylor’s Buying Machine - Bloomberg",
         "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxNWEJqOGpHV3FReG0wOExBcTN4TlVldEZTelQ0ZUZveXhiUTJGZUtCZTBpNmpFQUNEenpEU3ZkUUtjcGJkV3BKdVc0RVpWM1RhTkROb3RBVTNHaHBDTXFfQzlhY3YzYXBYTGg4UDdNTG1rWTBZZkxYX2tGaFhvMFR5c1lpQ0xCcEttTGtWc1pPTUJTVXl0UDFXYk5WajZVbFNITnZoUjMzWjhSQkpzY09OVUdPS3k?oc=5",
-        "source": "Bloomberg.com",
+        "source": "Bloomberg",
         "date": "Wed, 20 Ma",
         "language": "en",
         "tone": 0.0,
@@ -7095,23 +7089,6 @@
         ],
         "bias_label": "center-right",
         "factuality": "high"
-      },
-      {
-        "title": "Current price of Bitcoin for May 21, 2026 - Fortune",
-        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBSalFzMllvc2FVeVhDY0dhTFhwSXJoRUg1VUJmUkY3Y293eDNsMXBKLXQzeW12Wm1oV2FFeXVtZWlxNUs3MWNVSW1sTFZ5bVVMSVhTS0FYVGhrNzJvS0p4N3F5UzRsYjQ?oc=5",
-        "source": "Fortune",
-        "date": "Thu, 21 Ma",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Current",
-          "Bitcoin",
-          "Fortune"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
       },
       {
         "title": "BitMEX Co-Founder Cuts Bitcoin Price Forecast From $500K to $125K - Bitcoin Foundation",
@@ -7133,10 +7110,10 @@
         "factuality": "unknown"
       },
       {
-        "title": "Current price of Bitcoin for May 22, 2026 - Fortune",
-        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE5wTnZKbGVHcS1zcWthVGlCYlNhR3R3YUN1SVN3cG9Ud1d6cXAzU1hlQkVTNVA1SWlsNFJKdVA4WEx3YkJSdFJxRl9GdDA5ZlV5TEFwVmVHNVZzeDVwS3hUcnpveVo1UXM?oc=5",
+        "title": "Current price of Bitcoin for May 21, 2026 - Fortune",
+        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBSalFzMllvc2FVeVhDY0dhTFhwSXJoRUg1VUJmUkY3Y293eDNsMXBKLXQzeW12Wm1oV2FFeXVtZWlxNUs3MWNVSW1sTFZ5bVVMSVhTS0FYVGhrNzJvS0p4N3F5UzRsYjQ?oc=5",
         "source": "Fortune",
-        "date": "Fri, 22 Ma",
+        "date": "Thu, 21 Ma",
         "language": "en",
         "tone": 0.0,
         "category": "general",
@@ -7150,38 +7127,35 @@
         "factuality": "unknown"
       },
       {
-        "title": "How High Could Bitcoin (BTC) Realistically Go This Cycle? - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxNRzBqNWhlelNiLVk5Q0NLeEVHbC1iNVdLQzRVQ0VPRFF1b3ZYTzBPNnc4b1hyWTFfQ1ZqZmtnWXFSXzBfemltZmo3cFFVYV9WdllUZ21iLWZtWkg5azRmUTFJX1JLWi1jaWJWNlJVS1dCem1EZEdDTGRJUVhzUkVtd3ZPS2YwVEZuWWR2c0hVTDYtSXZ3M1Z1bFZURkg1T1A1YVVWaVRB?oc=5",
-        "source": "Yahoo Finance",
-        "date": "Wed, 20 Ma",
+        "title": "Ether (ETH) price dips, altcoins struggle as crypto traders await a bitcoin (BTC) move - CoinDesk",
+        "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxNWTNtSktDQkM4UmViLTlEdlNtSGhzUUhaRDEzX2h6MjJBc1FWOXE4ZWNSS3pLcWJydHpULWp1SXNabTBZb05qRVpKWUhxS0pqY1Y1TExSRld1eGZmSmJOUy0zNmlyaFBLa1YyUGxjbkh1WlBLTzdnd09QX3YxclREZ0taSzduamJCOFlsU2dCRzdYV0IwbnR6NzBZbXJDb0dSbE5Rd2lPSXMtSW5jZlh5Q294OUxNYnExZmIxWnZYcFdZUQ?oc=5",
+        "source": "CoinDesk",
+        "date": "Tue, 19 Ma",
         "language": "en",
         "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
-          "High",
-          "Could",
-          "Bitcoin",
-          "Realistically",
-          "This"
+          "Ether"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
       }
     ],
     "source_diversity": {
-      "Yahoo Finance": 10,
-      "Finance Magnates": 1,
-      "Bitcoin Foundation": 6,
+      "Yahoo Finance": 7,
+      "Finance Magnates": 2,
+      "Bitcoin Foundation": 7,
       "Fortune": 5,
-      "Bloomberg.com": 2,
+      "Bloomberg": 2,
+      "CoinDesk": 8,
       "Forbes": 1,
-      "CoinDesk": 6,
-      "TradingView": 4,
-      "ig.com": 1,
+      "TradingView": 3,
       "ThinkMarkets": 1,
-      "24/7 Wall St.": 2,
-      "Investor's Business Daily": 1
+      "ig.com": 1,
+      "Investor's Business Daily": 1,
+      "24/7 Wall St.": 1,
+      "Centre Daily Times": 1
     }
   },
   "political_bias_analysis": {
@@ -7215,5 +7189,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-20T22:48:59.305086+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }

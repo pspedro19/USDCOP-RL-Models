@@ -80,7 +80,10 @@ CREATE TABLE IF NOT EXISTS config.models (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
 
     -- Constraints
-    CONSTRAINT chk_model_algorithm CHECK (algorithm IN ('PPO', 'SAC', 'TD3', 'A2C', 'DQN', 'DDPG', 'SYNTHETIC')),
+    CONSTRAINT chk_model_algorithm CHECK (
+        algorithm IN ('PPO', 'SAC', 'TD3', 'A2C', 'DQN', 'DDPG')
+        AND algorithm <> 'SYNTHETIC'
+    ),
     CONSTRAINT chk_model_status CHECK (status IN ('active', 'inactive', 'training', 'deprecated', 'testing')),
     CONSTRAINT chk_model_color CHECK (color ~ '^#[0-9A-Fa-f]{6}$')
 );
@@ -104,6 +107,32 @@ COMMENT ON COLUMN config.models.framework IS 'ML framework used (stable-baseline
 CREATE INDEX IF NOT EXISTS idx_models_status ON config.models (status);
 CREATE INDEX IF NOT EXISTS idx_models_algorithm ON config.models (algorithm);
 CREATE INDEX IF NOT EXISTS idx_models_updated ON config.models (updated_at DESC);
+
+-- Synthetic demonstrations are a separate security domain. They deliberately
+-- have no FK path into trading.*, metrics.* or production model registries.
+CREATE SCHEMA IF NOT EXISTS demo;
+REVOKE ALL ON SCHEMA demo FROM PUBLIC;
+
+CREATE TABLE IF NOT EXISTS demo.synthetic_model (
+    model_id VARCHAR(100) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    algorithm VARCHAR(50) NOT NULL DEFAULT 'SYNTHETIC',
+    version VARCHAR(50) NOT NULL DEFAULT 'DEMO',
+    environment TEXT NOT NULL DEFAULT 'demo',
+    surface TEXT NOT NULL DEFAULT 'synthetic',
+    execution_eligible BOOLEAN NOT NULL DEFAULT FALSE,
+    color VARCHAR(7),
+    description TEXT,
+    display_metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT synthetic_demo_only CHECK (
+        algorithm = 'SYNTHETIC'
+        AND environment = 'demo'
+        AND surface = 'synthetic'
+        AND execution_eligible = FALSE
+    )
+);
 
 -- =============================================================================
 -- SECTION 3: CONFIG SCHEMA - Feature Definitions Table
@@ -614,67 +643,57 @@ INSERT INTO config.models (
     updated_at = NOW();
 
 -- =============================================================================
--- INVESTOR DEMO MODEL - For investor presentations (SSOT for demo mode)
+-- INVESTOR DEMO MODEL - isolated presentation-only SSOT
 -- =============================================================================
--- This model generates synthetic trades with optimized metrics for presentations.
--- Select this model_id in the UI to enable demo mode - no separate flag needed (DRY).
-INSERT INTO config.models (
+-- A demo deployment must additionally set environment=demo and
+-- surface=synthetic. Merely choosing this model_id never enables it.
+INSERT INTO demo.synthetic_model (
     model_id,
     name,
     algorithm,
     version,
-    status,
+    environment,
+    surface,
+    execution_eligible,
     color,
-    hyperparameters,
-    policy_config,
-    environment_config,
-    backtest_metrics,
-    model_path,
-    framework,
-    description
+    description,
+    display_metadata
 ) VALUES (
     'investor_demo',
-    'Demo Mode (Investor Presentation)',
+    '[DEMO - SYNTHETIC] Investor Presentation',
     'SYNTHETIC',
     'V1',
-    'active',
+    'demo',
+    'synthetic',
+    FALSE,
     '#F59E0B',
+    'Synthetic illustration only. Never a real model, backtest, performance record, or execution candidate.',
     '{
-        "target_sharpe": 2.1,
-        "target_max_drawdown": -0.095,
-        "target_win_rate": 0.61,
-        "target_annual_return": 0.32,
-        "target_profit_factor": 1.85,
-        "trades_per_month": 18
-    }'::jsonb,
-    '{
-        "type": "SyntheticTradeGenerator",
-        "avg_win_pct": 0.005,
-        "avg_loss_pct": 0.004,
-        "max_position_duration_minutes": 300,
-        "min_position_duration_minutes": 15
-    }'::jsonb,
-    '{
-        "market_open_hour": 8,
-        "market_close_hour": 12,
-        "stop_loss_pct": 0.005,
-        "take_profit_pct": 0.012
-    }'::jsonb,
-    '{
-        "sharpe_ratio": 2.1,
-        "max_drawdown": 0.095,
-        "win_rate": 0.61,
-        "total_return": 0.32,
-        "profit_factor": 1.85,
-        "is_synthetic": true
-    }'::jsonb,
-    NULL,
-    'synthetic-generator',
-    'Demo model for investor presentations. Generates synthetic trades with target metrics. NOT for live trading.'
+        "badge": "DEMO - SYNTHETIC",
+        "generator": {
+            "target_sharpe": 2.1,
+            "target_max_drawdown": -0.095,
+            "target_win_rate": 0.61,
+            "target_annual_return": 0.32,
+            "target_profit_factor": 1.85,
+            "trades_per_month": 18,
+            "avg_win_pct": 0.005,
+            "avg_loss_pct": 0.004,
+            "max_position_duration_minutes": 300,
+            "min_position_duration_minutes": 15,
+            "market_open_hour": 8,
+            "market_close_hour": 12,
+            "stop_loss_pct": 0.005,
+            "take_profit_pct": 0.012
+        }
+    }'::jsonb
 ) ON CONFLICT (model_id) DO UPDATE SET
-    hyperparameters = EXCLUDED.hyperparameters,
-    policy_config = EXCLUDED.policy_config,
-    backtest_metrics = EXCLUDED.backtest_metrics,
+    name = EXCLUDED.name,
+    environment = EXCLUDED.environment,
+    surface = EXCLUDED.surface,
+    execution_eligible = EXCLUDED.execution_eligible,
+    description = EXCLUDED.description,
+    display_metadata = EXCLUDED.display_metadata,
     updated_at = NOW();
 
 -- =============================================================================

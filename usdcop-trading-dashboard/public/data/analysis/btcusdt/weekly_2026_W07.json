@@ -9,7 +9,7 @@
   "week_end": "2026-02-15",
   "weekly_summary": {
     "headline": "Bitcoin · Semana 07 de 2026",
-    "markdown": "### Bitcoin — Semana 07 (2026-02-09 → 2026-02-15)\n\nEl cierre semanal de BTC/USDT fue **68832.58 USD**, un cambio de **-2.13%** en la semana (rango 65118.00–71453.53). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 68832.58. RSI(14)=36 (neutral). Soporte 60000.00, resistencia 90600.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: CME Group, Crypto News, Reuters.",
+    "markdown": "### Bitcoin — Semana 07 (2026-02-09 → 2026-02-15)\n\nEl cierre semanal de BTC/USDT fue **68832.58 USD**, un cambio de **-2.13%** en la semana (rango 65118.00–71453.53). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 68832.58. RSI(14)=36 (neutral). Soporte 60000.00, resistencia 90600.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: Crypto News, CME Group, CNBC.",
     "sentiment": "bearish",
     "ohlcv": {
       "open": 70330.38,
@@ -40,7 +40,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-10",
@@ -58,7 +58,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-11",
@@ -76,7 +76,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-12",
@@ -94,7 +94,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-13",
@@ -112,7 +112,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-14",
@@ -130,7 +130,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-15",
@@ -148,7 +148,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6156,28 +6156,29 @@
     "article_count": 40,
     "avg_sentiment": 0.0,
     "source_breakdown": {
-      "CME Group": 1,
       "Crypto News": 5,
-      "Reuters": 1,
+      "CME Group": 1,
       "CNBC": 3,
+      "Reuters": 1,
       "Yahoo Finance UK": 1,
-      "Ark Invest": 1,
       "Investing News Network": 1,
+      "The Guardian": 1,
+      "Ark Invest": 1,
       "Bitcoin Magazine": 1,
-      "CoinDesk": 5,
-      "The Journal Record": 1,
-      "Yahoo Finance": 7,
-      "The Hill": 1,
-      "The Christian Science Monitor": 1,
+      "CoinDesk": 4,
       "Forbes": 1,
-      "Bloomberg.com": 2,
-      "marketplace.org": 1,
+      "Yahoo Finance": 7,
+      "The Christian Science Monitor": 1,
+      "The Hill": 1,
       "The Block": 1,
+      "marketplace.org": 1,
       "The Evening Sun": 1,
-      "Coinpedia": 1,
-      "TradingView": 2,
+      "Bloomberg": 1,
       "24/7 Wall St.": 1,
-      "Business Insider": 1
+      "Coinpedia Fintech News": 1,
+      "Business Insider": 1,
+      "TradingView": 3,
+      "ETF Trends": 1
     }
   },
   "news_intelligence": {
@@ -6193,19 +6194,36 @@
       {
         "cluster_id": 0,
         "label": "General",
-        "article_count": 37,
+        "article_count": 36,
         "avg_sentiment": 0.0,
         "dominant_category": "general",
         "bias_distribution": {},
         "representative_titles": [
-          "Can Crypto World Break Free From Bitcoin’s Undertow? - CME Group",
           "Bitcoin price prediction: Can BTC emerge from $60K–$70K? - Crypto News",
-          "Crypto lender BlockFills suspends withdrawals amid faltering bitcoin price - Reuters",
+          "Can Crypto World Break Free From Bitcoin’s Undertow? - CME Group",
           "In bitcoin price plummet, ETF flows are down but aren't signaling 'crypto winter' investor panic - CNBC",
+          "Crypto lender BlockFills suspends withdrawals amid faltering bitcoin price - Reuters",
           "Bitcoin price steadies but fresh fears suggest slide to $52k - Yahoo Finance UK"
         ],
         "narrative_summary": "",
         "articles": [
+          {
+            "title": "Bitcoin price prediction: Can BTC emerge from $60K–$70K? - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5taUkyaGxnRHA3VWNhLUJzNnl2QmlUS2JFWlM3S1FtUE5saC1SU2ZtVndJWE1fcGdHMzFPVUt4T0I5RFlIUHJLMGZGZm5zaFdOR2FVRVNPSlB5bl9xWmVQZXNjWUZFcUMx?oc=5",
+            "source": "Crypto News",
+            "date": "Fri, 13 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Crypto",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
           {
             "title": "Can Crypto World Break Free From Bitcoin’s Undertow? - CME Group",
             "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQVzM4OHFvSzhlaFNLVFo4RjVHS1JoVmVQQVFEY0xtbnlVdVNESkNBNHo2LW9ocTZmcklpS2l0b0dXQzNkSVFZakc2QjN5endlb0JMd1poZmxNajBVSDBZZ0lvZDFWanAzbFVwSTUtQTgxdHVseElXQW5pcHFMUjlqWEFsdDZHcTdFeFREVUl6cVI2bEQ4MW9Sc3hsREp5cDV5Qmx0Z2VOelBXWDhEUjFPSkhR?oc=5",
@@ -6226,21 +6244,17 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price prediction: Can BTC emerge from $60K–$70K? - Crypto News",
-            "url": "https://news.google.com/rss/articles/CBMiaEFVX3lxTE5taUkyaGxnRHA3VWNhLUJzNnl2QmlUS2JFWlM3S1FtUE5saC1SU2ZtVndJWE1fcGdHMzFPVUt4T0I5RFlIUHJLMGZGZm5zaFdOR2FVRVNPSlB5bl9xWmVQZXNjWUZFcUMx?oc=5",
-            "source": "Crypto News",
-            "date": "Fri, 13 Fe",
+            "title": "In bitcoin price plummet, ETF flows are down but aren't signaling 'crypto winter' investor panic - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxOUV92a2tBb3BIUTltdFBuc2NRdkR0dGJVSFNrNDFkYlNVbzNqcURqN3h5RFBHMVVVWWVBMW5oVEJyaWxLRDRVU2VmYmgzMU9NaVpWcm16eTktWmg3S0ozQS1LS3RseUNoZnpxbHRUZGVLMExraWt5TjJCcEpsYllWQ3JJdUhXWW9yblNrMlpIZzd3N0RO0gGaAUFVX3lxTFBOUUx4cTRncklycE92QnNUX1dFckVmVVltTjZuTl9SclVjNE55QmtkNFp5Qnc0WUVSeHJQcDNQNVlRRXVvRDFkY1E1QUtFWlpHZTFEV0dySTctX3NsQ3E0VnVnYW4ybGxFc0ltVW9nQTFvWENzOFl5UXZWdExDUjFwb2tqaVBVcFNNVlhocERiWHpXVGUtVUhLaGc?oc=5",
+            "source": "CNBC",
+            "date": "Sun, 15 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Crypto",
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
+            "keywords": [],
+            "bias_label": "center-right",
+            "factuality": "high"
           },
           {
             "title": "Crypto lender BlockFills suspends withdrawals amid faltering bitcoin price - Reuters",
@@ -6259,19 +6273,6 @@
             "factuality": "high"
           },
           {
-            "title": "In bitcoin price plummet, ETF flows are down but aren't signaling 'crypto winter' investor panic - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxOUV92a2tBb3BIUTltdFBuc2NRdkR0dGJVSFNrNDFkYlNVbzNqcURqN3h5RFBHMVVVWWVBMW5oVEJyaWxLRDRVU2VmYmgzMU9NaVpWcm16eTktWmg3S0ozQS1LS3RseUNoZnpxbHRUZGVLMExraWt5TjJCcEpsYllWQ3JJdUhXWW9yblNrMlpIZzd3N0RO0gGaAUFVX3lxTFBOUUx4cTRncklycE92QnNUX1dFckVmVVltTjZuTl9SclVjNE55QmtkNFp5Qnc0WUVSeHJQcDNQNVlRRXVvRDFkY1E1QUtFWlpHZTFEV0dySTctX3NsQ3E0VnVnYW4ybGxFc0ltVW9nQTFvWENzOFl5UXZWdExDUjFwb2tqaVBVcFNNVlhocERiWHpXVGUtVUhLaGc?oc=5",
-            "source": "CNBC",
-            "date": "Sun, 15 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
             "title": "Bitcoin price steadies but fresh fears suggest slide to $52k - Yahoo Finance UK",
             "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxQZVI4aHh5U1RkOVNTRWJnU3NuSWZQR081dTRZNjRDREFiU0NYbXEzZnE1UUNFalhIdm51X3B3cjlyS3N1RmNmTGc4MGhLSmJnLVpWN0ozNHdXVHo5S2VyNTQxc0loR1ZycGpONXlIQ3Jtd19aV3NGV2xqeUhRTWRkSWVaVQ?oc=5",
             "source": "Yahoo Finance UK",
@@ -6284,25 +6285,6 @@
               "Bitcoin",
               "Yahoo",
               "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin’s Evolving Institutional Role - Ark Invest",
-            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNenMteEx5ODlPdENvR1N4M0tfdUlBSHZMWGlCeWdNaUpWTGNCcDNNY1VyblRRV1dTekRfMFg4S09WaEQ0dGxWN0FZMTlUSXp3QlFHMGhLcExsT2k1d2x6ZFAzWGxBdUFlTktnTWxtN1FFMWNJM19GUDdIakpKUWhKUEQwTWFHQ3hjV0Y2WWdqX3RvMDA?oc=5",
-            "source": "Ark Invest",
-            "date": "Wed, 11 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Evolving",
-              "Institutional",
-              "Role",
-              "Invest"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6327,6 +6309,42 @@
             "factuality": "unknown"
           },
           {
+            "title": "South Korean crypto exchange races to recover $40bn of bitcoin sent to customers by mistake - The Guardian",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxNeG1EZTZnbTc3SXcyR08wWjZHNV9OWjVjTUhCX0ttQzhZQmJxclhBdEUtc2VHeWFmeHpQdUEyMEVLWnFKVExxWDZEcHVmUmh0dFU5OVNFa1BpRzB1R2dNSEF1cV9PTzdGZFEyenF5X29reU9YaVZXVW9VbnpMOUp1eEpCeGo1MUJRbGtKeXFYckZSWVFDQ3JmbDJBeEJSQQ?oc=5",
+            "source": "The Guardian",
+            "date": "Mon, 09 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "South",
+              "Korean",
+              "Guardian"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin’s Evolving Institutional Role - Ark Invest",
+            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNenMteEx5ODlPdENvR1N4M0tfdUlBSHZMWGlCeWdNaUpWTGNCcDNNY1VyblRRV1dTekRfMFg4S09WaEQ0dGxWN0FZMTlUSXp3QlFHMGhLcExsT2k1d2x6ZFAzWGxBdUFlTktnTWxtN1FFMWNJM19GUDdIakpKUWhKUEQwTWFHQ3hjV0Y2WWdqX3RvMDA?oc=5",
+            "source": "Ark Invest",
+            "date": "Wed, 11 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Evolving",
+              "Institutional",
+              "Role",
+              "Invest"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Bitcoin Price Reclaims $70,000 After Deep February Slide - Bitcoin Magazine",
             "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1oSEtCQmljMjBTemJZTlBfLWZCQWRRM1FTR2tmQTZuU2hJNWV5dWNzU3Vob3owMl9uNnd6cHRhSnlwRHBsT0loZUREcWo4WTVieENqNTY4N2tTMmdZSk1EVjJyZHowM29BWTROVE1jc25ybnJvOS1rcFh1VWNQdzQ?oc=5",
             "source": "Bitcoin Magazine",
@@ -6346,37 +6364,41 @@
             "factuality": "unknown"
           },
           {
-            "title": "Standard Chartered sees bitcoin sliding to $50,000, ether to $1,400 before recovery - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxOX2V1NDU2QjNEZWhZcXJ0aXFyNW1SZ1htSmkxNzJVR0RwYllTY1pSaVhLOUdYWkpLTWh6cVl2djEzc0JRd0NDOWM5cjJWQXlzR3g0WmdVeDBwVVFiUmRnME5OSC1oOWRxYWo3Q0NOZXphb082UV9femVuSU5OeXZuaktlTDFUeTBfWGY3Q1VYYXJhdElVMWJKU3dBU2hnbTJKMHdBaTFHQmJkZWpjelpYd0ROQnkwV2tlTWtKYlptX0tXZlBpYTFoc3Rn?oc=5",
+            "title": "Bearish sentiment prevails as BTC price falls below $67,000, ether (ETH) drops: Crypto Markets Today - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOdjlqY2lpZzV1cXRheHB2Ykk3eURMUm45S2tTRmpqdkctTnp1MkhXaVpqUGJXbExJS3hoR0piSXpwMy1YeERqamJHZjlZelZSd19LcVg3YjlHaWxfTm9ZRElGcGtxSHVIQjV3UlBqZTJkUmpxcDNwOU9US0U5MXgtUjlWTFdJYmI3SWt2dldUb1VCdE1pdmZhZ2NtTWdpcG5XQnpPc3pKZFR6ZWZNSy1DaDJVYm1pdw?oc=5",
             "source": "CoinDesk",
-            "date": "Thu, 12 Fe",
+            "date": "Wed, 11 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Standard",
-              "Chartered"
+              "Bearish",
+              "Crypto",
+              "Markets",
+              "Today"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin rebounds above $65,000 amid largest weekly drop since 2022 - The Journal Record",
-            "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxNLXpjaWd3cUU5dEYzcXN1MlVZSHdRXzgyWllNOVctdEVTY3VxWHlIZ0VYaFBJMEVMOUtkdmF2VHoxaG5sM2lCR1RObXZteWk5aUFLd1dQb1pwOWRKdFc1VUZhZVV2eS1WdVBWdE9EWWh6ZjBwTV81SmJ2SlNXRzJJRVE5Vy1mQ0pkOWp0Qmtn?oc=5",
-            "source": "The Journal Record",
-            "date": "Mon, 09 Fe",
+            "title": "U.S. Treasury Secretary Issues ‘Very Important’ Crypto Prediction As The Bitcoin Price Suddenly Soars - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMi6AFBVV95cUxQT2pNSWN1dUtYTE11dnNtYk5PVkNpcWM3WlJsZkF3bmtfZUhiMHVMRU0wQXNzTnRBT1ljaENpU0dpQmI2b3NJektROVBjUEw2Y2V2OWtnTG9xS1pPeVVHb3d5R0w2N285REVRbF9wZ05tak9TY3U2Wnd6MnNJaHdrajc5ZTFxWGpkRXRzZllBcm5DNnZiU3lmeWFWN0wxQ3EyQVZodzRtYzRaN09vRXJ5QWNnVGNEUzZLbEZRbFZocS1uVnUwTFBZaFhCYUxMaFdlamszemVhOHJkZWNaSlYtRndkeDRmbGxZ?oc=5",
+            "source": "Forbes",
+            "date": "Sat, 14 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Bitcoin",
-              "Journal",
-              "Record"
+              "Treasury",
+              "Secretary",
+              "Issues",
+              "Very",
+              "Important"
             ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
+            "bias_label": "center-right",
+            "factuality": "high"
           },
           {
             "title": "Bitcoin price prediction: Will Chinese New Year trigger a BTC selloff tomorrow? - Crypto News",
@@ -6430,21 +6452,6 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price analysis: BTC faces fresh resistance near $71,000 - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxNY0VlcWVBLXZ0S1JieFY2Qk84VG1xTGFSLUdRR0VYd3RZLU8zS1JoSnNBV2tuaTZDM3ZLV0RLNE5kNE9hUnNvbnM1bUNEdGZwTVQ2Zk1WZmxzVlJjc214UFJFZzI1YnNkUWxuRFNlX1Z2UlRvems3ZEJ5R01PSWRyM2l2Q01tUjZMaTNRbDAyZzZVS2JfNjFjaFZlTzYtZVVGVVp3bnNfU0lYQzE4ak1lMkZjeXVHaHBEdlE?oc=5",
-            "source": "CoinDesk",
-            "date": "Mon, 09 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
             "title": "BTC price news: bitcoin claws back to $70,000 after $8.7 billion wipeout - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPQ0s0YkhVamw1MTE4cXJHRHlSWFphVU13STNSemdIZ1Jsa0NXTWhXUTVEWTFQSXRMZTgyd2EzTlpaVExEQVNaY2I0Y0M2RFVqVXloZ2kwblRhMFBtRG9Zb1dUZ01fR3kxeGU5MEdTMDd1TkVVWWtwamcyampPQ253ZlJBSDdfMkFhaDd5aFVya3BKLXg3RFk2cHFCU0tWY1l2OC1TQ1hlbVhYTmNjOTEwS1Q5RFlzSW5QYVd3eVNzZnFxYzg?oc=5",
             "source": "CoinDesk",
@@ -6458,26 +6465,10 @@
             "factuality": "unknown"
           },
           {
-            "title": "JPMorgan turns bullish on crypto in 2026 despite crash - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNNE1zb1dkbVliM3Z1Y2JoX1RfeElJakNNdUt3dEN2N2FvMXFueHdwa1RpNmZfZklPVHJWNVlYWHAtUXhpWUJxaFhzMVhfVWdJUjlFUW9HZHBpeWI5ZENMQnh0aXlZZjRHQktpNlZ4aXM1aDdQOEFDbnFoNC1mSUpVTEdTY09HdXM?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Wed, 11 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Yahoo",
-              "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin price news: BTC falls back to $65,000 as software sector slides 3% - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxQREdqQVNFZTQwNnRqaTNnTE5hZ1VYNEo3QWRVd1N5ZkNfQlRyLW5POXNpTmFUVU5iazF5R3BFVnpYaUdrTzI5X2RfWGhidzdOQzlweFlQSlBQTVJ3WjNHSllGRlQxbEc3N2VwVHZZeWs3d2hxV2NkbGhtZWpCU0ZKS2oxZTVPM2VVeGl4dy16UElsRlFMZXhmNjZGWEpaUXJkbTNHWmhKU0trLW1PcjdLNXF2MWJqUWl5YjVneTlrajBZc3dvQk1XX2lfMUFPY0ZyRlE?oc=5",
+            "title": "Bitcoin price analysis: BTC faces fresh resistance near $71,000 - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxNY0VlcWVBLXZ0S1JieFY2Qk84VG1xTGFSLUdRR0VYd3RZLU8zS1JoSnNBV2tuaTZDM3ZLV0RLNE5kNE9hUnNvbnM1bUNEdGZwTVQ2Zk1WZmxzVlJjc214UFJFZzI1YnNkUWxuRFNlX1Z2UlRvems3ZEJ5R01PSWRyM2l2Q01tUjZMaTNRbDAyZzZVS2JfNjFjaFZlTzYtZVVGVVp3bnNfU0lYQzE4ak1lMkZjeXVHaHBEdlE?oc=5",
             "source": "CoinDesk",
-            "date": "Thu, 12 Fe",
+            "date": "Mon, 09 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
@@ -6508,10 +6499,10 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price Crash: VanEck Analyst Explains What Triggered the Drop - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOYUlwUlFBc00zaDZ4Z1p3bHU3c0U2UnhLc3gwOFQ1VDRTT0FVd0h3WGVKTXNOLWVhS2s3ZHBqS3kyVGctcU9vZ2FvWHo2TWdEa0tQUUoyTWNMVXRIYl85NVJZQ19nNzZZSGp4UWF0dVdSdUw0ak8yajdxdVM1ZHN3MDF4SFpJTUE?oc=5",
+            "title": "Bitcoin Price Slides After US Admits Nearly 1 Million ‘Phantom’ Jobs in Data Revision - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxNQ3dlQmJIdkhOd1dKRUVCU2xvejZFWlZCRjU3enZoWlB3d19vbnRIQVRFb3U2anFYVldWeC1OakhNbEJOTVoyTWZibHVfQXNhMm5iT3BXS3hBUFRtbTRxWU9qR2lxLWI3Z21paVNpREcxOTYyWHN3UTlkNl9saExiMmxB?oc=5",
             "source": "Yahoo Finance",
-            "date": "Mon, 09 Fe",
+            "date": "Fri, 13 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
@@ -6519,9 +6510,9 @@
             "keywords": [
               "Bitcoin",
               "Price",
-              "Crash",
-              "Analyst",
-              "Explains"
+              "Slides",
+              "After",
+              "Admits"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6546,23 +6537,23 @@
             "factuality": "unknown"
           },
           {
-            "title": "U.S. Treasury Secretary Issues ‘Very Important’ Crypto Prediction As The Bitcoin Price Suddenly Soars - Forbes",
-            "url": "https://news.google.com/rss/articles/CBMi6AFBVV95cUxQT2pNSWN1dUtYTE11dnNtYk5PVkNpcWM3WlJsZkF3bmtfZUhiMHVMRU0wQXNzTnRBT1ljaENpU0dpQmI2b3NJektROVBjUEw2Y2V2OWtnTG9xS1pPeVVHb3d5R0w2N285REVRbF9wZ05tak9TY3U2Wnd6MnNJaHdrajc5ZTFxWGpkRXRzZllBcm5DNnZiU3lmeWFWN0wxQ3EyQVZodzRtYzRaN09vRXJ5QWNnVGNEUzZLbEZRbFZocS1uVnUwTFBZaFhCYUxMaFdlamszemVhOHJkZWNaSlYtRndkeDRmbGxZ?oc=5",
-            "source": "Forbes",
-            "date": "Sat, 14 Fe",
+            "title": "Bitcoin Price Crash: VanEck Analyst Explains What Triggered the Drop - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOYUlwUlFBc00zaDZ4Z1p3bHU3c0U2UnhLc3gwOFQ1VDRTT0FVd0h3WGVKTXNOLWVhS2s3ZHBqS3kyVGctcU9vZ2FvWHo2TWdEa0tQUUoyTWNMVXRIYl85NVJZQ19nNzZZSGp4UWF0dVdSdUw0ak8yajdxdVM1ZHN3MDF4SFpJTUE?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 09 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Treasury",
-              "Secretary",
-              "Issues",
-              "Very",
-              "Important"
+              "Bitcoin",
+              "Price",
+              "Crash",
+              "Analyst",
+              "Explains"
             ],
-            "bias_label": "center-right",
-            "factuality": "high"
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
             "title": "Crypto's 'age of speculation' may be over, says Galaxy CEO Mike Novogratz - CNBC",
@@ -6583,23 +6574,23 @@
             "factuality": "high"
           },
           {
-            "title": "Bitcoin (BTC) Under Pressure in Asia After Standard Chartered Warning - Bloomberg.com",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxNY29hM0J1S2xmSUlweUd6YU9ZZDJIOXJCX2ptb1N4MDJncmdGOVkyMnhkTEsxZ1VKSjdYbWYwTEZrR2hDOUpzTjRJajZGVFVCdDNmaUtqZkNtMXVWcy1hd3JFUFAtV0FmVGh4dmhDUnBWYVFwZ3QtZE1SM0dPbXFZQnNPUWVFQUxQN19Ua0NTN0hnWkhSQ2pXTHFtOFNSemNOMzE3dHMwLUFxNTM5S0R0YWh1bFFRUi1HUVE?oc=5",
-            "source": "Bloomberg.com",
-            "date": "Thu, 12 Fe",
+            "title": "El Salvador’s Bitcoin Conviction Now Carries a $300 Million Price Tag - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxPajMzcFpnNW5XdnYyczJMRk94aS1ORGxqOUhsNk9iMUtRRU5GdUsxN01XdDk4YzVSUWl2MEU2NG9zaXFMdXEwd3VFNDFjUWFTYnJHNWtWTWhUV1pwUGJ3bWxqc1RTT1F6a1pfRDkxMWlwd05fVENHeEx1ODdfenpkZXVMZ0Frdmc?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Fri, 13 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
+              "Salvador",
               "Bitcoin",
-              "Under",
-              "Pressure",
-              "Asia",
-              "After"
+              "Conviction",
+              "Carries",
+              "Million"
             ],
-            "bias_label": "center-right",
-            "factuality": "high"
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
             "title": "For crypto, how much of \"Fimbulwinter\" remains? - marketplace.org",
@@ -6617,35 +6608,36 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price news: BTC remains under pressure amid slumping stock market - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPMll5TWtzVkRDSlhsN0ZnbkZ6QjItZmRRZXRkcVhCdU9ENlN4dkh6aTJVUkZIVGFSeko3STNkZTFPV0RSSVNoRE1LQ29GUTVrS3g5d0NnVmx0dDlVeThWbzV3LV9GRTh0R3RMem1nU1ZJRWh0ekJlNWp3NUtTNHo4SXhnNnR1SktJSXJTdmxsNjNBNFFCdnhJWkxPZEQwbWNUbjFVVlU0bXNtVWo0Y1htTmxnTmxGUkY2Qzdn?oc=5",
-            "source": "CoinDesk",
-            "date": "Thu, 12 Fe",
+            "title": "Bitcoin price prediction: Will BTC drop to $60K again? - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTE1OVTV0Yi12YUdtRzFxTXpkYkgyV2VRUnhkb0VfSzV0aUpWekE4dm5QUmRsWldIMjc4WF9IWi01dGJpNXhkbUpYWDZOY0tZSHRMTFJsME8zempkNWRhSERvVkUzUWRpVzlqc2ZZTFJSV3hvcFVsUW0xcVA4UDI?oc=5",
+            "source": "Crypto News",
+            "date": "Mon, 09 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Bitcoin"
+              "Bitcoin",
+              "Will",
+              "Crypto",
+              "News"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "El Salvador’s Bitcoin Conviction Now Carries a $300 Million Price Tag - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxPajMzcFpnNW5XdnYyczJMRk94aS1ORGxqOUhsNk9iMUtRRU5GdUsxN01XdDk4YzVSUWl2MEU2NG9zaXFMdXEwd3VFNDFjUWFTYnJHNWtWTWhUV1pwUGJ3bWxqc1RTT1F6a1pfRDkxMWlwd05fVENHeEx1ODdfenpkZXVMZ0Frdmc?oc=5",
-            "source": "Yahoo Finance",
+            "title": "How might Bitcoin price react as $2.5B in BTC options expire today (Feb. 13)? - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFB5RkVLdjREUy10d1oyZkE0djlqZDRVdHFfazV6WGhxd0ZGOXR6RVhjMVJOS1FvaEZiMFdDODBzaXZaQjhCVnhReTl5ZTVFdFZUY0ZlR3JzV2s0RkZfN0QzR0RDUWpmLVJpelBxbTNqQ2VmUHZMc3lZ?oc=5",
+            "source": "Crypto News",
             "date": "Thu, 12 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Salvador",
               "Bitcoin",
-              "Conviction",
-              "Carries",
-              "Million"
+              "Crypto",
+              "News"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6670,28 +6662,9 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Bear Market Alert: Will BTC Price Drop to $55K Next? - Coinpedia",
-            "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxQbFZ6WVBUbUhVNWpEMTdqaGxCOUpPZGdxVm90a0E5NVRSRTFDa29TSWx0dGVQVWVRbTdYUHFzM2ktOVU2bEhldUYxVGJ2YjluVWdmdldtTEwxQU0waUxFOEhpN3lkdWRiSjlFQzJ3eVFMamw5VURKd3ZKSG9WUmFRMjBNbmptZGtkOHZlMFB30gGTAUFVX3lxTE5VRGdWUU9kTkw5OTNTMnFmcWJuY3lGUzAxQThRdWFmVnlBUG1lclhYUllUY3VMZzFiNDBsSUdUdHUzWkwyWkFvSks5aUY3N0hZalhVcVREWXRNUVUteDU4UW50SzFXVDlkWFVhOFJmRGNSNmhERXoxcGlocHcxeUdiaTloUFdWcEtDanVrdnNZS2JPdw?oc=5",
-            "source": "Coinpedia",
-            "date": "Sat, 14 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Bear",
-              "Market",
-              "Alert",
-              "Will"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "StanChart Slashes Bitcoin 2026 Target by 33%, Warns of More Pain - Bloomberg.com",
+            "title": "StanChart Slashes Bitcoin 2026 Target by 33%, Warns of More Pain - Bloomberg",
             "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxNTUpXMW51UEl1dGZ0bUdSOW5lX01aOTUtY2x2V0MzTndOM1BYR0xyaDBSRnFOYnlzaEd4X3N6am5sTl9Nek1MclQwdU96am9BSlZiaEVmSmUybkxoM193TVZOUmZlZTdncEdNWUxzRGQ1bl91ZEZBVEZ4UDR4SkJQNlo4dVNYUmVlS2E1S2tWTzM3Z1dGdmt1S1JHTWVhQXZVaXRWU1M5VkRfWGZ2NVBaV0VtZm5XSUFhMmIw?oc=5",
-            "source": "Bloomberg.com",
+            "source": "Bloomberg",
             "date": "Thu, 12 Fe",
             "language": "en",
             "tone": 0.0,
@@ -6708,9 +6681,9 @@
             "factuality": "high"
           },
           {
-            "title": "Bitcoin Price Slides After US Admits Nearly 1 Million ‘Phantom’ Jobs in Data Revision - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMi3AFBVV95cUxOelppVGFjcFhhRERPSnd6NVlmX2RfRVlXdWNPTExETk1FUUMxenF2RWNySXl2ZjBXZGdSZFlxQTVnQzFfcXlKRGJJT0NzRXk5YllJYTI3VlRyV1NHZGdiWFBqWGRMMVVNaExGcVo4NkhyUTNEUDQ2alBxenNBT0tGN0tQeHo0MU4yZ0poUmRSTkZ6R1JZNDlyT0NYaHp4bUZ6ckU5d3BrQmNWQzBNdTNwTkktZFVFcW5TS3VjOGx3Q0N1NWpfTWRDejNkendGUjBkUWwyakpFNXVMaFVk?oc=5",
-            "source": "TradingView",
+            "title": "Bitcoin price forecast as whale deposits 10K BTC to Binance - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1BTy12N0ltRmlVWTVDVGxsWlRzdDY5YnBUcnk4ajFWRHJkaUd1YUdHOThlX0IySVhLRTBXZHE5NTVZLVRQbUpZTzhHeGFpeWdMWG5paUdOTEo3Z3NQczJ2eXJjT1E4RmRXWTNsX1c1YXAzRnZnQkNscEI1MDh3YkE?oc=5",
+            "source": "Crypto News",
             "date": "Fri, 13 Fe",
             "language": "en",
             "tone": 0.0,
@@ -6718,43 +6691,7 @@
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Price",
-              "Slides",
-              "After",
-              "Admits"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "How might Bitcoin price react as $2.5B in BTC options expire today (Feb. 13)? - Crypto News",
-            "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFB5RkVLdjREUy10d1oyZkE0djlqZDRVdHFfazV6WGhxd0ZGOXR6RVhjMVJOS1FvaEZiMFdDODBzaXZaQjhCVnhReTl5ZTVFdFZUY0ZlR3JzV2s0RkZfN0QzR0RDUWpmLVJpelBxbTNqQ2VmUHZMc3lZ?oc=5",
-            "source": "Crypto News",
-            "date": "Thu, 12 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Crypto",
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin price prediction: Will BTC drop to $60K again? - Crypto News",
-            "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTE1OVTV0Yi12YUdtRzFxTXpkYkgyV2VRUnhkb0VfSzV0aUpWekE4dm5QUmRsWldIMjc4WF9IWi01dGJpNXhkbUpYWDZOY0tZSHRMTFJsME8zempkNWRhSERvVkUzUWRpVzlqc2ZZTFJSV3hvcFVsUW0xcVA4UDI?oc=5",
-            "source": "Crypto News",
-            "date": "Mon, 09 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Will",
+              "Binance",
               "Crypto",
               "News"
             ],
@@ -6800,19 +6737,37 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price forecast as whale deposits 10K BTC to Binance - Crypto News",
-            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1BTy12N0ltRmlVWTVDVGxsWlRzdDY5YnBUcnk4ajFWRHJkaUd1YUdHOThlX0IySVhLRTBXZHE5NTVZLVRQbUpZTzhHeGFpeWdMWG5paUdOTEo3Z3NQczJ2eXJjT1E4RmRXWTNsX1c1YXAzRnZnQkNscEI1MDh3YkE?oc=5",
-            "source": "Crypto News",
-            "date": "Fri, 13 Fe",
+            "title": "Bitcoin Bear Market Alert: Will BTC Price Drop to $55K Next? - Coinpedia Fintech News",
+            "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxQbFZ6WVBUbUhVNWpEMTdqaGxCOUpPZGdxVm90a0E5NVRSRTFDa29TSWx0dGVQVWVRbTdYUHFzM2ktOVU2bEhldUYxVGJ2YjluVWdmdldtTEwxQU0waUxFOEhpN3lkdWRiSjlFQzJ3eVFMamw5VURKd3ZKSG9WUmFRMjBNbmptZGtkOHZlMFB30gGTAUFVX3lxTE5VRGdWUU9kTkw5OTNTMnFmcWJuY3lGUzAxQThRdWFmVnlBUG1lclhYUllUY3VMZzFiNDBsSUdUdHUzWkwyWkFvSks5aUY3N0hZalhVcVREWXRNUVUteDU4UW50SzFXVDlkWFVhOFJmRGNSNmhERXoxcGlocHcxeUdiaTloUFdWcEtDanVrdnNZS2JPdw?oc=5",
+            "source": "Coinpedia Fintech News",
+            "date": "Sat, 14 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Binance",
-              "Crypto",
-              "News"
+              "Bear",
+              "Market",
+              "Alert",
+              "Will"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Past crypto winters show bitcoin could keep tumbling to $31,000, research firm says - Business Insider",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNSUw1MVJnMEpIbDRmWnhlS3pTWXo0cmxudkd6UFNmU0VWVTRJcHVxWWpPYjh0U1R3dWNvaEZiU1prZWsyXzhnVE9tc3RGYndrNVhPbF9oV1hLSllQYWlRX3pGOGpFbzA0VThpRTdKaEQ5SHF5djVWVmhZQ0IwRWJNYjJOcTBnQzFsbVBCV0ctSGltZjJST0VyTE9ZT2VsdmNpdjJ0Z3lhXzRvdw?oc=5",
+            "source": "Business Insider",
+            "date": "Fri, 13 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Past",
+              "Business",
+              "Insider"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6837,18 +6792,103 @@
             "factuality": "unknown"
           },
           {
-            "title": "Past crypto winters show bitcoin could keep tumbling to $31,000, research firm says - Business Insider",
-            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNSUw1MVJnMEpIbDRmWnhlS3pTWXo0cmxudkd6UFNmU0VWVTRJcHVxWWpPYjh0U1R3dWNvaEZiU1prZWsyXzhnVE9tc3RGYndrNVhPbF9oV1hLSllQYWlRX3pGOGpFbzA0VThpRTdKaEQ5SHF5djVWVmhZQ0IwRWJNYjJOcTBnQzFsbVBCV0ctSGltZjJST0VyTE9ZT2VsdmNpdjJ0Z3lhXzRvdw?oc=5",
-            "source": "Business Insider",
-            "date": "Fri, 13 Fe",
+            "title": "Bitcoin whales took advantage of $60K price dip, scooping up 40K BTC - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxPblA3cjQtNmRUSEdudEkyWll3M3JHM2xVaGhnUFhyZ2ctQm1QVE9JQmZCa1Rtem5QVGNwVnVZLWFiUlJkLWNLOFhseDZsLUVVa0hHY1BraVFJNzZtOGVTeHJxRkhHWTRKeE9BNjBNWUl0UUJLYmNGZ0pCTkh5TTFaTVRkY2JhUkVHVnhPWERjdXIxcGppSFBDb3JsQVlBVFZ2dEFYUmppTHhuUFhJWVJLMlFPcTVLSS1nRVJTLUR5R3V2emw3RWlHbXl3?oc=5",
+            "source": "TradingView",
+            "date": "Mon, 09 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Past",
-              "Business",
-              "Insider"
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Faces Another Rejection As Upside Momentum Fades - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxOWDZ0akNiQnFrOVBIX0pRZjNxT1N0MWdFYnZyeHAyanJKT0VNWFYtd052MHZsSm5aOU9DYkI2VEtaSWxkbEI1YmdZMVVGb0FjbjhvTXdWWXppNUZod2Z4MnJCMVFXdzk0TjlqaFBqdEJ3dDlUa2Y3TWMtWTFwTDhoRHAtREgxZEliYWJLZ0xhb0tBbFFpZ1RENUJ1V1Nkc3lyakRhWVYwQ3dSWW5kMktCZmI1bHdXNHh6bVBLWA?oc=5",
+            "source": "TradingView",
+            "date": "Sun, 15 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Faces",
+              "Another",
+              "Rejection"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Crypto Winter Calls for Protected Bitcoin Exposure - ETF Trends",
+            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxQNi04azlvQ2JoNHFkQlVHcGpvWkRfMlY3YnUwcVF6eFpIekVBb19qS2NmRG1pUE5LU3VEek90VDM0bzBZdk43eFpXaWhvWmFuMEl4bmhzS2lGc2N4dndzSHpPYlV1bGNvTVRnQUJORjhEUDFYMEVIdEJTMm56R3h2Um1uUmhOUEpvUVpFa05tNHVYVC1qZlM4dW5QVU5ZOUnSAaQBQVVfeXFMUFR0TVp2U25UajJnM3E1NHl4dWM3SHBVRXo1Tm9kNDgzdVFudGNJcHdjSjRvMl8zSk5XZ1Z6Zk9IQW52Q0hEczZ1S2xuSjE2dVdFQnhzYzJoZ3hDOHRsRzZDYUlPMGFRRWdNbDNVRnNKVXdNdmgzY29CbVB3TlIxZlNESktlUmpkOVR6TF9hbWd1b3h3d1RXMFdoOWlGOG5IX1FValM?oc=5",
+            "source": "ETF Trends",
+            "date": "Tue, 10 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Crypto",
+              "Winter",
+              "Calls",
+              "Protected",
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          }
+        ]
+      },
+      {
+        "cluster_id": 1,
+        "label": "Risk Premium",
+        "article_count": 2,
+        "avg_sentiment": 0.0,
+        "dominant_category": "risk_premium",
+        "bias_distribution": {},
+        "representative_titles": [
+          "'Weakest bitcoin bear case in history': Bernstein reiterates $150,000 price target for 2026 - The Block",
+          "Binance completes $1 billion shift of stablecoin reserves into bitcoin (BTC) - CoinDesk"
+        ],
+        "narrative_summary": "",
+        "articles": [
+          {
+            "title": "'Weakest bitcoin bear case in history': Bernstein reiterates $150,000 price target for 2026 - The Block",
+            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQMDktUWs3UzkyWUM0RVJZTzV6aGp2UlRZSDk4T2RWeFctVEFBQUVtSlhXOU5Vc0paS1FXdGxSTXgwVXJvLVZuVXlqQk5sNzBtWVgzTDlZdUVTSF85VjI5YUE2emlGSzA2UDdQeTNOVHNlMVU2TDE2QURiUURmVkxnbG9MUVlKVWhJUndwTkIwSGVhRVh4X1dVRld5YUFZd2NUMWtfWC1wWHdPQUJseUV5RW5CUQ?oc=5",
+            "source": "The Block",
+            "date": "Mon, 09 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "risk_premium",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Weakest",
+              "Bernstein",
+              "Block"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Binance completes $1 billion shift of stablecoin reserves into bitcoin (BTC) - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPMUhTS2FfQUZvTy1oMUQyQVYyakwxQ1FHQ2xreFhDUXc2amhGR215QjFGc3ZNLW01WmhoWTJteXdaRjlzZ1U1b2xJMWlMeldyMXRpUzl2eVpiZGhRVkdGXzFkWkRjcm5HN3h4dkx1Z1E2eVdvaTQtem54eGxiTERBNVEyRHVzSWdqYlVRajVDeXNTeVBQZ3lYT1ZUUkZSRmZuNXE4OGczVQ?oc=5",
+            "source": "CoinDesk",
+            "date": "Thu, 12 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "risk_premium",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Binance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6876,20 +6916,17 @@
         "factuality": "unknown"
       },
       {
-        "title": "Can Crypto World Break Free From Bitcoin’s Undertow? - CME Group",
-        "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQVzM4OHFvSzhlaFNLVFo4RjVHS1JoVmVQQVFEY0xtbnlVdVNESkNBNHo2LW9ocTZmcklpS2l0b0dXQzNkSVFZakc2QjN5endlb0JMd1poZmxNajBVSDBZZ0lvZDFWanAzbFVwSTUtQTgxdHVseElXQW5pcHFMUjlqWEFsdDZHcTdFeFREVUl6cVI2bEQ4MW9Sc3hsREp5cDV5Qmx0Z2VOelBXWDhEUjFPSkhR?oc=5",
-        "source": "CME Group",
+        "title": "Binance completes $1 billion shift of stablecoin reserves into bitcoin (BTC) - CoinDesk",
+        "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPMUhTS2FfQUZvTy1oMUQyQVYyakwxQ1FHQ2xreFhDUXc2amhGR215QjFGc3ZNLW01WmhoWTJteXdaRjlzZ1U1b2xJMWlMeldyMXRpUzl2eVpiZGhRVkdGXzFkWkRjcm5HN3h4dkx1Z1E2eVdvaTQtem54eGxiTERBNVEyRHVzSWdqYlVRajVDeXNTeVBQZ3lYT1ZUUkZSRmZuNXE4OGczVQ?oc=5",
+        "source": "CoinDesk",
         "date": "Thu, 12 Fe",
         "language": "en",
         "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
+        "category": "risk_premium",
+        "relevance": 0.5,
         "keywords": [
-          "Crypto",
-          "World",
-          "Break",
-          "Free",
-          "From"
+          "TES",
+          "Binance"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6912,6 +6949,38 @@
         "factuality": "unknown"
       },
       {
+        "title": "Can Crypto World Break Free From Bitcoin’s Undertow? - CME Group",
+        "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQVzM4OHFvSzhlaFNLVFo4RjVHS1JoVmVQQVFEY0xtbnlVdVNESkNBNHo2LW9ocTZmcklpS2l0b0dXQzNkSVFZakc2QjN5endlb0JMd1poZmxNajBVSDBZZ0lvZDFWanAzbFVwSTUtQTgxdHVseElXQW5pcHFMUjlqWEFsdDZHcTdFeFREVUl6cVI2bEQ4MW9Sc3hsREp5cDV5Qmx0Z2VOelBXWDhEUjFPSkhR?oc=5",
+        "source": "CME Group",
+        "date": "Thu, 12 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Crypto",
+          "World",
+          "Break",
+          "Free",
+          "From"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "In bitcoin price plummet, ETF flows are down but aren't signaling 'crypto winter' investor panic - CNBC",
+        "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxOUV92a2tBb3BIUTltdFBuc2NRdkR0dGJVSFNrNDFkYlNVbzNqcURqN3h5RFBHMVVVWWVBMW5oVEJyaWxLRDRVU2VmYmgzMU9NaVpWcm16eTktWmg3S0ozQS1LS3RseUNoZnpxbHRUZGVLMExraWt5TjJCcEpsYllWQ3JJdUhXWW9yblNrMlpIZzd3N0RO0gGaAUFVX3lxTFBOUUx4cTRncklycE92QnNUX1dFckVmVVltTjZuTl9SclVjNE55QmtkNFp5Qnc0WUVSeHJQcDNQNVlRRXVvRDFkY1E1QUtFWlpHZTFEV0dySTctX3NsQ3E0VnVnYW4ybGxFc0ltVW9nQTFvWENzOFl5UXZWdExDUjFwb2tqaVBVcFNNVlhocERiWHpXVGUtVUhLaGc?oc=5",
+        "source": "CNBC",
+        "date": "Sun, 15 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [],
+        "bias_label": "center-right",
+        "factuality": "high"
+      },
+      {
         "title": "Crypto lender BlockFills suspends withdrawals amid faltering bitcoin price - Reuters",
         "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxONTc4a1gyLVVnSjNMNHdNaU81ZFp2YjQ5YkEwWHFna1B5SkRMRWtwU1QzRUdVSTVGemFfNGlJSEtycGhvV1NZYmxRRm4wLVNqWVFRVW5SeWhoc2RsTVdKSW1SVTBURjc4ajZROTdlQ1BhQTlrQkpSdk5PU1dwSzg2Mlg4T1FuNHZISlczTTVlQk91TE1CcXoxRnAxVzZyQl85bGRGRXY2T2E0R0ktYzMtdEE5NnE5eTY0d2Mya2FwYzdieVVkN0E?oc=5",
         "source": "Reuters",
@@ -6928,19 +6997,6 @@
         "factuality": "high"
       },
       {
-        "title": "In bitcoin price plummet, ETF flows are down but aren't signaling 'crypto winter' investor panic - CNBC",
-        "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxOUV92a2tBb3BIUTltdFBuc2NRdkR0dGJVSFNrNDFkYlNVbzNqcURqN3h5RFBHMVVVWWVBMW5oVEJyaWxLRDRVU2VmYmgzMU9NaVpWcm16eTktWmg3S0ozQS1LS3RseUNoZnpxbHRUZGVLMExraWt5TjJCcEpsYllWQ3JJdUhXWW9yblNrMlpIZzd3N0RO0gGaAUFVX3lxTFBOUUx4cTRncklycE92QnNUX1dFckVmVVltTjZuTl9SclVjNE55QmtkNFp5Qnc0WUVSeHJQcDNQNVlRRXVvRDFkY1E1QUtFWlpHZTFEV0dySTctX3NsQ3E0VnVnYW4ybGxFc0ltVW9nQTFvWENzOFl5UXZWdExDUjFwb2tqaVBVcFNNVlhocERiWHpXVGUtVUhLaGc?oc=5",
-        "source": "CNBC",
-        "date": "Sun, 15 Fe",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [],
-        "bias_label": "center-right",
-        "factuality": "high"
-      },
-      {
         "title": "Bitcoin price steadies but fresh fears suggest slide to $52k - Yahoo Finance UK",
         "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxQZVI4aHh5U1RkOVNTRWJnU3NuSWZQR081dTRZNjRDREFiU0NYbXEzZnE1UUNFalhIdm51X3B3cjlyS3N1RmNmTGc4MGhLSmJnLVpWN0ozNHdXVHo5S2VyNTQxc0loR1ZycGpONXlIQ3Jtd19aV3NGV2xqeUhRTWRkSWVaVQ?oc=5",
         "source": "Yahoo Finance UK",
@@ -6953,25 +7009,6 @@
           "Bitcoin",
           "Yahoo",
           "Finance"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Bitcoin’s Evolving Institutional Role - Ark Invest",
-        "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNenMteEx5ODlPdENvR1N4M0tfdUlBSHZMWGlCeWdNaUpWTGNCcDNNY1VyblRRV1dTekRfMFg4S09WaEQ0dGxWN0FZMTlUSXp3QlFHMGhLcExsT2k1d2x6ZFAzWGxBdUFlTktnTWxtN1FFMWNJM19GUDdIakpKUWhKUEQwTWFHQ3hjV0Y2WWdqX3RvMDA?oc=5",
-        "source": "Ark Invest",
-        "date": "Wed, 11 Fe",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Bitcoin",
-          "Evolving",
-          "Institutional",
-          "Role",
-          "Invest"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6996,36 +7033,37 @@
         "factuality": "unknown"
       },
       {
-        "title": "Bitcoin Price Reclaims $70,000 After Deep February Slide - Bitcoin Magazine",
-        "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1oSEtCQmljMjBTemJZTlBfLWZCQWRRM1FTR2tmQTZuU2hJNWV5dWNzU3Vob3owMl9uNnd6cHRhSnlwRHBsT0loZUREcWo4WTVieENqNTY4N2tTMmdZSk1EVjJyZHowM29BWTROVE1jc25ybnJvOS1rcFh1VWNQdzQ?oc=5",
-        "source": "Bitcoin Magazine",
-        "date": "Sun, 15 Fe",
+        "title": "South Korean crypto exchange races to recover $40bn of bitcoin sent to customers by mistake - The Guardian",
+        "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxNeG1EZTZnbTc3SXcyR08wWjZHNV9OWjVjTUhCX0ttQzhZQmJxclhBdEUtc2VHeWFmeHpQdUEyMEVLWnFKVExxWDZEcHVmUmh0dFU5OVNFa1BpRzB1R2dNSEF1cV9PTzdGZFEyenF5X29reU9YaVZXVW9VbnpMOUp1eEpCeGo1MUJRbGtKeXFYckZSWVFDQ3JmbDJBeEJSQQ?oc=5",
+        "source": "The Guardian",
+        "date": "Mon, 09 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "South",
+          "Korean",
+          "Guardian"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Bitcoin’s Evolving Institutional Role - Ark Invest",
+        "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNenMteEx5ODlPdENvR1N4M0tfdUlBSHZMWGlCeWdNaUpWTGNCcDNNY1VyblRRV1dTekRfMFg4S09WaEQ0dGxWN0FZMTlUSXp3QlFHMGhLcExsT2k1d2x6ZFAzWGxBdUFlTktnTWxtN1FFMWNJM19GUDdIakpKUWhKUEQwTWFHQ3hjV0Y2WWdqX3RvMDA?oc=5",
+        "source": "Ark Invest",
+        "date": "Wed, 11 Fe",
         "language": "en",
         "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
           "Bitcoin",
-          "Price",
-          "Reclaims",
-          "After",
-          "Deep"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Standard Chartered sees bitcoin sliding to $50,000, ether to $1,400 before recovery - CoinDesk",
-        "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxOX2V1NDU2QjNEZWhZcXJ0aXFyNW1SZ1htSmkxNzJVR0RwYllTY1pSaVhLOUdYWkpLTWh6cVl2djEzc0JRd0NDOWM5cjJWQXlzR3g0WmdVeDBwVVFiUmRnME5OSC1oOWRxYWo3Q0NOZXphb082UV9femVuSU5OeXZuaktlTDFUeTBfWGY3Q1VYYXJhdElVMWJKU3dBU2hnbTJKMHdBaTFHQmJkZWpjelpYd0ROQnkwV2tlTWtKYlptX0tXZlBpYTFoc3Rn?oc=5",
-        "source": "CoinDesk",
-        "date": "Thu, 12 Fe",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Standard",
-          "Chartered"
+          "Evolving",
+          "Institutional",
+          "Role",
+          "Invest"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -7033,27 +7071,28 @@
     ],
     "source_diversity": {
       "The Block": 1,
-      "CME Group": 1,
+      "CoinDesk": 4,
       "Crypto News": 5,
-      "Reuters": 1,
+      "CME Group": 1,
       "CNBC": 3,
+      "Reuters": 1,
       "Yahoo Finance UK": 1,
-      "Ark Invest": 1,
       "Investing News Network": 1,
+      "The Guardian": 1,
+      "Ark Invest": 1,
       "Bitcoin Magazine": 1,
-      "CoinDesk": 5,
-      "The Journal Record": 1,
-      "Yahoo Finance": 7,
-      "The Hill": 1,
-      "The Christian Science Monitor": 1,
       "Forbes": 1,
-      "Bloomberg.com": 2,
+      "Yahoo Finance": 7,
+      "The Christian Science Monitor": 1,
+      "The Hill": 1,
       "marketplace.org": 1,
       "The Evening Sun": 1,
-      "Coinpedia": 1,
-      "TradingView": 2,
+      "Bloomberg": 1,
       "24/7 Wall St.": 1,
-      "Business Insider": 1
+      "Coinpedia Fintech News": 1,
+      "Business Insider": 1,
+      "TradingView": 3,
+      "ETF Trends": 1
     }
   },
   "political_bias_analysis": {
@@ -7061,19 +7100,19 @@
       "left": 0,
       "center-left": 0,
       "center": 1,
-      "center-right": 6,
+      "center-right": 5,
       "right": 0,
-      "unknown": 33
+      "unknown": 34
     },
-    "bias_diversity_score": 0.255,
+    "bias_diversity_score": 0.28,
     "factuality_distribution": {
-      "high": 7,
+      "high": 6,
       "mixed": 0,
       "low": 0,
-      "unknown": 33
+      "unknown": 34
     },
     "cluster_bias_assessments": [],
-    "flagged_articles": 6,
+    "flagged_articles": 5,
     "bias_narrative": "",
     "total_analyzed": 40
   },
@@ -7087,5 +7126,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-20T22:48:59.305086+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }

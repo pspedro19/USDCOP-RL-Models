@@ -9,7 +9,7 @@
   "week_end": "2026-07-05",
   "weekly_summary": {
     "headline": "Oro (Gold) · Semana 27 de 2026",
-    "markdown": "### Oro (Gold) — Semana 27 (2026-06-29 → 2026-07-05)\n\nEl cierre semanal de XAU/USD fue **4174.94 USD/oz**, un cambio de **+2.10%** en la semana (rango 3949.45–4195.33). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista debil** con precio en 4174.94. RSI(14)=47 (neutral). Soporte 3949.45, resistencia 4383.62.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: CNBC, Yahoo Finance, World Gold Council.",
+    "markdown": "### Oro (Gold) — Semana 27 (2026-06-29 → 2026-07-05)\n\nEl cierre semanal de XAU/USD fue **4174.94 USD/oz**, un cambio de **+2.10%** en la semana (rango 3949.45–4195.33). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista debil** con precio en 4174.94. RSI(14)=47 (neutral). Soporte 3949.45, resistencia 4383.62.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: Reuters, Yahoo Finance, World Gold Council.",
     "sentiment": "bullish",
     "ohlcv": {
       "open": 4080.8296,
@@ -40,7 +40,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-06-30",
@@ -58,7 +58,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-07-01",
@@ -76,7 +76,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-07-02",
@@ -94,7 +94,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-07-03",
@@ -112,32 +112,32 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
     "gold": {
-      "snapshot_date": "2026-07-05",
+      "snapshot_date": "2026-07-03",
       "variable_key": "gold",
       "variable_name": "Oro",
-      "value": 4195.36,
-      "sma_5": 4125.852,
-      "sma_10": 4097.026,
-      "sma_20": 4172.583,
-      "sma_50": 4705.0574,
-      "bollinger_upper_20": 4388.464274,
-      "bollinger_lower_20": 3956.701726,
-      "bollinger_width_20": 0.103476,
-      "rsi_14": 41.595996,
-      "macd_line": -170.294625,
-      "macd_signal": -199.32245,
-      "macd_histogram": 29.027825,
-      "roc_5": 3.873827,
-      "roc_20": -3.851125,
-      "z_score_20": 0.211,
-      "z_score_60": -1.2474,
+      "value": 4187.3,
+      "sma_5": 4094.56,
+      "sma_10": 4162.51,
+      "sma_20": 4348.837,
+      "sma_50": 4779.5662,
+      "bollinger_upper_20": 5069.289927,
+      "bollinger_lower_20": 3628.384073,
+      "bollinger_width_20": 0.331331,
+      "rsi_14": 38.276477,
+      "macd_line": -208.522959,
+      "macd_signal": -207.94607,
+      "macd_histogram": -0.576889,
+      "roc_5": 0.913385,
+      "roc_20": -17.955601,
+      "z_score_20": -0.4484,
+      "z_score_60": -1.4659,
       "z_score_252": null,
-      "trend": "above_sma20",
+      "trend": "below_sma20",
       "signal": "neutral",
       "chart_data": null,
       "png_url": null
@@ -148,20 +148,20 @@
       "variable_name": "DXY (Dollar Index)",
       "value": 100.86,
       "sma_5": 101.082,
-      "sma_10": 101.224,
-      "sma_20": 100.6355,
-      "sma_50": 98.9956,
-      "bollinger_upper_20": 102.006142,
-      "bollinger_lower_20": 99.264858,
-      "bollinger_width_20": 0.02724,
-      "rsi_14": 59.441506,
-      "macd_line": 0.609358,
-      "macd_signal": 0.68655,
-      "macd_histogram": -0.077193,
-      "roc_5": -0.493291,
-      "roc_20": 1.12292,
-      "z_score_20": 0.3276,
-      "z_score_60": 1.3206,
+      "sma_10": 100.963,
+      "sma_20": 100.3055,
+      "sma_50": 98.6866,
+      "bollinger_upper_20": 101.798597,
+      "bollinger_lower_20": 98.812403,
+      "bollinger_width_20": 0.029771,
+      "rsi_14": 62.616927,
+      "macd_line": 0.677224,
+      "macd_signal": 0.681423,
+      "macd_histogram": -0.004199,
+      "roc_5": -0.542353,
+      "roc_20": 1.69389,
+      "z_score_20": 0.7428,
+      "z_score_60": 1.5286,
       "z_score_252": null,
       "trend": "above_sma20",
       "signal": "neutral",
@@ -174,20 +174,20 @@
       "variable_name": "US Treasury 10Y",
       "value": 4.478,
       "sma_5": 4.4662,
-      "sma_10": 4.4362,
-      "sma_20": 4.4593,
-      "sma_50": 4.26132,
-      "bollinger_upper_20": 4.552153,
-      "bollinger_lower_20": 4.366447,
-      "bollinger_width_20": 0.041645,
-      "rsi_14": 61.175382,
-      "macd_line": 0.054289,
-      "macd_signal": 0.061565,
-      "macd_histogram": -0.007276,
+      "sma_10": 4.4644,
+      "sma_20": 4.45215,
+      "sma_50": 4.25294,
+      "bollinger_upper_20": 4.617413,
+      "bollinger_lower_20": 4.286887,
+      "bollinger_width_20": 0.074239,
+      "rsi_14": 60.172292,
+      "macd_line": 0.067434,
+      "macd_signal": 0.075926,
+      "macd_histogram": -0.008492,
       "roc_5": 2.377686,
-      "roc_20": -1.582418,
-      "z_score_20": 0.4028,
-      "z_score_60": 1.2849,
+      "roc_20": 8.268859,
+      "z_score_20": 0.3128,
+      "z_score_60": 1.3556,
       "z_score_252": null,
       "trend": "above_sma20",
       "signal": "neutral",
@@ -200,20 +200,20 @@
       "variable_name": "VIX (Volatilidad)",
       "value": 15.81,
       "sma_5": 16.53,
-      "sma_10": 17.535,
-      "sma_20": 17.8855,
-      "sma_50": 19.6124,
-      "bollinger_upper_20": 21.076202,
-      "bollinger_lower_20": 14.694798,
-      "bollinger_width_20": 0.356792,
-      "rsi_14": 41.807735,
-      "macd_line": -1.04327,
-      "macd_signal": -0.791881,
-      "macd_histogram": -0.25139,
-      "roc_5": -14.122759,
-      "roc_20": -42.024202,
-      "z_score_20": -1.301,
-      "z_score_60": -1.1353,
+      "sma_10": 17.104,
+      "sma_20": 18.9105,
+      "sma_50": 19.4854,
+      "bollinger_upper_20": 25.329199,
+      "bollinger_lower_20": 12.491801,
+      "bollinger_width_20": 0.67885,
+      "rsi_14": 42.780302,
+      "macd_line": -1.153789,
+      "macd_signal": -0.819962,
+      "macd_histogram": -0.333827,
+      "roc_5": -18.881478,
+      "roc_20": -38.0,
+      "z_score_20": -0.9661,
+      "z_score_60": -1.0594,
       "z_score_252": null,
       "trend": "below_sma20",
       "signal": "neutral",
@@ -221,25 +221,25 @@
       "png_url": null
     },
     "wti": {
-      "snapshot_date": "2026-07-05",
+      "snapshot_date": "2026-07-03",
       "variable_key": "wti",
       "variable_name": "WTI Petroleo",
-      "value": 68.25,
-      "sma_5": 68.76,
-      "sma_10": 69.925,
-      "sma_20": 75.475,
-      "sma_50": 72.91,
-      "bollinger_upper_20": 89.359847,
-      "bollinger_lower_20": 61.590153,
-      "bollinger_width_20": 0.367932,
-      "rsi_14": 39.73313,
-      "macd_line": -2.246399,
-      "macd_signal": -1.019594,
-      "macd_histogram": -1.226805,
-      "roc_5": -3.533569,
-      "roc_20": -25.24644,
-      "z_score_20": -1.0407,
-      "z_score_60": -0.2894,
+      "value": 68.78,
+      "sma_5": 69.26,
+      "sma_10": 72.423,
+      "sma_20": 79.4665,
+      "sma_50": 72.4348,
+      "bollinger_upper_20": 96.530892,
+      "bollinger_lower_20": 62.402108,
+      "bollinger_width_20": 0.429474,
+      "rsi_14": 39.285992,
+      "macd_line": -1.721803,
+      "macd_signal": 0.344936,
+      "macd_histogram": -2.066739,
+      "roc_5": -6.051086,
+      "roc_20": -27.42429,
+      "z_score_20": -1.2525,
+      "z_score_60": -0.1605,
       "z_score_252": null,
       "trend": "below_sma20",
       "signal": "neutral",
@@ -247,25 +247,25 @@
       "png_url": null
     },
     "brent": {
-      "snapshot_date": "2026-07-05",
+      "snapshot_date": "2026-07-03",
       "variable_key": "brent",
       "variable_name": "Brent",
-      "value": 71.59,
-      "sma_5": 72.0,
-      "sma_10": 73.094,
-      "sma_20": 78.521,
-      "sma_50": 76.9704,
-      "bollinger_upper_20": 92.220934,
-      "bollinger_lower_20": 64.821066,
-      "bollinger_width_20": 0.34895,
-      "rsi_14": 39.759583,
-      "macd_line": -2.379792,
-      "macd_signal": -1.19518,
-      "macd_histogram": -1.184612,
-      "roc_5": -2.132604,
-      "roc_20": -24.04244,
-      "z_score_20": -1.0118,
-      "z_score_60": -0.3882,
+      "value": 72.12,
+      "sma_5": 72.312,
+      "sma_10": 75.467,
+      "sma_20": 82.681,
+      "sma_50": 76.6662,
+      "bollinger_upper_20": 100.130221,
+      "bollinger_lower_20": 65.231779,
+      "bollinger_width_20": 0.422085,
+      "rsi_14": 39.446469,
+      "macd_line": -1.906634,
+      "macd_signal": 0.152661,
+      "macd_histogram": -2.059295,
+      "roc_5": -6.09375,
+      "roc_20": -27.12207,
+      "z_score_20": -1.2105,
+      "z_score_60": -0.2639,
       "z_score_252": null,
       "trend": "below_sma20",
       "signal": "neutral",
@@ -277,6 +277,38 @@
     "gold": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-16",
+          "value": 4304.6,
+          "sma20": 3917.4,
+          "bb_upper": 4249.653518,
+          "bb_lower": 3585.146482,
+          "rsi": 81.438205
+        },
+        {
+          "date": "2025-10-17",
+          "value": 4213.3,
+          "sma20": 3944.15,
+          "bb_upper": 4281.207488,
+          "bb_lower": 3607.092512,
+          "rsi": 71.520625
+        },
+        {
+          "date": "2025-10-20",
+          "value": 4359.4,
+          "sma20": 3976.83,
+          "bb_upper": 4340.780805,
+          "bb_lower": 3612.879195,
+          "rsi": 76.460716
+        },
+        {
+          "date": "2025-10-21",
+          "value": 4109.1,
+          "sma20": 3994.205,
+          "bb_upper": 4348.44631,
+          "bb_lower": 3639.96369,
+          "rsi": 57.923175
+        },
         {
           "date": "2025-10-22",
           "value": 4065.4,
@@ -1166,82 +1198,74 @@
           "rsi": 32.314903
         },
         {
-          "date": "2026-06-24",
-          "value": 4008.8,
-          "sma20": 4549.427,
-          "bb_upper": 5437.446615,
-          "bb_lower": 3661.407385,
-          "rsi": 29.006409
-        },
-        {
-          "date": "2026-06-25",
-          "value": 4047.6,
-          "sma20": 4495.072,
-          "bb_upper": 5366.058879,
-          "bb_lower": 3624.085121,
-          "rsi": 31.102743
-        },
-        {
-          "date": "2026-06-26",
-          "value": 4096.3,
-          "sma20": 4445.952,
-          "bb_upper": 5290.135949,
-          "bb_lower": 3601.768051,
-          "rsi": 33.747148
-        },
-        {
           "date": "2026-06-29",
           "value": 4038.9,
-          "sma20": 4389.962,
-          "bb_upper": 5184.721928,
-          "bb_lower": 3595.202072,
-          "rsi": 32.179416
+          "sma20": 4550.932,
+          "bb_upper": 5435.376362,
+          "bb_lower": 3666.487638,
+          "rsi": 29.65643
         },
         {
           "date": "2026-06-30",
           "value": 4038.5,
-          "sma20": 4336.702,
-          "bb_upper": 5073.667096,
-          "bb_lower": 3599.736904,
-          "rsi": 32.168201
+          "sma20": 4496.122,
+          "bb_upper": 5364.790856,
+          "bb_lower": 3627.453144,
+          "rsi": 29.646922
         },
         {
           "date": "2026-07-01",
           "value": 4082.4,
-          "sma20": 4278.717,
-          "bb_upper": 4894.065118,
-          "bb_lower": 3663.368882,
-          "rsi": 34.851741
+          "sma20": 4446.307,
+          "bb_upper": 5289.522985,
+          "bb_lower": 3603.091015,
+          "rsi": 32.215497
         },
         {
           "date": "2026-07-02",
           "value": 4125.7,
-          "sma20": 4226.047,
-          "bb_upper": 4684.415543,
-          "bb_lower": 3767.678457,
-          "rsi": 37.479034
+          "sma20": 4394.657,
+          "bb_upper": 5181.676263,
+          "bb_lower": 3607.637737,
+          "rsi": 34.746097
         },
         {
           "date": "2026-07-03",
           "value": 4187.3,
-          "sma20": 4180.985,
-          "bb_upper": 4412.287436,
-          "bb_lower": 3949.682564,
-          "rsi": 41.117115
-        },
-        {
-          "date": "2026-07-05",
-          "value": 4195.36,
-          "sma20": 4172.583,
-          "bb_upper": 4388.464274,
-          "bb_lower": 3956.701726,
-          "rsi": 41.595996
+          "sma20": 4348.837,
+          "bb_upper": 5069.289927,
+          "bb_lower": 3628.384073,
+          "rsi": 38.276477
         }
       ]
     },
     "dxy": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-16",
+          "value": 98.092,
+          "sma20": 97.96435,
+          "bb_upper": 99.323557,
+          "bb_lower": 96.605143,
+          "rsi": 50.569168
+        },
+        {
+          "date": "2025-10-17",
+          "value": 98.192,
+          "sma20": 98.01045,
+          "bb_upper": 99.334415,
+          "bb_lower": 96.686485,
+          "rsi": 51.633951
+        },
+        {
+          "date": "2025-10-20",
+          "value": 98.355,
+          "sma20": 98.07945,
+          "bb_upper": 99.321687,
+          "bb_lower": 96.837213,
+          "rsi": 53.39616
+        },
         {
           "date": "2025-10-21",
           "value": 98.711,
@@ -2139,74 +2163,74 @@
           "rsi": 75.984282
         },
         {
-          "date": "2026-06-24",
-          "value": 101.61,
-          "sma20": 99.9285,
-          "bb_upper": 101.547849,
-          "bb_lower": 98.309151,
-          "rsi": 77.242803
-        },
-        {
-          "date": "2026-06-25",
-          "value": 101.43,
-          "sma20": 100.0615,
-          "bb_upper": 101.714985,
-          "bb_lower": 98.408015,
-          "rsi": 73.509153
-        },
-        {
-          "date": "2026-06-26",
-          "value": 101.36,
-          "sma20": 100.1635,
-          "bb_upper": 101.872199,
-          "bb_lower": 98.454801,
-          "rsi": 72.050596
-        },
-        {
           "date": "2026-06-29",
           "value": 101.11,
-          "sma20": 100.2695,
-          "bb_upper": 101.936371,
-          "bb_lower": 98.602629,
-          "rsi": 66.941937
+          "sma20": 99.9035,
+          "bb_upper": 101.431077,
+          "bb_lower": 98.375923,
+          "rsi": 70.163958
         },
         {
           "date": "2026-06-30",
           "value": 101.19,
-          "sma20": 100.37,
-          "bb_upper": 102.00405,
-          "bb_lower": 98.73595,
-          "rsi": 67.730429
+          "sma20": 100.0245,
+          "bb_upper": 101.557138,
+          "bb_lower": 98.491862,
+          "rsi": 70.806155
         },
         {
           "date": "2026-07-01",
           "value": 101.39,
-          "sma20": 100.498,
-          "bb_upper": 102.027164,
-          "bb_lower": 98.968836,
-          "rsi": 69.677617
+          "sma20": 100.128,
+          "bb_upper": 101.734171,
+          "bb_lower": 98.521829,
+          "rsi": 72.405263
         },
         {
           "date": "2026-07-02",
           "value": 100.86,
-          "sma20": 100.5795,
-          "bb_upper": 101.999507,
-          "bb_lower": 99.159493,
-          "rsi": 59.441506
+          "sma20": 100.2215,
+          "bb_upper": 101.768423,
+          "bb_lower": 98.674577,
+          "rsi": 62.616927
         },
         {
           "date": "2026-07-03",
           "value": 100.86,
-          "sma20": 100.6355,
-          "bb_upper": 102.006142,
-          "bb_lower": 99.264858,
-          "rsi": 59.441506
+          "sma20": 100.3055,
+          "bb_upper": 101.798597,
+          "bb_lower": 98.812403,
+          "rsi": 62.616927
         }
       ]
     },
     "ust10y": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-23",
+          "value": 3.989,
+          "sma20": 4.06505,
+          "bb_upper": 4.200029,
+          "bb_lower": 3.930071,
+          "rsi": 40.466374
+        },
+        {
+          "date": "2025-10-24",
+          "value": 3.997,
+          "sma20": 4.05785,
+          "bb_upper": 4.191209,
+          "bb_lower": 3.924491,
+          "rsi": 41.623575
+        },
+        {
+          "date": "2025-10-27",
+          "value": 3.997,
+          "sma20": 4.0502,
+          "bb_upper": 4.179012,
+          "bb_lower": 3.921388,
+          "rsi": 41.623575
+        },
         {
           "date": "2025-10-28",
           "value": 3.983,
@@ -3096,82 +3120,82 @@
           "rsi": 66.297902
         },
         {
-          "date": "2026-06-24",
-          "value": 4.4,
-          "sma20": 4.3684,
-          "bb_upper": 4.692035,
-          "bb_lower": 4.044765,
-          "rsi": 55.489527
-        },
-        {
-          "date": "2026-06-25",
-          "value": 4.392,
-          "sma20": 4.3839,
-          "bb_upper": 4.679678,
-          "bb_lower": 4.088122,
-          "rsi": 54.663958
-        },
-        {
-          "date": "2026-06-26",
-          "value": 4.372,
-          "sma20": 4.3952,
-          "bb_upper": 4.670306,
-          "bb_lower": 4.120094,
-          "rsi": 52.558671
-        },
-        {
           "date": "2026-06-29",
           "value": 4.374,
-          "sma20": 4.4073,
-          "bb_upper": 4.654954,
-          "bb_lower": 4.159646,
-          "rsi": 52.754625
+          "sma20": 4.3671,
+          "bb_upper": 4.690425,
+          "bb_lower": 4.043775,
+          "rsi": 53.070695
         },
         {
           "date": "2026-06-30",
           "value": 4.422,
-          "sma20": 4.4217,
-          "bb_upper": 4.635259,
-          "bb_lower": 4.208141,
-          "rsi": 57.311853
+          "sma20": 4.3841,
+          "bb_upper": 4.680292,
+          "bb_lower": 4.087908,
+          "rsi": 56.813485
         },
         {
           "date": "2026-07-01",
           "value": 4.475,
-          "sma20": 4.43865,
-          "bb_upper": 4.608066,
-          "bb_lower": 4.269234,
-          "rsi": 61.704338
+          "sma20": 4.40055,
+          "bb_upper": 4.677969,
+          "bb_lower": 4.123131,
+          "rsi": 60.554332
         },
         {
           "date": "2026-07-02",
           "value": 4.469,
-          "sma20": 4.4518,
-          "bb_upper": 4.583592,
-          "bb_lower": 4.320008,
-          "rsi": 60.939861
+          "sma20": 4.4174,
+          "bb_upper": 4.667078,
+          "bb_lower": 4.167722,
+          "rsi": 59.921535
         },
         {
           "date": "2026-07-03",
           "value": 4.487,
-          "sma20": 4.4629,
-          "bb_upper": 4.563623,
-          "bb_lower": 4.362177,
-          "rsi": 62.443155
+          "sma20": 4.43505,
+          "bb_upper": 4.649523,
+          "bb_lower": 4.220577,
+          "rsi": 61.230464
         },
         {
           "date": "2026-07-05",
           "value": 4.478,
-          "sma20": 4.4593,
-          "bb_upper": 4.552153,
-          "bb_lower": 4.366447,
-          "rsi": 61.175382
+          "sma20": 4.45215,
+          "bb_upper": 4.617413,
+          "bb_lower": 4.286887,
+          "rsi": 60.172292
         }
       ]
     },
     "vix": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-17",
+          "value": 20.78,
+          "sma20": 17.8745,
+          "bb_upper": 22.965297,
+          "bb_lower": 12.783703,
+          "rsi": 57.15486
+        },
+        {
+          "date": "2025-10-20",
+          "value": 18.23,
+          "sma20": 17.981,
+          "bb_upper": 23.007565,
+          "bb_lower": 12.954435,
+          "rsi": 50.438154
+        },
+        {
+          "date": "2025-10-21",
+          "value": 17.87,
+          "sma20": 18.0425,
+          "bb_upper": 23.031892,
+          "bb_lower": 13.053108,
+          "rsi": 49.552798
+        },
         {
           "date": "2025-10-22",
           "value": 18.6,
@@ -4069,74 +4093,82 @@
           "rsi": 49.847632
         },
         {
-          "date": "2026-06-24",
-          "value": 18.63,
-          "sma20": 20.704,
-          "bb_upper": 28.388617,
-          "bb_lower": 13.019383,
-          "rsi": 48.105052
-        },
-        {
-          "date": "2026-06-25",
-          "value": 18.89,
-          "sma20": 20.591,
-          "bb_upper": 28.312437,
-          "bb_lower": 12.869563,
-          "rsi": 48.689059
-        },
-        {
-          "date": "2026-06-26",
-          "value": 18.41,
-          "sma20": 20.324,
-          "bb_upper": 27.95885,
-          "bb_lower": 12.68915,
-          "rsi": 47.623526
-        },
-        {
           "date": "2026-06-29",
           "value": 17.65,
-          "sma20": 19.732,
-          "bb_upper": 26.175293,
-          "bb_lower": 13.288707,
-          "rsi": 45.910347
+          "sma20": 20.655,
+          "bb_upper": 28.404117,
+          "bb_lower": 12.905883,
+          "rsi": 46.262154
         },
         {
           "date": "2026-06-30",
           "value": 16.45,
-          "sma20": 19.2795,
-          "bb_upper": 25.295922,
-          "bb_lower": 13.263078,
-          "rsi": 43.263922
+          "sma20": 20.42,
+          "bb_upper": 28.377092,
+          "bb_lower": 12.462908,
+          "rsi": 44.037447
         },
         {
           "date": "2026-07-01",
           "value": 16.59,
-          "sma20": 18.8625,
-          "bb_upper": 24.390866,
-          "bb_lower": 13.334134,
-          "rsi": 43.671871
+          "sma20": 20.062,
+          "bb_upper": 28.03186,
+          "bb_lower": 12.09214,
+          "rsi": 44.37354
         },
         {
           "date": "2026-07-02",
           "value": 16.15,
-          "sma20": 18.4585,
-          "bb_upper": 23.52007,
-          "bb_lower": 13.39693,
-          "rsi": 42.634307
+          "sma20": 19.395,
+          "bb_upper": 26.25229,
+          "bb_lower": 12.53771,
+          "rsi": 43.489532
         },
         {
           "date": "2026-07-03",
           "value": 15.81,
-          "sma20": 17.8855,
-          "bb_upper": 21.076202,
-          "bb_lower": 14.694798,
-          "rsi": 41.807735
+          "sma20": 18.9105,
+          "bb_upper": 25.329199,
+          "bb_lower": 12.491801,
+          "rsi": 42.780302
         }
       ]
     },
     "wti": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-27",
+          "value": 61.31,
+          "sma20": 60.047,
+          "bb_upper": 63.659878,
+          "bb_lower": 56.434122,
+          "rsi": 52.760796
+        },
+        {
+          "date": "2025-10-28",
+          "value": 60.15,
+          "sma20": 59.936,
+          "bb_upper": 63.38947,
+          "bb_lower": 56.48253,
+          "rsi": 47.352515
+        },
+        {
+          "date": "2025-10-29",
+          "value": 60.48,
+          "sma20": 59.871,
+          "bb_upper": 63.230862,
+          "bb_lower": 56.511138,
+          "rsi": 48.955529
+        },
+        {
+          "date": "2025-10-30",
+          "value": 60.57,
+          "sma20": 59.8755,
+          "bb_upper": 63.238852,
+          "bb_lower": 56.512148,
+          "rsi": 49.407962
+        },
         {
           "date": "2025-10-31",
           "value": 60.98,
@@ -5026,82 +5058,82 @@
           "rsi": 44.100189
         },
         {
-          "date": "2026-06-24",
-          "value": 70.34,
-          "sma20": 82.7355,
-          "bb_upper": 98.174292,
-          "bb_lower": 67.296708,
-          "rsi": 40.88599
-        },
-        {
-          "date": "2026-06-25",
-          "value": 71.92,
-          "sma20": 82.5985,
-          "bb_upper": 98.366616,
-          "bb_lower": 66.830384,
-          "rsi": 43.334549
-        },
-        {
-          "date": "2026-06-26",
-          "value": 69.23,
-          "sma20": 82.0095,
-          "bb_upper": 98.816775,
-          "bb_lower": 65.202225,
-          "rsi": 40.275798
-        },
-        {
           "date": "2026-06-29",
           "value": 70.75,
-          "sma20": 81.002,
-          "bb_upper": 97.971718,
-          "bb_lower": 64.032282,
-          "rsi": 42.735439
+          "sma20": 82.756,
+          "bb_upper": 98.129854,
+          "bb_lower": 67.382146,
+          "rsi": 41.316174
         },
         {
           "date": "2026-06-30",
           "value": 69.5,
-          "sma20": 79.7385,
-          "bb_upper": 96.174231,
-          "bb_lower": 63.302769,
-          "rsi": 41.231595
+          "sma20": 82.498,
+          "bb_upper": 98.56425,
+          "bb_lower": 66.43175,
+          "rsi": 39.936548
         },
         {
           "date": "2026-07-01",
           "value": 68.58,
-          "sma20": 78.995,
-          "bb_upper": 96.026426,
-          "bb_lower": 61.963574,
-          "rsi": 40.112777
+          "sma20": 81.8765,
+          "bb_upper": 99.048531,
+          "bb_lower": 64.704469,
+          "rsi": 38.906805
         },
         {
           "date": "2026-07-02",
           "value": 68.69,
-          "sma20": 78.067,
-          "bb_upper": 95.22026,
-          "bb_lower": 60.91374,
-          "rsi": 40.321292
+          "sma20": 80.766,
+          "bb_upper": 98.328399,
+          "bb_lower": 63.203601,
+          "rsi": 39.108968
         },
         {
           "date": "2026-07-03",
           "value": 68.78,
-          "sma20": 76.6275,
-          "bb_upper": 91.698066,
-          "bb_lower": 61.556934,
-          "rsi": 40.50382
-        },
-        {
-          "date": "2026-07-05",
-          "value": 68.25,
-          "sma20": 75.475,
-          "bb_upper": 89.359847,
-          "bb_lower": 61.590153,
-          "rsi": 39.73313
+          "sma20": 79.4665,
+          "bb_upper": 96.530892,
+          "bb_lower": 62.402108,
+          "rsi": 39.285992
         }
       ]
     },
     "brent": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-14",
+          "value": 21.93,
+          "sma20": 38.7815,
+          "bb_upper": 81.025931,
+          "bb_lower": -3.462931,
+          "rsi": 15.847839
+        },
+        {
+          "date": "2025-10-15",
+          "value": 22.0,
+          "sma20": 36.458,
+          "bb_upper": 76.992426,
+          "bb_lower": -4.076426,
+          "rsi": 16.06868
+        },
+        {
+          "date": "2025-10-16",
+          "value": 21.5,
+          "sma20": 34.1355,
+          "bb_upper": 72.448198,
+          "bb_lower": -4.177198,
+          "rsi": 15.750721
+        },
+        {
+          "date": "2025-10-17",
+          "value": 21.68,
+          "sma20": 31.8475,
+          "bb_upper": 67.289184,
+          "bb_lower": -3.594184,
+          "rsi": 16.392116
+        },
         {
           "date": "2025-10-20",
           "value": 22.21,
@@ -5991,76 +6023,44 @@
           "rsi": 44.208459
         },
         {
-          "date": "2026-06-24",
-          "value": 73.74,
-          "sma20": 86.213,
-          "bb_upper": 101.624617,
-          "bb_lower": 70.801383,
-          "rsi": 40.756648
-        },
-        {
-          "date": "2026-06-25",
-          "value": 75.26,
-          "sma20": 85.906,
-          "bb_upper": 101.921667,
-          "bb_lower": 69.890333,
-          "rsi": 43.131939
-        },
-        {
-          "date": "2026-06-26",
-          "value": 71.99,
-          "sma20": 85.235,
-          "bb_upper": 102.36341,
-          "bb_lower": 68.10659,
-          "rsi": 39.46597
-        },
-        {
           "date": "2026-06-29",
           "value": 73.15,
-          "sma20": 84.258,
-          "bb_upper": 101.798192,
-          "bb_lower": 66.717808,
-          "rsi": 41.369706
+          "sma20": 86.1835,
+          "bb_upper": 101.692455,
+          "bb_lower": 70.674545,
+          "rsi": 40.152169
         },
         {
           "date": "2026-06-30",
           "value": 72.92,
-          "sma20": 82.956,
-          "bb_upper": 99.789235,
-          "bb_lower": 66.122765,
-          "rsi": 41.093752
+          "sma20": 85.7595,
+          "bb_upper": 102.203839,
+          "bb_lower": 69.315161,
+          "rsi": 39.903709
         },
         {
           "date": "2026-07-01",
           "value": 71.57,
-          "sma20": 82.1445,
-          "bb_upper": 99.521468,
-          "bb_lower": 64.767532,
-          "rsi": 39.431161
+          "sma20": 85.0675,
+          "bb_upper": 102.638635,
+          "bb_lower": 67.496365,
+          "rsi": 38.401647
         },
         {
           "date": "2026-07-02",
           "value": 71.8,
-          "sma20": 81.1355,
-          "bb_upper": 98.454305,
-          "bb_lower": 63.816695,
-          "rsi": 39.87746
+          "sma20": 84.023,
+          "bb_upper": 102.132823,
+          "bb_lower": 65.913177,
+          "rsi": 38.824154
         },
         {
           "date": "2026-07-03",
           "value": 72.12,
-          "sma20": 79.654,
-          "bb_upper": 94.567952,
-          "bb_lower": 64.740048,
-          "rsi": 40.533986
-        },
-        {
-          "date": "2026-07-05",
-          "value": 71.59,
-          "sma20": 78.521,
-          "bb_upper": 92.220934,
-          "bb_lower": 64.821066,
-          "rsi": 39.759583
+          "sma20": 82.681,
+          "bb_upper": 100.130221,
+          "bb_lower": 65.231779,
+          "rsi": 39.446469
         }
       ]
     }
@@ -6118,130 +6118,110 @@
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": -0.071,
+    "avg_sentiment": 0.0,
     "source_breakdown": {
-      "CNBC": 2,
-      "Yahoo Finance": 9,
-      "World Gold Council": 1,
       "Reuters": 2,
-      "KITCO": 3,
+      "Yahoo Finance": 7,
+      "World Gold Council": 1,
+      "KITCO": 4,
       "Business Insider": 2,
+      "BullionVault": 1,
       "Gold Price": 1,
+      "Mining Weekly": 1,
+      "South China Morning Post": 1,
       "thestreet.com": 1,
-      "Yahoo Finance Australia": 1,
-      "Mining.com": 1,
-      "Yahoo! Finance Canada": 1,
-      "NerdWallet": 1,
+      "USA Today": 1,
+      "CNBC": 3,
+      "GuruFocus": 1,
+      "Intellectia AI": 1,
+      "FXEmpire": 2,
+      "Anadolu Ajansı": 1,
       "Investing News Network": 1,
       "The Guardian": 1,
-      "The Business Times": 1,
-      "markets.businessinsider.com": 1,
-      "GoldBroker.com": 1,
-      "Yahoo Finance Singapore": 1,
-      "TradingView": 2,
-      "GuruFocus": 1,
-      "Crypto News": 1,
-      "Yahoo Finance UK": 1,
-      "FXEmpire": 1,
-      "Crypto Briefing": 1,
-      "Elko Daily Free Press": 1,
-      "simplywall.st": 1
+      "Mitrade": 1,
+      "FOREX.com": 1,
+      "FXStreet": 1,
+      "GoldSilver": 2,
+      "The Times of India": 1,
+      "36 Kr": 1,
+      "MoneyMagpie": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
     "relevant_articles": 40,
-    "avg_sentiment": -0.071,
+    "avg_sentiment": 0.0,
     "sentiment_distribution": {
-      "positive": 11,
-      "negative": 14,
-      "neutral": 15
+      "positive": 0,
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
         "cluster_id": 0,
         "label": "Commodities",
-        "article_count": 19,
-        "avg_sentiment": -0.035,
+        "article_count": 31,
+        "avg_sentiment": 0.0,
         "dominant_category": "commodities",
-        "bias_distribution": {
-          "center-right": 1,
-          "center": 1
-        },
+        "bias_distribution": {},
         "representative_titles": [
-          "Gold prices set for first weekly rise in a month as investors scale back Fed rate hike bets - CNBC",
-          "Gold price climbs as weak NFP data dampens Fed rate hike expectations - Crypto Briefing",
-          "Gold slump accelerates as rising yields and stronger dollar weigh on prices - Yahoo Finance UK",
-          "Gold prices today, Thursday, July 2, 2026: Prices break above $4,100 following a disappointing June jobs report - Yahoo Finance",
-          "Gold Mid-Year Outlook 2026: Point break - World Gold Council"
+          "Soft Jobs Data Helps Gold Rebound From $4,000 Test - Yahoo Finance",
+          "JPMorgan sees $4,500 gold price in fourth quarter, says risks to downside - Reuters",
+          "Gold price outlook: Could prices hit $6,000 in 2026? - Yahoo Finance",
+          "Gold Mid-Year Outlook 2026: Point break - World Gold Council",
+          "Gold price jumps above $4,100 as U.S. economy created 57k jobs in June - KITCO"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Gold prices set for first weekly rise in a month as investors scale back Fed rate hike bets - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxNbWVmbHRNYi1WMk5Yb2pzT2h5RmVuWmVhMHg2SXRQVGxiem9zQ1owQzBCZjZLYkJQRnRmYWdsM3ZmNzlmX2RnVWlCblRKZUIyeGdGRlctaldzN25FRllsQjJxazduSVpaQ010czM2VWtGZFktaFRGWThJSks1cUlGR01wRUbSAYoBQVVfeXFMUEFaT0ZKa09lbC1xVzREMjhDSm5CVnp0OW11SDhKaHhHYXBKOVFmZ2ZwTjVmY2h1cWhyLUtydm9tM2cwbV9SUzVZQTFzeTh3Yk5xZ1REODNUMWRva2tkb1FlaUEzbkFVR2VXQlN1R3ZzdTdMMWtWUC1NbkRaVnlGNW1CYk1CM3I2aVNR?oc=5",
-            "source": "CNBC",
+            "title": "Soft Jobs Data Helps Gold Rebound From $4,000 Test - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxNTmxZNUVNTkJKdFI5ZnM3ejFGU25vVHAtSzNrTmZ3MFZ1a0NzU2IwZzAzdmZnTDBOMkN3RkFLZHBTV2g4eks4aXZ3QkJvQ2I1R3JKYWJxR3cxZ1VUMVM4VnQ1U1Bab2hPc1FWVm4xZjhWNGRjY20wQVNEUUc1Nmhzd1k2STBCNzlHemRkVzdmTng4WGxDNEF6Y0pDMA?oc=5",
+            "source": "Yahoo Finance",
             "date": "Fri, 03 Ju",
             "language": "en",
-            "tone": 0.018,
-            "category": "monetary_policy",
-            "relevance": 0.62,
-            "keywords": [
-              "Gold"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "Gold price climbs as weak NFP data dampens Fed rate hike expectations - Crypto Briefing",
-            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxQeFZmaGZsTThYSDB1MWVJeWViaVlRMW9xUVB6Y3hfd0tFNzQ5eVY1anlZeWl5TTJsQmtIeGstc29xTGNPdVViSi1raUtQXy0zYU9mZFQwY2NTSG1lTjgwajV5bXFTTnZBb1JDTk1fbTVOcU1OZ014REk2akdRZnYyWVZpWm1aVVd0b1pmdmctM1F6bW90bjM4VW12dFU3QQ?oc=5",
-            "source": "Crypto Briefing",
-            "date": "Sat, 04 Ju",
-            "language": "en",
-            "tone": -0.704,
-            "category": "monetary_policy",
-            "relevance": 0.62,
-            "keywords": [
-              "Gold",
-              "Crypto",
-              "Briefing"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold slump accelerates as rising yields and stronger dollar weigh on prices - Yahoo Finance UK",
-            "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxNbGlYT2ltNjJPak8wczBJaGhjUGg4WkRISW82RWZsZ3ZPVjYwbWY2Q29lRXp1eHlYZlptRm15MlBxb1IzSUpTWmxaS1hYN2pXOGJKWWhpZUFuc3NTY1VZWjBiSzQ3a3NvUEFLWUliOXQ2NVJYcGhhLThYSHBqV0hUdFUwNDBxdFFkOTlYWWxn?oc=5",
-            "source": "Yahoo Finance UK",
-            "date": "Fri, 03 Ju",
-            "language": "en",
-            "tone": -0.046,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.5,
             "keywords": [
               "TES",
-              "Gold",
-              "Yahoo",
-              "Finance"
+              "Soft",
+              "Jobs",
+              "Data",
+              "Helps",
+              "Gold"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Gold prices today, Thursday, July 2, 2026: Prices break above $4,100 following a disappointing June jobs report - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMijgJBVV95cUxPaW9RM3hDTjNPSmRUNXVoRGJxR1FlX3JOdXVzVGdCeGtEaXdIcHkyMTZPdDZTN1c5OXpBek5lMEt2WXpDdm1KQ3VTbUdGTmkxX0gyVXdxMFd4WEpUdTZ4TXc0UXN3aHY3RUZ3M0tPZjJkcTRqLTgwRUE1VkF1ZEl2NUtEM3BldDIyR0NfTDBLVlVtNThBMnF5blk0T2prdmFoRU94TGxZUkVnTGktdUM5V3FxLUVXUXRpZkdwNVdCVkZxdVFQTWMzWUNtTnhDZ3VCelpOZHB4Y0lFN0dCVGlhZjVUSzFJRk55cjNpOGxkMGlWdi1DOXppTmZyd1JfSjlGRHVXMnQ3UXZDX3E4M1E?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Thu, 02 Ju",
+            "title": "JPMorgan sees $4,500 gold price in fourth quarter, says risks to downside - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxOR1FOcHg1SUdkOExTLWpxN0pyeFppZU5ZdXB4N080LWcwN0ZTNTRjclZ2Y3pqWFlicUZaX05iY2w0MGtMVVdPRE1YTEllV3ZmYUQzSHE3WktzVmhpSUh1bkRzSkxDSXEyMkwwLVhSTktZekhiLUdob2VESmxJQk5mN01QRkUteGJzWmdMM05aN3F5Mzd1YUJSSHNLS1lZLXpLa3hha1dmQ2dVX1pUbGx4b3Fja1Q2U3JTYlBET3ExeDVaQjQ?oc=5",
+            "source": "Reuters",
+            "date": "Fri, 03 Ju",
             "language": "en",
-            "tone": -0.865,
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold price outlook: Could prices hit $6,000 in 2026? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxOdnhFb2JvTjVvc0Qya0ZBMExkRkpScjBMV0htN193cjNpV2M5WTg2ZlpUVFdXQWtKc2JsajRLQk9GTTNqQXBZdm1hLTJOZkVabERGUHJFT2kwNE44dkNUWl9FbVhBZGJXbktpdTFZa25fbDFZclNlZEM5VllPWEpGWG5oN01pdWVsLVhfZmFxaDNnTGxndTJBZzFXdDZGRDR2WFM5QlJkQVdzWkZXdHFiVTBIMWpFZloxSVBmUzFyMVNWZw?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Tue, 30 Ju",
+            "language": "en",
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "Gold",
-              "Thursday",
-              "July",
-              "Prices",
-              "June"
+              "Could",
+              "Yahoo",
+              "Finance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6252,7 +6232,7 @@
             "source": "World Gold Council",
             "date": "Wed, 01 Ju",
             "language": "en",
-            "tone": 0.025,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6271,7 +6251,7 @@
             "source": "KITCO",
             "date": "Thu, 02 Ju",
             "language": "en",
-            "tone": 0.479,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6282,12 +6262,30 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold Price on 04 July 2026 - Gold Price",
-            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5rTGlZaGg1QjdPZjladnJjWHpvZnZ0UUFLN2NvV0FSOFB2anlQQlA1ZExmeXhqRGFTdmxLSWc0YWxRSEUxc213SnplUGo2bl91eERDVTJEc0dZZWZQM2c?oc=5",
-            "source": "Gold Price",
-            "date": "Sun, 05 Ju",
+            "title": "Gold flashed a death cross at the end of its worst quarter in 13 years. Here's what's weighing it down. - Business Insider",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQNHZHRU9OcUphRnhIbWZtVXR2QW9mWFZrcVpDXzBVYUxJZzU5aDREVHNOT01TRG5SNFRRZ2lvVnkzMU9Xa2pWZjhJNkZKTTlwb01aakkwRUdXVURPOFc5dWJrTG14a2FRbGZSU2pGLXBGN1E2d0ctWXhSemsxd1VaSnRDRTNmNldlMUhKdDd3X2R6TklzUFhwNTMxUFpSbHVBeUxZVHpJVQ?oc=5",
+            "source": "Business Insider",
+            "date": "Wed, 01 Ju",
             "language": "en",
-            "tone": -0.004,
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Here",
+              "Business",
+              "Insider"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price on 01 July 2026 - Gold Price",
+            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE9UZFZqaUJsekh3VDh2aUVfbUlWNWZhNGlkQkRFRXRfMmVEYkpnb3hvUnFsZ2dkZl82M2pSQ3BKNkthbExadkdVaHdPUi0xdkYzaE5BZzYyWmZpNkh6VVE?oc=5",
+            "source": "Gold Price",
+            "date": "Wed, 01 Ju",
+            "language": "en",
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6299,12 +6297,68 @@
             "factuality": "unknown"
           },
           {
+            "title": "Gold price outlook hinges on macroeconomic conditions as geopolitical risks, Asian demand gain influence - Mining Weekly",
+            "url": "https://news.google.com/rss/articles/CBMi5gFBVV95cUxNTjdMc1ZERUc2OC1ORUFuaWF5TF9pa0ZfZU53ZzZCdXNsekt0OG0ySjMwU0FiY3pQeW9uRi1jUk5pSkJPQnprXzBMLTcwQ1p0QkZCVUc5R25HTmVLVmt5dXJiVG94V1YwQmFVX0VweXBZaGZUYldXY1hqWXFQUm82eS1IS21EZmRPVFQzTWtwNExYT3BUaTlrdkdzaTBOQzA2cF81aEpUYTdIZEZzTGpKa25ETE43eUJxTlVZbHNhUWlMXzhXUmc1cnpONmZoUzFXWFEyUDVoUm9ISExiRHZmTHJjbmU1Zw?oc=5",
+            "source": "Mining Weekly",
+            "date": "Wed, 01 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Asian",
+              "Mining",
+              "Weekly"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "‘Upside potential’: Why Asian gold buyers offer hope to regain lost ground - South China Morning Post",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxONF96MzJsc1pBVElTdFpxLUlTczBJUGJMSDRJZ2NHQ243OUJtNlNoejhURWVCU2ZtZFhoQW1zNzk5XzFSVG1kWGU0aThKd1NDWEJ3WTVvOVVMVENvSVZqOWZhbnhNaGhGbjFrVUxId2pSV3JEWVl3OTVLRTFEM1AwdDNaOERISzFGY2h1VXJxcnNPbEl3V0UxQWlPaV9aZ2NxX29QblRWeFkyeHFFdnJJY2pQbjNjTl9yOEHSAboBQVVfeXFMUElsNGFHYVdlcld0emVldDEtUThlcWdhUmRYTzdPTlRfeFp1dUU4NDc0eThuTHhMaC1qcVJrTnFoZ2tTTVJ5OERBSTB2LVUxNE0xQWx4RTRGNDdoNFNXSFJ3ZVpkb254TC1CRG1ULXhHbU00T05ZQzhPNWd3OFR1aWFoTEg5YWlyVGs0TW92UEFTQXRuVmEzVWJNZjY4bFFuU2xIUmZ0YWFvQUx2d3JGSmxBMWJQZy1QZ21n?oc=5",
+            "source": "South China Morning Post",
+            "date": "Wed, 01 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Upside",
+              "Asian",
+              "South",
+              "China",
+              "Morning"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Today: Gold Rises 2.94% on July 02, 2026 - USA Today",
+            "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxQR2dCRU0waGpQQWtfem5WdHlLai1OMmVkaklQSlgtbVJsN2prUmRMY0VEWFBteUplNEJYTmhsVXdXWERFSERzdzViM2U3T1dveHJpN0hsdEktT3Nyek5XWmZGNHotME1MVXhqaEVoM0ptNFMwaDlSVjd6bTQ0RFhlVkROLXJOMzV3ZGotZjM4Rkk4elhEaG1aNWVTNXZqLXVxRXM3QWRn?oc=5",
+            "source": "USA Today",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Today",
+              "Price",
+              "Rises",
+              "July"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold prices today, Wednesday, July 1: Prices remain below $4,100, but could have plenty of room to rise - Yahoo Finance",
             "url": "https://news.google.com/rss/articles/CBMigwJBVV95cUxOejJwVEtMd0pLSnZYVk5lOWVqN0VlNnVKX3RyMFljajRuNkh5N2czbUhHV1Q0RzBQblBNSTh3ai1UZTJaYms0dW9HUHRKZElaZlpCWVZOa294QXRRdE5QNXl3MVBPTnNwZU5YQ01Edms2Y0htUmQzX2ZZNGJFVG5TV1lMSGhtOTBpVE41VlRwSGpRd2lVNjY0d21Oc3BUMGcySzhGQkdqQ3kycHVGSlJsYmZPRGZ5UGk4YlRxdTlRMllWQlhuSFFBWW1CMFl1UXJoN0w5ZU55Rm9YMlBMTnNWbnJpajluVWgxUGlxNDV1R1ZkcjdTS2c2aGMxVlBNMWQ3SFVz?oc=5",
             "source": "Yahoo Finance",
             "date": "Wed, 01 Ju",
             "language": "en",
-            "tone": 0.078,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6323,7 +6377,7 @@
             "source": "KITCO",
             "date": "Fri, 03 Ju",
             "language": "en",
-            "tone": 0.191,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6334,33 +6388,34 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold heads for weekly gain as weak US jobs data tempers rate hike bets - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNclFSSUNFMmZtNVhtRTlWeTdJSElSd1hZSjB1c0tabXAwUVRJY0ZiQkZYc2ZRY184NzFHOURseE8wVXpJd2tVY09IQTlVV1R2R0htNEp6Wm5qT05rN1ZqZjhPeDZZN0JRUWE1VlJJSGpNdEoybFRnUV9TYzVTWGZ6bENIelRIenRQN3Z0T19KMmlUcU4xd0oxT3FTcWtMMTV6LWFocUFmaEo0UUE?oc=5",
-            "source": "Reuters",
-            "date": "Fri, 03 Ju",
+            "title": "3 reasons UBS sees gold surging 30% in the next year - Business Insider",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxQZnJwUjU5N0VIX2ZEblpQbTJ2SE1HWlEtcDVPRXduRUhaQVoyMUFwWDBPbXFMUl9JV1VmdC1ZT0FINFREdW4zdWFDUVFaZi1ab2JiOVd6UzJXaDN3ZXVrUG5GcHlncm1lbi0wMHVBV3ltTWJRd09lYjI3c0ZFOXFKUnNoZVgyR3ZEUzFzeUU2T2hhbTNadmlVaWc0T3RfOUNmSUR0VA?oc=5",
+            "source": "Business Insider",
+            "date": "Mon, 29 Ju",
             "language": "en",
-            "tone": -0.469,
-            "category": "monetary_policy",
+            "tone": 0.0,
+            "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Gold",
-              "Reuters"
+              "Business",
+              "Insider"
             ],
-            "bias_label": "center",
-            "factuality": "high"
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
-            "title": "Gold forecast and tracker: Where will prices land in 2026? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxNVnBPemh3a1A4SzZLM21wQUhyVy1rNXo3VlhtWlVjWlNVVmlqaVFwNDl3a2FjeVlBNm1wTGs0REpuX0NnNzNKbE9IczByNnJyRGowLVkyMWUxWnFoaFh1b1N1cFVHVEY4bUFtdEItMVB6bzhJczhXcTdiUENjcDVFLUdNMm5UMG1yelpUbjZvaXhRN2tXVG1Ma1NUeWJEZzBza1JweEE5blFJWW0zU0RXLWJwLTk5d1ZxVnpnLWt6ekNNODI4enpQaVRNUkg?oc=5",
+            "title": "'Gold is not done': Goldman Sachs predicts a rise to $4,900 - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxOVlFNSlpaSkhpY3VOSVVZQjlEcEFKQXV6Q1ZDLTRiZllvbXdvZE9qNTVEejNjY0gxMzA0T3NuWjlsS1JMaC1QSC1EZ1RBZzhEVTlqMGl5X3NGWkxPYzdGQ290VHNvRlVFWktCUi1Yb2dYdTRQcXpoQUg2ekRnWmdienlKeGFvODNIOUNucFdJN1ZPVGxWQkRrQlRSSTNEUUpSRmptaF8xVHpfVFdNbVlHcA?oc=5",
             "source": "Yahoo Finance",
-            "date": "Tue, 30 Ju",
+            "date": "Mon, 29 Ju",
             "language": "en",
-            "tone": 0.024,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "Gold",
-              "Where",
+              "Goldman",
+              "Sachs",
               "Yahoo",
               "Finance"
             ],
@@ -6368,182 +6423,18 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold price outlook: Could prices hit $6,000 in 2026? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxOdnhFb2JvTjVvc0Qya0ZBMExkRkpScjBMV0htN193cjNpV2M5WTg2ZlpUVFdXQWtKc2JsajRLQk9GTTNqQXBZdm1hLTJOZkVabERGUHJFT2kwNE44dkNUWl9FbVhBZGJXbktpdTFZa25fbDFZclNlZEM5VllPWEpGWG5oN01pdWVsLVhfZmFxaDNnTGxndTJBZzFXdDZGRDR2WFM5QlJkQVdzWkZXdHFiVTBIMWpFZloxSVBmUzFyMVNWZw?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Tue, 30 Ju",
+            "title": "The price of gold today, July 2, 2026 — and the best places to buy - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMickFVX3lxTE56Z3dJTEtSWFcyZkphY0g2ZVJlNG1Sdm5mRExxbTVGVWJqbG1FNEc3SGc1RHUwWkltc20wbzluemMwaTRqb3M3bzZwNkVtOTlNdkxfb2laTEtIMUlhRUlTNlVJTEU3SUwzTEpqZ2FWbWFOQdIBd0FVX3lxTE5QUEt3Y0tsa2tfZjRBQS1UV3IxV1p5azlocmJOeVZxalZjODhJVDZWZ2l5NFotTF93X3hZRU1nRHlxWGpzb3d2bjdsZWx0bUdjV2NrYUVodFRUTXRSa05hLUZfQ3VBMmd3cmFMU2daWm9lYXJFeWhr?oc=5",
+            "source": "CNBC",
+            "date": "Thu, 02 Ju",
             "language": "en",
-            "tone": 0.029,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Gold",
-              "Could",
-              "Yahoo",
-              "Finance"
+              "July"
             ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold and silver price update: Is this a repeat of 2025? - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxOOVFfc0hlc2NzTW8yQXdTWlo3VnhERWwtUmtBeXQ4d1NGSXZ1QTFBY0Fvd3B5M0U3YldJV2x5Z2Q4dnd6LXdjLTNOLTRSTm9HNEg4ZVg4YXZhZENUNEpfT3RXVkJxeEQtZWVaa0NYd3hVM2dISGpqRU1mRFNZTkt4Q3RTWUltLWI1?oc=5",
-            "source": "KITCO",
-            "date": "Fri, 03 Ju",
-            "language": "en",
-            "tone": -0.025,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "XAU/USD: Gold Prices Shoot Above $4,170 as Rate-Hike Anxiety Cools After Jobs Report - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMi3AFBVV95cUxQSmx2cm9zT2YtMHUzeGt0aUNtWkdWcWZaRkZuV0FZc2VuNnl5dzhuS05NR1NlWkxwVXBwZXY1d0R4bzU4dlhiaWpRcGVfdHNiR3hGTXd1UWFEY3NwNGNBRHRYVGNLbFJCYmNzR1dkRERmM2FSQVd1RDdVd3NEOUxlQ0dXVERCM2RvaXlHRHVtMTJCdkF1dmgyTlVjeVA3SXozM1doMnFrVml5N0ktZ2t1MG1BMnRHaUVsZHpzblE2TFRXQ0tjOF9fSldYR2t6VjdDWGU3YlQ2V091ZUI2?oc=5",
-            "source": "TradingView",
-            "date": "Fri, 03 Ju",
-            "language": "en",
-            "tone": 0.287,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Prices",
-              "Shoot",
-              "Above",
-              "Rate"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold and Silver Recovery—3 Precious Metals Stocks for H2 2026 - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQOC1LeFc1N2pnZEM3Ny1rYXFjSmhzREU4VURfRF8xOHBpZUxwbG9xbTdEd3c4TmNrUGlLdU1jT3BEUmxLTWFIUzBZcGZQcXQ3ZTFqanVvY1Z1M3U3NGljS0FUbmU5SndOLTRGUDQ3N3A1V2pIOGZMZWlrMFo0YkNFNURVSnBwekJPeUdqQlJYZV9wTjJvS1R4eW5qeWxRRmtudFdJ?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Fri, 03 Ju",
-            "language": "en",
-            "tone": 0.106,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Silver",
-              "Recovery",
-              "Precious",
-              "Metals"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Price Outlook: J.P. Morgan Predicts Recovery by 2026 - GuruFocus",
-            "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxQOHY2cGpqRkNNU1kxLW5WaU0wXzJZMGJlZnVkR1dXUGI3dTNqUnRQUnJJUU5TYXZ3dDdrTlVNcnhPTm1TNm14MUFQS2h4blFFS3gxOUhFSy1FRVk5NDVKRlUzcmNOS2FYODNTZ1A3SzBuemZ2bE1BVy1xckMyOHkxSkFMbnhNOVJOV3pSMl9ENzVMcnlpbUpCeA?oc=5",
-            "source": "GuruFocus",
-            "date": "Fri, 03 Ju",
-            "language": "en",
-            "tone": 0.463,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Outlook",
-              "Morgan",
-              "Predicts"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "50 years of gold price history: What the charts reveal - Crypto News",
-            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9BNXljMWc3ZlQwblVmSWJzNjFYMU5xbFdVcDItdHV6emxNbHBqTGtfOFROR3YxU2ZadVI1N0h6dDFNa1dXTDNzb2JEU2JONGdIbnQ5ZzdONTlsTC04NlN1Tjl1ZlZYcWcxSnl5b0pYRm1NaDI4Mm1SNGlCNF9QU0k?oc=5",
-            "source": "Crypto News",
-            "date": "Sat, 04 Ju",
-            "language": "en",
-            "tone": 0.032,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "What",
-              "Crypto",
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Price Forecast: Weak Jobs Data Fuels Rebound as Gold Eyes $4,350 - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxPWWhMVlJvMlFidG05THBETGdya2pqWnBPNUlORXltSjR2RGszY2M3TmJlUmN2VWJGMS1PZ2w5WDdyNGoyZEYyRkN2RDBhSzBZeTM2YUlRZVo2ZW9fUjVveWo4ajFqWFZYTmt0V2Jzdzd0cklJclY5TDV1a2tNdzVUNU9kcHVfOWhOSjdzRTEyTVRLaUhKcHA3U0ZlOEd1YU1Ha3RxOUF5LUxyV25SSjJUcFFvcFJTaUFiOU1IbWxIQjZIU0k?oc=5",
-            "source": "FXEmpire",
-            "date": "Sun, 05 Ju",
-            "language": "en",
-            "tone": -0.494,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Forecast",
-              "Weak",
-              "Jobs"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Report says gold prices could rise in second half of 2026 - Elko Daily Free Press",
-            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOaTRKekdiRHNrbzBsa1J4c1dZYnZ1Z01BMGpoLS01WW5uVFZ4N21YMjlvbFZPZjF3aXl0emVSRnlxanhHZFIxY1B2SVhUdWFvY1lCalpSaldGU3g3dzM0STExRVprVHFZZkY2RGhUWTdseS1kbWRybjktN09MS3pHN2FEX3BKeUxqZ2M2Z0gwTXlNcXNhdUpRY2EzTmUyaTQ?oc=5",
-            "source": "Elko Daily Free Press",
-            "date": "Fri, 03 Ju",
-            "language": "en",
-            "tone": 0.217,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Report",
-              "Elko",
-              "Daily",
-              "Free",
-              "Press"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          }
-        ]
-      },
-      {
-        "cluster_id": 1,
-        "label": "Commodities",
-        "article_count": 4,
-        "avg_sentiment": -0.221,
-        "dominant_category": "commodities",
-        "bias_distribution": {
-          "center": 1
-        },
-        "representative_titles": [
-          "JPMorgan sees $4,500 gold price in fourth quarter, says risks to downside - Reuters",
-          "JPMorgan Reduces Its Gold Price Target for Q4 by 25% - Yahoo Finance",
-          "JPMorgan sees US$4,500 gold price in Q4, says risks to downside - The Business Times",
-          "JPMorgan sees $4,500 gold price in fourth quarter, says risks to downside - TradingView"
-        ],
-        "narrative_summary": "",
-        "articles": [
-          {
-            "title": "JPMorgan sees $4,500 gold price in fourth quarter, says risks to downside - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxOR1FOcHg1SUdkOExTLWpxN0pyeFppZU5ZdXB4N080LWcwN0ZTNTRjclZ2Y3pqWFlicUZaX05iY2w0MGtMVVdPRE1YTEllV3ZmYUQzSHE3WktzVmhpSUh1bkRzSkxDSXEyMkwwLVhSTktZekhiLUdob2VESmxJQk5mN01QRkUteGJzWmdMM05aN3F5Mzd1YUJSSHNLS1lZLXpLa3hha1dmQ2dVX1pUbGx4b3Fja1Q2U3JTYlBET3ExeDVaQjQ?oc=5",
-            "source": "Reuters",
-            "date": "Fri, 03 Ju",
-            "language": "en",
-            "tone": -0.147,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Reuters"
-            ],
-            "bias_label": "center",
+            "bias_label": "center-right",
             "factuality": "high"
           },
           {
@@ -6552,7 +6443,7 @@
             "source": "Yahoo Finance",
             "date": "Sat, 04 Ju",
             "language": "en",
-            "tone": -0.271,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6566,103 +6457,472 @@
             "factuality": "unknown"
           },
           {
-            "title": "JPMorgan sees US$4,500 gold price in Q4, says risks to downside - The Business Times",
-            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxPcVEyTFpyUHRpX09meUFlWV9JY2Q3MGxvSzIxWmZveW5DTlZHWjdvN21CZG4yY0NiU1VZNjRMN0c0SVUxZTF6YWpoQXBPbHJDYkVOZ29XSW9ITURvbUNIekJCdE9EUUU4RU9hc0ZTSVV0ZVdVdVVfNllGRFp4N0NqT3ZXU0hTckNYMDlrVU9EcXp5b05qR0YybEEyZmZBQ1pOak92VUVXcXQ?oc=5",
-            "source": "The Business Times",
-            "date": "Sat, 04 Ju",
+            "title": "Gold Price Outlook: J.P. Morgan Predicts Recovery by 2026 - GuruFocus",
+            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxPLXhKS0thRW1ESUJSYjdZY2hUSEFKZlBMWFRzVC1TWFAtMTJaRzBDM2JmbW1zZWFsTG9RX1hTZ2Z1NkJETElTQWJDcmNJLWJzUFB5S3FlTGswRGFMM1NvMXhvSjl2YlljaTNoNk1YNld3NXNMQ2ZGckpMOHQxVXg5RXRCak9CT2I5ZGRpT0ZnNkk0VHZnMThiR1B2VW5NbnptdjR0bk05U1E?oc=5",
+            "source": "GuruFocus",
+            "date": "Fri, 03 Ju",
             "language": "en",
-            "tone": -0.246,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Business",
+              "Gold",
+              "Price",
+              "Outlook",
+              "Morgan",
+              "Predicts"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Jordan Rusche: Are Gold Stocks a Buy? My Strategy Now - Investing News Network",
+            "url": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBXLVBINURXN2t4TGVTX04xS2tYd2lvZ1JEbGtwcndtUjZZNzNLVjVLb00yWHI1UUVhWk5sV2huTXk5M3dTU3lmVkhTaFlTSkQ4aTJ2ZDNfejJ2MFN4X1YtcGcxM09FVnp4ZkZpcjZ3?oc=5",
+            "source": "Investing News Network",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Jordan",
+              "Rusche",
+              "Gold",
+              "Stocks",
+              "Strategy"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Forecast: Strong Dollar Pressures Gold as China Buys the Dip - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxQazVtQzBnQ3FzSjBrRUFmbnN0alZvYWxFZllTY19VdmZRQURNcDZkWEdxdXZaMF92R1k1al8tM3VINWFuX1ZVY1daelV5QWdMMndnODBkaWhqbmx5cFRjdVp0djdjcjNrc2JhVHc5cUk2M1pqcDY2dlFHOGxUeHVHdlJDWlByUnpNVlVZcldXNXdHbVFsM2dEWjAzVzNnY0VMY2s2Sm5odFZkdktlWU5taUdnVFZGVFl1ZUt3dDBTV2t6bnVGekg5RA?oc=5",
+            "source": "FXEmpire",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast",
+              "Strong",
+              "Dollar"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "How Much Gold Is Hiding in the World Cup Trophy — and Why It’s Worth More Than Ever - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxQa3FzTGJxU3Bjb0QxMU5keDVxUnRVY2lvYzdUa1FiNlVFa3hSZk5aSFVKTG5HRnZodk5BeUtEZnlhRlFLSzFBNWZTaDVKV2hJR3Q1Wm81aGhPcElKLWZMX0ppVTZHRWpDMVcyZEs3RXA2aElqY0FMeEVMcVFLVGEzaTNNVW9yRjhIZFl1T0pNS2padzNUdF9zLXpycTc?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Fri, 03 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Much",
+              "Gold",
+              "Hiding",
+              "World",
+              "Trophy"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold gains more than 2% after weak U.S. payrolls report - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxQX1N5dmw5aDJ5S2Z3R0FHWUI3YmVtUHVOcnplQ19ETlpZVDA5YThCa09KbkNRNHZHbDlpTTFRaUZnZm5YNGJlRkFlSUZIREdNdWNYODkybEZabE5vblZLV1FYQ1hLMnJVRHdSNnBrVU5pLUhvMVRKaVpqWE9MQ1FPZHI2NFJScXFIUWZJSzgxeEVLUzZ6UkprdU5yZUYwQ2d6cFR5WlppUllrNUXSAbABQVVfeXFMUEx3SE1aRlFwT1NMYnhacHR2NDdoR0NTM1gxZEVncFlCLVlkUVBYc09UeklmOWFiSHAwVlpRMGI3dkQ0eGNGczhBelJBTlZsYjVVa1FUR1NuZThBN0lseW5IYjZ0SGVUN0xVV3VLbjFMeEFZZnJrMmRmMk51LU40Y0VSUzMtTU8zeUk5RG81YmFORG9aZVdHZjY5cTlGcE00TlVoNkNVamV2b0JYTlQ4M00?oc=5",
+            "source": "CNBC",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Why is Nigel Farage being paid so much to promote a gold bullion company? - The Guardian",
+            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOdGFPNkl1RlE3VVlVOVB3TDFLdTdUYlcwVWVWekY0WlJmbGZtc0kzWGFOWldDU01LeTJCclBpUEJVREtiNVc0MGM4UmNWUVlfM1NnZXJiMHcyeU5tQW9aSEdkRkV2MkdFVDQ1Y21sWnFtU3NoMXdtY3diOVlUeEtDc3IzMmxHeTVpVzlZMHFQXzNSeXd5dUpoUzNuYXZVbEVkcFAteEcxUm0?oc=5",
+            "source": "The Guardian",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Nigel",
+              "Farage",
+              "Guardian"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/USD hovers near YTD lows at $3,941 weighed by higher US yields - Mitrade",
+            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxQWEcxSjl5TkNiMWhzZlJ1Q1hsSF8zb1F2WS0zZVNuYUMza3owQ0plUllOMi1sRlB4eGVxUmxjblY4aW9xWlZjUjdDel9ZWF8yVVVERUtrZ3Z5Q1pzX3ZVTFFoZ3dtRXhlZFkyNW1CR01yTnduNGtoYjVzWGI0c2phVjFkbw?oc=5",
+            "source": "Mitrade",
+            "date": "Wed, 01 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast",
+              "Mitrade"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and Silver Recovery—3 Precious Metals Stocks for H2 2026 - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQOC1LeFc1N2pnZEM3Ny1rYXFjSmhzREU4VURfRF8xOHBpZUxwbG9xbTdEd3c4TmNrUGlLdU1jT3BEUmxLTWFIUzBZcGZQcXQ3ZTFqanVvY1Z1M3U3NGljS0FUbmU5SndOLTRGUDQ3N3A1V2pIOGZMZWlrMFo0YkNFNURVSnBwekJPeUdqQlJYZV9wTjJvS1R4eW5qeWxRRmtudFdJ?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Fri, 03 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Silver",
+              "Recovery",
+              "Precious",
+              "Metals"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/USD finds acceptance above $4,000, but US NFP holds the key - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxQNzNpLTR4em5aN3RCR2NyanpJTFc3RHlMa3R4akl6VUVtTHhPamxLNm4wQ05xM05ueVBtZWpGbnc4V2hHYWVaWDNfZmV0bGJMLUZ3RlNISkJQckpWZVB5SS04NnZqa2FzRG1IUFBHc1lmcDcwQ19IVzV6cWU3dmdXdU0tcFhacVBmVDBXUi13cHhCTjd6dlJOYTB2SHo5WV8welE1OXpIcXpCSl9xcDdHYkNxaVJ0c05RU3lqZzgzZEJublhxbUI0?oc=5",
+            "source": "FXStreet",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "ADP Missed. Gold Shrugged. Warsh Is Live in Sintra Right Now. - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNa0RkeU9VZEoweEJiUUstR18xQlptN3Y4ZkNjNUpWa0laNF9COXNCMkkzbFZRMXdUTEZyLUNYZ0o0SWFyV1dRY3RWOGVLQ1hWa0c1NmFlejlHTmhFQnJyRGZTNmp6b0hNZzZEbVpyNFhUalE2bU9LQTZDU2dLV2JINjVwclhOeGxVSEU2dE5ZU1B0eWh5YU5vb2RZMG5qdmxDSm5QRjFSMW5jZFdkOElxVzZB?oc=5",
+            "source": "GoldSilver",
+            "date": "Wed, 01 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Missed",
+              "Gold",
+              "Shrugged",
+              "Warsh",
+              "Live"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Technical Analysis: A Complete Investor’s Guide - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNaHB0OEhJbzRia25lT3hiZS1vNWFTY3JXWHpFT3NrSkp3SmF5dy03ZEhuemkyY3NpdnZ4UE1ZTnNIZUYtUEg2MzU2bnk5aDFiYnBMSWFjODVkcnhhb0V2LW5jeTExWFJKWlFSQ240Z3ZIWnZaMFJHYUhVeld0TUc0Tw?oc=5",
+            "source": "GoldSilver",
+            "date": "Fri, 03 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Technical",
+              "Analysis",
+              "Complete",
+              "Investor"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price prediction today: After worst quarter in 13 years, will gold continue to fall? Check July 1, 2 - The Times of India",
+            "url": "https://news.google.com/rss/articles/CBMiygJBVV95cUxPYVZ4OURaQ2NZdUtzZGc5VWxPTTRsQmItZlowWUtFOWZKMWMzcU5xMFZ3OTRsTGlPVkwzeFdSWWhzR01OQkttcmJSU1ptel9ya1dXQzlPbUZiTmZMVjdnQk1nODY2QllwU0JjNDRKUEI3ajRyblJWUkxyaUE1d2hHelBMTUhfT2kwMGFGenExT3pwbnhyX29wR0RRWG1NMXBwREFXMTRFTVJSN2lKbDd5bko1YnFzVUl1UHkyM0tYY2NGOW9JcXI0bjZ4Z3QtaFZKMWVneEx4UmpxRWQycHZwTHNTVWVOZVhQZHVoeHN1aGxzdU1OZVEtcVpCM0sycVBOeVIwdGt4RE1ocVdDTW5qRVhRbUVVYUhLYVhGaFl5MlhpQVlMZU9USHk5cnU3OVVTaURGN3MzRWNMOU95QmUzQ19adzJHTXZWZ2fSAc8CQVVfeXFMUDJlZjhGSlN1VXVuMHRhWF9TcXJHZHZneGZwdkZFVVBrdjhPNjlYZk9OMFlncVVwLXVQTFhSd2tFM2MwYl9hNGdqRG9ZbXQwRHI4dlA0M2N1bmJUR1g5RGhPbmphNzQwSW9Kc0FydEdHQzQtTVAyTlFzZFloSXVPSzFhUlhQWnNXeDdOeU8zbE1uaUROMzFpYm54U1hrTWxIRGlhdDZ2Tk4tclpVTzBHeUFrWnozNnlhNnc4MlM3Ulp4YWRoaXBROFdkeW9KYXdMMlVaaHNkazV6SENhVVI3bFFRUnpYQ29nT01vOUJPMzdBMFlfdVVSLUJzTUhjYU9VMGFOdWdVX3V4SkFuQ04wOUpnLUhXaExrdmctODA3TG5ad0lRQWRMQkZNVUJNYjJwZ29QaUxMTE1ZWXIyX2dEeTZINmUyUjRDUExfTVVGWHM?oc=5",
+            "source": "The Times of India",
+            "date": "Wed, 01 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "After",
+              "Check",
+              "July",
               "Times"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "JPMorgan sees $4,500 gold price in fourth quarter, says risks to downside - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMi2AFBVV95cUxQMG5LaXNKUnhua1gxaTlKakptU040T1lmblpLcGFodEo2NE4tNC1nOGN1ZHlYVmlMRS1YdjR3NE9xTmhyTjRPWjctc2RwU3BtTlBEOGRIOHNFYkpESTBfRmdGZWRlMFE3ZUpSNncxaUdMdDQzTURZaXVSNW1rbGFrYkl3akthMlp1WnUwWnRVTGlGWlRMUnlDNnJVb3pDN3pXckMwUGNTamdFczNmTHFSUHFFejRVUWNoWEVmNC1vcGVZYUdXZnNjODNxcVhOcjFBeE15MUtCN3c?oc=5",
-            "source": "TradingView",
+            "title": "Gold and silver price update: Is this a repeat of 2025? - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxOOVFfc0hlc2NzTW8yQXdTWlo3VnhERWwtUmtBeXQ4d1NGSXZ1QTFBY0Fvd3B5M0U3YldJV2x5Z2Q4dnd6LXdjLTNOLTRSTm9HNEg4ZVg4YXZhZENUNEpfT3RXVkJxeEQtZWVaa0NYd3hVM2dISGpqRU1mRFNZTkt4Q3RTWUltLWI1?oc=5",
+            "source": "KITCO",
             "date": "Fri, 03 Ju",
             "language": "en",
-            "tone": -0.22,
+            "tone": 0.0,
             "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "World Gold Council Warns: Gold Price Below $4,000 May Trigger Further Sell - offs - 36 Kr",
+            "url": "https://news.google.com/rss/articles/CBMiU0FVX3lxTFBUUXJMNl9NcG42UWxkeUlJdHlYOE5iVGt4bVlCdGRUektSZy02dmo1RVdaT0xyTnRCZVZKN0UzU0g1X1hJRF9XbXA0bkZkNDVPNU5N?oc=5",
+            "source": "36 Kr",
+            "date": "Wed, 01 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "World",
+              "Council",
+              "Warns",
+              "Price"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Prediction July 2026: Can Gold Recover After Its Sharp Sell-Off? - MoneyMagpie",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQQzhLLWJ0eEVYM3c5UzBEWTZVUTVfUnVSMFVyMVlUSFFtQ09ieG5EMjIxanM3bjJVTWEzTzZXbjVrZmlNa3h6WG1ETzlqZUpoOU56Z0x6ZUhLcENpTUttdnZZVFlWQS1rMXlIY2EyeVpndHdxSktrMjhyMHhGYUtQN2ZrVDRWQQ?oc=5",
+            "source": "MoneyMagpie",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Prediction",
+              "July",
+              "Recover"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          }
+        ]
+      },
+      {
+        "cluster_id": 1,
+        "label": "Monetary Policy",
+        "article_count": 8,
+        "avg_sentiment": 0.0,
+        "dominant_category": "monetary_policy",
+        "bias_distribution": {},
+        "representative_titles": [
+          "Gold and Silver Jump as Weak Jobs Data Crushes Fed Rate-Rise Bets - BullionVault",
+          "Gold Price Analysis – Gold Gains Capped by Persistent High Interest Rates - FXEmpire",
+          "JPMorgan tweaks gold price target as Fed risks return - thestreet.com",
+          "Gold gains over 2% after soft jobs data, Fed Chair Warsh's comments - CNBC",
+          "Gold bulls charge back on Wall Street and Main Street after weak jobs report dispels rate hike fears and drives gold above $4,100/oz - KITCO"
+        ],
+        "narrative_summary": "",
+        "articles": [
+          {
+            "title": "Gold and Silver Jump as Weak Jobs Data Crushes Fed Rate-Rise Bets - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNam00d25SV20wNktEVFZpTVZlVjQ1SUtkVlI5dXFsWmpJRURqeGJDMHhldmE3RjVmaW9OU0l3WVBSeXJteXRGZHhRTUVGOWFwN2R5ZmN5ZFJjcVEwZThKbFNRNnIwTDduVWtqeVh2MHQyRk15Ym5uaEtmMkYzVkViTFZfUXFmS0FibDdkNVVCTDJwa1U?oc=5",
+            "source": "BullionVault",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.62,
+            "keywords": [
+              "Gold",
+              "Silver",
+              "Jump",
+              "Weak",
+              "Jobs"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Analysis – Gold Gains Capped by Persistent High Interest Rates - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxQcFlreThrMDBIUU5HZmk3NVJ4dmdXR1lfNFpzckh3T0w5N3B6S2FONnRtazZpcDJiaTY3Q0pSNVUxRkxLOUhfVmZmQWx3ZFYtS280ZngxU2h1SHhUUVNaRGRYMjRuS2p6QXRoNkZ5Yno0Q2hyRFkyMUMyVm1ORXNhRU9ZMWotUGlIUGw3czRnV09MZEc0bDdMUVJkYk9raFN5X3pXQUxaNktGeUhZUXF6b3o2OVUxUTQ3eS1LMmxZYw?oc=5",
+            "source": "FXEmpire",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Gold",
+              "Price",
+              "Analysis",
+              "Gains",
+              "Capped"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "JPMorgan tweaks gold price target as Fed risks return - thestreet.com",
+            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxQRlctaDZ4VkRVUjItd1lCV2pJcmtIR0w4RUl4RFNJVTMzV1FRV0E2c1FzOVNIWDJQQjZVU0hKY2JhRmhFSTZwczR0STJqcEQ1UkR5NHQ2NnRSMTdMVENHZnVnLWVkWGNDTkpXMHdUaHZydDBvYlpXVEEtc2J0Q3Q2aDVIazN1aF9iOW1URjVTRWJEemc?oc=5",
+            "source": "thestreet.com",
+            "date": "Sun, 05 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
             "relevance": 0.2,
             "keywords": [],
             "bias_label": "unknown",
             "factuality": "unknown"
+          },
+          {
+            "title": "Gold gains over 2% after soft jobs data, Fed Chair Warsh's comments - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxQOWtqZFY5cThkakJHcEZ0TmstcFE1bVdmS1A0U244ckFEWVRYMFJRa05jRUwtVnhNeEZzczFmZ1M5dU1teVc2am1LQUhPYWUtWGV4eGFsS0YwZUExM0pkb25MUUxrdl9Vd2otVmhhVDZxR2hNV0g2RVRyWXhKbE02UUhaOVd4M2tFaGhpci1vWWhiSy1EWmpzTHlBZms4eUYwYThuNNIBqgFBVV95cUxOUUdzdURZcUpTQjNGbWNabDVNamVCc3FKZ0ptZ2NhMkFDTmR6b3ZQZjJlUG9CWXdRVi1UWmNDQ3RaeWMzZFNoS1c4b01wWXpkc0N1Y0xnY082Qks0V1liY29UV2ktdzVLN3JnZ1ZRemVIaEpCOGh4dzRualp5Qi1ybGZhZkVlaGx3OERUZm5xX1BaZ2UzN0tQaW1BdXZMMV9rNzE4ZlFEMGgxQQ?oc=5",
+            "source": "CNBC",
+            "date": "Wed, 01 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Chair",
+              "Warsh"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold bulls charge back on Wall Street and Main Street after weak jobs report dispels rate hike fears and drives gold above $4,100/oz - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxOdVdPVko0YnlQUy05OGx6Q29BS3Vlc0VlbkNSTE9xQnM4Wm4xZklUaHh1UVh0SVRianVYekp0RnBja2pkNk41bk1saEtwd2hjRlNPZkdTZFJxeW55Q1hTZFkyS0J6VVluX3YtNktZMnMwemhWbG85NTZ6dlJMcXNfMERIdzFMMTlYc2oyc3Rwd1U2a1VNNDR6VHRaQkNhS2tPXzZlMVVyWVp6X0h0UjVwYkNLTGRoOXlwMG5r?oc=5",
+            "source": "KITCO",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.2,
+            "keywords": [
+              "Street",
+              "Gold",
+              "Wall",
+              "Main"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Forecast July 2026: XAUUSD Analysis Amid Fed Policy Uncertainty - Intellectia AI",
+            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9fUkRlekt6V3NBY3h0Xzl6RXRkOUJzd2J3Z1RmZjdVTTZpSGJIM1RETXl6NTRsWDZrRkFDYkRJeDQ3bFZqZ01XTkVqd2VZcjhnbkRCVzliX2FqRDJsSGhqV0J2dGdoR0lSV0hPUDB3T0hUaUZfZFdveTM4RmNMUQ?oc=5",
+            "source": "Intellectia AI",
+            "date": "Fri, 03 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast",
+              "July",
+              "Analysis"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold prices jump 2.5% as weak US jobs data cools Fed hike bets - Anadolu Ajansı",
+            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxNUFBkM0M4RGJLM00yOXlWV0RPaWpkSkNMMUVwTFRLVWZIWF85Yi1yNGNNbVlhaWtGTHk0UmxaTUZDTzVMNEliMnV6QzgwNG9fOTFGSno2YVVBaHhuMkRiVW40ZlpNbjBvdF9aYjBXY19wVkttdm5EX3phMnhScWY2OHpiSGI2cFlxMlNCSWNqMlpmNkxTcU8wbzBiVU9uYkFabTVr?oc=5",
+            "source": "Anadolu Ajansı",
+            "date": "Thu, 02 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Anadolu"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold heads for weekly gain as weak US jobs data tempers rate hike bets - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNclFSSUNFMmZtNVhtRTlWeTdJSElSd1hZSjB1c0tabXAwUVRJY0ZiQkZYc2ZRY184NzFHOURseE8wVXpJd2tVY09IQTlVV1R2R0htNEp6Wm5qT05rN1ZqZjhPeDZZN0JRUWE1VlJJSGpNdEoybFRnUV9TYzVTWGZ6bENIelRIenRQN3Z0T19KMmlUcU4xd0oxT3FTcWtMMTV6LWFocUFmaEo0UUE?oc=5",
+            "source": "Reuters",
+            "date": "Fri, 03 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
           }
         ]
       }
     ],
     "top_stories": [
       {
-        "title": "Gold prices set for first weekly rise in a month as investors scale back Fed rate hike bets - CNBC",
-        "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxNbWVmbHRNYi1WMk5Yb2pzT2h5RmVuWmVhMHg2SXRQVGxiem9zQ1owQzBCZjZLYkJQRnRmYWdsM3ZmNzlmX2RnVWlCblRKZUIyeGdGRlctaldzN25FRllsQjJxazduSVpaQ010czM2VWtGZFktaFRGWThJSks1cUlGR01wRUbSAYoBQVVfeXFMUEFaT0ZKa09lbC1xVzREMjhDSm5CVnp0OW11SDhKaHhHYXBKOVFmZ2ZwTjVmY2h1cWhyLUtydm9tM2cwbV9SUzVZQTFzeTh3Yk5xZ1REODNUMWRva2tkb1FlaUEzbkFVR2VXQlN1R3ZzdTdMMWtWUC1NbkRaVnlGNW1CYk1CM3I2aVNR?oc=5",
-        "source": "CNBC",
-        "date": "Fri, 03 Ju",
+        "title": "Gold and Silver Jump as Weak Jobs Data Crushes Fed Rate-Rise Bets - BullionVault",
+        "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNam00d25SV20wNktEVFZpTVZlVjQ1SUtkVlI5dXFsWmpJRURqeGJDMHhldmE3RjVmaW9OU0l3WVBSeXJteXRGZHhRTUVGOWFwN2R5ZmN5ZFJjcVEwZThKbFNRNnIwTDduVWtqeVh2MHQyRk15Ym5uaEtmMkYzVkViTFZfUXFmS0FibDdkNVVCTDJwa1U?oc=5",
+        "source": "BullionVault",
+        "date": "Thu, 02 Ju",
         "language": "en",
-        "tone": 0.018,
+        "tone": 0.0,
         "category": "monetary_policy",
         "relevance": 0.62,
         "keywords": [
-          "Gold"
-        ],
-        "bias_label": "center-right",
-        "factuality": "high"
-      },
-      {
-        "title": "Expectations for U.S. Fed rate hikes pressure gold - Yahoo! Finance Canada",
-        "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxNSldEV0NSbllrMHpaTmk0dndkMU5qdXJkUEdqenZUWVNVYkZ6T0JJLXJrdUh1QkxwSkFLUzloaGlTUVFxNkllQVVyOHBzY1RUZGpYaWJ4alNzRHM3Tk1sanBGMExTWjNUSmRoVUJxbVpxWmM0WVlwNUpqT2k0NHFOSEdzdGg?oc=5",
-        "source": "Yahoo! Finance Canada",
-        "date": "Sun, 05 Ju",
-        "language": "en",
-        "tone": -0.459,
-        "category": "monetary_policy",
-        "relevance": 0.62,
-        "keywords": [
-          "Expectations",
-          "Yahoo",
-          "Finance",
-          "Canada"
+          "Gold",
+          "Silver",
+          "Jump",
+          "Weak",
+          "Jobs"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
       },
       {
-        "title": "Gold price climbs as weak NFP data dampens Fed rate hike expectations - Crypto Briefing",
-        "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxQeFZmaGZsTThYSDB1MWVJeWViaVlRMW9xUVB6Y3hfd0tFNzQ5eVY1anlZeWl5TTJsQmtIeGstc29xTGNPdVViSi1raUtQXy0zYU9mZFQwY2NTSG1lTjgwajV5bXFTTnZBb1JDTk1fbTVOcU1OZ014REk2akdRZnYyWVZpWm1aVVd0b1pmdmctM1F6bW90bjM4VW12dFU3QQ?oc=5",
-        "source": "Crypto Briefing",
-        "date": "Sat, 04 Ju",
+        "title": "Gold Price Analysis – Gold Gains Capped by Persistent High Interest Rates - FXEmpire",
+        "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxQcFlreThrMDBIUU5HZmk3NVJ4dmdXR1lfNFpzckh3T0w5N3B6S2FONnRtazZpcDJiaTY3Q0pSNVUxRkxLOUhfVmZmQWx3ZFYtS280ZngxU2h1SHhUUVNaRGRYMjRuS2p6QXRoNkZ5Yno0Q2hyRFkyMUMyVm1ORXNhRU9ZMWotUGlIUGw3czRnV09MZEc0bDdMUVJkYk9raFN5X3pXQUxaNktGeUhZUXF6b3o2OVUxUTQ3eS1LMmxZYw?oc=5",
+        "source": "FXEmpire",
+        "date": "Thu, 02 Ju",
         "language": "en",
-        "tone": -0.704,
+        "tone": 0.0,
         "category": "monetary_policy",
-        "relevance": 0.62,
+        "relevance": 0.5,
         "keywords": [
+          "TES",
           "Gold",
-          "Crypto",
-          "Briefing"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Newmont Stock And 2 Gold Plays Gaining From Lower Fed Rate Expectations - simplywall.st",
-        "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPeUxRejVEOEp3eTg5MWZJWDVsUWVsVXVCODNZNzljYkhtOUtrOFZZSGZYWFNfUlBGMm50TGN0di1YQUFpMFY2ZEZGM2IxQVFEOERUZVdxWGI0NURfV0xyZjJndmFBazQwMmNwdTQ4N0NCNUJnQ2Q3S3BoeTN2dXlKOW5nY2hLM0lkSENZTkRjY1ZRRWt6Q0h3RWRnbnlyMlczMDA0V2hrRC1ZRS1Kcm8yTUtVdDd2ZmZZTmpVbUM4cHYyd9IBxwFBVV95cUxQYWVtcEtRMTFzcVN5c3cwV1N1Sk5id3JaV3BwcFdrWGJjTWVqVHgyaWxaenhPMThXdHF3UzA3cEUzUlB2Q0ZmNmFRYUJJY0hmNW0tSWlSOXVVQ2ZPVkpIdF8yb0tVVUczZ3NxSTJia0xQM0lSdUJDQ2htWUxxMlpnNTBUZW5uWGZnVnM3XzhTaUtHUHgwS3FRY2k4d3RVUjJuNG5zNGpWVFM2YXlrc3ZkaHNhT3RteFhpMjd3c1JPUmdEejFGYWpN?oc=5",
-        "source": "simplywall.st",
-        "date": "Fri, 03 Ju",
-        "language": "en",
-        "tone": 0.522,
-        "category": "monetary_policy",
-        "relevance": 0.62,
-        "keywords": [
-          "Newmont",
-          "Stock",
-          "Gold",
-          "Plays",
-          "Gaining"
+          "Price",
+          "Analysis",
+          "Gains",
+          "Capped"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6673,7 +6933,7 @@
         "source": "Yahoo Finance",
         "date": "Fri, 03 Ju",
         "language": "en",
-        "tone": 0.245,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.5,
         "keywords": [
@@ -6688,38 +6948,34 @@
         "factuality": "unknown"
       },
       {
-        "title": "Gold slump accelerates as rising yields and stronger dollar weigh on prices - Yahoo Finance UK",
-        "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxNbGlYT2ltNjJPak8wczBJaGhjUGg4WkRISW82RWZsZ3ZPVjYwbWY2Q29lRXp1eHlYZlptRm15MlBxb1IzSUpTWmxaS1hYN2pXOGJKWWhpZUFuc3NTY1VZWjBiSzQ3a3NvUEFLWUliOXQ2NVJYcGhhLThYSHBqV0hUdFUwNDBxdFFkOTlYWWxn?oc=5",
-        "source": "Yahoo Finance UK",
+        "title": "JPMorgan sees $4,500 gold price in fourth quarter, says risks to downside - Reuters",
+        "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxOR1FOcHg1SUdkOExTLWpxN0pyeFppZU5ZdXB4N080LWcwN0ZTNTRjclZ2Y3pqWFlicUZaX05iY2w0MGtMVVdPRE1YTEllV3ZmYUQzSHE3WktzVmhpSUh1bkRzSkxDSXEyMkwwLVhSTktZekhiLUdob2VESmxJQk5mN01QRkUteGJzWmdMM05aN3F5Mzd1YUJSSHNLS1lZLXpLa3hha1dmQ2dVX1pUbGx4b3Fja1Q2U3JTYlBET3ExeDVaQjQ?oc=5",
+        "source": "Reuters",
         "date": "Fri, 03 Ju",
         "language": "en",
-        "tone": -0.046,
+        "tone": 0.0,
         "category": "commodities",
-        "relevance": 0.5,
+        "relevance": 0.2,
         "keywords": [
-          "TES",
-          "Gold",
-          "Yahoo",
-          "Finance"
+          "Reuters"
         ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
+        "bias_label": "center",
+        "factuality": "high"
       },
       {
-        "title": "Gold prices today, Thursday, July 2, 2026: Prices break above $4,100 following a disappointing June jobs report - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMijgJBVV95cUxPaW9RM3hDTjNPSmRUNXVoRGJxR1FlX3JOdXVzVGdCeGtEaXdIcHkyMTZPdDZTN1c5OXpBek5lMEt2WXpDdm1KQ3VTbUdGTmkxX0gyVXdxMFd4WEpUdTZ4TXc0UXN3aHY3RUZ3M0tPZjJkcTRqLTgwRUE1VkF1ZEl2NUtEM3BldDIyR0NfTDBLVlVtNThBMnF5blk0T2prdmFoRU94TGxZUkVnTGktdUM5V3FxLUVXUXRpZkdwNVdCVkZxdVFQTWMzWUNtTnhDZ3VCelpOZHB4Y0lFN0dCVGlhZjVUSzFJRk55cjNpOGxkMGlWdi1DOXppTmZyd1JfSjlGRHVXMnQ3UXZDX3E4M1E?oc=5",
+        "title": "Gold price outlook: Could prices hit $6,000 in 2026? - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxOdnhFb2JvTjVvc0Qya0ZBMExkRkpScjBMV0htN193cjNpV2M5WTg2ZlpUVFdXQWtKc2JsajRLQk9GTTNqQXBZdm1hLTJOZkVabERGUHJFT2kwNE44dkNUWl9FbVhBZGJXbktpdTFZa25fbDFZclNlZEM5VllPWEpGWG5oN01pdWVsLVhfZmFxaDNnTGxndTJBZzFXdDZGRDR2WFM5QlJkQVdzWkZXdHFiVTBIMWpFZloxSVBmUzFyMVNWZw?oc=5",
         "source": "Yahoo Finance",
-        "date": "Thu, 02 Ju",
+        "date": "Tue, 30 Ju",
         "language": "en",
-        "tone": -0.865,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
           "Gold",
-          "Thursday",
-          "July",
-          "Prices",
-          "June"
+          "Could",
+          "Yahoo",
+          "Finance"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6730,7 +6986,7 @@
         "source": "World Gold Council",
         "date": "Wed, 01 Ju",
         "language": "en",
-        "tone": 0.025,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6744,27 +7000,12 @@
         "factuality": "unknown"
       },
       {
-        "title": "JPMorgan sees $4,500 gold price in fourth quarter, says risks to downside - Reuters",
-        "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxOR1FOcHg1SUdkOExTLWpxN0pyeFppZU5ZdXB4N080LWcwN0ZTNTRjclZ2Y3pqWFlicUZaX05iY2w0MGtMVVdPRE1YTEllV3ZmYUQzSHE3WktzVmhpSUh1bkRzSkxDSXEyMkwwLVhSTktZekhiLUdob2VESmxJQk5mN01QRkUteGJzWmdMM05aN3F5Mzd1YUJSSHNLS1lZLXpLa3hha1dmQ2dVX1pUbGx4b3Fja1Q2U3JTYlBET3ExeDVaQjQ?oc=5",
-        "source": "Reuters",
-        "date": "Fri, 03 Ju",
-        "language": "en",
-        "tone": -0.147,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Reuters"
-        ],
-        "bias_label": "center",
-        "factuality": "high"
-      },
-      {
         "title": "Gold price jumps above $4,100 as U.S. economy created 57k jobs in June - KITCO",
         "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPdlZPekJtQVNybFBsUFFoWkMyMGY2M00ta2tPaWdlV0dHbU1aaVNBQUM3Z1VhSklQQ3pTcVB3RkxvazhHMkFkZzBPeG5wZm5DdUxTOHNvQldDU3pBVng4OWg0T3k5RmtnYkdZZWkzSzJmaUNfNjdrX1U0X01WWW1tcjBhdWFNeHhmWjllTEk0UVBDZ2xjNURZS181NkV1MnlMamZSN1YtSG9Cdw?oc=5",
         "source": "KITCO",
         "date": "Thu, 02 Ju",
         "language": "en",
-        "tone": 0.479,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6773,35 +7014,87 @@
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
+      },
+      {
+        "title": "Gold flashed a death cross at the end of its worst quarter in 13 years. Here's what's weighing it down. - Business Insider",
+        "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQNHZHRU9OcUphRnhIbWZtVXR2QW9mWFZrcVpDXzBVYUxJZzU5aDREVHNOT01TRG5SNFRRZ2lvVnkzMU9Xa2pWZjhJNkZKTTlwb01aakkwRUdXVURPOFc5dWJrTG14a2FRbGZSU2pGLXBGN1E2d0ctWXhSemsxd1VaSnRDRTNmNldlMUhKdDd3X2R6TklzUFhwNTMxUFpSbHVBeUxZVHpJVQ?oc=5",
+        "source": "Business Insider",
+        "date": "Wed, 01 Ju",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Here",
+          "Business",
+          "Insider"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Gold Price on 01 July 2026 - Gold Price",
+        "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE9UZFZqaUJsekh3VDh2aUVfbUlWNWZhNGlkQkRFRXRfMmVEYkpnb3hvUnFsZ2dkZl82M2pSQ3BKNkthbExadkdVaHdPUi0xdkYzaE5BZzYyWmZpNkh6VVE?oc=5",
+        "source": "Gold Price",
+        "date": "Wed, 01 Ju",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Price",
+          "July"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Gold price outlook hinges on macroeconomic conditions as geopolitical risks, Asian demand gain influence - Mining Weekly",
+        "url": "https://news.google.com/rss/articles/CBMi5gFBVV95cUxNTjdMc1ZERUc2OC1ORUFuaWF5TF9pa0ZfZU53ZzZCdXNsekt0OG0ySjMwU0FiY3pQeW9uRi1jUk5pSkJPQnprXzBMLTcwQ1p0QkZCVUc5R25HTmVLVmt5dXJiVG94V1YwQmFVX0VweXBZaGZUYldXY1hqWXFQUm82eS1IS21EZmRPVFQzTWtwNExYT3BUaTlrdkdzaTBOQzA2cF81aEpUYTdIZEZzTGpKa25ETE43eUJxTlVZbHNhUWlMXzhXUmc1cnpONmZoUzFXWFEyUDVoUm9ISExiRHZmTHJjbmU1Zw?oc=5",
+        "source": "Mining Weekly",
+        "date": "Wed, 01 Ju",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Asian",
+          "Mining",
+          "Weekly"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
       }
     ],
     "source_diversity": {
-      "CNBC": 2,
-      "Yahoo! Finance Canada": 1,
-      "Crypto Briefing": 1,
-      "simplywall.st": 1,
-      "Yahoo Finance": 9,
-      "Yahoo Finance UK": 1,
-      "World Gold Council": 1,
+      "BullionVault": 1,
+      "FXEmpire": 2,
+      "Yahoo Finance": 7,
       "Reuters": 2,
-      "KITCO": 3,
+      "World Gold Council": 1,
+      "KITCO": 4,
       "Business Insider": 2,
       "Gold Price": 1,
+      "Mining Weekly": 1,
+      "South China Morning Post": 1,
       "thestreet.com": 1,
-      "Yahoo Finance Australia": 1,
-      "Mining.com": 1,
-      "NerdWallet": 1,
+      "USA Today": 1,
+      "CNBC": 3,
+      "GuruFocus": 1,
+      "Intellectia AI": 1,
+      "Anadolu Ajansı": 1,
       "Investing News Network": 1,
       "The Guardian": 1,
-      "The Business Times": 1,
-      "markets.businessinsider.com": 1,
-      "GoldBroker.com": 1,
-      "Yahoo Finance Singapore": 1,
-      "TradingView": 2,
-      "GuruFocus": 1,
-      "Crypto News": 1,
-      "FXEmpire": 1,
-      "Elko Daily Free Press": 1
+      "Mitrade": 1,
+      "FOREX.com": 1,
+      "FXStreet": 1,
+      "GoldSilver": 2,
+      "The Times of India": 1,
+      "36 Kr": 1,
+      "MoneyMagpie": 1
     }
   },
   "political_bias_analysis": {
@@ -6809,19 +7102,19 @@
       "left": 0,
       "center-left": 0,
       "center": 3,
-      "center-right": 2,
+      "center-right": 3,
       "right": 0,
-      "unknown": 35
+      "unknown": 34
     },
-    "bias_diversity_score": 0.418,
+    "bias_diversity_score": 0.431,
     "factuality_distribution": {
-      "high": 4,
+      "high": 5,
       "mixed": 1,
       "low": 0,
-      "unknown": 35
+      "unknown": 34
     },
     "cluster_bias_assessments": [],
-    "flagged_articles": 2,
+    "flagged_articles": 3,
     "bias_narrative": "",
     "total_analyzed": 40
   },
@@ -6835,5 +7128,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-12T01:11:11.942294+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }

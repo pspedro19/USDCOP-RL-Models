@@ -44,7 +44,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-06",
@@ -66,7 +66,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-07",
@@ -88,7 +88,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-08",
@@ -110,7 +110,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-09",
@@ -132,7 +132,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6142,271 +6142,83 @@
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": 0.022,
+    "avg_sentiment": 0.0,
     "source_breakdown": {
       "World Gold Council": 3,
-      "Yahoo Finance": 2,
+      "Yahoo Finance": 1,
       "VanEck": 1,
       "CBS News": 3,
-      "Reuters": 4,
+      "Reuters": 5,
       "KITCO": 7,
       "BullionVault": 2,
       "CNBC": 1,
-      "American Enterprise Institute - AEI": 1,
-      "FXEmpire": 3,
       "Yahoo Finance UK": 1,
       "North of 60 Mining News": 1,
       "FOREX.com": 1,
-      "Investing.com": 2,
-      "Morningstar": 1,
+      "Investing.com": 1,
       "Investopedia": 1,
-      "Fast Company": 1,
-      "Business Insider": 1,
+      "Morningstar": 1,
+      "FXEmpire": 3,
+      "Business Insider": 2,
+      "FXStreet": 1,
       "Anadolu Ajansı": 1,
+      "Fast Company": 1,
       "Mining.com": 2,
-      "money.com": 1
+      "USA Today": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
     "relevant_articles": 40,
-    "avg_sentiment": 0.022,
+    "avg_sentiment": 0.0,
     "sentiment_distribution": {
-      "positive": 11,
-      "negative": 11,
-      "neutral": 18
+      "positive": 0,
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
-        "cluster_id": 1,
+        "cluster_id": 0,
         "label": "Commodities",
-        "article_count": 11,
-        "avg_sentiment": 0.137,
+        "article_count": 39,
+        "avg_sentiment": 0.0,
         "dominant_category": "commodities",
         "bias_distribution": {},
         "representative_titles": [
-          "Will the price of gold rise again this January? - CBS News",
-          "Gold price up, silver sharply up; it’s jobs Friday, and maybe more - KITCO",
-          "Now is a good time to discuss gold prices - North of 60 Mining News",
-          "Silver and Gold Prices Snap – Are Highs Already in-Plac - FOREX.com",
-          "How much gold will $10,000 buy right now? - CBS News"
-        ],
-        "narrative_summary": "",
-        "articles": [
-          {
-            "title": "Will the price of gold rise again this January? - CBS News",
-            "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTFBqRDJ5SXZqcmp0N1h2Y3Zic3RzWmc5LUxvc0hqX3RJQjNKYnZlQnB3Mmh4aWFldkJ0RzIzQWFHbWZWcDFrRzU1ekJQTmhURU96R1dPUEZKN0dqS3JENlY3b25oRUFNbFo1UHQ3Sm1pNUpiekxZUEtpNW9tNlY?oc=5",
-            "source": "CBS News",
-            "date": "Mon, 05 Ja",
-            "language": "en",
-            "tone": 0.033,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Will",
-              "January",
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold price up, silver sharply up; it’s jobs Friday, and maybe more - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPRGRrV25GQzczeVhnN2Y4REZabHlzQVNTUUNzeXdWSDRHYm5OWElFck1yZk9FU085Q0Y3OGFhdXF6cDluMWswX3BHTF9EQ0UyWm41UHZ0Z0ZINDlCQTdIMkhjQ0hYRGlZTms3RVJoeHNmZGlPS0JFTWMzUERydldIa2VkdTE0bFYzQUtrT25hZlFDb0Q0U2xSc0g3b2xkdzFoSF9PTA?oc=5",
-            "source": "KITCO",
-            "date": "Fri, 09 Ja",
-            "language": "en",
-            "tone": 0.409,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Friday"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Now is a good time to discuss gold prices - North of 60 Mining News",
-            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNczIzbWtzMWpnZzBkdTZTbkMtUHY2MUZNVVFRMkRVazZ6R05TX3BvMVVtYnNsZUs0dXFjbFdma2RYS3IxaGUwWExxcURfUHVCX0VsTW1la0NiSUVKVVdOaU9Fal80QUdoQTZadlRvRFhoTFpwUlNyamlkMTFUb0cwbWEwWVpybTJoV3drd2NkMjJZOExzR3YybjVmbkFsNlhCd1lFdVozRWJzQQ?oc=5",
-            "source": "North of 60 Mining News",
-            "date": "Fri, 09 Ja",
-            "language": "en",
-            "tone": 0.316,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "North",
-              "Mining",
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Silver and Gold Prices Snap – Are Highs Already in-Plac - FOREX.com",
-            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxPUW11OU1EdzhXRGJPUzZURG8wZWZpS0Z1SVl0Q1E0bjZlRjItWXB4d2RRR0Rsd3huaVh1Y3NmN2ZLXzRnYUo5THpVZlk0WjJyM1VhendqMnlVYUlOWlhxdzlvMVFLSnJ3Tk8yczFXWTFuUXZON3BRNE95SkxpeG81aUNxLVhyWnFmWVF4VmFKUmE4djk3c1V3TkwwU01taXlTdE5j?oc=5",
-            "source": "FOREX.com",
-            "date": "Wed, 07 Ja",
-            "language": "en",
-            "tone": -0.001,
-            "category": "fx_market",
-            "relevance": 0.2,
-            "keywords": [
-              "Silver",
-              "Gold",
-              "Prices",
-              "Snap",
-              "Highs"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "How much gold will $10,000 buy right now? - CBS News",
-            "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFBEZThVbWVyZW9BYmNVTk9ybEU2LUprTzBXN19LNjJEaVY2MWhvczU1MENxMXAycl9tWFZzNDM3cTA3WE52MVJGdGlDREw2NVZxWVBUMElYR1RnRDVycWVWbHd2UDI2V28teHJjYmJfT0xiTXZMY2Yw?oc=5",
-            "source": "CBS News",
-            "date": "Fri, 09 Ja",
-            "language": "en",
-            "tone": -0.015,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold and Silver Prices Are Surging Again Following Venezuela Developments - Investopedia",
-            "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxOZTYtcEttaG5keGRlaHdtb3UtMS1CSkxRZGd2aXFzZ1Z4TGFVdWYyd0V3MTU2M3dzeU5ESUR2X08tTkdHLS1KZGhGRE1hYTBXNHdtdXV0czcwMlY3anV4SDZjRU9lcmllZjdaWmotZWdVMTRyUS1YV2xXU0ltR0JkcE1RalU4MWhhNTlsNFdJay1HOW5EMWZEUThtTGh3ejI1clFJQkZNNmhqd3RLOUJpTg?oc=5",
-            "source": "Investopedia",
-            "date": "Tue, 06 Ja",
-            "language": "en",
-            "tone": 0.078,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Silver",
-              "Prices",
-              "Surging",
-              "Again"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold prices attracting some new bullish attention after U.S. economy created 50k jobs in December - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxOZFBXN05UUm56RzMxVDQ5dHFsdGhISDltVTliSHBtczBUZkZrbndrVFVILXNSbHduV0lzODlobkZJT0lmbTAtWVNtc3J3b3Q3cUd1WDJ6cUdnRlZZRmppNERfcmJJd2ctbkZZRmdPdEYwdEVXRkhhckc3dTVuMy1JSnktc3VtNzdya1JpNU04Qy1qLXVVaHkxZkdsUHFaaU9rSjlmdXN5NUFRbkZUd2RnMmxaYVRhZzktdFN2LQ?oc=5",
-            "source": "KITCO",
-            "date": "Fri, 09 Ja",
-            "language": "en",
-            "tone": 0.516,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "December"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "The price of gold is back on the rise and near an all-time high. Here’s why - Fast Company",
-            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOTXhBWDBTTU1WckF0bkotT3pqN1lhQURrLVZ3UXJ4RHhWUEV1enBpVkVfXzdRTWZUOFlBTE1WYlBxbk5kTEdicnFIQ016YzExalFZR0FtYVR0QkxwTkhnM0IxU0dycXZwLUNfT0xJdTlmUHVqd0ZTSGVuLVVvcDg3U3czWUFhQXJNTi1pelQ5ZlJ3TjJKZUs1Skhn?oc=5",
-            "source": "Fast Company",
-            "date": "Tue, 06 Ja",
-            "language": "en",
-            "tone": 0.387,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Here",
-              "Fast",
-              "Company"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold prices soar 2.1% amid geopolitical issues - Anadolu Ajansı",
-            "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxNcUpZTU5OaWFyOGNzNkJzQXN6S3hkdjlWdlg0Y1pOZlJrY01JYnJUMGVyWGhjeFQ5VlZIV2FuYVdBUFpqdl9DNU5vSFowOFRRdHYwSkw5OUdrZDQ4dTUxc0xod2I1RmVCQXkteENmYXBfSDV0UEJqNW5rSU84MVB0Q1lRR0pBNVhOQVF1dXpn?oc=5",
-            "source": "Anadolu Ajansı",
-            "date": "Mon, 05 Ja",
-            "language": "en",
-            "tone": -0.371,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Anadolu"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold price rises to weekly high on US-Venezuela fallout - Mining.com",
-            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNSWRZdUw3WHRVNnNiS2xGYkNzdWpxRjViWVpOQjdkX1h1RTdxeXN3MzJOUXFnUXdQSE5lUmFCcEhUTlNfaXNYMlRsa0E3c0VtVnNEWVdYMG1sa21mV25xaWpqajBkT3RrUFBMQ2M2Z1ZsdUlCbVZWd3VpR3J6cDlEZG9paWFLZw?oc=5",
-            "source": "Mining.com",
-            "date": "Mon, 05 Ja",
-            "language": "en",
-            "tone": 0.277,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Venezuela",
-              "Mining"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Why Both Stocks and Gold Are Rising After the U.S. Attack on Venezuela - money.com",
-            "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTFBxT1Y3N21EeXFnRnFEbEZDbHBPWFV2WGJyc2tWWjFRWnhZckwxbGsxN29XNHoxZzl6cnFhazZBRjY2ak5SMm9uSlI5VUZhNE8xMVRRM1VEYzk2N3ZDRm5UWmpHYw?oc=5",
-            "source": "money.com",
-            "date": "Mon, 05 Ja",
-            "language": "en",
-            "tone": -0.123,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Both",
-              "Stocks",
-              "Gold",
-              "Rising",
-              "After"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          }
-        ]
-      },
-      {
-        "cluster_id": 0,
-        "label": "Commodities",
-        "article_count": 4,
-        "avg_sentiment": 0.113,
-        "dominant_category": "commodities",
-        "bias_distribution": {
-          "center": 1
-        },
-        "representative_titles": [
+          "The Supreme Court’s Review of IEEPA Tariffs: Why it matters to the gold market (or does it?) - World Gold Council",
           "Gold price today, Friday, January 9: Gold nears $4,500 per ounce - Yahoo Finance",
-          "Gold price could reach $5,050/oz in H1 2026, but H2 correction could be deeper – HSBC - KITCO",
-          "Gold could hit $5,000 an ounce in first half of 2026, says HSBC - Reuters",
-          "Gold price could hit $5,000 in H1 2026, says HSBC - Mining.com"
+          "If the Dollar Loses Reserve Status, Could Gold Surpass $39k? - VanEck",
+          "Will the price of gold rise again this January? - CBS News",
+          "Gold price surge boosts Swiss National Bank's profit - Reuters"
         ],
         "narrative_summary": "",
         "articles": [
+          {
+            "title": "The Supreme Court’s Review of IEEPA Tariffs: Why it matters to the gold market (or does it?) - World Gold Council",
+            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxNbjRlOGZNRmhCeUNmZXp5WkMzX2Q5cUNZZGxNM2hySldrZDlzZGQxSXZmNjdJUkdFeE55aUNrekVWRUJBSzlwUUlfYTE0V2txMUE3VzlDM2ZVNmhkaHJlSUp5VnZWSVVDck51amQ1emxpT3RUMlZuNGJKTWViZVhidW5rY3JSWXlWWVR2RFhoaUVsWDNoVlh4UlBKOGViY2xIdFV4ZV9oWHpINnA1aDNr?oc=5",
+            "source": "World Gold Council",
+            "date": "Thu, 08 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Supreme",
+              "Court",
+              "Review",
+              "Tariffs",
+              "World"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
           {
             "title": "Gold price today, Friday, January 9: Gold nears $4,500 per ounce - Yahoo Finance",
             "url": "https://news.google.com/rss/articles/CBMi0AFBVV95cUxQRklfOENJS3ZiQUp6RmRsUHRtaXZTcDFjanJQckhTTlRZMEdPQl9sYnRGV2tVN2tuRFRkQkExUmU3T015OThiM05EUVBUVlNtZHZ3eHVUby1CeWtrZHp2QnVqUGltSFR3RmtQNjdPVjVHdm5QYW10UEdlWlBDM1JobjhnbzV2MTJ6c29MOU9lREZlcncwajlBa1NnU09oLTV4dHhreHRDRk9YLTduYi1fSnFGUDhwRFRDa2UwOG13cWtiM3JqYVZ3b0M2UDlDZUR5?oc=5",
             "source": "Yahoo Finance",
             "date": "Fri, 09 Ja",
             "language": "en",
-            "tone": 0.068,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6420,12 +6232,67 @@
             "factuality": "unknown"
           },
           {
+            "title": "If the Dollar Loses Reserve Status, Could Gold Surpass $39k? - VanEck",
+            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxNTXZQVHR1Q3hnWGdCcnlMdGVMcDE2dEFZWlhYOW5kYWkxZzBhVVlGcEJ6cjkwUTFTU3lkQUpzLTNVdmY4d2c5bXJqdENNempRVDJQUW1zdzF2QWN0N2JVa0dmT2tEYnlkUlFEZk9Hb0F3RDU1NERSWjFrbGN0b0dVWkxmZDFDYlVKbVFBZUV3Y2RRV3ZxcWJ6SlB5NGRNelNWN1h2TXBaQWhEOVJnNkx5OXRLU2REbWs?oc=5",
+            "source": "VanEck",
+            "date": "Wed, 07 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Dollar",
+              "Loses",
+              "Reserve",
+              "Status",
+              "Could"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Will the price of gold rise again this January? - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTFBqRDJ5SXZqcmp0N1h2Y3Zic3RzWmc5LUxvc0hqX3RJQjNKYnZlQnB3Mmh4aWFldkJ0RzIzQWFHbWZWcDFrRzU1ekJQTmhURU96R1dPUEZKN0dqS3JENlY3b25oRUFNbFo1UHQ3Sm1pNUpiekxZUEtpNW9tNlY?oc=5",
+            "source": "CBS News",
+            "date": "Mon, 05 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Will",
+              "January",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price surge boosts Swiss National Bank's profit - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxOdGM5UUtFNUZxRUxFSXFaSzNDV1VNaUVDTDNEbERZTWdhM1o5N2I4Sk9Ub1Voa0dXNDZReG5qUHpCX3UtUV9ZVFFfZExHejhfdUhzX1d5TFBmNGJPM3FuTnNpXzhmQl9ZSldLNlg3cHVMcEtFRlVDMjRvdjkwZDU3bk1TbExJOVl3Ym1nRDI3OHBEdFBiX2dDM3BLSWJFWWRHNTBMeXg3OS04X0VYZ2R2SlY2Vlo3Xy0wTlE?oc=5",
+            "source": "Reuters",
+            "date": "Thu, 08 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Swiss",
+              "National",
+              "Bank",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
             "title": "Gold price could reach $5,050/oz in H1 2026, but H2 correction could be deeper – HSBC - KITCO",
             "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxPTTYxMHBjUFd4TXdINFEwalhiTEhJMlJzcDRzcndlQWRkT29ZTVFFNEJKdXMxcUlpSy1SaV9RNV95OWhvOThJdHhWZmF4M1VWV3NJLWNQVWViWDF5WUxyT0hGeEh0V3BjNld5aHRLaHkzLWFZLXJsdzRrd0pXUGczdENZZE5tbGltdnZTa3VUaHRZaE15QnZRM09oSnJmak1qV2tQRjRNT2IxdEhVdDdiczM5NkR6SEkxT0E?oc=5",
             "source": "KITCO",
             "date": "Thu, 08 Ja",
             "language": "en",
-            "tone": -0.085,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6435,12 +6302,65 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold could hit $5,000 an ounce in first half of 2026, says HSBC - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNQTdFdmZSazc3bGQtdFd4Ri1sZF9sblktb29Gc0kzX2tUdnRzeEJxblN0RkR6VTV4cTNaUld2MVhEQXg0QnJNQkUxcUktOThyTjNxM3JZZWxOWmJEOUVfYWdpN3RtdTRVbVJQWWZIOURTLXpJNUlJUkV3Q0g2U2lVRDlCeU84cFFCcFQxU2lyS1VzX1pReUk3NWJZY2paVHR2?oc=5",
+            "title": "Gold and Silver Rebound as Trump Arrests Maduro, Spooks Nato Over Greenland - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMikAFBVV95cUxPUDI5b2E0SDV1MTNpQTdVcWJ3QnAtSHdVSUZmYk9sb09IODlPck43NUpCa0F4WTJ4bC12aWY1VEx5WWk1U2FwOVYyVVMtR0xMZzdoN1Q0MHMzQ0NLM1hKYVJBQjVpN19IRHVmbjlRVmRHN2RESWVWQ3hwRjlWbDRxZzJyQ0tFTmlDSFVZbXRzVk0?oc=5",
+            "source": "BullionVault",
+            "date": "Mon, 05 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Silver",
+              "Rebound",
+              "Trump",
+              "Arrests"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold set for weekly gain on U.S. payrolls miss, broader uncertainty - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxQMkUzRldTbGtKaFRpdHNfUzJEYkNqdGpLRElKaFlYdXJRTUpKYmpoNDBMVkRUVjZEVkh1Y1Z4SkdBOTBkeElZaFFqQW82V1FpSEhaaTdkTF9sNHZjTktXTURBQ256T0R5bmpzTU5TTGRHV0NmMnJ4dm5aNTUzOUxZTnpVeEFidml1QXVvUHdaaXNaeHVhWGhLS3ljLThPZFYtaktzWEk5c1g4QdIBrwFBVV95cUxQTGhpZUNieXhPWWJ4blRqMV9sQjJVQVZ6RjJIaU12MUNuYm9aWHJCYlU5TkhQVnRvaVFKLXh2YkNlWHJmS21qMTRHR0lqVmRIMmk3NDl3cEhLYkhXX25GbWI3T3h6Y1Exakl6Wkc0TVh0MEhJbGtYVHdlUWxiZXNpSy1KZTllZjhYenY1eUVLNHQwdnFRU2FaRjA5YUxtb3V1NGYxTDk0UE13ejU4ekNB?oc=5",
+            "source": "CNBC",
+            "date": "Fri, 09 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold Market Commentary: Precious Metal Thunder - World Gold Council",
+            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1LdnRIVlR0aDNnZTBkazE4VHN6dzBTWk9Lak5kdkNDYmV2RWozWWRkTG5ZMU5ZOWlkc2JmZ3YxQnNLcTRWV3kxRHo4SkdqVHJYbFNYcm1mbEJuZjctVlVMSTF5d3BUN05yOFViYjNnYUc1cjdwZ0hDZlZiNndLZG8?oc=5",
+            "source": "World Gold Council",
+            "date": "Thu, 08 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Market",
+              "Commentary",
+              "Precious",
+              "Metal"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold set for weekly gain on US payrolls miss, broader uncertainty - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxPaUsyOGd2MDhZMU5xVmI4Yjlib1NZTHJkQkVBVjVHbHdybzJnX2JkTDNPLXlDMU50WVVoQTJxZks5NjZfRWdfWDhDVW1jMFNRSTMwUTNzbjR6RmhvWUJCZFAwOEM0U2xOQ1ZmbGx5UFhpY2lnRUdpLWlJRkZkZHlnQVctYnNSOHg1UnktTmZlbXJFUFFJMW0yT0Exb2xmbmJFVDJ1ZnlWYjczZ2xjbkNVcw?oc=5",
             "source": "Reuters",
             "date": "Thu, 08 Ja",
             "language": "en",
-            "tone": 0.373,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6451,52 +6371,257 @@
             "factuality": "high"
           },
           {
-            "title": "Gold price could hit $5,000 in H1 2026, says HSBC - Mining.com",
-            "url": "https://news.google.com/rss/articles/CBMiekFVX3lxTFA0cUlKQmxVU19lOVBqWExVTXZQcTJqdjd0Tk9ic2VwU0VSTjNVQkJUaGd3SlZoMXk0WHBlZGEyYmQ1NWVuVndNNlZyVGZzdHFaZWxsVC1qUXR4NDdoa29fNWlPZVlSQ3hmVW9zRUZaV016cm5BVGh5UjRB?oc=5",
-            "source": "Mining.com",
+            "title": "Gold price down amid sharp losses in silver - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxPODhzZ25SZVpnQ2ZEa2twZi1HbGlQMHA5ejgySXNpNFo0NkladmNoY0I2ZUlyR2JSa2kxWjN5RTJ5bDdtcTNRa29JLWpyRlVNUXVhV1FGSXhTa2FZUFhuS2xLSlVwVVA0OEs1aW9vWHNBRjJ1T2w2amdsWFpVeldCNDVEcXhWVjZkVkdRRDB3aw?oc=5",
+            "source": "KITCO",
+            "date": "Thu, 08 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "London Gold and Silver Holdings Hit 3-Year Highs as Exports from Trump's USA Jump | Gold News - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxPamFLNmhkZmdtNDc0eXdfbU1mVW1WcnRfbElGUG5tSlFmYUNFWUQ2ZzdwWEpiRGppYlVmdkktV2lBY2N6dGFMakZQMWNOVS03VmZQaTRNQmV1dkN5YTZDLVJPMnFJeW8xa25NblJjYkwtc2k4dS1zTEZvY3Z4SmoxSWNzUF9xclFIM2FDV1VfVS1ITlBQ?oc=5",
+            "source": "BullionVault",
             "date": "Fri, 09 Ja",
             "language": "en",
-            "tone": 0.095,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "Gold",
-              "Mining"
+              "London",
+              "Silver",
+              "Holdings",
+              "Year"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
-          }
-        ]
-      },
-      {
-        "cluster_id": 2,
-        "label": "Commodities",
-        "article_count": 3,
-        "avg_sentiment": -0.23,
-        "dominant_category": "commodities",
-        "bias_distribution": {},
-        "representative_titles": [
-          "Gold (XAUUSD) & Silver Price Forecast: Triangle Setups Hold as Markets Eye NFP Risk - FXEmpire",
-          "Gold Price Forecast – Cooling Growth and Sticky Inflation Set Stage for Gold’s Next Breakout - FXEmpire",
-          "Gold (XAUUSD) Price Forecast: Gold Price Set for Pullback as $6.8B Rebalancing Begins Jan 9 - FXEmpire"
-        ],
-        "narrative_summary": "",
-        "articles": [
+          },
           {
-            "title": "Gold (XAUUSD) & Silver Price Forecast: Triangle Setups Hold as Markets Eye NFP Risk - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxQd2tyOTlLYUQta2J1U1lTWFNRRzFRQWZGTmJybzhHMlpzVkRQUzhTQXdlaW9hV1Qwa2NiUXZWTzJDUGU2M3JLNVh5WEkxX0JJWm9GRW1FWmg5RlRia3lVcGFNSHVWZmJjeFQtdDJVSnY3c0w4X25fYmpJOHcxNmFUYVQ0bFNEdV94aDZuVUhUeDRVQlIxTG9PVHRLSmk0LU9yNzV4TnJpQUpPRktaQTAta29qeDU4Z1lZb3U1czJWVHNTdHhSZEs4NQ?oc=5",
-            "source": "FXEmpire",
+            "title": "Gold falls more than 1% as investors lock in profits - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxQOVk5TGl1RVFCUDA0TEhJY0ZmRzNFLXg2ci1CLUc5TDBnUjhidFhyX1ZTQkxGekFZMzVOR3F0a0FJZ3VnakI0RDJEV1hCbE90Z1dQaTd2LTRod2VBN0xaRV9BMWFJQnMtNmRSQ0RKRl9JQ0cyRFBicU5FTmo0WkFiRUp1czlKVkZyZi1wYzBwSEFsb25uQjBiQmdCQ1FoTVpWekRNVA?oc=5",
+            "source": "Reuters",
+            "date": "Tue, 06 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold price up, silver sharply up; it’s jobs Friday, and maybe more - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPRGRrV25GQzczeVhnN2Y4REZabHlzQVNTUUNzeXdWSDRHYm5OWElFck1yZk9FU085Q0Y3OGFhdXF6cDluMWswX3BHTF9EQ0UyWm41UHZ0Z0ZINDlCQTdIMkhjQ0hYRGlZTms3RVJoeHNmZGlPS0JFTWMzUERydldIa2VkdTE0bFYzQUtrT25hZlFDb0Q0U2xSc0g3b2xkdzFoSF9PTA?oc=5",
+            "source": "KITCO",
             "date": "Fri, 09 Ja",
             "language": "en",
-            "tone": -0.388,
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Friday"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold prices dip as investors await US payrolls data - Yahoo Finance UK",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxOc2lVTVlaZ1FLWFlyRTNIVGZNeHJiSFNnLTQxMzNPNmo3OWtOeTVISVZGWURkVVBLR2QzdVYtRDByaVV4OXN4VXFzOW5qazRDaWg1ZHNzeW9CeldtVTRLYXpvZ2o4QXlYUGpVYlowNHZkbE1tOGMxeWZDRjNhR2k4QVBuaVgtSmJaLVJobTM0SDJ3WUhnSXpONzVHZGRRa05R?oc=5",
+            "source": "Yahoo Finance UK",
+            "date": "Thu, 08 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold prices will take their cues from oil this week following Venezuela attacks, initial resistance at $4,474/oz – World Gold Council - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxONDRJZl9Yb09pMEc2bGVrZ3Z2NGQyd0ZGQXNVS213dVMwc0loazBBUHdtR1pPVGRpR2tMdUcxN0xWeDRySTRWa2V6dzh3b2ZMUnZxbEhOZ1E2Z2Q0U3ZPYnJ1bDJNUWYzOE5HN0NQQ0FXNi12WmpLYkFXTUUxdXZQWi05bWpCeTliemdoSGFBRmhYTG9hQlZNYnM1RS1GMWVlTGw4eHl3c3Z0eFREckd2U1Q3Y09RZw?oc=5",
+            "source": "KITCO",
+            "date": "Mon, 05 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Venezuela",
+              "World",
+              "Council"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "How much gold will $10,000 buy right now? - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFBEZThVbWVyZW9BYmNVTk9ybEU2LUprTzBXN19LNjJEaVY2MWhvczU1MENxMXAycl9tWFZzNDM3cTA3WE52MVJGdGlDREw2NVZxWVBUMElYR1RnRDVycWVWbHd2UDI2V28teHJjYmJfT0xiTXZMY2Yw?oc=5",
+            "source": "CBS News",
+            "date": "Fri, 09 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "You asked, we answered: Is mined gold production peaking? | Post by John Reade,Ray Jia | Insights - World Gold Council",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNM0tKQm1GbWtZTm1rQ08wWnV4UEtDUEN2X29nWFdIRkxGbmN3Tkx0SWRQYzVGXzIwWFZWM2JrSDN5c2ZqN0xpQ0tqbjJGWHNlSlBMWDEwR2JQSVNDMmRJOVZ5R1BnZlhvRjY5Qk1IcXBFQ2FWNmM5bUYxQ2s5MWkyN1JLd2VzUlRsalp1ZVJCS1pvV2V4WWpEamhXLU1kNDl2?oc=5",
+            "source": "World Gold Council",
+            "date": "Wed, 07 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Post",
+              "John",
+              "Reade",
+              "Insights",
+              "World"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Now is a good time to discuss gold prices - North of 60 Mining News",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNczIzbWtzMWpnZzBkdTZTbkMtUHY2MUZNVVFRMkRVazZ6R05TX3BvMVVtYnNsZUs0dXFjbFdma2RYS3IxaGUwWExxcURfUHVCX0VsTW1la0NiSUVKVVdOaU9Fal80QUdoQTZadlRvRFhoTFpwUlNyamlkMTFUb0cwbWEwWVpybTJoV3drd2NkMjJZOExzR3YybjVmbkFsNlhCd1lFdVozRWJzQQ?oc=5",
+            "source": "North of 60 Mining News",
+            "date": "Fri, 09 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "North",
+              "Mining",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price continues to see some profit taking as ADP says 41k jobs created in December - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxQcVlyVE1qQUxBYUJaMmJCUVBqNUM5SGxxaUhLeS0zZlhPanVmakM0V0w3a0ZodnRFYnd3czR0Nm9hY1dxSnVZTzdfLWpLdHVMMG02Q2VuRERJV2kxWXFYck1fQy1LZXJMX0JiZ0dvM2pxYjIxZFZGaGhubHBldEVQZTAwREpBMWdPc2k4SHRjd0NxRmJfNUhaNXpLVnJMYzdtSlJCY2pDeGV2VnBvRWV6OHlzX2RfUQ?oc=5",
+            "source": "KITCO",
+            "date": "Wed, 07 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "December"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold prices may move lower next week. Here’s why - Investing.com",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPbFhvMEh3dmNRWDgxM0pvOVhBYUxEZF9Qa2tNLVJFRVRGakQ1cG9Jak5wS3VzazNJVXh2bzlCQThiQmFuTUUxR2NzeFZCWnNJSFpSUVM4clJfZk1IdXh3Mi1tMndGX01sb1hrSm5ZeDlZZWN0UTNZbDlBeDJiMV9VR2NkcHJFU0xXYjJ6WlJuaVF6elJlamtBbktNWFhOWS1YeFEzVA?oc=5",
+            "source": "Investing.com",
+            "date": "Wed, 07 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Here",
+              "Investing"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold will be the primary hedge and performance driver in 2026, silver could top out between $135 and $309 – Bank of America’s Widmer - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxQX3NhTHluNk9hMF93R0dJWVliaHhSenUyZDdvWTdNY1dCRkhIS1hSVjY1VXJmeHhtY2g2V3k4RElLbVI5cmwzWlUxcFVxRUZfSFF0TnBkMmRtR1lmODlzSnJqMEllSkF2c1FlUXhpWl94aVBFZm9wXzJvMEs5YlFHdkgwN2Mzb0pRSW1JNjljX3k4T1QzblFZOUlnMldfdjR5TzBZRGJQWVFsSGYwUkhhQmJNejlST3NFZmFIVWRB?oc=5",
+            "source": "KITCO",
+            "date": "Mon, 05 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Bank",
+              "America",
+              "Widmer"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and Silver Prices Are Surging Again Following Venezuela Developments - Investopedia",
+            "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxOZTYtcEttaG5keGRlaHdtb3UtMS1CSkxRZGd2aXFzZ1Z4TGFVdWYyd0V3MTU2M3dzeU5ESUR2X08tTkdHLS1KZGhGRE1hYTBXNHdtdXV0czcwMlY3anV4SDZjRU9lcmllZjdaWmotZWdVMTRyUS1YV2xXU0ltR0JkcE1RalU4MWhhNTlsNFdJay1HOW5EMWZEUThtTGh3ejI1clFJQkZNNmhqd3RLOUJpTg?oc=5",
+            "source": "Investopedia",
+            "date": "Tue, 06 Ja",
+            "language": "en",
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "Gold",
               "Silver",
-              "Price",
-              "Forecast",
-              "Triangle"
+              "Prices",
+              "Surging",
+              "Again"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Rally to Continue in 2026, Top-Performing Fund Manager Says - Morningstar",
+            "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNX0dSbWUwT1hnTnFuUEJyelc3WTBNV19hVzJVUDVQZTBxdHg2Y1FmR1hfeXBhUnhxeGl5RzcwQTNzV1VGclp6OS1yRm80ekZzbnhaODVtNEVJelNJMGhfRzkxNWVEXzVuTXhnZEgtZ1pMWXRIcDUyRWxKbnRueDdXbTB1Q3l5M2NycThzNU1vQUl1RGJ5WTc5WGRIRWlOd3J2aFE?oc=5",
+            "source": "Morningstar",
+            "date": "Tue, 06 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Rally",
+              "Continue",
+              "Performing",
+              "Fund"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Is there a limit on how much gold you can own? - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNTjNaTDIxSEFYWXFKNG84NFFWMGpycGlFZ0wyMzRqQ25vMEt6QlZ0WDI5SWk5SGhOLU8tekFmQ1l4eFBLV29SdDFIcjlkczhvc3JkRG5wdHFBdzA0aHVodXpYVkVNVGZmc1NaRFkwUlhMaGlHSDBFb3JFVDFnd25Kdw?oc=5",
+            "source": "CBS News",
+            "date": "Mon, 05 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "News"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6507,7 +6632,7 @@
             "source": "FXEmpire",
             "date": "Sun, 11 Ja",
             "language": "en",
-            "tone": 0.04,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6521,12 +6646,214 @@
             "factuality": "unknown"
           },
           {
+            "title": "Gold could hit $5,000 an ounce in first half of 2026, says HSBC - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNQTdFdmZSazc3bGQtdFd4Ri1sZF9sblktb29Gc0kzX2tUdnRzeEJxblN0RkR6VTV4cTNaUld2MVhEQXg0QnJNQkUxcUktOThyTjNxM3JZZWxOWmJEOUVfYWdpN3RtdTRVbVJQWWZIOURTLXpJNUlJUkV3Q0g2U2lVRDlCeU84cFFCcFQxU2lyS1VzX1pReUk3NWJZY2paVHR2?oc=5",
+            "source": "Reuters",
+            "date": "Thu, 08 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Billionaire investor Ray Dalio says gold's rapid rally is a warning for markets and the economy - Business Insider",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxORDFJcDhFWXd0SnVTVXRvNzdQOU1VTjNYMTVQV0VMOEQwWWlrdnB6eTBKdjN5RGRBTjMtWS1yd0JkRmY3N3laUzUwNzRKZy1CdVBHSHhMQ3M5Tkg1RUk1R09keDhjY0hsdGozRGMxOHpLcl9LazNfUmJTbnBQSldNRFJCLWZBTnR3NElrajFtbHNZZDZzSjgtQlY4LTZoRk9fNEVveWdLS05OQQ?oc=5",
+            "source": "Business Insider",
+            "date": "Tue, 06 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Billionaire",
+              "Dalio",
+              "Business",
+              "Insider"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold hits one-week high after US strikes in Venezuela - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPLWNkVEQ1LXRWY3QxemptWU1HT0R1Z3Y4RTNvVWxKbE10aU9qa21DZk9MXzdMRGlhRjVoWlFQcGVsa3IyX2RKQ0hQNWpiR3pXY3hPdHYzaUhPNkdjNHVPYmJ3cFhsbGF0VGNicWdWMjVubDFNdjZDWlVCLXA5R1FOLXR1Mmt2aEpIYkh1ZTdwU1lpS1FvMmlrOW5SMUJrbGVrRE01MFRYRlQ4SWVhQk1seWpnTzA?oc=5",
+            "source": "Reuters",
+            "date": "Mon, 05 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Venezuela",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold prices attracting some new bullish attention after U.S. economy created 50k jobs in December - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxOZFBXN05UUm56RzMxVDQ5dHFsdGhISDltVTliSHBtczBUZkZrbndrVFVILXNSbHduV0lzODlobkZJT0lmbTAtWVNtc3J3b3Q3cUd1WDJ6cUdnRlZZRmppNERfcmJJd2ctbkZZRmdPdEYwdEVXRkhhckc3dTVuMy1JSnktc3VtNzdya1JpNU04Qy1qLXVVaHkxZkdsUHFaaU9rSjlmdXN5NUFRbkZUd2RnMmxaYVRhZzktdFN2LQ?oc=5",
+            "source": "KITCO",
+            "date": "Fri, 09 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "December"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold (XAUUSD) Price Forecast: Profit-Taking Stalls Rally Ahead of NFP Report - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxQdGJKajk3cTY1UjVJRWRQVXB1SmpvWXUxaklFLWJzeC14SkItUng0VlczNG53cmpVcEdzb2pUSVdQVDYxZGplN3pQRWROSk51R2dRYlFsQ3VuVkNUbk9YbVZrd1RyOHZSa3QyWUg0QzBXQmk1VjBpWkN2V0lDdU1lN2ZyOVl4cGI2b1EybkNVcUxRSFZMQTNHV1M2NENfVnJPbFJMYV81SzFRcjVHVFY5amtGeElxUkR2aGJJZmVxTWpyUQ?oc=5",
+            "source": "FXEmpire",
+            "date": "Wed, 07 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast",
+              "Profit",
+              "Taking"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/USD hovers near YTD lows at $3,941 weighed by higher US yields - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxOcG1SLWtIVmc3dmk2Qmg1eko0ZWZYNEVONHhTUC1yZmF6NGRkRGpRakY4NXlCU0Zpc3J3V29wS05xX0ZpNXhjbDBqME5JMWxPVzE3TEFYMWJFWUxrLU5SUGpkZHdqazRYVU9XV0xsQTE5eUlSZVdUdnpGM0F6Yk13b3Z6Y0dIbU9OOEpoSUdqYWxzaHBtQUJEenBkT0RCNGQ4aElibHFfb2FwdXNzc0tVOEpOdVJ2SXQwSmNPYUpzNHdrREJheUhr?oc=5",
+            "source": "FXStreet",
+            "date": "Wed, 07 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Why gold, silver, and copper could soon tumble from record-highs - Business Insider",
+            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxNSjNvNmd5UTY3anFHc0xNZnp5YTM3dkJXUmlNSEl3M0tLMlpjQmZIWG1ORXRyS3NjcFdpenlSN2xibl8wSWpfUDVGNURLSzRDYnZ3b1NGQnRIN0U2QWdDQWYtM2lNU1ZuS3p1MWZsekxMTjhmc0pBQzYyRjRkeUpoOUpfWWNGdUJCc0ZKamd5cFJiRVJpSTNFOUFkNXphQTJqMWIwUk1Uem4?oc=5",
+            "source": "Business Insider",
+            "date": "Thu, 08 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Business",
+              "Insider"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold prices soar 2.1% amid geopolitical issues - Anadolu Ajansı",
+            "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxNcUpZTU5OaWFyOGNzNkJzQXN6S3hkdjlWdlg0Y1pOZlJrY01JYnJUMGVyWGhjeFQ5VlZIV2FuYVdBUFpqdl9DNU5vSFowOFRRdHYwSkw5OUdrZDQ4dTUxc0xod2I1RmVCQXkteENmYXBfSDV0UEJqNW5rSU84MVB0Q1lRR0pBNVhOQVF1dXpn?oc=5",
+            "source": "Anadolu Ajansı",
+            "date": "Mon, 05 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Anadolu"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "The price of gold is back on the rise and near an all-time high. Here’s why - Fast Company",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOTXhBWDBTTU1WckF0bkotT3pqN1lhQURrLVZ3UXJ4RHhWUEV1enBpVkVfXzdRTWZUOFlBTE1WYlBxbk5kTEdicnFIQ016YzExalFZR0FtYVR0QkxwTkhnM0IxU0dycXZwLUNfT0xJdTlmUHVqd0ZTSGVuLVVvcDg3U3czWUFhQXJNTi1pelQ5ZlJ3TjJKZUs1Skhn?oc=5",
+            "source": "Fast Company",
+            "date": "Tue, 06 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Here",
+              "Fast",
+              "Company"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price could hit $5,000 in H1 2026, says HSBC - Mining.com",
+            "url": "https://news.google.com/rss/articles/CBMiekFVX3lxTFA0cUlKQmxVU19lOVBqWExVTXZQcTJqdjd0Tk9ic2VwU0VSTjNVQkJUaGd3SlZoMXk0WHBlZGEyYmQ1NWVuVndNNlZyVGZzdHFaZWxsVC1qUXR4NDdoa29fNWlPZVlSQ3hmVW9zRUZaV016cm5BVGh5UjRB?oc=5",
+            "source": "Mining.com",
+            "date": "Fri, 09 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Mining"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price rises to weekly high on US-Venezuela fallout - Mining.com",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxNSWRZdUw3WHRVNnNiS2xGYkNzdWpxRjViWVpOQjdkX1h1RTdxeXN3MzJOUXFnUXdQSE5lUmFCcEhUTlNfaXNYMlRsa0E3c0VtVnNEWVdYMG1sa21mV25xaWpqajBkT3RrUFBMQ2M2Z1ZsdUlCbVZWd3VpR3J6cDlEZG9paWFLZw?oc=5",
+            "source": "Mining.com",
+            "date": "Mon, 05 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Venezuela",
+              "Mining"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold prices hit record highs. Here's how to buy gold safely in 2026. - USA Today",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPTmIwOEM5WTBvNDhsdGZUNlZMUnBiZThmbG5Md0l1Z1hINDMtazFydVBGdUd3dXhyaFNOZUdfeXJmRXlFMkoxaTZNUWF3ZW9GcFhJVG1LbTBmY1ZhcHh4TC0tQ2hSeWFRcnRZXzFOUW1QODVZb3I4N0UyeTlOQWxWemVuUnBRcDNNLVdVS2ctalZ3NXl4aWpYb003V3JrNUJlVGhLTzZHa2phQQ?oc=5",
+            "source": "USA Today",
+            "date": "Tue, 06 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Here",
+              "Today"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold (XAUUSD) Price Forecast: Gold Price Set for Pullback as $6.8B Rebalancing Begins Jan 9 - FXEmpire",
             "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxQM3c5UEZPZWpoNlRiYm8zNmgzV1FVYWZFZEQxRnRPVk51cHNPUlpGc3JiZl9VV2Z0SS1TOXlDOUx3bGxDbGwwdzdyOFRUNHZPSHRjbG5RRFA0UVk2Qk0wWjdvWllRTlB4Vmk0eGxhU05tT3E0MmRxNkpscnRkZUF4VmdlWG40NC1sWVF3TlNGWlhhdXd1N2cwSmFaYm5ia0k2bFp3UnZjNjBOQW15eW5YLTVBTVB2TlhBT0JhUFFpTjJ2TGhYeEF3ZmprSTdUdzA1YmxJYg?oc=5",
             "source": "FXEmpire",
             "date": "Thu, 08 Ja",
             "language": "en",
-            "tone": -0.343,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6549,7 +6876,7 @@
         "source": "World Gold Council",
         "date": "Thu, 08 Ja",
         "language": "en",
-        "tone": -0.007,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6568,7 +6895,7 @@
         "source": "Yahoo Finance",
         "date": "Fri, 09 Ja",
         "language": "en",
-        "tone": 0.068,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6587,7 +6914,7 @@
         "source": "VanEck",
         "date": "Wed, 07 Ja",
         "language": "en",
-        "tone": -0.24,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6606,7 +6933,7 @@
         "source": "CBS News",
         "date": "Mon, 05 Ja",
         "language": "en",
-        "tone": 0.033,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6623,7 +6950,7 @@
         "source": "Reuters",
         "date": "Thu, 08 Ja",
         "language": "en",
-        "tone": 0.661,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6642,7 +6969,7 @@
         "source": "KITCO",
         "date": "Thu, 08 Ja",
         "language": "en",
-        "tone": -0.085,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6657,7 +6984,7 @@
         "source": "BullionVault",
         "date": "Mon, 05 Ja",
         "language": "en",
-        "tone": -0.813,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6676,7 +7003,7 @@
         "source": "CNBC",
         "date": "Fri, 09 Ja",
         "language": "en",
-        "tone": -0.267,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6686,31 +7013,12 @@
         "factuality": "high"
       },
       {
-        "title": "Trump’s Venezuelan Gift to the Gold Market - American Enterprise Institute - AEI",
-        "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTE9LZ1FxSzZ5WGU4NGc3QXpQSnpRS1V4c0FlMWRKUmRKV1ZuTW1rQWlpM0tFN1JUMjFiQW1XbnhfeFI3NHQxQ1pHU3g1QW5jLXl6TFpPVFJndGtlalpPVE5IZ1VfMVNZX3JfQlU1NHh2a0VKYlV6Z3lqag?oc=5",
-        "source": "American Enterprise Institute - AEI",
-        "date": "Fri, 09 Ja",
-        "language": "en",
-        "tone": 0.12,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Trump",
-          "Venezuelan",
-          "Gift",
-          "Gold",
-          "Market"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "Gold Market Commentary: Precious Metal Thunder - World Gold Council",
         "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1LdnRIVlR0aDNnZTBkazE4VHN6dzBTWk9Lak5kdkNDYmV2RWozWWRkTG5ZMU5ZOWlkc2JmZ3YxQnNLcTRWV3kxRHo4SkdqVHJYbFNYcm1mbEJuZjctVlVMSTF5d3BUN05yOFViYjNnYUc1cjdwZ0hDZlZiNndLZG8?oc=5",
         "source": "World Gold Council",
         "date": "Thu, 08 Ja",
         "language": "en",
-        "tone": -0.087,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6722,30 +7030,46 @@
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
+      },
+      {
+        "title": "Gold set for weekly gain on US payrolls miss, broader uncertainty - Reuters",
+        "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxPaUsyOGd2MDhZMU5xVmI4Yjlib1NZTHJkQkVBVjVHbHdybzJnX2JkTDNPLXlDMU50WVVoQTJxZks5NjZfRWdfWDhDVW1jMFNRSTMwUTNzbjR6RmhvWUJCZFAwOEM0U2xOQ1ZmbGx5UFhpY2lnRUdpLWlJRkZkZHlnQVctYnNSOHg1UnktTmZlbXJFUFFJMW0yT0Exb2xmbmJFVDJ1ZnlWYjczZ2xjbkNVcw?oc=5",
+        "source": "Reuters",
+        "date": "Thu, 08 Ja",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Reuters"
+        ],
+        "bias_label": "center",
+        "factuality": "high"
       }
     ],
     "source_diversity": {
       "World Gold Council": 3,
-      "Yahoo Finance": 2,
+      "Yahoo Finance": 1,
       "VanEck": 1,
       "CBS News": 3,
-      "Reuters": 4,
+      "Reuters": 5,
       "KITCO": 7,
       "BullionVault": 2,
       "CNBC": 1,
-      "American Enterprise Institute - AEI": 1,
-      "FXEmpire": 3,
       "Yahoo Finance UK": 1,
       "North of 60 Mining News": 1,
       "FOREX.com": 1,
-      "Investing.com": 2,
-      "Morningstar": 1,
+      "Investing.com": 1,
       "Investopedia": 1,
-      "Fast Company": 1,
-      "Business Insider": 1,
+      "Morningstar": 1,
+      "FXEmpire": 3,
+      "Business Insider": 2,
+      "FXStreet": 1,
       "Anadolu Ajansı": 1,
+      "Fast Company": 1,
       "Mining.com": 2,
-      "money.com": 1
+      "USA Today": 1
     }
   },
   "political_bias_analysis": {
@@ -6779,5 +7103,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-12T01:11:11.942294+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }

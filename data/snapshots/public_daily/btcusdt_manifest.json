@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "asset_id": "btcusdt",
+  "ticker": "BTC-USD",
+  "source": "yahoo_finance_public_adapter",
+  "retrieved_at": "2026-07-21T15:22:49.958740+00:00",
+  "start": "2020-01-01",
+  "end": "2026-07-21",
+  "rows": 2393,
+  "data_path": "data\\snapshots\\public_daily\\btcusdt_daily.parquet",
+  "sha256": "3aaf9488ba3a9f8e34f378c291b6d57890442d67023cdd5874fba71530fd117e",
+  "availability_policy": "reconstructed_close_plus_conservative_lag",
+  "pit_vintage": false,
+  "promotion_eligible": false,
+  "reason": "Public adapter lacks historical provider revision vintages."
+}

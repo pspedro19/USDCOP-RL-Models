@@ -82,7 +82,7 @@
 - [ ] Sin sesión: solo landing/login/register/pricing; ruta protegida → /login con
       `?next=` y nota "Inicia sesión para continuar"
 - [ ] "Explorar como invitado" en Landing, Login y Register-done → sesión demo rol free
-      (guest@demo.local, is_test) → hub con nav de 4 y cards bloqueadas
+      (guest@demo.usdcop.ai, is_test) → hub con nav de 4 y cards bloqueadas
 - [ ] Guest NUNCA ve Backtest/Admin ni en nav ni en hub
 
 ## Públicas

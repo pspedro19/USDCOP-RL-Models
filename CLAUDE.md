@@ -222,7 +222,7 @@ Script: `scripts/pipeline/generate_weekly_analysis.py`. Migration: 046. See `new
 ### Dashboard (Next.js 15 App Router)
 
 <!-- inv:frontend -->
-**23 páginas activas** (8 en `/legacy`) · **95 rutas API**
+**24 páginas activas** (8 en `/legacy`) · **98 rutas API**
 <!-- /inv -->
 
 Pages (8 sections + 5 `/execution` sub-pages): `/`, `/hub`, `/dashboard`, `/production`, `/forecasting`, `/analysis`, `/execution/*`, `/login`.
@@ -248,7 +248,7 @@ ya instrumentado): detalle y roadmap en `observability.md`.
 
 ### CI/CD & Testing
 <!-- inv:workflows -->
-**12 GitHub Actions**
+**13 GitHub Actions**
 <!-- /inv -->
 
 Includes: ci, deploy, security (x2), contracts-check, drift-check, dvc-validate, experiment,
@@ -289,7 +289,7 @@ state — must also stay OUT of the docker build context: its NTFS mode breaks `
 ## DAG SCHEDULE
 
 <!-- inv:dags -->
-**53 DAGs** (50 declarados en 50 módulos + 3 generados por factory)
+**53 DAGs** (50 declarados en 51 módulos + 3 generados por factory)
 <!-- /inv -->
 
 

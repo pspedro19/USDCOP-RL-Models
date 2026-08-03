@@ -79,7 +79,8 @@
       "Bash(curl -s https://api.github.com/repos/pspedro19/USDCOP-RL-Models)",
       "Bash(awk -F/ '{if\\($1==\".claude\"\\) print \".claude/\"$2; else if\\($1==\"usdcop-trading-dashboard\"\\) print \"dashboard/\"$2; else print $1}')",
       "Bash(grep -iE \"\\(^|/\\)\\\\.env|secret|credential|\\\\.pem$|\\\\.key$|id_rsa|token|password\")",
-      "Bash(git commit -m '@ *)"
+      "Bash(git commit -m '@ *)",
+      "Bash(awk -F/ '{if\\($1==\"usdcop-trading-dashboard\"\\) print \"dashboard/\"$2; else print $1}')"
     ]
   }
 }

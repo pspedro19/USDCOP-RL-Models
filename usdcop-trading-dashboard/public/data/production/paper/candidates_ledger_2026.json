@@ -8,7 +8,7 @@
     "v13": "EXCLUIDA hasta freeze (abrir 2026 = +1 trial, decisi\u00f3n del operador)"
   },
   "judge_note": "el juez sellado de v12/v14 consume SOLO judge_window (post-freeze); la serie completa es monitoreo, no evidencia confirmatoria",
-  "generated_at": "2026-07-22",
+  "generated_at": "2026-07-27",
   "strategies": {
     "smart_simple_v11": {
       "ret_2026_ytd_pct": 3.36,

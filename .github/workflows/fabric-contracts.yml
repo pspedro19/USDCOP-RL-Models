@@ -32,6 +32,80 @@ jobs:
       - name: Vitest delta gate
         run: python scripts/validation/check_monitor_delta.py --monitor vitest_dashboard_unit
 
+  dashboard-playwright-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: usdcop-trading-dashboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: usdcop-trading-dashboard/package-lock.json
+      - run: npm ci
+      - name: Prepare browser evidence sink
+        run: |
+          mkdir -p test-results
+          : > playwright-server.log
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build fresh production artifact
+        run: npm run build
+      - name: Run serial public and read-only browser contracts
+        env:
+          BASE_URL: http://localhost:5000
+          CI: 'true'
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          : > playwright-server.log
+          npm run start >> playwright-server.log 2>&1 &
+          server_pid=$!
+          cleanup() {
+            result=$?
+            kill "$server_pid" 2>/dev/null || true
+            wait "$server_pid" 2>/dev/null || true
+            exit "$result"
+          }
+          trap cleanup EXIT
+
+          ready=0
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error http://localhost:5000/login >/dev/null; then
+              ready=1
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat playwright-server.log
+            exit 1
+          fi
+
+          npx playwright test \
+            tests/e2e/ci-public-readonly.spec.ts \
+            tests/e2e/replay-read-only.spec.ts \
+            --project=chromium \
+            --workers=1 \
+            --grep 'CI public|anon:'
+      - name: Publish Playwright evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fabric-playwright-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            usdcop-trading-dashboard/playwright-report
+            usdcop-trading-dashboard/test-results
+            usdcop-trading-dashboard/playwright-server.log
+
   python-contracts:
     runs-on: ubuntu-latest
     steps:

@@ -44,7 +44,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2025-12-30",
@@ -66,7 +66,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2025-12-31",
@@ -88,7 +88,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-01",
@@ -110,7 +110,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-02",
@@ -132,7 +132,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6142,254 +6142,126 @@
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": 0.025,
+    "avg_sentiment": 0.0,
     "source_breakdown": {
       "BullionVault": 2,
       "Yahoo Finance": 1,
       "NBC News": 1,
       "KITCO": 4,
+      "U.S. Gold Bureau": 1,
       "Investopedia": 2,
-      "FXEmpire": 6,
+      "FXEmpire": 3,
       "HeraldNet.com": 1,
-      "The Conversation": 1,
-      "Reuters": 3,
+      "Reuters": 2,
+      "BBC": 1,
       "CBS News": 1,
       "Yahoo Finance UK": 2,
+      "The Conversation": 1,
       "Financial Times": 1,
       "South China Morning Post": 1,
-      "BBC": 1,
-      "thestreet.com": 1,
-      "Mitrade": 2,
-      "FXStreet": 2,
+      "Dailynewsegypt": 1,
+      "Finance Magnates": 1,
+      "Investing.com": 3,
       "CNBC": 1,
       "Crux Investor": 1,
-      "Investing.com": 3,
-      "Dailynewsegypt": 1,
-      "Mining.com": 1,
-      "NAI500": 1
+      "FXStreet": 4,
+      "Spectrum News": 1,
+      "Mining.com": 2,
+      "NAI500": 1,
+      "Mitrade": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
     "relevant_articles": 40,
-    "avg_sentiment": 0.025,
+    "avg_sentiment": 0.0,
     "sentiment_distribution": {
-      "positive": 12,
-      "negative": 9,
-      "neutral": 19
+      "positive": 0,
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
-        "cluster_id": 2,
+        "cluster_id": 0,
         "label": "Commodities",
-        "article_count": 9,
-        "avg_sentiment": 0.052,
+        "article_count": 39,
+        "avg_sentiment": 0.0,
         "dominant_category": "commodities",
         "bias_distribution": {},
         "representative_titles": [
-          "Gold Price Forecast: XAU/USD climbs to near $4,350 on Fed rate cut bets, geopolitical risks - Mitrade",
-          "Gold (XAUUSD) & Silver Price Forecast: Fed Cuts Fuel $4,400 Gold, Silver Holds $71 - FXEmpire",
-          "Gold (XAUUSD) & Silver Price Forecast: Profit-Taking Caps Rally as Key Levels Hold - FXEmpire",
-          "Gold Price Forecast: XAU/SD retreats to the $4,445 area in thin trading - FXStreet",
-          "Gold Price Forecast: XAU/USD jumps above $4,350 on US-Venezuela tensions - Mitrade"
+          "Why Silver Is Falling With Gold and Why Robert Kiyosaki Predicts a $200 Price by 2026 - Finance Magnates",
+          "Gold price in Philippines: Rates on January 2 - FXStreet",
+          "Texas Comptroller announces commemorative gold, silver coins, gold banknotes - Spectrum News",
+          "Record Gold Price Ends 2025 Up 65%, Silver Jumps 144% - BullionVault",
+          "Gold price today, Friday, January 2: Gold rises above $4,400 to start 2026 - Yahoo Finance"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Gold Price Forecast: XAU/USD climbs to near $4,350 on Fed rate cut bets, geopolitical risks - Mitrade",
-            "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxNNTQyT3BBYmU0UDNRM2NJVGd3MlhtTnhFM0RyY05fZDJNQlhRNGVEX2hMUTMzc2VEcjRGcDVUQXN5aEhYZURBcXJ6VHk2UUxTZmgtdnE2T3I3NEhjMmxvNzVjcTlwMlpoQ3NfZmtFcnZRR2RkWncwal9IeVlzOG9hMUh3cmk2T1ZqTmxsZ0hoSQ?oc=5",
-            "source": "Mitrade",
-            "date": "Thu, 01 Ja",
-            "language": "en",
-            "tone": 0.601,
-            "category": "monetary_policy",
-            "relevance": 0.62,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Forecast",
-              "Mitrade"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold (XAUUSD) & Silver Price Forecast: Fed Cuts Fuel $4,400 Gold, Silver Holds $71 - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxNZERrMFYwZk9oQkRYRlp3c09DTjhwY0tIZDRVMjhvS2tzNWQtZzc1YjMta29TTVRRblhCcThIZnRGbzZnSW40c1NRZjNaeXFldjNDazA2ZzAtMHpvYmMzbmNubVd2ZC1obXZ2bTgxb2h1bkxMUTAyYTdWbGZMSjVFRm5veE15d1JKaWJ3TEJ5cXBFaWRWb05jNGZTRXVlMWR3RVpJakdQVlVpbGtjX1hRenhqRGdLMmxVaFZvTXp4RDNadw?oc=5",
-            "source": "FXEmpire",
+            "title": "Why Silver Is Falling With Gold and Why Robert Kiyosaki Predicts a $200 Price by 2026 - Finance Magnates",
+            "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxOY3VqLXo2UWtBTWRubzBITWlETjRUOVZFVmxBbkZIdHRReHFRUnR5MmNlSW9MWTdseU10OVhVTjZMTVVsZWExRnhpZFFNZDBtSGgwZnUxZG1ndXdXY0lUaGEtZTEyQTdScENaTmtLdk9ROUlVaHY5U0hzVlo1OEN2ZlZmQXIxQnp3ZHlZVDBaNHF3SWtXWFF4RUstdmhUREs1X0llbGotWTE4WXQ2T01RU0Q1SVN4TmRWaEJsZ0JYeHFlOEN3?oc=5",
+            "source": "Finance Magnates",
             "date": "Wed, 31 De",
             "language": "en",
-            "tone": -0.323,
-            "category": "monetary_policy",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Silver",
-              "Price",
-              "Forecast",
-              "Cuts"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold (XAUUSD) & Silver Price Forecast: Profit-Taking Caps Rally as Key Levels Hold - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxNaURQelZBNEFBWkUzTmdnZXZPdXN5X01DRzBPOTc2VGQyTVJ0VnhMVkJ6d21PNl9idWpEMDg5RVRjYjlUTDdPbno2SFRxT09JTVZlajFSekdkcTMxcGV3NEl4R0g3Vnc1d0ZjUi1NbGRCTEhtdkJBRWFLN0x1NlJjMEpiMXA5eVBMZHAtcW4wUUdBN3RIbkhhd2JIZEEzOHlaZUNPT0NjNmR1SzhVYzhHQ1NuQmVfU1g3LVE3S1A2aktVcFVnOVNV?oc=5",
-            "source": "FXEmpire",
-            "date": "Mon, 29 De",
-            "language": "en",
-            "tone": -0.079,
+            "tone": 0.0,
             "category": "commodities",
-            "relevance": 0.2,
+            "relevance": 0.5,
             "keywords": [
-              "Gold",
+              "TES",
               "Silver",
-              "Price",
-              "Forecast",
-              "Profit"
+              "Falling",
+              "With",
+              "Gold",
+              "Robert"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Gold Price Forecast: XAU/SD retreats to the $4,445 area in thin trading - FXStreet",
-            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOMTRhYmdlR1poNldoYXJ2Um56R2FFVjQ1YVBDY1k2cUNDMlF0eUNuZXBmTnV1UWlycER4dm1kOThWSDZPdkV0LUxpWlp6UVJPV053akVvV2RpanlFRG9oa0NrX3otd094bFRoYUcwbm5lVFV2V0JxZDE4akM0SXlZaVRUZE5zRG55QmxtMVoxdWFmWHRmQlFaZ3lmYjQ3dXNwRDNuci1JcU40NWs1RldkeVhB0gG3AUFVX3lxTFBwc2hzWDB2YVZUWV8xWm9VQ3ZuWS1UVEJXcURiM0F4NEVVMU9laVVDbEtSX0R4OWtvc3hZMDJfcmh1TWFiNDBscjdNZ2FjdUwxUE91Z2lWSUpBdm5lZzRmSkMyWWp4NktlbFlzYmpLazAyZU9CckNFaU9weUV4bGxjRm9WQVpRQjJYUnhKTlNVWGczLTZmVzBQRDNiTXE1OGxqSzl5cE5OR25qdjRDbndtQUduWFVJQQ?oc=5",
+            "title": "Gold price in Philippines: Rates on January 2 - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNMzA3dnpGWVE1M21QQThZc1RFRjJ1X0FTcWhBTFBSMVNPNVdUSlFSM0J6LUNVdlNtQUxtcU9fU01memFHN2l5YmMzTTJuWXRPSXhNY2lwa3B3M1YtbXZEdUozUHJOYUNMZmVqTWdSN1RUMHk0VmdlQUdXSGQxQ3R5SzU3amdybkVrQzF5S3dDcGRNZnFPSktlMXZWMHJsakpiblA2N1V1N2tEQkxFLVHSAbMBQVVfeXFMUEFyQ1czZUl0TGQ2OEVKQTNuQ0VuSFJFVjVBUENtRXliYzQyN0dmQ0RvRk5VVmZYcTJuN1MxZ0NCR3hyODNJWlBDU1ZpZlZuNlZFSW5GU1gzbTJDU3FhOHRkeExBNm1ldzlkYlY3SDJqMXBTYzRVQkhYcmprTEl5RE12RXUxRzZqR25OVk9LamhWOVFuaGVERzdQckdlYTJrVlVrUEpnTENxS0RmZWVNZUpDdlU?oc=5",
             "source": "FXStreet",
-            "date": "Mon, 29 De",
-            "language": "en",
-            "tone": -0.461,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Forecast"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Price Forecast: XAU/USD jumps above $4,350 on US-Venezuela tensions - Mitrade",
-            "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxPM0ZqOVhDb3l6MlNUTWt1eTVNT1pXaHkyeDQxdEtrc2d2NmhPdnVrdDhBVC1RRW5BV0pXQ1NQclVkVWYwbnhEbGR4ZWhVWVNsQTlib2RPdGttTkN2UmIzNzd6bm50ZG1ESldVNGdzX0hmYjNWME50cWpRb29rTDZhVUI5M1hvV25rR0xfMFZSZFdMSHgwb2M0?oc=5",
-            "source": "Mitrade",
-            "date": "Sun, 04 Ja",
-            "language": "en",
-            "tone": 0.409,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Forecast",
-              "Venezuela",
-              "Mitrade"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold (XAUUSD) Price Forecast: Will Venezuela Crisis Trigger Next Gold Rally? - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxOVFJtd25hSl9tc3pveDZkeUt0TXlISUNnbFZOcWFtMnV6NlRTRnMxXzVWaElGSHUzS2tBdFFYZnpmeUVrVVl3ckJMNjNBVUxVMEhhNV8zdjJEMXhpd1V4Y3dRbHhXVGgyUkpYN1MwSGRpZ01FSGVHc05ZUElCLS1lRV95VHE0MnVPZnlCY2JKTkhycUlSWDVHOFREZlYydXliXzdxUUlDRnFaQnJieHJ6UEp3SDV6QkZ2VlNaOVZ0S0c?oc=5",
-            "source": "FXEmpire",
-            "date": "Sun, 04 Ja",
-            "language": "en",
-            "tone": -0.035,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Forecast",
-              "Will",
-              "Venezuela"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold (XAUUSD) Price Forecast: Gold Market Breakdown Eyes $4,041 Target - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxQZThzdjVjWVFnVkxFdHd1QVZ2aTdVTjJmMlQ4T2FwWkxOeVR4bVY1dk1NLVUyQWM5bGNhdmVMMUhLWkNMdkdWX0hibEkyNXBVZjZEWGlUQzNxb1h1Wm5uYXVLQVZzRjAyMDB4MkVmS3Vvdll2c1F3aWJTWXRNWkRUb1hGdzdyUDJkOHI5MnYzZFdOQThPclRLdWhGMW5BNmFxUTYyaU9DVExhRjNGbXpESVU2dGw2a28?oc=5",
-            "source": "FXEmpire",
-            "date": "Mon, 29 De",
-            "language": "en",
-            "tone": -0.013,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Forecast",
-              "Market",
-              "Breakdown"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Price Outlook – Gold Trying to Stay Above $4400 - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxQN2hreU5IMmI5aWwzMlZjV1BYczF5SnN1SmEzdnVOYWZhZUhYbTNRRGhyZW90eE9uRkdyZFRWWXBpbE9DVjdjZG9SanBkd3lSYlpHTC1La3EzTDQ3aGdSb1R2V0JrZjNTbC1rb25uUW1RLTFsY2sydklrUjR3MXFEajhUT1J2b1M0U1pvN3NLYjdXWGlCUDFmZVVsNG5Ob05FakE?oc=5",
-            "source": "FXEmpire",
             "date": "Fri, 02 Ja",
             "language": "en",
-            "tone": 0.017,
+            "tone": 0.0,
             "category": "commodities",
-            "relevance": 0.2,
+            "relevance": 0.5,
             "keywords": [
+              "TES",
               "Gold",
-              "Price",
-              "Outlook",
-              "Trying",
-              "Stay"
+              "Philippines",
+              "Rates",
+              "January"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Gold (XAUUSD) & Silver Price Forecast: $4,360 Gold Rebounds as Margin Hike Shakes Metals - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxPZlEwSUh0amtuTVp3QV9FTThNTk1IWnFCUG03TlBiWFRyYk9laHdGMU1hc1QxU2prTGctZWRxemxYZVpfYUZxUExtR2dFV1I1ak9uVWFrMXFNelNtRTVfa2hYWUN1UjRUZEtHQXFuRWduQ3o5OGQ5clZrWTJPZDBFMU1qR2g4MU13cUpoNld6WGJwdTI5NzhTX09FSVdSTFhkVDNveHh2b2p3emN4YmIyVGplSU9qa0pwWEVBVXUtZ3dWeGZZUmhYbTNVa2Q?oc=5",
-            "source": "FXEmpire",
-            "date": "Tue, 30 De",
+            "title": "Texas Comptroller announces commemorative gold, silver coins, gold banknotes - Spectrum News",
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNWGtrOEJOTFhvcnN4WU9mUF96Ukw4N29OeG9RZnNMckN3RFpPVk1CbHFvUERlVlIyVnlzanRDVmxwNW9SbzVSSTAwWmdlZEhpaWt0eUg4b0xIZS1yRUFNQTRHUG9ra0pvT3Q1enRzbnozZDFsR0lFdEViYmxmdUdTeXVscVJ0YUlFOVF2RU5VWnUzNXdyaEFydUlnb1hfRFN6UzdGaWd0dWlxa2tLb2FybVoxNFlsS3BFRGtPc0NHbXlicVIxZlE?oc=5",
+            "source": "Spectrum News",
+            "date": "Mon, 29 De",
             "language": "en",
-            "tone": 0.356,
+            "tone": 0.0,
             "category": "commodities",
-            "relevance": 0.2,
+            "relevance": 0.5,
             "keywords": [
-              "Gold",
-              "Silver",
-              "Price",
-              "Forecast",
-              "Rebounds"
+              "TES",
+              "Texas",
+              "Comptroller",
+              "Spectrum",
+              "News"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
-          }
-        ]
-      },
-      {
-        "cluster_id": 1,
-        "label": "Commodities",
-        "article_count": 6,
-        "avg_sentiment": 0.13,
-        "dominant_category": "commodities",
-        "bias_distribution": {
-          "center": 1
-        },
-        "representative_titles": [
-          "Record Gold Price Ends 2025 Up 65%, Silver Jumps 144% - BullionVault",
-          "Gold price today, Friday, January 2: Gold rises above $4,400 to start 2026 - Yahoo Finance",
-          "Gold Prices Soared This Year. Will 2026 Bring More Record Highs? - Investopedia",
-          "Why gold prices fluctuated in 2025, hitting highs and plunging - South China Morning Post",
-          "Gold prices rise after monster 2025 performance - Investing.com"
-        ],
-        "narrative_summary": "",
-        "articles": [
+          },
           {
             "title": "Record Gold Price Ends 2025 Up 65%, Silver Jumps 144% - BullionVault",
             "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNU1pUR3Ntd2lJd0MyblpncmNIc1k4ZGJtTTdJczhpWlN3WDlTWWlzTlRUU1BOeDlOVEllTklGeEx1N052ZHlnVTZKYkl3RS05enJZcW9kWEVNN0c2MTBmM1h0Q0xLVTlrZkR1bk5razR2R3JrX0pUb0Y1elJjb3dXM0ZmZzF3OEY1VzVMQXlST3REYlp6MHBRRXFB?oc=5",
             "source": "BullionVault",
             "date": "Wed, 31 De",
             "language": "en",
-            "tone": 0.459,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6408,7 +6280,7 @@
             "source": "Yahoo Finance",
             "date": "Fri, 02 Ja",
             "language": "en",
-            "tone": 0.545,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6422,12 +6294,62 @@
             "factuality": "unknown"
           },
           {
+            "title": "Gold and silver head for biggest annual price gains in over 40 years - NBC News",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNLUVibmNocHhQdXV0VU1ScFp6VGdxRElEdGdUSnNTeEJoY3pXOTZqTlROYzVYUERnVnA4MDg4RnBTZVJvVjktSUpjVmFpaTJoOFktUnFOM0xzYjZ4NG5QYS05Z0xkOUFsbVVTX1o0cm5CTXYtdy16a01icm9kQy1yag?oc=5",
+            "source": "NBC News",
+            "date": "Tue, 30 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price down, silver strongly down amid extreme volatility - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxQaVZsNFZSY0UwT1VWM0thQzNQLWppNTVZRW1xdXBhWWRheUpZalRuYk5STkdWcW9aeGx4YzcyNEtlMTlnaEFuVWJfNFR2X1hKOWdlUFowRHJZS2RFQ0xyVGxYNkkwbUlZekN0N3BDYkRxeEl1dTFKQllfOG45TFNRb1ppNFFOU183eXRDeTBKSkE5RWRfU2daNEw0dVNmWXRKc3FXWWdTRDNxUQ?oc=5",
+            "source": "KITCO",
+            "date": "Wed, 31 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "What Is the Best Time of the Year to Buy Gold and Silver? - U.S. Gold Bureau",
+            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxPTkFJOS03UXlyeE9fUHV6TnZYMTU3bnhkemItLUQxcFpEdHNHbW5udEdrQnVNNkk5VzRreU9qeE9IdWszOHV2emloOTdNT2h1NFVhNThUd2Rwemp3U1M2Qm9Sa09aTURRWUl4Z0tNWVBmc2VGdC1JOFdNb0hVVTVyalVFV3hJdjlfNEpJdko0SEt6SmQzTW5MQ3FNNA?oc=5",
+            "source": "U.S. Gold Bureau",
+            "date": "Thu, 01 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "What",
+              "Best",
+              "Time",
+              "Year"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold Prices Soared This Year. Will 2026 Bring More Record Highs? - Investopedia",
             "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxONVJuRUJpTXk4TGNjb29DRnBRdGV0aGxBNjBObGNQUWhtRHVOaXZrQlp0MjlTVEFndDFkY0tkbDU5SklnSU1Rcnp3ckJRMTdZYmxKVG5UaUZWdXh1dWV5VjA3WUpfSFBYMWdPUDZRVzYwX3Z1Z2RjenZVWDRnZ0dlMw?oc=5",
             "source": "Investopedia",
             "date": "Tue, 30 De",
             "language": "en",
-            "tone": 0.052,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6441,12 +6363,229 @@
             "factuality": "unknown"
           },
           {
+            "title": "Gold (XAUUSD) & Silver Price Forecast: Profit-Taking Caps Rally as Key Levels Hold - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxNaURQelZBNEFBWkUzTmdnZXZPdXN5X01DRzBPOTc2VGQyTVJ0VnhMVkJ6d21PNl9idWpEMDg5RVRjYjlUTDdPbno2SFRxT09JTVZlajFSekdkcTMxcGV3NEl4R0g3Vnc1d0ZjUi1NbGRCTEhtdkJBRWFLN0x1NlJjMEpiMXA5eVBMZHAtcW4wUUdBN3RIbkhhd2JIZEEzOHlaZUNPT0NjNmR1SzhVYzhHQ1NuQmVfU1g3LVE3S1A2aktVcFVnOVNV?oc=5",
+            "source": "FXEmpire",
+            "date": "Mon, 29 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Silver",
+              "Price",
+              "Forecast",
+              "Profit"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Lynnwood coin shop doesn’t believe new taxes on gold will pan out - HeraldNet.com",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxNZUJoVk9NYlFSaDA0MmZkRVY0QmxkR3N0d1pnR3hrVl95Ql8tVjBUWFZpcGtndTB3SXo4RTRqUUdvYXY1dVRsZDFLa2drcnR0eTNkV1pFZGRlT2tqeHFOc19RdXJZRUItT0cxZmYwZUFia2ZZZGhXVnh3Yko2UDNkY2RSYTZGRkIxeXF2YzVSRUF1UDF1QlRRODhYcEluRG1VdE4ycw?oc=5",
+            "source": "HeraldNet.com",
+            "date": "Mon, 29 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Lynnwood"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Soaring prices spark Australia gold rush for new generation of fortune hunters - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxQV3ZQNEdWQWxfbl9kUmxBZFViVGdCLUtabEgxS2pIMFlOQjJQVlY4SFpNaWhTcmdGVmQ4WDFhdkRONWgxVXZSdEloc0RUZGhjWkkwMzhFY0s4S0E4cUcySDFUdlVnV0xFeTViYkFDcTZNd1oxLXRGcGgxcFBKdVBzZ19KSWFfLWFGQnZIQlE3aFJiNk5zaU4xaVkwekdELThFV25NYUFsU3I3alc3UGl2dUJLcVR5a181VUVNdzllY1ZBeEs2?oc=5",
+            "source": "Reuters",
+            "date": "Mon, 29 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Soaring",
+              "Australia",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold and silver see rollercoaster end to blockbuster year - BBC",
+            "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFA4NEZwVWJwUHBuNUlvU180R1NMblM5N3llZEdkVUpCVzFMcE5fX2VsZ1NIXzRBNl82Rzl4N3BVT3ZoSDdEcmFFbWZmX0lQWEVDdWJyMjdwa3pOZw?oc=5",
+            "source": "BBC",
+            "date": "Wed, 31 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold Sinks $200, Silver -14% from China's Christmas Chaos - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxOZC1jRV9EOVBOYWpPRnAwZXpncFlidHMwZTZtZFZjc1hVWGRtQVh2LVNnWmw4TnJ2UFpoZjBlcE1ZSUp5THo2YVNrNW43RXIySGViOElYWVZweUFpaW9ZV19pLXlCZkFULXBxbUdsVzI0cG1TS2RQWlpBWGxkbzNtVU9EZTI4ay1ucnpWYzFjX3QybjZScFZVa29SZW0?oc=5",
+            "source": "BullionVault",
+            "date": "Mon, 29 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Sinks",
+              "Silver",
+              "China",
+              "Christmas"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "How much can you sell a 100-ounce bar of gold for right now? - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxOR0hURHBJczdtTkhLdEVObUtRakZZM3p2bHJSUHhVckxMRzJDSlRnakJzQ2tqcjRIMGc4N25lMHNxZHd5T25fNmVpdUlfQXo2SmluUnZ2VXZwaWxrbmpoVVNVODFDWFA5UG1lXzkwSGxqWWNYTnl0TUZQX1ZkQkViZk93Sy1TRTdyQm9vdVJTUHRPMmM?oc=5",
+            "source": "CBS News",
+            "date": "Tue, 30 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Four key drivers will determine gold’s price trajectory in 2026 – WGC’s Artigas - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxOcm1MRUYzcEdreTdhTVJTUTFOZmUyUy1Td25iQnN2WDc2MnUxSDVBWjdkWndUZEtOWUJpQ3UzMmhfNnkxb0FzWF9VRGdfSjdQRXU3MTV6NThKSDhZRU45UGQzZUc1R2N4WE5IdUFueUtPM25YUmRDOF9jbmRhcUtYN0lOUFA0U1JPQTdEMzJtcXdaUjRLeGxzRmVscHA4UnYtclV4dU1ZTzRaQjl1bEJVSUV1MC1TbnVfbVE?oc=5",
+            "source": "KITCO",
+            "date": "Tue, 30 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Four",
+              "Artigas"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "71% of retail investors see gold trading above $5,000/oz in 2026, banks and experts see further gains – but not like 2025 - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxPN2x4Nm1Bb0pDUFR1b1NVSWtqWmJQdTZybmZQYWxWNngyQkJNbkVha21HbEtRNTZTVEZGTEJPM0dtXy1nWHktenl3UGpXb0ZIeXZBY1R6RGttdzRyWmV0bldqd2pGdnRzZjhaYXZIdHdhNjRiTldYR1Bka3ZURWJiZ1hyTU5KVUF1Vk5oRVVLMTQ4b2xxazlLcE43STNYQlJ3V013RmZkUmxOLWp1WnNLZ0paSmQzNnV3X2c?oc=5",
+            "source": "KITCO",
+            "date": "Fri, 02 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold slips but heads for strongest annual gain in over 40 years - Yahoo Finance UK",
+            "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxQbzJuem16RnVvMUZRU1JmUkFxUW9vR0FSSEI4ZVZ4UEZ3T1hCeXZLV0NJSkd2eGc4SHVjejhMQnNPeGNaLW9rUW5jS25YbzhsZVFkY2hsbmtCZEZWeDkyd0NFNU9oM0RGZGJMZXNDdGZmZHpXUEJMNEdMSHJjaThqbE52YjRWaVRj?oc=5",
+            "source": "Yahoo Finance UK",
+            "date": "Wed, 31 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "‘Weights of gold in bullion’: how the ancients invested in precious metals - The Conversation",
+            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxPVDctMVdJbzJLLXZMODJfLTkzVDkyeEwwMWIxVVlRMzh3b2F2eGQ0VlJORHB4NEpJR0Y1Rkx5eTRGaHk2ZHBqVUNNcmtQMGpza3RwdGdnN3IyaFJ4aWxpWGdUUW0tdGQtZ1RVWklobGxtc1BSSWZiMEZfSS1jNHZHYy1hNlhLQy1LVnhacUg2VE43RFluRFdUWFBSYWxOY1pPNHYxWnAxbUNwUQ?oc=5",
+            "source": "The Conversation",
+            "date": "Mon, 29 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Weights",
+              "Conversation"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold (XAUUSD) & Silver Price Forecast: $4,360 Gold Rebounds as Margin Hike Shakes Metals - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxPZlEwSUh0amtuTVp3QV9FTThNTk1IWnFCUG03TlBiWFRyYk9laHdGMU1hc1QxU2prTGctZWRxemxYZVpfYUZxUExtR2dFV1I1ak9uVWFrMXFNelNtRTVfa2hYWUN1UjRUZEtHQXFuRWduQ3o5OGQ5clZrWTJPZDBFMU1qR2g4MU13cUpoNld6WGJwdTI5NzhTX09FSVdSTFhkVDNveHh2b2p3emN4YmIyVGplSU9qa0pwWEVBVXUtZ3dWeGZZUmhYbTNVa2Q?oc=5",
+            "source": "FXEmpire",
+            "date": "Tue, 30 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Silver",
+              "Price",
+              "Forecast",
+              "Rebounds"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and Silver Prices Plunged Monday After Last Week's Big Rally. Here's Why. - Investopedia",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxOY2dWSXFMbG0zQkMxeElOTUFFaHRxSUc4Vl9qRDQ0RC1ZTm1MUGJ4dkh5YTZyWUE5QWNqZEtZczJXZDlqbm9yUkhiSGoyZE5UWjhONzFDQTdGejdLY2FnWU9DVE84TGhOYVBBbkRObUtBdmhaa2VEa1lMMnBUVXYydkIzZjJGdXhkR2tLdnQwZXlHR0tfei1CLWVJa2NmaTIwZHc4bjdqSk84MlRvMEZFYjBrZHE3Nm9rUzhn?oc=5",
+            "source": "Investopedia",
+            "date": "Mon, 29 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Silver",
+              "Prices",
+              "Plunged",
+              "Monday"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold tipped to extend record-breaking rally in 2026 - Financial Times",
+            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxQVmtBZ19vd0F0dUR3T0lGS1VWMFM5RW5ubFFsd0FkNGNEd0p1UG9Va1dPRnVpTXJQNzF4RHZ3Um1nLUc5em9rX0ZaeS1JUkE0eDEyUHZUd3dSQ1lENGtic2JpNFduYlpRLV82TUIzZFJuckZRLVdreEZkM0RMYlFXQ3BHNjM?oc=5",
+            "source": "Financial Times",
+            "date": "Fri, 02 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Financial",
+              "Times"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Why gold prices fluctuated in 2025, hitting highs and plunging - South China Morning Post",
             "url": "https://news.google.com/rss/articles/CBMi4AFBVV95cUxPZEhNX2NkNlh2Y1ZKU2xSVWxOR3E0ZlBwMUQ2NmFmbFJNRlJ3dGFxc1ZrM2VLMWQ3RVRiRmVYN0pFMFVSTVlqYndlZWhSci1USm1XRElWYkQtUkhlVXQyVGNIMnFsbkxPSUVHQ0pnVWN1UnNnX0FMNFpIREJucHg3eXB5bkZhYWdBbUkwbmhLMXJFNUw1UExWemV0bE5nNFBsZE5mcC1MQURfNEpIcHR2dTlqbHJhRjF0T0VHMnBSZi1iaDFqNGJsMWdWR2Q4N3ZBZHpJdWh0VlNDMVVQTG9Oc9IB4AFBVV95cUxPR1hnTjgtU3UzYzJxbngxaE9IRXFDaWs4bm55VTZSZ0ktenVaTmsydkRmOG9IT2Y4M2hvbEEyeHNHQ295ZGJIeDZpX0x4MFNybWtJQVgxQ1RsT3ZpQzYtODAxSEE2VEZaQzdEclFrbzJZaENubExHWlVnR2lHVUstbWVjbzFVSlV3YnBnRHJRQTNNZVZXVmpHUDNLUjQzUEpoRkppNHR0cHNDMTBydmZkbjEyT0Y2cXNfZEJPN2RXVWVZbFpQeUFVSjR2eExUeXBBUkpydnpKS3Y3eEZ2bE5BQQ?oc=5",
             "source": "South China Morning Post",
             "date": "Wed, 31 De",
             "language": "en",
-            "tone": 0.04,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6459,12 +6598,145 @@
             "factuality": "unknown"
           },
           {
+            "title": "Gold slips at start of 2026 as thin liquidity triggers profit-taking: Gold Bullion - Dailynewsegypt",
+            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxNSzhvTU9RZ0V5Q0NLSG80UmFJUXNWWWFwcGY2blBQRHduMVp6YThuZmotZklGaks5dGhmbUVfWk9rOW5VUlVCRndCd1VxVWxxekt4NmFIdWxyZ1BRYzNfVDVGR1A0OHhaNGlka0ZSNTFYWDU0SnExaDZTNUtURlFScEQ3YWhPTkFtRkNlb2pzMnJrOHpYUkcxWGI5QkFrcVVvRm9kOWhtWjNtSU9hX0tvUnVINnFjcmwzUGpIc0M4MmZZUQ?oc=5",
+            "source": "Dailynewsegypt",
+            "date": "Sat, 03 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Bullion",
+              "Dailynewsegypt"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "As gold hits records, Indians opt for bars and coins over jewellery - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxNMDcxMzI4RzhWSXFMWnA2YkRaOG92d3laQnF2UUVNdXBNdENlTkd6WjF0Yk9UY1BLemFfVXNRSkpMRllCQVl1UHhGQjdTNDFhdGp1Z2Rib041TGFwX2p2QU0tTHZUeWhYNk1xUW9yYVBRNy04a0RyN2JEWjR2TXVqQlVJMXNhYjVMcE5iUVpEOUFYMEhiekF5NzJndXpqbjY2c0dld3V3?oc=5",
+            "source": "Reuters",
+            "date": "Wed, 31 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Indians",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold prices climb amid boost to safe haven demand after U.S.-Iran escalation - Investing.com",
+            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxQT2k2SUdqS1FKWklxVXlVTUU3UHp3dmxNdFBtMmNqVjd4eERibC1PU3pJbERZS1VPXzdOVGY5eWtLaFNrZG56b01KdXBCOVoxclRRRHZaMkNuVEZyTGUwcmQwell1Z3pXZVZHU0dvLVB6cXAwSGtvYWRobmZyMGV1SFEyM3lQbWtId2JSdlVJa29kbG9mSGxzZnByZ3pKdXd6emZSSFFEN200NjUtVHN0LTVseExQdGM?oc=5",
+            "source": "Investing.com",
+            "date": "Sat, 03 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Iran",
+              "Investing"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold, silver prices fall after CME raises precious metals margins — again - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOYWJxUVd5QTFQM0Y0R0NoalZTeTFuT1pVc01LSlRmclBBTWF2eEphX3JjUWI1elNYczRqLTRXSlhFRDBEWnlfX0lTc3ZSWFltSy1tOXI4dm9Ha1B3SlQ1ajZ5M0U2bkNJZWZuLU94Rko5NWY2TDZ5R2tFMHE5dFBvd1c2cUpBLWlpNTQzZF9Fb3lxLWN0QnpQNzJaWGFxNWJZTHVjaURIUDLSAa4BQVVfeXFMT1NTX3N4Z1RaczI4SVBtNWJZSENMRDVHMThNa1JhbHdPSjZOSHFGVGJUcWZTUzlvMkpmVV9TcDIwUFhvMjg2ME96YWtwSFZ2N24zN3Qwa2diTDBWQ1dES3NVODljTmZFby1oa1dMc2VkeXZjYTJiQVg5ZUtveVR0VmZlOGZtUjZfZnpvaVBpcHdLQ1ZYNXJTZXFOM1pHYXpTWURNVF94UkhzVmhVbEN3?oc=5",
+            "source": "CNBC",
+            "date": "Wed, 31 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold prices holding support but look vulnerable as U.S. weekly jobless claims drop by 16k - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxNRV9CS1RqM0NRaWlRSnJ2aXVnMW9JRldVd0pHQ2NRdU5YY2FHSENmZEl0cHhrSVJDLVhDeDhrSmc1bHFuNDNHX0V5bkt6bFFQWWExaGQxZ2oyOUtHN2hrUzJVeFFEdXFXTUw1VzNnR1VhejJocHpaYWZ3LThFYWZjZ1IwdmNpMkhiVGNrdDBxZEVTTG56X2xqZWJyckhEajRGWldFNXo4dkJDNm9IXzhoUk1YU1VDa0tPeFdr?oc=5",
+            "source": "KITCO",
+            "date": "Wed, 31 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Decade-Long Development Timelines Support +$5,000 Gold Prices as Production Fails to Replace Depleting Reserves - Crux Investor",
+            "url": "https://news.google.com/rss/articles/CBMi3AFBVV95cUxQcWxtYVMyVzhnck9oVTkzelRSb1RENGVWZlNBdlBlNXpsRTBXVmxFbjlVMUxqdlF0QjNSNG9odWJJazVEeEhjVEFCMkZXaHlmeU1YcWk1bmN1Z1Vvb2toUUpFN2ZoeTAtMGpfcXZnN2N5QTBoZFZPZ3o2R3ZsazVENHlvRmpXb1ZrY0dRVHhnR0J3YVIyNXJnVTg0QzlZQml5a3JtdVBBM1V5U0x1SzZlOE96NERxZmxfLWZqWGNHMDBVOUNXdzF4OEltUk1LMW52X0hjR1l3U3dFMEdj?oc=5",
+            "source": "Crux Investor",
+            "date": "Sat, 03 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Decade",
+              "Long",
+              "Development",
+              "Timelines",
+              "Support"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/SD retreats to the $4,445 area in thin trading - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOMTRhYmdlR1poNldoYXJ2Um56R2FFVjQ1YVBDY1k2cUNDMlF0eUNuZXBmTnV1UWlycER4dm1kOThWSDZPdkV0LUxpWlp6UVJPV053akVvV2RpanlFRG9oa0NrX3otd094bFRoYUcwbm5lVFV2V0JxZDE4akM0SXlZaVRUZE5zRG55QmxtMVoxdWFmWHRmQlFaZ3lmYjQ3dXNwRDNuci1JcU40NWs1RldkeVhB0gG3AUFVX3lxTFBwc2hzWDB2YVZUWV8xWm9VQ3ZuWS1UVEJXcURiM0F4NEVVMU9laVVDbEtSX0R4OWtvc3hZMDJfcmh1TWFiNDBscjdNZ2FjdUwxUE91Z2lWSUpBdm5lZzRmSkMyWWp4NktlbFlzYmpLazAyZU9CckNFaU9weUV4bGxjRm9WQVpRQjJYUnhKTlNVWGczLTZmVzBQRDNiTXE1OGxqSzl5cE5OR25qdjRDbndtQUduWFVJQQ?oc=5",
+            "source": "FXStreet",
+            "date": "Mon, 29 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/USD rallies further with the $5,000 level on focus - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxPODhGMDZUdmZMUS1UOHFvRE4zWDNUbU44M0xHbnFPd3VBOXhzQVpGSnBKazJTM194MVhpOXVrNEJnaU8yNnJockp2MXl5elVPUm14YVhyQXo2VWJlTVY4YTZDVXVtUFVZeEx1cE9ZdnhMaUFXdmJXZXI3WVRIYTBQWTNmb0dLZ04zWnYtdF9oOXYxeUZJeVFaWmFzRk8wZjlDcGFmMnFFbFRhblpqQ1hkT1g3UjA4U2vSAbwBQVVfeXFMUG5VTHNvZkZ3bEljeWs3Qy02cHBUSkMwWDFwc082Z3lYS29kQzRJV2UzdVpqZ01vT0RDQ0RjaXJlZExIMTJBTU0zS0hFNm80VEVVS3g2WElzOXRYZlRTVHhPdmxKLW05c0lUTVlNRXMwQ3U3bXAzQ1ZsaER2WFVwZ1pVNy14SWlkZXVPa0RHbnFvdzlmTnpJLXpmNTF3Y2k3czZKbUJnNzVEM3YtMV8xSDZ1cEF2aERSdmRabHI?oc=5",
+            "source": "FXStreet",
+            "date": "Sun, 04 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold prices rise after monster 2025 performance - Investing.com",
             "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNaFcwQWhkTE1ib3Fkc1Z6ajFwNW41Tm42TmdmTF90Y2l6SG5aaldOZXd0THc3M2tnSVRqaWY5V2lzSVZCam10RkRVU01zZVJVOE9FY3NFUGNBSXV0Z29UMk9XQjBabmZWVWtyTnNqRmhjcHByZW1QR19ScGdfZ0tZMU80LWw3emNCcWtwaXBBVURiRlFFZmdQTUhZT0J4WlMtMVoxUnNnRVBCUXhEanJ2eFFjcW1DeVRnY1NfOHJQOTk1N0YyNVE?oc=5",
             "source": "Investing.com",
             "date": "Fri, 02 Ja",
             "language": "en",
-            "tone": 0.072,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6475,69 +6747,73 @@
             "factuality": "high"
           },
           {
-            "title": "Gold slips at start of 2026 as thin liquidity triggers profit-taking: Gold Bullion - Dailynewsegypt",
-            "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxNSzhvTU9RZ0V5Q0NLSG80UmFJUXNWWWFwcGY2blBQRHduMVp6YThuZmotZklGaks5dGhmbUVfWk9rOW5VUlVCRndCd1VxVWxxekt4NmFIdWxyZ1BRYzNfVDVGR1A0OHhaNGlka0ZSNTFYWDU0SnExaDZTNUtURlFScEQ3YWhPTkFtRkNlb2pzMnJrOHpYUkcxWGI5QkFrcVVvRm9kOWhtWjNtSU9hX0tvUnVINnFjcmwzUGpIc0M4MmZZUQ?oc=5",
-            "source": "Dailynewsegypt",
-            "date": "Sat, 03 Ja",
+            "title": "Gold (XAUUSD) Price Forecast: Will Venezuela Crisis Trigger Next Gold Rally? - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxOVFJtd25hSl9tc3pveDZkeUt0TXlISUNnbFZOcWFtMnV6NlRTRnMxXzVWaElGSHUzS2tBdFFYZnpmeUVrVVl3ckJMNjNBVUxVMEhhNV8zdjJEMXhpd1V4Y3dRbHhXVGgyUkpYN1MwSGRpZ01FSGVHc05ZUElCLS1lRV95VHE0MnVPZnlCY2JKTkhycUlSWDVHOFREZlYydXliXzdxUUlDRnFaQnJieHJ6UEp3SDV6QkZ2VlNaOVZ0S0c?oc=5",
+            "source": "FXEmpire",
+            "date": "Sun, 04 Ja",
             "language": "en",
-            "tone": -0.389,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "Gold",
-              "Bullion",
-              "Dailynewsegypt"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          }
-        ]
-      },
-      {
-        "cluster_id": 0,
-        "label": "Commodities",
-        "article_count": 3,
-        "avg_sentiment": -0.511,
-        "dominant_category": "commodities",
-        "bias_distribution": {
-          "center-right": 1
-        },
-        "representative_titles": [
-          "Gold price down, silver strongly down amid extreme volatility - KITCO",
-          "Gold, silver prices fall after CME raises precious metals margins — again - CNBC",
-          "Silver price suffers biggest loss since 2021, gold price falls from record - Mining.com"
-        ],
-        "narrative_summary": "",
-        "articles": [
-          {
-            "title": "Gold price down, silver strongly down amid extreme volatility - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxQaVZsNFZSY0UwT1VWM0thQzNQLWppNTVZRW1xdXBhWWRheUpZalRuYk5STkdWcW9aeGx4YzcyNEtlMTlnaEFuVWJfNFR2X1hKOWdlUFowRHJZS2RFQ0xyVGxYNkkwbUlZekN0N3BDYkRxeEl1dTFKQllfOG45TFNRb1ppNFFOU183eXRDeTBKSkE5RWRfU2daNEw0dVNmWXRKc3FXWWdTRDNxUQ?oc=5",
-            "source": "KITCO",
-            "date": "Wed, 31 De",
-            "language": "en",
-            "tone": -0.608,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold"
+              "Price",
+              "Forecast",
+              "Will",
+              "Venezuela"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Gold, silver prices fall after CME raises precious metals margins — again - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOYWJxUVd5QTFQM0Y0R0NoalZTeTFuT1pVc01LSlRmclBBTWF2eEphX3JjUWI1elNYczRqLTRXSlhFRDBEWnlfX0lTc3ZSWFltSy1tOXI4dm9Ha1B3SlQ1ajZ5M0U2bkNJZWZuLU94Rko5NWY2TDZ5R2tFMHE5dFBvd1c2cUpBLWlpNTQzZF9Fb3lxLWN0QnpQNzJaWGFxNWJZTHVjaURIUDLSAa4BQVVfeXFMT1NTX3N4Z1RaczI4SVBtNWJZSENMRDVHMThNa1JhbHdPSjZOSHFGVGJUcWZTUzlvMkpmVV9TcDIwUFhvMjg2ME96YWtwSFZ2N24zN3Qwa2diTDBWQ1dES3NVODljTmZFby1oa1dMc2VkeXZjYTJiQVg5ZUtveVR0VmZlOGZtUjZfZnpvaVBpcHdLQ1ZYNXJTZXFOM1pHYXpTWURNVF94UkhzVmhVbEN3?oc=5",
-            "source": "CNBC",
+            "title": "Gold prices trade mixed in last session of 2025 - Investing.com",
+            "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxOZEE0WnBabGdlekpGUlh0RkdjOXhJdnkyeDlkSm1JSVc1T3FWNS1BX1cxeWdKYVlMUkVBSXZvMWxUVndMMjB4a1NFem1ZT1hkSF9tWDZ4anozdGVfeEZnXzFwSmloLV9BODNMbnpyT1RqR0xQQWZvamd5NVlTeWc1LXVDRGhDbDkwSUIzRTZzRWY5QmlEVHY1bmpadUdtcHI5RUFrZlNpUklwcjhfU2tkaVlSZkR1dXh2N3NMRzNVUGZhSkpmN1JsQzdRM3pRdw?oc=5",
+            "source": "Investing.com",
             "date": "Wed, 31 De",
             "language": "en",
-            "tone": -0.136,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Gold"
+              "Gold",
+              "Investing"
             ],
-            "bias_label": "center-right",
+            "bias_label": "center",
             "factuality": "high"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/USD holds above $4,300 after profit taking kicked in - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxPNDVEa0hrR2xEZzN2eW4zT2xJSlFoU3RqbVRIM214RVVqMWpYSTRYeVFvRHBLWFdyWmtzOGo2ZUJva19HOVRuYkFrNjFhOENpZERjZEpiRldJNVhXckNyalNIVUp3aC1lRDdscDBHb2Fqc1dJc2JXVkp5VTc5RlZLMzZxTG5CTzFZNEdFZHZMVzlvcnIzc2xPRkc4Zk9IOTZBWjhsQmdNN1AzM1FtN0U2TXZBUlZ1TUwzNHVFYTg2WdIBxAFBVV95cUxPcDlJOUJtLTZMTUpTZjNQdjZ3QTU2UE9OcktsUW5PdmR0enlSaFJ6UTVNNkowcHV4eTQ2RE1mZFdRVk1XNnZpanlIbTZpSDhiQzc1c1g5OFdkMkRRczhFRm8xX1BkcUYyZ1FsT3c4UDVHaHNYZjRRYVlhUERpa3dFNlEwakZWazNMV3BLdEtZVHpreVAxWFo2a3BCX09GNWRvTVY3dm9uNXVxN2haZ3EyeXozMG5nMHRwZGltLVVqQzhDX083?oc=5",
+            "source": "FXStreet",
+            "date": "Mon, 29 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price: Most popular stories of 2025 - Mining.com",
+            "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE0xNkM0cXZsd01IcDc1aFRodDdtcnJGeUk4dlIxWGxLY0oyTXkzUnlGZk1zaF9WNGNnVG16WTB4WmFINFl3R21pUVExRmROZ25CZ2lMc3FtSlRXUEpnZHdfc2U1MU51bFJ4SFRMMm96cFY?oc=5",
+            "source": "Mining.com",
+            "date": "Wed, 31 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Most",
+              "Mining"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
             "title": "Silver price suffers biggest loss since 2021, gold price falls from record - Mining.com",
@@ -6545,12 +6821,48 @@
             "source": "Mining.com",
             "date": "Mon, 29 De",
             "language": "en",
-            "tone": -0.789,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "Silver",
               "Mining"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price today, Tuesday, December 30, 2025: Gold opens below $4,400 - NAI500",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPVHFuN2x6QjRpNU15OHVfRXJ4Y0NlblByY1cyYkRtTXl3NFBieDA3bno4LU05d1RnN2lCQTNJN0JDZkl2VEtGVlMxYnZ0OXhBVGVQb0VadFg1N0VCVkFtRi1zaVo2ak5jR0NOSHoyYmZnVkJhQ29YOUdTN0VZeUpHa202R0RRX1Bwc1EtZ2k0b2wtN3I1Rnl2SUs4bU9KUQ?oc=5",
+            "source": "NAI500",
+            "date": "Tue, 30 De",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Tuesday",
+              "December"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "XAU/USD Gold Price Trend Analysis 2026: Will It Keep Rising? - Mitrade",
+            "url": "https://news.google.com/rss/articles/CBMidEFVX3lxTE1BaHNJNDEwYjJWM01QeEtOVDZ6LWZZQ0pFdHJicUh5ZWt6ek1sS3Z2UW1haG9hWlJia09LeWJaOGJCOHE3TDZQV0JPdXE1UGN5X2lkUWFHZkUzMFpDRGliR25DVGhQTVU3ZEY5UFBNWXp0MWI4?oc=5",
+            "source": "Mitrade",
+            "date": "Sun, 04 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Trend",
+              "Analysis",
+              "Will"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6565,7 +6877,7 @@
         "source": "Yahoo Finance UK",
         "date": "Fri, 02 Ja",
         "language": "en",
-        "tone": 0.644,
+        "tone": 0.0,
         "category": "monetary_policy",
         "relevance": 0.62,
         "keywords": [
@@ -6577,19 +6889,21 @@
         "factuality": "unknown"
       },
       {
-        "title": "Gold Price Forecast: XAU/USD climbs to near $4,350 on Fed rate cut bets, geopolitical risks - Mitrade",
-        "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxNNTQyT3BBYmU0UDNRM2NJVGd3MlhtTnhFM0RyY05fZDJNQlhRNGVEX2hMUTMzc2VEcjRGcDVUQXN5aEhYZURBcXJ6VHk2UUxTZmgtdnE2T3I3NEhjMmxvNzVjcTlwMlpoQ3NfZmtFcnZRR2RkWncwal9IeVlzOG9hMUh3cmk2T1ZqTmxsZ0hoSQ?oc=5",
-        "source": "Mitrade",
-        "date": "Thu, 01 Ja",
+        "title": "Why Silver Is Falling With Gold and Why Robert Kiyosaki Predicts a $200 Price by 2026 - Finance Magnates",
+        "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxOY3VqLXo2UWtBTWRubzBITWlETjRUOVZFVmxBbkZIdHRReHFRUnR5MmNlSW9MWTdseU10OVhVTjZMTVVsZWExRnhpZFFNZDBtSGgwZnUxZG1ndXdXY0lUaGEtZTEyQTdScENaTmtLdk9ROUlVaHY5U0hzVlo1OEN2ZlZmQXIxQnp3ZHlZVDBaNHF3SWtXWFF4RUstdmhUREs1X0llbGotWTE4WXQ2T01RU0Q1SVN4TmRWaEJsZ0JYeHFlOEN3?oc=5",
+        "source": "Finance Magnates",
+        "date": "Wed, 31 De",
         "language": "en",
-        "tone": 0.601,
-        "category": "monetary_policy",
-        "relevance": 0.62,
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.5,
         "keywords": [
+          "TES",
+          "Silver",
+          "Falling",
+          "With",
           "Gold",
-          "Price",
-          "Forecast",
-          "Mitrade"
+          "Robert"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6600,7 +6914,7 @@
         "source": "FXStreet",
         "date": "Fri, 02 Ja",
         "language": "en",
-        "tone": -0.002,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.5,
         "keywords": [
@@ -6614,12 +6928,31 @@
         "factuality": "unknown"
       },
       {
+        "title": "Texas Comptroller announces commemorative gold, silver coins, gold banknotes - Spectrum News",
+        "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNWGtrOEJOTFhvcnN4WU9mUF96Ukw4N29OeG9RZnNMckN3RFpPVk1CbHFvUERlVlIyVnlzanRDVmxwNW9SbzVSSTAwWmdlZEhpaWt0eUg4b0xIZS1yRUFNQTRHUG9ra0pvT3Q1enRzbnozZDFsR0lFdEViYmxmdUdTeXVscVJ0YUlFOVF2RU5VWnUzNXdyaEFydUlnb1hfRFN6UzdGaWd0dWlxa2tLb2FybVoxNFlsS3BFRGtPc0NHbXlicVIxZlE?oc=5",
+        "source": "Spectrum News",
+        "date": "Mon, 29 De",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.5,
+        "keywords": [
+          "TES",
+          "Texas",
+          "Comptroller",
+          "Spectrum",
+          "News"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
         "title": "Record Gold Price Ends 2025 Up 65%, Silver Jumps 144% - BullionVault",
         "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNU1pUR3Ntd2lJd0MyblpncmNIc1k4ZGJtTTdJczhpWlN3WDlTWWlzTlRUU1BOeDlOVEllTklGeEx1N052ZHlnVTZKYkl3RS05enJZcW9kWEVNN0c2MTBmM1h0Q0xLVTlrZkR1bk5razR2R3JrX0pUb0Y1elJjb3dXM0ZmZzF3OEY1VzVMQXlST3REYlp6MHBRRXFB?oc=5",
         "source": "BullionVault",
         "date": "Wed, 31 De",
         "language": "en",
-        "tone": 0.459,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6638,7 +6971,7 @@
         "source": "Yahoo Finance",
         "date": "Fri, 02 Ja",
         "language": "en",
-        "tone": 0.545,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6657,7 +6990,7 @@
         "source": "NBC News",
         "date": "Tue, 30 De",
         "language": "en",
-        "tone": 0.45,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6673,11 +7006,30 @@
         "source": "KITCO",
         "date": "Wed, 31 De",
         "language": "en",
-        "tone": -0.608,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
           "Gold"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "What Is the Best Time of the Year to Buy Gold and Silver? - U.S. Gold Bureau",
+        "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxPTkFJOS03UXlyeE9fUHV6TnZYMTU3bnhkemItLUQxcFpEdHNHbW5udEdrQnVNNkk5VzRreU9qeE9IdWszOHV2emloOTdNT2h1NFVhNThUd2Rwemp3U1M2Qm9Sa09aTURRWUl4Z0tNWVBmc2VGdC1JOFdNb0hVVTVyalVFV3hJdjlfNEpJdko0SEt6SmQzTW5MQ3FNNA?oc=5",
+        "source": "U.S. Gold Bureau",
+        "date": "Thu, 01 Ja",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "What",
+          "Best",
+          "Time",
+          "Year"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6688,7 +7040,7 @@
         "source": "Investopedia",
         "date": "Tue, 30 De",
         "language": "en",
-        "tone": 0.052,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6700,83 +7052,51 @@
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
-      },
-      {
-        "title": "Gold (XAUUSD) & Silver Price Forecast: Fed Cuts Fuel $4,400 Gold, Silver Holds $71 - FXEmpire",
-        "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxNZERrMFYwZk9oQkRYRlp3c09DTjhwY0tIZDRVMjhvS2tzNWQtZzc1YjMta29TTVRRblhCcThIZnRGbzZnSW40c1NRZjNaeXFldjNDazA2ZzAtMHpvYmMzbmNubVd2ZC1obXZ2bTgxb2h1bkxMUTAyYTdWbGZMSjVFRm5veE15d1JKaWJ3TEJ5cXBFaWRWb05jNGZTRXVlMWR3RVpJakdQVlVpbGtjX1hRenhqRGdLMmxVaFZvTXp4RDNadw?oc=5",
-        "source": "FXEmpire",
-        "date": "Wed, 31 De",
-        "language": "en",
-        "tone": -0.323,
-        "category": "monetary_policy",
-        "relevance": 0.2,
-        "keywords": [
-          "Gold",
-          "Silver",
-          "Price",
-          "Forecast",
-          "Cuts"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Lynnwood coin shop doesn’t believe new taxes on gold will pan out - HeraldNet.com",
-        "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxNZUJoVk9NYlFSaDA0MmZkRVY0QmxkR3N0d1pnR3hrVl95Ql8tVjBUWFZpcGtndTB3SXo4RTRqUUdvYXY1dVRsZDFLa2drcnR0eTNkV1pFZGRlT2tqeHFOc19RdXJZRUItT0cxZmYwZUFia2ZZZGhXVnh3Yko2UDNkY2RSYTZGRkIxeXF2YzVSRUF1UDF1QlRRODhYcEluRG1VdE4ycw?oc=5",
-        "source": "HeraldNet.com",
-        "date": "Mon, 29 De",
-        "language": "en",
-        "tone": -0.294,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Lynnwood"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
       }
     ],
     "source_diversity": {
       "Yahoo Finance UK": 2,
-      "Mitrade": 2,
-      "FXStreet": 2,
+      "Finance Magnates": 1,
+      "FXStreet": 4,
+      "Spectrum News": 1,
       "BullionVault": 2,
       "Yahoo Finance": 1,
       "NBC News": 1,
       "KITCO": 4,
+      "U.S. Gold Bureau": 1,
       "Investopedia": 2,
-      "FXEmpire": 6,
+      "FXEmpire": 3,
       "HeraldNet.com": 1,
-      "The Conversation": 1,
-      "Reuters": 3,
+      "Reuters": 2,
+      "BBC": 1,
       "CBS News": 1,
+      "The Conversation": 1,
       "Financial Times": 1,
       "South China Morning Post": 1,
-      "BBC": 1,
-      "thestreet.com": 1,
+      "Dailynewsegypt": 1,
+      "Investing.com": 3,
       "CNBC": 1,
       "Crux Investor": 1,
-      "Investing.com": 3,
-      "Dailynewsegypt": 1,
-      "Mining.com": 1,
-      "NAI500": 1
+      "Mining.com": 2,
+      "NAI500": 1,
+      "Mitrade": 1
     }
   },
   "political_bias_analysis": {
     "source_bias_distribution": {
       "left": 0,
       "center-left": 0,
-      "center": 8,
+      "center": 6,
       "center-right": 1,
       "right": 0,
-      "unknown": 31
+      "unknown": 33
     },
-    "bias_diversity_score": 0.217,
+    "bias_diversity_score": 0.255,
     "factuality_distribution": {
-      "high": 8,
-      "mixed": 1,
+      "high": 7,
+      "mixed": 0,
       "low": 0,
-      "unknown": 31
+      "unknown": 33
     },
     "cluster_bias_assessments": [],
     "flagged_articles": 1,
@@ -6793,5 +7113,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-12T01:11:11.942294+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }

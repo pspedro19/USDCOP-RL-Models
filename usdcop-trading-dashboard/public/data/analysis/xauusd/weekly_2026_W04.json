@@ -9,7 +9,7 @@
   "week_end": "2026-01-25",
   "weekly_summary": {
     "headline": "Oro (Gold) · Semana 04 de 2026",
-    "markdown": "### Oro (Gold) — Semana 04 (2026-01-19 → 2026-01-25)\n\nEl cierre semanal de XAU/USD fue **4984.67 USD/oz**, un cambio de **+8.58%** en la semana (rango 4588.36–4990.21). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 4984.67. RSI(14)=82 (sobrecompra). Soporte 4279.07, resistencia 4990.21.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **posición larga** esta semana (apalancamiento 0.51x). Régimen: stretched.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: FOREX.com, Robin J Brooks | Substack, Yahoo Finance.",
+    "markdown": "### Oro (Gold) — Semana 04 (2026-01-19 → 2026-01-25)\n\nEl cierre semanal de XAU/USD fue **4984.67 USD/oz**, un cambio de **+8.58%** en la semana (rango 4588.36–4990.21). El sentimiento fue **bullish**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 4984.67. RSI(14)=82 (sobrecompra). Soporte 4279.07, resistencia 4990.21.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **posición larga** esta semana (apalancamiento 0.51x). Régimen: stretched.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: FOREX.com, Yahoo Finance, BullionVault.",
     "sentiment": "bullish",
     "ohlcv": {
       "open": 4595.2504,
@@ -44,7 +44,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-20",
@@ -66,7 +66,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-21",
@@ -88,7 +88,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-22",
@@ -110,7 +110,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-01-23",
@@ -132,7 +132,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6142,73 +6142,91 @@
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": 0.05,
+    "avg_sentiment": 0.0,
     "source_breakdown": {
       "FOREX.com": 1,
-      "Robin J Brooks | Substack": 1,
       "Yahoo Finance": 4,
       "BullionVault": 2,
+      "Robin J Brooks | Substack": 1,
       "VanEck": 1,
       "CNBC": 3,
       "Fortune": 1,
-      "CBS News": 1,
-      "Yahoo Finance UK": 3,
       "Reuters": 4,
-      "KITCO": 2,
-      "Bloomberg.com": 1,
-      "Business Insider": 2,
-      "Gold Price": 2,
-      "Investor's Business Daily": 1,
-      "Investing.com": 1,
-      "Think Global Health": 1,
-      "Sherwood News": 1,
-      "BBC": 1,
-      "Los Angeles Times": 1,
-      "Forbes": 1,
-      "FXEmpire": 1,
-      "GoldSilver": 1,
+      "CBS News": 1,
+      "Yahoo Finance UK": 1,
       "Mining Weekly": 1,
-      "CNN": 1,
-      "Wealth Briefing": 1
+      "Bloomberg": 1,
+      "Business Insider": 2,
+      "KITCO": 2,
+      "Think Global Health": 1,
+      "Marietta Times": 1,
+      "Los Angeles Times": 1,
+      "BBC": 1,
+      "Investor's Business Daily": 1,
+      "FXEmpire": 1,
+      "Forbes": 1,
+      "GoldSilver": 1,
+      "WSJ": 1,
+      "Gold Price": 1,
+      "Wealth Briefing": 1,
+      "Finance Magnates": 1,
+      "Investopedia": 2,
+      "Mining.com": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
     "relevant_articles": 40,
-    "avg_sentiment": 0.05,
+    "avg_sentiment": 0.0,
     "sentiment_distribution": {
-      "positive": 13,
-      "negative": 8,
-      "neutral": 19
+      "positive": 0,
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
         "cluster_id": 0,
         "label": "Commodities",
-        "article_count": 19,
-        "avg_sentiment": 0.074,
+        "article_count": 35,
+        "avg_sentiment": 0.0,
         "dominant_category": "commodities",
-        "bias_distribution": {
-          "center-right": 3,
-          "center": 3,
-          "center-left": 1
-        },
+        "bias_distribution": {},
         "representative_titles": [
+          "This New Gold Price Prediction from Goldman Sachs Shows How High Will Gold Go in 2026 - Finance Magnates",
           "Gold price today, Friday, January 23: Gold surges towards $5,000 per ounce - Yahoo Finance",
-          "Understanding the relationship between gold prices and the U.S. dollar: What to know for 2026 - CBS News",
-          "Another day another high: Gold surges past $5,100 as investors seek shelter from global risks - CNBC",
-          "Gold price nears $5,000 as geopolitical worries linger - Yahoo Finance UK",
-          "Gold tops $4,900/oz; silver and platinum extend record‑setting rally - Reuters"
+          "Silver $100, Gold $5000 as Trump's 'Rupture' Turns on J.P.Morgan - BullionVault",
+          "Everything you need to know about gold - Robin J Brooks | Substack",
+          "If the Dollar Loses Reserve Status, Could Gold Surpass $39k? - VanEck"
         ],
         "narrative_summary": "",
         "articles": [
+          {
+            "title": "This New Gold Price Prediction from Goldman Sachs Shows How High Will Gold Go in 2026 - Finance Magnates",
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxPU3dlMHptSUxIa0MyeXdBZ29OcnFTdVV3Q2FEbjlNU3Q5bTFkeXZQdll6Z3E4OGlXT1gyTDg0eGRoNG5UeFB5LVNUQzlsUjhlUDYxMDZGRUhOdWxKcUxlbWJfeU9ucUFXOXVOODIwYWpHeWJDN0ZtNWVLbFV3MkxqYnNMMjdwZU9WVmxPWU9wbEk0b1NSNWFhOFJmYXNvcU1LcHhCa0hDa0xXUkQzRHlERmc2Q2V0bE5tdHd4eU1JVl96d213Z0E?oc=5",
+            "source": "Finance Magnates",
+            "date": "Thu, 22 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Gold",
+              "This",
+              "Price",
+              "Prediction",
+              "Goldman"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
           {
             "title": "Gold price today, Friday, January 23: Gold surges towards $5,000 per ounce - Yahoo Finance",
             "url": "https://news.google.com/rss/articles/CBMi3gFBVV95cUxPWXhnb1NFQWpMTk1SeC1RYTE1a3hha3V5LTNXNFFtcVVSd3gwQ2Y1MFRfcklKU2kxaHdXQUVZa1lQd3IxOEVOb2o0OFBzbUtPTGF2QUJfb2NnQjFaRm1qcjdaTVMxQkVVSG8tcWZwM1EzcnBSMXBvRFhmbVgycXZ4YldndlFieXhxWDAtaXhxQ1E2YVpFclBuY1pzTndHcV9xaUNUa05oZnJXalppTXhJa2lYNEVwQmU3NHZYVVVPMTRtWE9IU0x4UWsza080VDRNOXc3dzVkSUxLb1U1bmc?oc=5",
             "source": "Yahoo Finance",
             "date": "Fri, 23 Ja",
             "language": "en",
-            "tone": 0.469,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6222,12 +6240,138 @@
             "factuality": "unknown"
           },
           {
+            "title": "Silver $100, Gold $5000 as Trump's 'Rupture' Turns on J.P.Morgan - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxOT216SW1Cek5tUmY0MUkwX19sNDgwOV9pdmlXdE54NXBxQjgzRl9QeC1EZ0E5cTdZa2g1d0VmcTdMejc4d3dPSXNJM3ZQN2lfU01WbEZyUEdYamgtNzlnOXpFX1ZpdVFOSThVRUJLZkJ4MmhUeUo4LVFySTFHa2FhTXhIVFNsT0VoSFNDRHdR?oc=5",
+            "source": "BullionVault",
+            "date": "Fri, 23 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Silver",
+              "Gold",
+              "Trump",
+              "Rupture",
+              "Turns"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Everything you need to know about gold - Robin J Brooks | Substack",
+            "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTFB4OFV0SjRQRWhJNGZWV3JsdlFOTkE1TE1KR3N6OU1Sc3gxakZtNkVYcjJjY1lTR3FmTFNhX2o5X3dsT0RKQVlxUzRBUjcxRGFiRnd0UkhrRHlBNlpBekpZTnctOGUxbmM3SGdzQ0xTazVMRDE0U3R2ag?oc=5",
+            "source": "Robin J Brooks | Substack",
+            "date": "Sun, 25 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Everything",
+              "Robin",
+              "Brooks",
+              "Substack"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "If the Dollar Loses Reserve Status, Could Gold Surpass $39k? - VanEck",
+            "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxNMWxlM2MzZld5QzNTV3NvYzZKTHVmTnJ0TVAyTDZYS05kWDk2QnV6ZjFoLXp3M3ZzRjM3S0FLdzRGMHJqZzZ6Rk0zbk5Tc2tOR1djajNob3M5dGR0RkhoLU5wZlA2RkZoUmlsc2ZkRGJyOURlR0ZfZTJiVEtFblVEcnVHZzZVM2x5MWhWSzFDM1pzOUhCYllRcHVya2JMVDZLQWtUSldhVVZBcV9uNlE?oc=5",
+            "source": "VanEck",
+            "date": "Mon, 19 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Dollar",
+              "Loses",
+              "Reserve",
+              "Status",
+              "Could"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold breaks new record on Greenland tariff threats — $7,000 level on the cards - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxOY0k4TEU3dlFYbnRucnU3RGhlS21DQVI1b29iTk1kdEN2QnhGLWFncjlvXzRzanZ0NVZoMVVpVVN6bXluSkgxUC1OemNsTndoWlBiQV9nb2J1TGlLZmowUTZmclNjX2NYVnVPcG9IM0xIZmFFQkhNSFJOSUQ5OGM5RDFzcTc3dHJNLVVSb9IBkgFBVV95cUxOZnJYZjdZZWRkM0NtbDhKU1l1bG9GSkhBc1A4UUVSdnctdmhXU1diV3RSMEhXN1Z0WTZZTWRORmJta3BKT2RXNEVHcElraUU0OGU1QlVSYndnUkw1ZFBpMGZmeVZjOHh5dUIyV0x2RGxKSmdYV1hLVTlpeGRadEFhVlFwdjRLd3BHa0dyY1VYVDNfdw?oc=5",
+            "source": "CNBC",
+            "date": "Wed, 21 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Greenland"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold tops $4,900/oz; silver and platinum extend record‑setting rally - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQMGpFRVNfZUF6QVBHZjVxVC1jN2Y3YzNCUHQzLUJ2eWV6dzNWa1NDX0RvTnNlOGZhRFpzLUVmY29yRXNhdVc1bUpDZHJaeHhRU1BlT3MwcGd0anZ3aGxjOUtaQzY4MEtYZlJOVl85em83NkJKRDJjRmM2MUdVOXVmbTIxZ2pFemZob0tpbzRQVkR3S19UVFB2SXdjXzFZNTE2UUZCSDlucUpTRGNaOGViUmhR?oc=5",
+            "source": "Reuters",
+            "date": "Wed, 21 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold and Silver Forecasts 'Beyond Outlandish' After 2025's Bad Miss - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPOUw2aXdtOVNscVRzZkpSX0FvUlFqZ1VNZ25CWlJNcnFJVmZhNWNXYTZFdzNCRjJwQ2lFVlZCQzlrRjN2bC1rbE81QU8yMzJHNGJ3UmM3YTdReXpMOWRQS2k2ZlU1SE9CMFYxeGppYlpMNGRyNlVlZ0RlWHNtSFFHdlJxcTU1UjNTMFFoQzBad0pjbnRGejhBdC15bHlSSlhuejJPVg?oc=5",
+            "source": "BullionVault",
+            "date": "Tue, 20 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Silver",
+              "Forecasts",
+              "Beyond",
+              "Outlandish"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold tops $4,900 as Goldman Sachs ups year-end forcast - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxONFpkSGg0LWkwaUxtcUVCWVNDa0JyMWxCSTlDb3lkbGdzQUthYVB3aWRSN24yZ1RvczlRb3FrVm5EaGgyTDd4VkZPbDFCYVVFMHA0WlhZSjlfeHJMd1B0dE41aVRVYlJiU2pQLTdqQWpxLUk2bWhOWXU5Z2t6QjJwTnNENUJxV0Q0bmlWQWxqVEhVQkowRzh6Vk5pdUFYeUk?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 22 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Goldman",
+              "Sachs",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Understanding the relationship between gold prices and the U.S. dollar: What to know for 2026 - CBS News",
             "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOb1dUcVkyNWhIeTQzYWpGVW42ckxyR0tBN09CZERXM3BkT0JTWVh1RmlGYUN0RUdlUzNwRnpZYUhZbjhqTFBLOWlad0lFV0hGS1ctT2RnbUMxYUN4a2ZQWGZQc0xjU0FsWnhIZjJRRllZQ0xrUTBTOHNiU1VOb2UxSEh3OEJkOUNVZUI2YTZmcVZPSU0wZDVYZ3hsZmNSRlHSAaQBQVVfeXFMUG5fdktwdnJCM3BrMlQzWEVnbEFnRUdoRTVMUWNCSzg1alllSGdKamJmTlZ4WHdMRFR2UlNYSloxYU1FdkVva1FGdmF6MDgyZHRkU0xfbTlIaWs5NFIyU1NNOWQ5WGszRXJJVHpXS0tWN1U2MFRUNURMWFBzX2RXUlpxNWI3WmJSSklnRmhQVlgyc1NFNEd5eHEtVXRkbFV3Q1hLWGg?oc=5",
             "source": "CBS News",
             "date": "Fri, 23 Ja",
             "language": "en",
-            "tone": 0.09,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6239,28 +6383,12 @@
             "factuality": "unknown"
           },
           {
-            "title": "Another day another high: Gold surges past $5,100 as investors seek shelter from global risks - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxPb2hidFJjdUpVanpYWmRVSVotXzhPREx5YlZ3dnZ5Vkp1M0V1MG9jYnJxcnJPaXE1cXRJUUs3R0pCUmhBeGpzZTZZVS16b0dPMVFhdG1XRnVKTHRVOE9iX0RUdnI5YlE3djhNXzJrb2g2RkxIaFhKX3R5SURUZGNRSDN30gGHAUFVX3lxTFB1UFNCMVhWMGt2ck05NzZIQkh1ajVHdFl4YTBaLW1zTFR3dDR1TnhHckU3eW81bjhZNUlIeFpGSk5NcGNsZ2NWdGFQQWI5RGdFZlpwRkhYNVZnMFVYRTZJM2x4THNTLTRGQ2l5cVBFaFMtcGkzQVRqOGxaWkF2Q0ZqbE1DM3I3VQ?oc=5",
-            "source": "CNBC",
-            "date": "Sun, 25 Ja",
-            "language": "en",
-            "tone": 0.243,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Another",
-              "Gold"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
             "title": "Gold price nears $5,000 as geopolitical worries linger - Yahoo Finance UK",
             "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxQbGVVZkViV3N5YW1FeUUtR05KNUZnUzBVOHo2MThWOTljNzhDSndRSFZRdGFoSWxOSy1ZVkFvVXZkd3BnR09rdFpGMmRET016QlBWWlBjTlk4TzE0dDlmX28wSEhRUEdMQkRQNm1yYk5CcFluSkZMTEhsdFkxT1dNX2poN2FrYjdXaEtXYTJxZ0Z6UWtNSDM4ZnFRNDNPa0RjMllmYlFmc3Q1RkNE?oc=5",
             "source": "Yahoo Finance UK",
             "date": "Fri, 23 Ja",
             "language": "en",
-            "tone": -0.394,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6272,304 +6400,19 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold tops $4,900/oz; silver and platinum extend record‑setting rally - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQMGpFRVNfZUF6QVBHZjVxVC1jN2Y3YzNCUHQzLUJ2eWV6dzNWa1NDX0RvTnNlOGZhRFpzLUVmY29yRXNhdVc1bUpDZHJaeHhRU1BlT3MwcGd0anZ3aGxjOUtaQzY4MEtYZlJOVl85em83NkJKRDJjRmM2MUdVOXVmbTIxZ2pFemZob0tpbzRQVkR3S19UVFB2SXdjXzFZNTE2UUZCSDlucUpTRGNaOGViUmhR?oc=5",
-            "source": "Reuters",
-            "date": "Wed, 21 Ja",
-            "language": "en",
-            "tone": 0.494,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Reuters"
-            ],
-            "bias_label": "center",
-            "factuality": "high"
-          },
-          {
-            "title": "Forget $5,000: Bank of America sees gold price hitting $6,000/oz by Spring 2026 - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxNVzBUTXUweVZVVjNjUmhFQ0hzeGtKSC1fNGVlcXJBaGZGSk9fc1NId2NRajlFb2E0aFUxMnBxZHZKdUtlZkpoQW4wQllLbUtCUnJ1TkYyMXhiNHZybXpUSkhtMWpaZWE0S0dEYkZhaV9NeXU3WUdWYk9iRWZmZG1aS0ZTT1k0ME1wMDNmaGN1ZEhxVXlwRmpyVERQSmZuSHM1QzFUZms5Nm10WmRXTkY3UUlIaw?oc=5",
-            "source": "KITCO",
-            "date": "Fri, 23 Ja",
-            "language": "en",
-            "tone": 0.136,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Forget",
-              "Bank",
-              "America",
-              "Spring"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Price Surges Past $5,000 As Debt Fears Shake Global Markets - Business Insider",
-            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNZm53bjVyTmkwaFUtaEFLeUlvdHhCbFVDbTFKcGhQb0lSemdKR3M4cjYtR2xzdkJaTWZ6Nkd0VVhQdnBVTnpkTHhGYkdTX05Jc0k0R2QzbHRxaXlhVXFjMVpkemF1bGgycllGV1A3ek9ENC1MOVBRNDltUzduRlBrT3B2YmlLWGdOM2ZYYmpJRUkzejNsbURTU0lqVHlFdkxDQ01GOXZ3TQ?oc=5",
-            "source": "Business Insider",
-            "date": "Sun, 25 Ja",
-            "language": "en",
-            "tone": -0.428,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Surges",
-              "Past",
-              "Debt"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Price on 19 January 2026 - Gold Price",
-            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE1DOE1JTzRHanU2cTVja1dEbHhGanlKYXpxS296UXBWM3lXQlV1Yzc4TUN0bDkzbHpUM1V0VFJnOFZsVW1BOUtmTGJTZDg4Z20tWTFCM2djZ0luQlVGcmc?oc=5",
-            "source": "Gold Price",
-            "date": "Mon, 19 Ja",
-            "language": "en",
-            "tone": -0.01,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "January"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Prices Jumped On Trump’s Greenland Spat. Why They Might Keep Rising. - Investor's Business Daily",
-            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxOcHc5YVNtWE4zV1BVcmNBdjFSbkVtRkFlLWVkQnhCZmctcmdqZWdTTm1kSC01V3ZhbjZ3T1lKNDRIMmhYT1ZoUnNDRlJBZVh5b2dyS3k0b2RfMktzOExUNzhNblhrOE56Mm5aeTVzT09RclhkcHJZdFRiRTh1aXI1Wl93?oc=5",
-            "source": "Investor's Business Daily",
+            "title": "Goldman Sachs raises 2026-end gold price forecast - Mining Weekly",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPTTlTVG9lRS1WZ3lQNVlPNkxET2pzUEFXSFNPMXhWU051b244d0N2MFZycWs2SVFJbWd4OTNwWXh2b1FuZGxvN21xcThXXzlkYzVNTG9zdUlYV1ROOFNSZUNVQjNMSVNuSmhzeVJhTWtwaE1uMFhkS25kbmhxSENxOGxQak1BZ3Q5eEx5a2FNdDBYSjJxQVdxSURIZzBuZw?oc=5",
+            "source": "Mining Weekly",
             "date": "Thu, 22 Ja",
             "language": "en",
-            "tone": 0.114,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Gold",
-              "Prices",
-              "Jumped",
-              "Trump",
-              "Greenland"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold and silver prices hit high after tariff threat - BBC",
-            "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFB0c1BZaDNGNDhSRUM5VzRvTE5XdVFYUXBvNmI5TmZYdU5GUkNMNmxRcUhOODBVaVV3bG42WWVxbzVKZE80eFZQREV6MGt4bWVGanRBdzRwR3J4dw?oc=5",
-            "source": "BBC",
-            "date": "Mon, 19 Ja",
-            "language": "en",
-            "tone": -0.086,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold"
-            ],
-            "bias_label": "center",
-            "factuality": "high"
-          },
-          {
-            "title": "Silver Price Crosses $100 For First Time, Gold Nears $5,000 - Forbes",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxQbzdFbEhpR2xYWF9YN1YyVUdKRFphN1BQY0lRX1NtY2tobjhUUDNleURvcGF5d0VpNVdtbGlrU1BvZXRwVTdsd2tsMmc2Q3BxMTllVDNQdDlzZTRnWERFQjdLWUZMNWRzdGtTMEtaUDRxeHg0ZzZMM2IyejJRZTB3OGVXRUhqQ2JkSFZTQThQNlEycFpIalE1a3dmeURIQTgyVWx5eDl3UmFuaVZxQ3VFNjFjM3czMHNqVEE?oc=5",
-            "source": "Forbes",
-            "date": "Fri, 23 Ja",
-            "language": "en",
-            "tone": 0.187,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Silver",
-              "Price",
-              "Crosses",
-              "First",
-              "Time"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "Gold blasts past $5,100 to record high on safe-haven rush - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxOVEdzUi1RZ1pRYUUzWktJS0tQQTdzZTA1WmFodTlHamdtR0RaMFpPVklPMEFuVFFUY01vcllrcHV5aFFCZDVIc0FpcXVKWEhaU3RqbkdJcmhNTlhwWE1pbVlVRkl5THhIRVVpVzRsLVdJV1ZEcmZTV2ItTFRTYlNzOHVPMXF5aVFUcjlfdTVfZVVDNDA?oc=5",
-            "source": "Reuters",
-            "date": "Sun, 25 Ja",
-            "language": "en",
-            "tone": 0.499,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Reuters"
-            ],
-            "bias_label": "center",
-            "factuality": "high"
-          },
-          {
-            "title": "Gold prices surge past $4,800 on jitters over Greenland dispute - Yahoo Finance UK",
-            "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxQZTdYNnV3dnBQZTVkVmZ2T25jWEJxRzVlQ2ZLYVVfRXlTSlRRN0FmNm1EaDh4TzVaNEw5SmplZ184ZnJsMTFobEFRRmNRQ2lvbzBlTU54LVlHZUUxTGE2cEcyczFrUlVQR2ktZFAzakJyUDlGSGFka0xPTlJRa1VVaDY3WlpHcDBKc09fSEh3enV3cmk5LXlXWA?oc=5",
-            "source": "Yahoo Finance UK",
-            "date": "Wed, 21 Ja",
-            "language": "en",
-            "tone": -0.038,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Greenland",
-              "Yahoo",
-              "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Silver hits record high above $100/oz as gold closes in on $5,000 milestone - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxPR2ZOdnZ4aThnN0lBV01aSE9BMXBjZVc1U1NyekxkSU11d1VDYXM4LUtEV042aW52YmJGNzEtQTlBNjUzWE8yNkRoaW4yVkwyeGlHcXZkTEljZTFmZi0zejNWekFWMHBqcVJCeTJyLUp5bG9oUWVsUnhvV21UYWRLd3YydTBIbW4wSlBHLURxWmgzVzRWNWdZN2h30gGfAUFVX3lxTFBqOWgxMXdKRzlZNUtyemMyaUV0TXI5Z3lSM0NiNDhOUWhTZnFGMHpsRURaUGJUWVVxalZtNFpyNXJ0UWE3TTNIWEtvQUYxQlJRRlFkU0RhOFJ4TE1tRVB1cDJfM1d3M3ZKX29LQ2JqR1R3YTBzc0F2eF8tRFVYa1RIVkdINmxOWE42MXpMbEEyd2xOM3RHOUF6YTAwRjZ3bw?oc=5",
-            "source": "CNBC",
-            "date": "Fri, 23 Ja",
-            "language": "en",
-            "tone": 0.196,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Silver"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "Gold Price Eyes $5,000, Silver Nears $100 - GoldSilver",
-            "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQZmZlQjVBNDh0OTVYa1NBbzJDMjQ1Q0luQjVrRENwZDNxSWxfNVZONzdFb1IzcHpLTW1zNFd3cjNzWHcwdXJqR0NDMDdCekQ2Q2xEZTR4N0J3NXlHdzhGa3JqWjU1LU1NVmcwQTRTdzlMdWlPUC1QaHMzZlVIMERnbkJYN3FEX04tMW5HVE5yYzdqT3Rnc2c?oc=5",
-            "source": "GoldSilver",
-            "date": "Fri, 23 Ja",
-            "language": "en",
-            "tone": 0.051,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Eyes",
-              "Silver",
-              "Nears"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold just hit a record $5,000. What’s driving the surge? | CNN Business - CNN",
-            "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxOZnVkbjl6a0ZtT2hyNDRSWE5hWXcyWTlGTGZVUHdWOUxPcjBFSkYzS3ZBRnVRYXpHQkw5ZEw3c0hWRlhWSEp5TTN4QUxYY2pqTXdTbjBTY1MwdWVqSm9UQXFMMllENXlyM3JaUjFheE90TzduTlcxZWprR3pwdTBicXJOcFZJc2hRa2c?oc=5",
-            "source": "CNN",
-            "date": "Sun, 25 Ja",
-            "language": "en",
-            "tone": 0.017,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "What",
-              "Business"
-            ],
-            "bias_label": "center-left",
-            "factuality": "mixed"
-          },
-          {
-            "title": "Gold Prices Soar Amidst Rising Geopolitical Tension - Wealth Briefing",
-            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNVXRUT0ZwQmlxRV9neDI1c1g5c0dCMFFGcWpwVU43eGxLZ21YcGNCMDVSSm1zWjgzbi1kVHRLWVZpcUJtaXozNjVnbWlCbTNnVGF4UHZZNmI1WWlVU1JpdEJ2bzZLMzdoaUl3eHgtNzd5ZEE1Y0pxVjFaLWFKNEdpYzBrblBaX09PY0Myc2NrdUlXRXc3TnRyZlFSM1ZsUGd6?oc=5",
-            "source": "Wealth Briefing",
-            "date": "Thu, 22 Ja",
-            "language": "en",
-            "tone": -0.044,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Prices",
-              "Soar",
-              "Amidst",
-              "Rising"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold prices soar as Trump doubles down on push for Greenland takeover - Yahoo Finance UK",
-            "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxQUGhiYkxBSkV0b29pQlBmTWIyVDhDUktHQ1V6cTROeXBBelFvcHBjaGNJT0FYVTdkS2YzNUg2WThLYWxZckg1ZmQ3bUpwQ24yQUNHWE95bFVpUXlvZXdfVVQwYVcybzZoSzRNOEtJUTgyOUluX2N1X2Y2d1BFa1FNeUNvM01rSS1JOGd2VkEwMHNMczEzQWtmYQ?oc=5",
-            "source": "Yahoo Finance UK",
-            "date": "Tue, 20 Ja",
-            "language": "en",
-            "tone": -0.085,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Trump",
-              "Greenland",
-              "Yahoo",
-              "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Price on 22 January 2026 - Gold Price",
-            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5NLVNyYlB4bWtKak9ybnNYMU5VX3A1NExLeUozNmc5MEd6M1hqRkRkUHRqcE9YOXYxZTJ6bWJNc1ZVUGpnek42Yk5MTWVEYlZqTndMaF9DN0d4bkJ4R3c?oc=5",
-            "source": "Gold Price",
-            "date": "Thu, 22 Ja",
-            "language": "en",
-            "tone": -0.008,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "January"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          }
-        ]
-      },
-      {
-        "cluster_id": 1,
-        "label": "Commodities",
-        "article_count": 8,
-        "avg_sentiment": 0.156,
-        "dominant_category": "commodities",
-        "bias_distribution": {
-          "center": 2,
-          "center-right": 1
-        },
-        "representative_titles": [
-          "Gold tops $4,900 as Goldman Sachs ups year-end forcast - Yahoo Finance",
-          "Goldman Sachs raises 2026-end gold price forecast by $500 to $5,400/oz - Reuters",
-          "Goldman Sachs raises 2026 gold price target to $5,400/oz as private sector joins central bank diversification strategy - KITCO",
-          "Goldman Raises Year-End Gold Forecast to $5,400 an Ounce - Bloomberg.com",
-          "Goldman lifts gold price target as key upside risk is now materialising - Investing.com"
-        ],
-        "narrative_summary": "",
-        "articles": [
-          {
-            "title": "Gold tops $4,900 as Goldman Sachs ups year-end forcast - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxONFpkSGg0LWkwaUxtcUVCWVNDa0JyMWxCSTlDb3lkbGdzQUthYVB3aWRSN24yZ1RvczlRb3FrVm5EaGgyTDd4VkZPbDFCYVVFMHA0WlhZSjlfeHJMd1B0dE41aVRVYlJiU2pQLTdqQWpxLUk2bWhOWXU5Z2t6QjJwTnNENUJxV0Q0bmlWQWxqVEhVQkowRzh6Vk5pdUFYeUk?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Thu, 22 Ja",
-            "language": "en",
-            "tone": 0.334,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
               "Goldman",
               "Sachs",
-              "Yahoo",
-              "Finance"
+              "Mining",
+              "Weekly"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6580,7 +6423,7 @@
             "source": "Reuters",
             "date": "Wed, 21 Ja",
             "language": "en",
-            "tone": 0.365,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6592,28 +6435,50 @@
             "factuality": "high"
           },
           {
-            "title": "Goldman Sachs raises 2026 gold price target to $5,400/oz as private sector joins central bank diversification strategy - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxPNWFRX3dIbGFzdUtZYWpxTlBKeGJLSDhuSHdQVmpPZGFtb0dELWMtcUVJRmNZVUxQRVJMeTJBcUlBR0h3Nml0cnNGOUhYV0hhX29EUHhIRkdMMW8wWUgyU0VsMGFNY0tsR3dTdUhjZUVESUljMmpidjZtS3pmYWVJVE1WdXZQV0cyVWMycjI5UF92cENHakIzUDlVSkgyVHpLRk5YX2lZWWlfZ2ZoTXJMVG9keWpXVGVn?oc=5",
-            "source": "KITCO",
-            "date": "Thu, 22 Ja",
+            "title": "What Newmont (NEM)'s Record Gold Price Tailwinds Mean For Its Cash Flow And Balance Sheet - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxOcmJhTVVQc1VPU1NGLWxUclgwYkFrVU9IN0pPa1hfbC1aTGJVTThtSjB1LVpWZmxrVGtOOFdvM0FFNW1yQVJqVlVYa0FSNFdTNDlBU2JHanA5TzRweDBiYXhvTXlnZjA2TFFPSWN3Ym1NbTl6cVhIMmQxRTlzMHBNYQ?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Tue, 20 Ja",
             "language": "en",
-            "tone": 0.406,
-            "category": "monetary_policy",
+            "tone": 0.0,
+            "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Goldman",
-              "Sachs"
+              "What",
+              "Newmont",
+              "Record",
+              "Gold",
+              "Price"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Goldman Raises Year-End Gold Forecast to $5,400 an Ounce - Bloomberg.com",
+            "title": "Why You Should Play Record Gold Prices with the GLD ETF - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE0zcEZuQ21mdlJsYXhsYVpRV2pLZGxqcENyNk1hSkVlMHpXS3RfQUFOMVVUTmZfTER1cWRCSzhVWXhXa1c3OHd4VEZnaWRlMmNFTVVYTG1rSkZIcU9zLU15WVpvWGx2X3p1VVF4aDFkaXZXdzZURVV6UnFGcXhBdw?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 19 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Should",
+              "Play",
+              "Record",
+              "Gold",
+              "Prices"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Goldman Raises Year-End Gold Forecast to $5,400 an Ounce - Bloomberg",
             "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNQWdFTW9DTHlHbXNFcy1oNFFrbTZoTEItMTA1OUNMcEdLN3dfbXZPOFRxdUk3MlRlRTdyaDBLRVVnV3o0amdQYTE5VjV1Z1lKNlZzbVg5WVc3Qzh3Mk5JalJ4SnlEb3lNX2E5RUpEQkhySVdFbnJjdjJpTXQwRVlmdWo1WjQtc1J4SW41c2YtcUZyWFBjMHFwN3ZGZlU1dks5aGlHSkhZeHBCMjhJa0I0UER3?oc=5",
-            "source": "Bloomberg.com",
+            "source": "Bloomberg",
             "date": "Wed, 21 Ja",
             "language": "en",
-            "tone": 0.147,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6627,37 +6492,239 @@
             "factuality": "high"
           },
           {
-            "title": "Goldman lifts gold price target as key upside risk is now materialising - Investing.com",
-            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQZ3MyUjZ3cXQ4SVdrY0tJSXpjUXpYZDN6ZHZ4MVNWSDYwNm5xT200TWFoOVdIODJoVFBpaFMzUFVXalFQZ0FtNFJjdVFfM0syYmVDSXZVRGxRZlVTYXRXbmlmT1JGTW4tT0o5cGFMNkpXV3N1WjlmaDRlSU1hcVk0MEQzQVAzbXc1UklVV2lLeXBaWVdVNWdjdWxlWGN1RjRubXVTNkR6NE41UXJWbi0tYmNBZWltSzJNakJ2dWZLb0QxMlQxanc?oc=5",
-            "source": "Investing.com",
-            "date": "Thu, 22 Ja",
+            "title": "Gold Price Surges Past $5,000 As Debt Fears Shake Global Markets - Business Insider",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNZm53bjVyTmkwaFUtaEFLeUlvdHhCbFVDbTFKcGhQb0lSemdKR3M4cjYtR2xzdkJaTWZ6Nkd0VVhQdnBVTnpkTHhGYkdTX05Jc0k0R2QzbHRxaXlhVXFjMVpkemF1bGgycllGV1A3ek9ENC1MOVBRNDltUzduRlBrT3B2YmlLWGdOM2ZYYmpJRUkzejNsbURTU0lqVHlFdkxDQ01GOXZ3TQ?oc=5",
+            "source": "Business Insider",
+            "date": "Sun, 25 Ja",
             "language": "en",
-            "tone": 0.171,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Goldman",
-              "Investing"
+              "Gold",
+              "Price",
+              "Surges",
+              "Past",
+              "Debt"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Forget $5,000: Bank of America sees gold price hitting $6,000/oz by Spring 2026 - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxNVzBUTXUweVZVVjNjUmhFQ0hzeGtKSC1fNGVlcXJBaGZGSk9fc1NId2NRajlFb2E0aFUxMnBxZHZKdUtlZkpoQW4wQllLbUtCUnJ1TkYyMXhiNHZybXpUSkhtMWpaZWE0S0dEYkZhaV9NeXU3WUdWYk9iRWZmZG1aS0ZTT1k0ME1wMDNmaGN1ZEhxVXlwRmpyVERQSmZuSHM1QzFUZms5Nm10WmRXTkY3UUlIaw?oc=5",
+            "source": "KITCO",
+            "date": "Fri, 23 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Forget",
+              "Bank",
+              "America",
+              "Spring"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Prices Reach Record High, Poisoning Ghana's Land - Think Global Health",
+            "url": "https://news.google.com/rss/articles/CBMimAFBVV95cUxNTzMxUjRpeE1iWW9kOWc5VmNSUUZNYmt1UVRHTTJmVFZ3X0h5NTRSLTBFUmdTU2ZSeUtDZWc5NnRXclBJTzc0TFFMRkQ5RXJiRi1Yell4d2h2WDVYSWY1VHZhUno4SlBXRFF5enlzcmN3bEtXcnJwaFBlOV8wbnFEYlprdmI3NEgzUkdiSkw3MHVOTlhYcXlyTQ?oc=5",
+            "source": "Think Global Health",
+            "date": "Tue, 20 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Prices",
+              "Reach",
+              "Record",
+              "High"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Wall Street drifts as Intel tumbles and gold’s price rises to another record - Marietta Times",
+            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxPcUV5LXZSa0NFZ3YxaFlFRUFPRzFBdEppM0VmdTMzWi1QZVhMVm84MUdfRVJMNU9kY2x4ODFYYXZUajBGVUQyTHI2cTNsM2J2ZXFqREhyT29TUDVsa0VmVXEteXN5M0JIY1lsV2JLQ21KWDU5dDlsam1XbmQybGlPQi1zVXFwaVhGd1o0eXlfTXEta29JYXNRdFRvblo2amNoUWV1OUY4elhsYXdhRUZCZWRUUlFVQTdEckJKVmpPZnYyM2VIVkJZ?oc=5",
+            "source": "Marietta Times",
+            "date": "Sat, 24 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Wall",
+              "Street",
+              "Intel",
+              "Marietta",
+              "Times"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Wall Street drifts as Intel tumbles and gold’s price rises to another record - Los Angeles Times",
+            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxPWWVtQjZ6cXdrcmxQVktNVVB5ZXg4RmVYdE12d1JCRE1pSno4d19LR3hkd3REQWswTE1OdVAwNERzclFpWGxXLU11V1ZrVm9nTS1RMWNzYy1UZDVLR1ZtSTl5cHY4Y3NhVUROUEVNSVlCcnlWVk9JRW5lVEFlUGRRazd3OHk0dkJSZGJpWFNiN2padnZNcFFzU0w3ejUzdHg2RFZxUUJIQkdBQ2VWbXhrd0FRb2lmMGtuZ182c2JB?oc=5",
+            "source": "Los Angeles Times",
+            "date": "Fri, 23 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Wall",
+              "Street",
+              "Intel",
+              "Angeles",
+              "Times"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and silver prices hit high after tariff threat - BBC",
+            "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTFB0c1BZaDNGNDhSRUM5VzRvTE5XdVFYUXBvNmI5TmZYdU5GUkNMNmxRcUhOODBVaVV3bG42WWVxbzVKZE80eFZQREV6MGt4bWVGanRBdzRwR3J4dw?oc=5",
+            "source": "BBC",
+            "date": "Mon, 19 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
             ],
             "bias_label": "center",
             "factuality": "high"
           },
           {
-            "title": "Goldman hikes year-end gold price forecast to $5,400 per ounce as private investors and central banks compete for the shiny stuff - Sherwood News",
-            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQVUYydnZHeTJocWpqbzJhZklmNm9acUZ6QTlXTEo4ald0X2pLZ2xPLXcwRjQ2b004aGVhN3lEbG4wbVFfOHk1ZTZxYkcyZHhOZnM0dkdjd1h3V3h3WUwyV09wNjJfYkxuLW5scDRFQUJkUjM1WFE3Tk5GeURBYmNnb2VZRkRFSWdzajZzZ013NjVmWUpibGkxWWxrc1VlREhz?oc=5",
-            "source": "Sherwood News",
+            "title": "Gold Prices Jumped On Trump’s Greenland Spat. Why They Might Keep Rising. - Investor's Business Daily",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxOcHc5YVNtWE4zV1BVcmNBdjFSbkVtRkFlLWVkQnhCZmctcmdqZWdTTm1kSC01V3ZhbjZ3T1lKNDRIMmhYT1ZoUnNDRlJBZVh5b2dyS3k0b2RfMktzOExUNzhNblhrOE56Mm5aeTVzT09RclhkcHJZdFRiRTh1aXI1Wl93?oc=5",
+            "source": "Investor's Business Daily",
             "date": "Thu, 22 Ja",
             "language": "en",
-            "tone": -0.368,
-            "category": "monetary_policy",
+            "tone": 0.0,
+            "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Goldman",
-              "Sherwood",
-              "News"
+              "Gold",
+              "Prices",
+              "Jumped",
+              "Trump",
+              "Greenland"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
+          },
+          {
+            "title": "Gold (XAUUSD) & Silver Price Forecast: Silver Holds $94 – Is $99.65 the Next Big Move? - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxPeGoxUnR1UWVMenJYVzdDUlFnZVFsQ0ZDTFBnUVFqV2pHMEYtRkxuUWhGakRtUXYxbVVKamp0emsyQ1VLbmRhcS1MTXNicEpiSzNXYWRjaUJlVVpJSVdIRVBjM2VWT3loRTNzbmhvM3JfRHYyWlQ1RFEyMTczNDVaZThlYVdQTWtVdGxzeHpaZzZCc3IyUDlSOWZBOEhDWF84SmNsQlkzdTJPLVlIRlJhZEU5ZVJXVlBlU0VVQTdVQzRYNnVXUFE?oc=5",
+            "source": "FXEmpire",
+            "date": "Wed, 21 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Silver",
+              "Gold",
+              "Price",
+              "Forecast",
+              "Holds"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Another day another high: Gold surges past $5,100 as investors seek shelter from global risks - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxPb2hidFJjdUpVanpYWmRVSVotXzhPREx5YlZ3dnZ5Vkp1M0V1MG9jYnJxcnJPaXE1cXRJUUs3R0pCUmhBeGpzZTZZVS16b0dPMVFhdG1XRnVKTHRVOE9iX0RUdnI5YlE3djhNXzJrb2g2RkxIaFhKX3R5SURUZGNRSDN30gGHAUFVX3lxTFB1UFNCMVhWMGt2ck05NzZIQkh1ajVHdFl4YTBaLW1zTFR3dDR1TnhHckU3eW81bjhZNUlIeFpGSk5NcGNsZ2NWdGFQQWI5RGdFZlpwRkhYNVZnMFVYRTZJM2x4THNTLTRGQ2l5cVBFaFMtcGkzQVRqOGxaWkF2Q0ZqbE1DM3I3VQ?oc=5",
+            "source": "CNBC",
+            "date": "Sun, 25 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Another",
+              "Gold"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Silver Price Crosses $100 For First Time, Gold Nears $5,000 - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxQbzdFbEhpR2xYWF9YN1YyVUdKRFphN1BQY0lRX1NtY2tobjhUUDNleURvcGF5d0VpNVdtbGlrU1BvZXRwVTdsd2tsMmc2Q3BxMTllVDNQdDlzZTRnWERFQjdLWUZMNWRzdGtTMEtaUDRxeHg0ZzZMM2IyejJRZTB3OGVXRUhqQ2JkSFZTQThQNlEycFpIalE1a3dmeURIQTgyVWx5eDl3UmFuaVZxQ3VFNjFjM3czMHNqVEE?oc=5",
+            "source": "Forbes",
+            "date": "Fri, 23 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Silver",
+              "Price",
+              "Crosses",
+              "First",
+              "Time"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold Price Eyes $5,000, Silver Nears $100 - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQZmZlQjVBNDh0OTVYa1NBbzJDMjQ1Q0luQjVrRENwZDNxSWxfNVZONzdFb1IzcHpLTW1zNFd3cjNzWHcwdXJqR0NDMDdCekQ2Q2xEZTR4N0J3NXlHdzhGa3JqWjU1LU1NVmcwQTRTdzlMdWlPUC1QaHMzZlVIMERnbkJYN3FEX04tMW5HVE5yYzdqT3Rnc2c?oc=5",
+            "source": "GoldSilver",
+            "date": "Fri, 23 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Eyes",
+              "Silver",
+              "Nears"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Five Reasons Gold Prices Surged Above $5,000 an Ounce - WSJ",
+            "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPeU9OTElEaU55SnI1Zk5VbzM3d1VrTzBuRFhESlQyUXNjblBoWWZsX2d5WFNCVTZuZVZSY3RleUVxNWVObWtsY0NRSHpDcU9DMTRIYlpkbnNYbHdqOF94U0RkQU9kX2NoaVBxWVpDaGZsTEV4ZlpWNFczdXZ6enpfRUtpLVp4eWJQb1Vtcw?oc=5",
+            "source": "WSJ",
+            "date": "Thu, 22 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Five",
+              "Reasons",
+              "Gold",
+              "Prices",
+              "Surged"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Silver hits record high above $100/oz as gold closes in on $5,000 milestone - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxPR2ZOdnZ4aThnN0lBV01aSE9BMXBjZVc1U1NyekxkSU11d1VDYXM4LUtEV042aW52YmJGNzEtQTlBNjUzWE8yNkRoaW4yVkwyeGlHcXZkTEljZTFmZi0zejNWekFWMHBqcVJCeTJyLUp5bG9oUWVsUnhvV21UYWRLd3YydTBIbW4wSlBHLURxWmgzVzRWNWdZN2h30gGfAUFVX3lxTFBqOWgxMXdKRzlZNUtyemMyaUV0TXI5Z3lSM0NiNDhOUWhTZnFGMHpsRURaUGJUWVVxalZtNFpyNXJ0UWE3TTNIWEtvQUYxQlJRRlFkU0RhOFJ4TE1tRVB1cDJfM1d3M3ZKX29LQ2JqR1R3YTBzc0F2eF8tRFVYa1RIVkdINmxOWE42MXpMbEEyd2xOM3RHOUF6YTAwRjZ3bw?oc=5",
+            "source": "CNBC",
+            "date": "Fri, 23 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Silver"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
           },
           {
             "title": "Why Goldman Sachs raised its gold price forecast 10% - Business Insider",
@@ -6665,7 +6732,7 @@
             "source": "Business Insider",
             "date": "Wed, 21 Ja",
             "language": "en",
-            "tone": 0.068,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6678,34 +6745,221 @@
             "factuality": "unknown"
           },
           {
-            "title": "Goldman Sachs raises 2026-end gold price forecast - Mining Weekly",
-            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPTTlTVG9lRS1WZ3lQNVlPNkxET2pzUEFXSFNPMXhWU051b244d0N2MFZycWs2SVFJbWd4OTNwWXh2b1FuZGxvN21xcThXXzlkYzVNTG9zdUlYV1ROOFNSZUNVQjNMSVNuSmhzeVJhTWtwaE1uMFhkS25kbmhxSENxOGxQak1BZ3Q5eEx5a2FNdDBYSjJxQVdxSURIZzBuZw?oc=5",
-            "source": "Mining Weekly",
+            "title": "Gold Price on 22 January 2026 - Gold Price",
+            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5NLVNyYlB4bWtKak9ybnNYMU5VX3A1NExLeUozNmc5MEd6M1hqRkRkUHRqcE9YOXYxZTJ6bWJNc1ZVUGpnek42Yk5MTWVEYlZqTndMaF9DN0d4bkJ4R3c?oc=5",
+            "source": "Gold Price",
             "date": "Thu, 22 Ja",
             "language": "en",
-            "tone": 0.127,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Goldman",
-              "Sachs",
-              "Mining",
-              "Weekly"
+              "Gold",
+              "Price",
+              "January"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
+          },
+          {
+            "title": "Gold Prices Soar Amidst Rising Geopolitical Tension - Wealth Briefing",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxNVXRUT0ZwQmlxRV9neDI1c1g5c0dCMFFGcWpwVU43eGxLZ21YcGNCMDVSSm1zWjgzbi1kVHRLWVZpcUJtaXozNjVnbWlCbTNnVGF4UHZZNmI1WWlVU1JpdEJ2bzZLMzdoaUl3eHgtNzd5ZEE1Y0pxVjFaLWFKNEdpYzBrblBaX09PY0Myc2NrdUlXRXc3TnRyZlFSM1ZsUGd6?oc=5",
+            "source": "Wealth Briefing",
+            "date": "Thu, 22 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Prices",
+              "Soar",
+              "Amidst",
+              "Rising"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Came as Close as It's Ever Been to $5,000 Today. Why—and What's Next? - Investopedia",
+            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxNRUFEV1hKbnY3WF9YWmZmZDBsVnY5ZnlRLVJkRUhQZmRJb0Frc2lWdVZyZU42NzhmVXFTZFZicFlaWk1LcFNBN0pKbEFQVm1uWmltZkxoU2FBSGxDTU1tWVRROWI3M1JHRk5YREJxSzFYY3hNN2psbmp3aDBzME9va25sN20xbDNpVUl0b3JrN00yaXVaalMxQ3p3LVFZNW9NeXh4UFNsbXRIdEJrRHBiQ0VB?oc=5",
+            "source": "Investopedia",
+            "date": "Wed, 21 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Came",
+              "Close",
+              "Ever",
+              "Been"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Haven Assets Keep On Shining. Some Experts Think Gold Prices Can Go to $6,000. - Investopedia",
+            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxNSHVMYkpBMFotb2FVeDZjaUw5SS1NQUpBcC1ZQW9GbWV0djBmb0NETU9CbGJiQ2cyazVNLWtidVdjcy1uMFpKMTQyZ01SQ21VMXJRU0JhVUlQU3BrWTVfamlWbGxyTmM0SnVKWXNaeU5QQ3FpMVhfREowWGdiSUtCYUM0bVNjYU5hQ0hBZ3VOX1BrX08wMjVDSWdtSXhVbTBhaS1MLTYwWFhPQU5CcmdDZzZLRlNjc0U?oc=5",
+            "source": "Investopedia",
+            "date": "Fri, 23 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Haven",
+              "Assets",
+              "Keep",
+              "Shining",
+              "Some"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price surpasses $4,900 as record rally carries on - Mining.com",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxOakltaUlnWlk0bTcyd280RDNsRml1eUl5a043NFY1OS1jd0JsSXNhTjl1YlA0dGdJd0haWU1WbnNaYVRMR2t6Wlh1N2NqOWRNMU9jWXNkdDM1VEZtQkpOaDVQZmNKRWRrOWF5d3VfYmpPdjZYUjU3a0JoQmtaWmJDMEF3?oc=5",
+            "source": "Mining.com",
+            "date": "Thu, 22 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Mining"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          }
+        ]
+      },
+      {
+        "cluster_id": 1,
+        "label": "Monetary Policy",
+        "article_count": 2,
+        "avg_sentiment": 0.0,
+        "dominant_category": "monetary_policy",
+        "bias_distribution": {},
+        "representative_titles": [
+          "The Trump TACO trade is driving up the price of gold as central banks hoard bullion to hedge against the dollar - Fortune",
+          "Goldman Sachs raises 2026 gold price target to $5,400/oz as private sector joins central bank diversification strategy - KITCO"
+        ],
+        "narrative_summary": "",
+        "articles": [
+          {
+            "title": "The Trump TACO trade is driving up the price of gold as central banks hoard bullion to hedge against the dollar - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE1rWHNRMUVxN2RuYlVabGJDWWdVbUJheWR5cXMzSlpQREVaaUUyemlMY3ROa1prR0VsVnVDNWJoc3YtWXNmRDRzMTBDVHJaZEk3VEIyZ2V1TVJheXBYSVdISjFPVFA1OGJxNW9nQ0dCU0VtSGtFOVV6WWlSTFlhQQ?oc=5",
+            "source": "Fortune",
+            "date": "Thu, 22 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.2,
+            "keywords": [
+              "Trump",
+              "Fortune"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Goldman Sachs raises 2026 gold price target to $5,400/oz as private sector joins central bank diversification strategy - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxPNWFRX3dIbGFzdUtZYWpxTlBKeGJLSDhuSHdQVmpPZGFtb0dELWMtcUVJRmNZVUxQRVJMeTJBcUlBR0h3Nml0cnNGOUhYV0hhX29EUHhIRkdMMW8wWUgyU0VsMGFNY0tsR3dTdUhjZUVESUljMmpidjZtS3pmYWVJVE1WdXZQV0cyVWMycjI5UF92cENHakIzUDlVSkgyVHpLRk5YX2lZWWlfZ2ZoTXJMVG9keWpXVGVn?oc=5",
+            "source": "KITCO",
+            "date": "Thu, 22 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.2,
+            "keywords": [
+              "Goldman",
+              "Sachs"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          }
+        ]
+      },
+      {
+        "cluster_id": 2,
+        "label": "General",
+        "article_count": 2,
+        "avg_sentiment": 0.0,
+        "dominant_category": "general",
+        "bias_distribution": {},
+        "representative_titles": [
+          "South African rand at strongest since 2022 as precious metals surge - Reuters",
+          "Speculative frenzy catapults silver above $100/oz - Reuters"
+        ],
+        "narrative_summary": "",
+        "articles": [
+          {
+            "title": "South African rand at strongest since 2022 as precious metals surge - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQczlpbldXUlBnM2FCbEYtX3FvcFgtRnRIUU4tZ3ZvSDhDTmNsSlEwYVpwc3VLQVZLN3VadkN0bS1oRWk0eGppTmVZbXlaX180S3hkcHF5dlhXZFhJZ2ZubENhNVhnQkdGNjk2TWZpMEFraVFDWHNTU3pYbHZ0QjA1RVEzbVMzV0hIczE5UGsyTURBRXM3MW94MTd0T0N1UkZ0SVZN?oc=5",
+            "source": "Reuters",
+            "date": "Sun, 25 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "South",
+              "African",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Speculative frenzy catapults silver above $100/oz - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxQZnFJSXFVajZLTFV5Tm5ETzFvTk1jM1NLSTkxY0pES1UtaDJ6UjFZZmtBTWpuUWFTb0ZwSnFhaWxYYmRNWU1uLUZ4OUVsOU8zOGxKMXlQNWVsVnFJblQtVUxRSFZDczRRM0piR3Q3bFUwQU44VE1hS1RhQnJwYVJ0LThhYTNhRXZvWkIxWHA0UzZfMzVidTRPR0ozNA?oc=5",
+            "source": "Reuters",
+            "date": "Sat, 24 Ja",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Speculative",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
           }
         ]
       }
     ],
     "top_stories": [
       {
+        "title": "This New Gold Price Prediction from Goldman Sachs Shows How High Will Gold Go in 2026 - Finance Magnates",
+        "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxPU3dlMHptSUxIa0MyeXdBZ29OcnFTdVV3Q2FEbjlNU3Q5bTFkeXZQdll6Z3E4OGlXT1gyTDg0eGRoNG5UeFB5LVNUQzlsUjhlUDYxMDZGRUhOdWxKcUxlbWJfeU9ucUFXOXVOODIwYWpHeWJDN0ZtNWVLbFV3MkxqYnNMMjdwZU9WVmxPWU9wbEk0b1NSNWFhOFJmYXNvcU1LcHhCa0hDa0xXUkQzRHlERmc2Q2V0bE5tdHd4eU1JVl96d213Z0E?oc=5",
+        "source": "Finance Magnates",
+        "date": "Thu, 22 Ja",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.5,
+        "keywords": [
+          "TES",
+          "Gold",
+          "This",
+          "Price",
+          "Prediction",
+          "Goldman"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
         "title": "Gold Price Outlook: XAU/USD Breakout Fuels Largest Weekly Range on Record- Bulls Eye 5K - FOREX.com",
         "url": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxOb3RmdXJyaDRsZ3lQcnMzdVhBMk9nRTd2eDJheGg1NFZIRFpvNlFmcFRWTUNTLWpqYTQ3X3ZCR3RlRGRTb1BJcDZGV0FYWmtpSjdvNTdEcHgtSDQ4TURxaFZsSWsxTzJsYnAxUnd2dm5TWlRVcGUxZGlEcEx2ZGtZSW81N29PMkhPbXA2aDZORHZOMVhZRnV5SHhJcTdveTZBUGxhdGpfa2JfcVdOU1NvSHhkc3JXZlMzckQwbXA2dzUzZDM5SnVWVzZSODhMUldaaGxBV0M2Nm1td9IB5gFBVV95cUxOaHBjQXp5ai1YSDdURzJ0YVhqeVdSel8xVm9WTEppbTdFakctZF8wZkRSX2tNY0tXWVNZcHJCR3FxemJMMVJxaHpheTYyejFZa1BsR2tzNmZSYzFEVkZ3YWZNTjVLNFBhZ0RlNHQ0NmltRE5hUHdjMk5ZLUg4c1dWaWpXeExyN243TlpJYXhJUTZralY0bG5ncUNMTjlxVGgzYUxkWkFncTI0c1JvTXM2ZGp6eUhtSlBtRjhZOW1aN0lDRHZjeVlPRHhnQWYtSVhUQjcwN1BnS29NSndicnczYkFuOXJhQQ?oc=5",
         "source": "FOREX.com",
         "date": "Fri, 23 Ja",
         "language": "en",
-        "tone": 0.123,
+        "tone": 0.0,
         "category": "fx_market",
         "relevance": 0.2,
         "keywords": [
@@ -6719,30 +6973,12 @@
         "factuality": "unknown"
       },
       {
-        "title": "Everything you need to know about gold - Robin J Brooks | Substack",
-        "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTFB4OFV0SjRQRWhJNGZWV3JsdlFOTkE1TE1KR3N6OU1Sc3gxakZtNkVYcjJjY1lTR3FmTFNhX2o5X3dsT0RKQVlxUzRBUjcxRGFiRnd0UkhrRHlBNlpBekpZTnctOGUxbmM3SGdzQ0xTazVMRDE0U3R2ag?oc=5",
-        "source": "Robin J Brooks | Substack",
-        "date": "Sun, 25 Ja",
-        "language": "en",
-        "tone": 0.037,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Everything",
-          "Robin",
-          "Brooks",
-          "Substack"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "Gold price today, Friday, January 23: Gold surges towards $5,000 per ounce - Yahoo Finance",
         "url": "https://news.google.com/rss/articles/CBMi3gFBVV95cUxPWXhnb1NFQWpMTk1SeC1RYTE1a3hha3V5LTNXNFFtcVVSd3gwQ2Y1MFRfcklKU2kxaHdXQUVZa1lQd3IxOEVOb2o0OFBzbUtPTGF2QUJfb2NnQjFaRm1qcjdaTVMxQkVVSG8tcWZwM1EzcnBSMXBvRFhmbVgycXZ4YldndlFieXhxWDAtaXhxQ1E2YVpFclBuY1pzTndHcV9xaUNUa05oZnJXalppTXhJa2lYNEVwQmU3NHZYVVVPMTRtWE9IU0x4UWsza080VDRNOXc3dzVkSUxLb1U1bmc?oc=5",
         "source": "Yahoo Finance",
         "date": "Fri, 23 Ja",
         "language": "en",
-        "tone": 0.469,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6756,20 +6992,38 @@
         "factuality": "unknown"
       },
       {
-        "title": "Gold and Silver Forecasts 'Beyond Outlandish' After 2025's Bad Miss - BullionVault",
-        "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPOUw2aXdtOVNscVRzZkpSX0FvUlFqZ1VNZ25CWlJNcnFJVmZhNWNXYTZFdzNCRjJwQ2lFVlZCQzlrRjN2bC1rbE81QU8yMzJHNGJ3UmM3YTdReXpMOWRQS2k2ZlU1SE9CMFYxeGppYlpMNGRyNlVlZ0RlWHNtSFFHdlJxcTU1UjNTMFFoQzBad0pjbnRGejhBdC15bHlSSlhuejJPVg?oc=5",
+        "title": "Silver $100, Gold $5000 as Trump's 'Rupture' Turns on J.P.Morgan - BullionVault",
+        "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxOT216SW1Cek5tUmY0MUkwX19sNDgwOV9pdmlXdE54NXBxQjgzRl9QeC1EZ0E5cTdZa2g1d0VmcTdMejc4d3dPSXNJM3ZQN2lfU01WbEZyUEdYamgtNzlnOXpFX1ZpdVFOSThVRUJLZkJ4MmhUeUo4LVFySTFHa2FhTXhIVFNsT0VoSFNDRHdR?oc=5",
         "source": "BullionVault",
-        "date": "Tue, 20 Ja",
+        "date": "Fri, 23 Ja",
         "language": "en",
-        "tone": -0.282,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
-          "Gold",
           "Silver",
-          "Forecasts",
-          "Beyond",
-          "Outlandish"
+          "Gold",
+          "Trump",
+          "Rupture",
+          "Turns"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Everything you need to know about gold - Robin J Brooks | Substack",
+        "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTFB4OFV0SjRQRWhJNGZWV3JsdlFOTkE1TE1KR3N6OU1Sc3gxakZtNkVYcjJjY1lTR3FmTFNhX2o5X3dsT0RKQVlxUzRBUjcxRGFiRnd0UkhrRHlBNlpBekpZTnctOGUxbmM3SGdzQ0xTazVMRDE0U3R2ag?oc=5",
+        "source": "Robin J Brooks | Substack",
+        "date": "Sun, 25 Ja",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Everything",
+          "Robin",
+          "Brooks",
+          "Substack"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6780,7 +7034,7 @@
         "source": "VanEck",
         "date": "Mon, 19 Ja",
         "language": "en",
-        "tone": -0.24,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6799,7 +7053,7 @@
         "source": "CNBC",
         "date": "Wed, 21 Ja",
         "language": "en",
-        "tone": 0.31,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6815,7 +7069,7 @@
         "source": "Fortune",
         "date": "Thu, 22 Ja",
         "language": "en",
-        "tone": -0.363,
+        "tone": 0.0,
         "category": "monetary_policy",
         "relevance": 0.2,
         "keywords": [
@@ -6826,105 +7080,87 @@
         "factuality": "unknown"
       },
       {
-        "title": "Silver $100, Gold $5000 as Trump's 'Rupture' Turns on J.P.Morgan - BullionVault",
-        "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxOT216SW1Cek5tUmY0MUkwX19sNDgwOV9pdmlXdE54NXBxQjgzRl9QeC1EZ0E5cTdZa2g1d0VmcTdMejc4d3dPSXNJM3ZQN2lfU01WbEZyUEdYamgtNzlnOXpFX1ZpdVFOSThVRUJLZkJ4MmhUeUo4LVFySTFHa2FhTXhIVFNsT0VoSFNDRHdR?oc=5",
+        "title": "Gold tops $4,900/oz; silver and platinum extend record‑setting rally - Reuters",
+        "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxQMGpFRVNfZUF6QVBHZjVxVC1jN2Y3YzNCUHQzLUJ2eWV6dzNWa1NDX0RvTnNlOGZhRFpzLUVmY29yRXNhdVc1bUpDZHJaeHhRU1BlT3MwcGd0anZ3aGxjOUtaQzY4MEtYZlJOVl85em83NkJKRDJjRmM2MUdVOXVmbTIxZ2pFemZob0tpbzRQVkR3S19UVFB2SXdjXzFZNTE2UUZCSDlucUpTRGNaOGViUmhR?oc=5",
+        "source": "Reuters",
+        "date": "Wed, 21 Ja",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Reuters"
+        ],
+        "bias_label": "center",
+        "factuality": "high"
+      },
+      {
+        "title": "Gold and Silver Forecasts 'Beyond Outlandish' After 2025's Bad Miss - BullionVault",
+        "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPOUw2aXdtOVNscVRzZkpSX0FvUlFqZ1VNZ25CWlJNcnFJVmZhNWNXYTZFdzNCRjJwQ2lFVlZCQzlrRjN2bC1rbE81QU8yMzJHNGJ3UmM3YTdReXpMOWRQS2k2ZlU1SE9CMFYxeGppYlpMNGRyNlVlZ0RlWHNtSFFHdlJxcTU1UjNTMFFoQzBad0pjbnRGejhBdC15bHlSSlhuejJPVg?oc=5",
         "source": "BullionVault",
-        "date": "Fri, 23 Ja",
+        "date": "Tue, 20 Ja",
         "language": "en",
-        "tone": -0.096,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
+          "Gold",
           "Silver",
-          "Gold",
-          "Trump",
-          "Rupture",
-          "Turns"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Gold tops $4,900 as Goldman Sachs ups year-end forcast - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxONFpkSGg0LWkwaUxtcUVCWVNDa0JyMWxCSTlDb3lkbGdzQUthYVB3aWRSN24yZ1RvczlRb3FrVm5EaGgyTDd4VkZPbDFCYVVFMHA0WlhZSjlfeHJMd1B0dE41aVRVYlJiU2pQLTdqQWpxLUk2bWhOWXU5Z2t6QjJwTnNENUJxV0Q0bmlWQWxqVEhVQkowRzh6Vk5pdUFYeUk?oc=5",
-        "source": "Yahoo Finance",
-        "date": "Thu, 22 Ja",
-        "language": "en",
-        "tone": 0.334,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Gold",
-          "Goldman",
-          "Sachs",
-          "Yahoo",
-          "Finance"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Understanding the relationship between gold prices and the U.S. dollar: What to know for 2026 - CBS News",
-        "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxOb1dUcVkyNWhIeTQzYWpGVW42ckxyR0tBN09CZERXM3BkT0JTWVh1RmlGYUN0RUdlUzNwRnpZYUhZbjhqTFBLOWlad0lFV0hGS1ctT2RnbUMxYUN4a2ZQWGZQc0xjU0FsWnhIZjJRRllZQ0xrUTBTOHNiU1VOb2UxSEh3OEJkOUNVZUI2YTZmcVZPSU0wZDVYZ3hsZmNSRlHSAaQBQVVfeXFMUG5fdktwdnJCM3BrMlQzWEVnbEFnRUdoRTVMUWNCSzg1alllSGdKamJmTlZ4WHdMRFR2UlNYSloxYU1FdkVva1FGdmF6MDgyZHRkU0xfbTlIaWs5NFIyU1NNOWQ5WGszRXJJVHpXS0tWN1U2MFRUNURMWFBzX2RXUlpxNWI3WmJSSklnRmhQVlgyc1NFNEd5eHEtVXRkbFV3Q1hLWGg?oc=5",
-        "source": "CBS News",
-        "date": "Fri, 23 Ja",
-        "language": "en",
-        "tone": 0.09,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Understanding",
-          "What",
-          "News"
+          "Forecasts",
+          "Beyond",
+          "Outlandish"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
       }
     ],
     "source_diversity": {
+      "Finance Magnates": 1,
       "FOREX.com": 1,
-      "Robin J Brooks | Substack": 1,
       "Yahoo Finance": 4,
       "BullionVault": 2,
+      "Robin J Brooks | Substack": 1,
       "VanEck": 1,
       "CNBC": 3,
       "Fortune": 1,
-      "CBS News": 1,
-      "Yahoo Finance UK": 3,
       "Reuters": 4,
-      "KITCO": 2,
-      "Bloomberg.com": 1,
-      "Business Insider": 2,
-      "Gold Price": 2,
-      "Investor's Business Daily": 1,
-      "Investing.com": 1,
-      "Think Global Health": 1,
-      "Sherwood News": 1,
-      "BBC": 1,
-      "Los Angeles Times": 1,
-      "Forbes": 1,
-      "FXEmpire": 1,
-      "GoldSilver": 1,
+      "CBS News": 1,
+      "Yahoo Finance UK": 1,
       "Mining Weekly": 1,
-      "CNN": 1,
-      "Wealth Briefing": 1
+      "Bloomberg": 1,
+      "Business Insider": 2,
+      "KITCO": 2,
+      "Think Global Health": 1,
+      "Marietta Times": 1,
+      "Los Angeles Times": 1,
+      "BBC": 1,
+      "Investor's Business Daily": 1,
+      "FXEmpire": 1,
+      "Forbes": 1,
+      "GoldSilver": 1,
+      "WSJ": 1,
+      "Gold Price": 1,
+      "Wealth Briefing": 1,
+      "Investopedia": 2,
+      "Mining.com": 1
     }
   },
   "political_bias_analysis": {
     "source_bias_distribution": {
       "left": 0,
-      "center-left": 1,
-      "center": 6,
-      "center-right": 5,
+      "center-left": 0,
+      "center": 5,
+      "center-right": 6,
       "right": 0,
-      "unknown": 28
+      "unknown": 29
     },
-    "bias_diversity_score": 0.571,
+    "bias_diversity_score": 0.428,
     "factuality_distribution": {
       "high": 11,
-      "mixed": 1,
+      "mixed": 0,
       "low": 0,
-      "unknown": 28
+      "unknown": 29
     },
     "cluster_bias_assessments": [],
     "flagged_articles": 6,
@@ -6941,5 +7177,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-12T01:11:11.942294+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }

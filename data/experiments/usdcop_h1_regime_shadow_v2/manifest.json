@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "created_at_utc": "2026-07-22T20:32:44.107498+00:00",
+  "cutoff": "2026-07-21",
+  "historical_availability_class": "reconstructed_not_true_pit",
+  "files": {
+    "asset_daily_ohlcv_through_2026-07-21.parquet": {
+      "rows": 7762,
+      "start": "1989-11-09T00:00:00+00:00",
+      "end": "2020-01-01T00:00:00+00:00",
+      "sha256": "bc6d05b375c56b70f0863df6222ee5f99427d2e0a0a5d37f28d6b77912adf438"
+    },
+    "usdcop_daily_ohlcv_through_2026-07-21.parquet": {
+      "rows": 1699,
+      "start": "2019-12-18T00:00:00+00:00",
+      "end": "2026-07-21T00:00:00+00:00",
+      "sha256": "3d528ee39197fa6536d7c73820f415ee6aa1f5a1cfded2ae3c85474ae592149d"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "purpose": "recoverable_backup_before_spx500_intraday_delete",
+  "table": "asset_native_ohlcv",
+  "symbol": "SPY",
+  "timeframes": [
+    "1h",
+    "4h"
+  ],
+  "rows": 14532,
+  "min_time": "2020-02-10 12:00:00+00:00",
+  "max_time": "2026-07-21 19:30:00+00:00",
+  "sha256": "08f48b9c5acd728a3ae02d8645417cf3c53b3ec7cdea87cf2c06b62e29f36e76",
+  "created_at": "2026-07-21T21:43:35.335827+00:00",
+  "data_path": "data/backups/features/spx500_intraday_asset_native_20260721.parquet"
+}

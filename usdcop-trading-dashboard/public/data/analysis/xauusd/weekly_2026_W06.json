@@ -9,7 +9,7 @@
   "week_end": "2026-02-08",
   "weekly_summary": {
     "headline": "Oro (Gold) · Semana 06 de 2026",
-    "markdown": "### Oro (Gold) — Semana 06 (2026-02-02 → 2026-02-08)\n\nEl cierre semanal de XAU/USD fue **4957.75 USD/oz**, un cambio de **+0.35%** en la semana (rango 4410.85–5090.97). El sentimiento fue **mixed**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 4957.75. RSI(14)=57 (neutral). Soporte 4410.85, resistencia 5597.23.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **posición larga** esta semana (apalancamiento 0.51x). Régimen: stretched.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: Yahoo Finance, BullionVault, Reuters.",
+    "markdown": "### Oro (Gold) — Semana 06 (2026-02-02 → 2026-02-08)\n\nEl cierre semanal de XAU/USD fue **4957.75 USD/oz**, un cambio de **+0.35%** en la semana (rango 4410.85–5090.97). El sentimiento fue **mixed**.\n\n### Técnico\nLa tendencia es **alcista** con precio en 4957.75. RSI(14)=57 (neutral). Soporte 4410.85, resistencia 5597.23.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **posición larga** esta semana (apalancamiento 0.51x). Régimen: stretched.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: BullionVault, Yahoo Finance, BBC.",
     "sentiment": "mixed",
     "ohlcv": {
       "open": 4865.354,
@@ -44,7 +44,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-03",
@@ -66,7 +66,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-04",
@@ -88,7 +88,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-05",
@@ -110,7 +110,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-02-06",
@@ -132,7 +132,7 @@
         "note": "Gold · Trend-follower (B2) · régimen: stretched",
         "exit_reason": "regime_flip"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6142,73 +6142,186 @@
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": -0.16,
+    "avg_sentiment": 0.0,
     "source_breakdown": {
+      "BullionVault": 4,
       "Yahoo Finance": 2,
-      "BullionVault": 5,
-      "Reuters": 5,
-      "BBC": 2,
+      "BBC": 3,
+      "Reuters": 3,
       "DW.com": 1,
-      "Gold Price": 1,
       "Al Jazeera": 3,
-      "The Conversation": 1,
+      "Gold Price": 1,
       "CBS News": 2,
-      "Bloomberg.com": 1,
+      "Bloomberg": 1,
       "Investopedia": 1,
-      "Yahoo Finance Singapore": 1,
       "Yahoo Finance UK": 2,
+      "CNN": 1,
+      "Yahoo Finance Singapore": 1,
       "Forbes": 1,
       "Morningstar": 2,
-      "CNBC": 2,
       "Investor's Business Daily": 1,
+      "CNBC": 2,
       "New Eastern Europe": 1,
-      "KITCO": 1,
+      "Investing News Network": 2,
       "Barron's": 1,
-      "Investing.com": 1,
-      "Atlantic Council": 1,
-      "Investing News Network": 1,
-      "Finance Magnates": 1
+      "KITCO": 1,
+      "The Conversation": 1,
+      "Finance Magnates": 1,
+      "PR Newswire": 1,
+      "Investing.com": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
     "relevant_articles": 40,
-    "avg_sentiment": -0.16,
+    "avg_sentiment": 0.0,
     "sentiment_distribution": {
-      "positive": 8,
-      "negative": 21,
-      "neutral": 11
+      "positive": 0,
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
         "cluster_id": 0,
         "label": "Commodities",
-        "article_count": 9,
-        "avg_sentiment": -0.224,
+        "article_count": 37,
+        "avg_sentiment": 0.0,
         "dominant_category": "commodities",
-        "bias_distribution": {
-          "center": 2
-        },
+        "bias_distribution": {},
         "representative_titles": [
-          "What's going on with the price of gold? - BBC",
-          "Why gold and silver prices suddenly collapsed - DW.com",
-          "Understanding the value of gold: Prices, global reserves, and market trends - Al Jazeera",
-          "The rise and fall (and rise again) of gold prices – what’s going on? - The Conversation",
-          "Gold and silver prices are slumping after their meteoric rise. Here's why. - CBS News"
+          "Silver Lease Rates Jump as Gold Cuts Price Crash in Half - BullionVault",
+          "Why Gold Still May Hit $6,000; Bitcoin Tests Trump 2.0 Low - Investor's Business Daily",
+          "Why Gold Is Surging Above $5,000? The New Gold Price Predictions from JPMorgan and Deutsche Bank Target +$6,000 - Finance Magnates",
+          "'Unprecedented' Crash Sees Gold Sink 21% from Record High, Silver Price Drops 40% - BullionVault",
+          "Gold price today, Friday, February 6: Gold volatility continues, prompting another margin increase - Yahoo Finance"
         ],
         "narrative_summary": "",
         "articles": [
+          {
+            "title": "Silver Lease Rates Jump as Gold Cuts Price Crash in Half - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxNNmhxNktOVUxDaU1oWVBfb1BMcUY3clM0ZkZTZlB6ZU9wRjRGSVdmandwQldTM0ZHelN3bVhYeDZKRkcwWFJEWi14VmVtQkU0d3ZfTXp1VFU4emJpbDRYRFNqWTBQMnc0LUZfT09BTV83UkpIaXBUcV8wZmNoTmpJTEZOMlRadGxOdlMwQnhpQ3ZacDhGUlpwVXdn?oc=5",
+            "source": "BullionVault",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Silver",
+              "Lease",
+              "Rates",
+              "Jump",
+              "Gold"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Why Gold Still May Hit $6,000; Bitcoin Tests Trump 2.0 Low - Investor's Business Daily",
+            "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxOWlJpSXF1WHkwb0ZydW9EUjBPc09LakxacmJjU01vQzBWOWVJS3BkSURySGpuSWlfNDFlQVVhVVI3a1BaWlVpYjZTYlRrTk1UTlB2NXNKZVNCYUxQdDc1V3hHMjhXTC13YXhpR1VPYlBDbTZFZ1FfNHJJd0k1OXpkMzNCSlNVYUFuSk90d1UyaGJMTHhYS0w4dzRrWmlXdUdPcW9UM0VRYVJHTXBIS3JCVg?oc=5",
+            "source": "Investor's Business Daily",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Gold",
+              "Still",
+              "Bitcoin",
+              "Tests",
+              "Trump"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Why Gold Is Surging Above $5,000? The New Gold Price Predictions from JPMorgan and Deutsche Bank Target +$6,000 - Finance Magnates",
+            "url": "https://news.google.com/rss/articles/CBMi4AFBVV95cUxQcHp1bkpObUlTWXNwM3VGMHpoVjhpa2lORWs4TjZMNFJfYlBEYUo2V0ptNEJaZU13ZTZSZXZnWFhzUEU1YzhhNmUwM2wtUDlnenFJUWhTQlBZTlZoRWpXN29NeFpXU3ZQRG9xaWo3STlDUGFETzltbHd4X05RSi1hYzl3dTh0bmNaaFFlUnoxYTdiRkJKM2ZvZU9qck5LTnJnWnhvN3VmcTBBZzNhYlF0NVFGdG9HcjdZRDhYSkJHcFdDOF80ekZEUVhqMkFEdHpOTkZrSVVPWkRfUGZlWElNOA?oc=5",
+            "source": "Finance Magnates",
+            "date": "Wed, 04 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Gold",
+              "Surging",
+              "Above",
+              "Price",
+              "Predictions"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "'Unprecedented' Crash Sees Gold Sink 21% from Record High, Silver Price Drops 40% - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxPb2puUzJmU0o1MzBOSXRlb244S0ZrWHB5a3ZqYzVKZ1pqM0hhWE95clAzaG9JNVg5dlZTSmtZNW9VNDF6cTBaV3hhcUtUVUZHV1FMMjZOTzdhcnBTUHgzY2RVWjhtTjRyT0hoSFVFZzRWVUdKMzJ3LUtkODBJZzhna1hleERrYzVfZTE4?oc=5",
+            "source": "BullionVault",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Unprecedented",
+              "Crash",
+              "Sees",
+              "Gold",
+              "Sink"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price today, Friday, February 6: Gold volatility continues, prompting another margin increase - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMi_wFBVV95cUxOOVNSLWxWNDBwbFpSVk1FZWhpSzVMSUFsQllVWkxSdXktRmpfVV9mdjNzM3RxYWRSNnZZT3NVdGFldUNKZ2NvaVBmUlJ1LXRwcU1ReEJpY3pnTkdDWXlzWVpXRzh5NWwySHE3Z2hoOGJaOEJNN1V5cmsxVHBFUjY5eTlnNHI2VXppblhjUjh2R0dxYmoxV2xUWUhncno3ZDZfcEdXOFQ3dXNYSDU3YVRLd202S21KVjktUXVWcE84T2VuV0kyQ2JBZ0FpTjNCYjZLdG8yWGlVenJTU0l6UUlreGJkUVB0Ui1JcllZa0JjV3NYczVHVEhfMXVtenhYakU?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Friday",
+              "February",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
           {
             "title": "What's going on with the price of gold? - BBC",
             "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE13NlgxX0U0NUc3QWx6UTUxeXREa05tR3dQRDkzbFRZeXNNaUdqRE9vYTFOMFlmc09kbkVZc25Oalp1UmZzaWNDWnZIdllNVHdHZEY5T1NUWERJQQ?oc=5",
             "source": "BBC",
             "date": "Wed, 04 Fe",
             "language": "en",
-            "tone": -0.172,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "What"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold’s bull run seen intact despite steep pullback - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxQdFd1SGYtZVVWWDFqTlptNnFrWVNSanM2dS1waVU0bUkwY0c1M0RtWVhTck10UjJmNkhfRGM1Q21XZUh3d2Vqc2N6TXUwRmx6WnF0cEptOURhd0xUUUx0dnBsOGNnX1kwOTlGYnh0aGVaZVZvbzZTRFFUcDZMNzJDRTUxb1lUdlBBSW9Lc04tTmdsNUxiU0RfMUhMNElldw?oc=5",
+            "source": "Reuters",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Reuters"
             ],
             "bias_label": "center",
             "factuality": "high"
@@ -6219,7 +6332,7 @@
             "source": "DW.com",
             "date": "Tue, 03 Fe",
             "language": "en",
-            "tone": -0.398,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [],
@@ -6232,7 +6345,7 @@
             "source": "Al Jazeera",
             "date": "Sun, 08 Fe",
             "language": "en",
-            "tone": 0.113,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6244,16 +6357,18 @@
             "factuality": "unknown"
           },
           {
-            "title": "The rise and fall (and rise again) of gold prices – what’s going on? - The Conversation",
-            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxONUlqN05rU25TOFVMQkhDUmpOLVFROXYxZmE0OXlaZzd3T3Q5RHdZT3dBUHZSOEo3YmVzNVpWQVliZ2VIXzdQNjlfZVlCb0ZaWDlvZ05PSVpYZWx2ZGNITy1GMmc1c3RkYnpVaFlHb2J5LU9IZ1FNdE1ILTJKZEdqWFF0M3hta1NqUW5GS3JPRmM1LVh3NU1NX2g4X1lYUQ?oc=5",
-            "source": "The Conversation",
-            "date": "Tue, 03 Fe",
+            "title": "Gold Price on 07 February 2026 - Gold Price",
+            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFBkb1lnNlo2bmtSV3NpUXJfd3Rac2NDN290TFVGdzFqcHRZYjNfRnEtSng2Z2tXcjkyWEpnNHVQSVJGc3J4YTIwalpwYU00dUhWMGhocDlPcThkWC1QWnc?oc=5",
+            "source": "Gold Price",
+            "date": "Sat, 07 Fe",
             "language": "en",
-            "tone": -0.166,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Conversation"
+              "Gold",
+              "Price",
+              "February"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6264,7 +6379,7 @@
             "source": "CBS News",
             "date": "Mon, 02 Fe",
             "language": "en",
-            "tone": -0.701,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6276,12 +6391,138 @@
             "factuality": "unknown"
           },
           {
+            "title": "Bessent Sees ‘Unruly’ Chinese Trading Behind Gold Price Swings - Bloomberg",
+            "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxOQ0ZUTER0WGQtR00yUVNfMG9qUl9XWXZQQUpVOFozY3MyV1hvak12SF9Fc0lOOHd2ZGZ1QUNEc3NzY25uVm5Ua09ZUEMwbGN0Rk1GTVItVEljN3ZTWXlvdXpmZzZMRHkwZXN1M08zdWZTY1E3S0czVXozY1FvYkhIZE43Mi1RajBLR3RQSHA2Q252ZDl5TC1lMWZDVnYxTUVUNXdaMHZzMjJtNmdGUGNVNw?oc=5",
+            "source": "Bloomberg",
+            "date": "Sun, 08 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Bessent",
+              "Sees",
+              "Unruly",
+              "Chinese",
+              "Trading"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "After Their Worst Day Since 1980, What’s Next For Gold and Silver? - Investopedia",
+            "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxOUlBGT3RMbmVvekJlQmdTcXJxdHlHSk1RVTJLcWRiSHYxUWFGaXZUMlBsTFlZZ2I3aXI1VHN5STF1QkJqd1V4c2FkZGRBbmhnUEtaWjNpcnJhS0YyVURxSDFqSHhYbGFzZFVIdlJWc0Mwd1ctVlFpQU1yMUtKa1UxMG9IU1lyZW9xMHZDMl83czYtNDVDRkpGcjhzdkFCek12cGNhUEN5bm5KUVNNeERtTg?oc=5",
+            "source": "Investopedia",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "After",
+              "Their",
+              "Worst",
+              "Since",
+              "What"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Huge Outflows Hit China Gold ETFs as Shanghai Price Rebounds - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxNZ0ZacjE3Ty1fNUE0RjhtRV9DeGZXWURaYzNjRUZvWjM4eHdYeTFFR1Z4d2FDbjhyVjU5SmxUcTIwTmJkRkZ6aUtkQkpfMDZuUmtNeFhnRWhQQmZ2OHFRbl9Ha21qLXV2VGczSVdmZWZVRzVRdmRSemhXM1lTNEVtakk1SXJDRFp5bXc?oc=5",
+            "source": "BullionVault",
+            "date": "Wed, 04 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Huge",
+              "Outflows",
+              "China",
+              "Gold",
+              "Shanghai"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Los Angeles jeweler struggles to keep up with historic gold prices - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxOdllCY1pGM1dneE5DZDJWSkRjd2VPbjZxTEltWnJVNkFjLUNJbExfNmR5RVY0ZzJia0tJQ21RRF9hSWxBcnd1cUxpQ3VNT3BEcnNXdmt4T2ZDRmUxb0ZIVl85bHh4SE96TDI2TnFTeXVDQ0NyLVBMM0EzTXBkbXgzOXRhOUNmSlXSAYwBQVVfeXFMUFd0ZUxYWWVna0E1cVB6cDFzNHVQWlY5UkhENWJtQVp5eXphSTkwT3RYVVctMXk1dG45d2RjYVYxV25nWE1oQmZZZzlPaE8yb1NlOERkVmFPTFpIcHBBOVRsSjF6aXVhYUNVQmJ0YUpHcmlNV19VcmJBYWZPVzZzb1ZfUEFyQlJpVmFscEk?oc=5",
+            "source": "CBS News",
+            "date": "Tue, 03 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Angeles",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Breakingviews - Options muddy gold’s value as gauge of global risk - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPOW9EUm9XMUFBQ0ZiNnZXSjV2UVRBcmJvQlFmQ1lKbmFxN0hfYURBWV9HVEtGS01XbXRBbTRzRWVzRnkzZjhVcUg3akhyVjBlMmh0Mmd1dVNnREZrMGdYOS1SdHpuU3R3bUEtb1dSSHc4YlNmcEpGNUdOQWprbXZ5cEk3TjFZZVdsbjljZXZPTjl4ME5SZUY4a2V6bkZOMEZOazk0ekdwcw?oc=5",
+            "source": "Reuters",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Breakingviews",
+              "Options",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold price climbs back near $5,100 after investors flock back to precious metals - Yahoo Finance UK",
+            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxQRWJWYnF3cjNONk1NU0JjbmVPM0RzR0dyVnNZdjZVNVIxNW1fNUVVUldSeS1GZ3dNc196X0REb0QzRVVyOFRlNXN0M0k3a0tkVVV4Ykl4QXhtT1VPa0lnUGxrZWVmdUE3em5BcE9DbmFDWHNoTm5QaU1wWExIVmlVWU1tQ3BNUzJ3TFcwaGxlTVNvaDdTYVQ5Q0xJYnM5M29iS1NsN2ZVUGtDUXQ5c2tkajM3RFNaWDJkdERyXw?oc=5",
+            "source": "Yahoo Finance UK",
+            "date": "Wed, 04 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Factbox-J.P. Morgan expects gold prices to reach $6,300/oz by end of 2026 - Yahoo Finance Singapore",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNQ01tMEh1MGZLZmFZLXEtMlMyRnVQaHNjVEpXZ2hJeEkzajVfekpNVEEzWkNZQzZ2Y0NSVHlzQm1wWW1nMTU5aThYNk5WS1dQWjRPck1ZNzdpWVVVSkxHa2x2VGdaMk1XT1RPUWF6RGI1dy1TLXl1X2dBeXlKdlhFZA?oc=5",
+            "source": "Yahoo Finance Singapore",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Factbox",
+              "Morgan",
+              "Yahoo",
+              "Finance",
+              "Singapore"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold and silver prices soared, then plummeted. What’s going on? - Al Jazeera",
             "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPOV8yWXMzQVNHTC1aYTNYZklIYW5ScGQ1cjEtUE5IaTJoS1dCT1AxYk14V0xSLXJFU1g4RGFQVnprYmpsZFVVQlNnMnRfdV9ickJqTkZIVzlGbGxwRFg3Ri1sNXVBRDMtelNza2xFUnYtODFCeEZDaEVQU283MU1PMlZJSVhMR19WVmwycmN2NmJZX3N6dENWT1FEbVJPS2Vxcm4xVNIBqgFBVV95cUxNdUotdTNfeXNTenFpU1ZkLVBGbVZDa1dSYm9QdE5kdDE1cTJ5Mm8tRWdhMnpMTUFOY3dhT0JvaDdrbW5CWWo3Q3JWcTlUc1hUWVpNVWdES3NOSlhHNjRZVXZPT245X011QzBiX2Q2T3U4dTUzVTJyTmZRWDJ3QmNvd25wVlhOd0ctc29YTURYWDFGcFB6MEdPZUxKVy1RQTJmZ0taNHV6SThldw?oc=5",
             "source": "Al Jazeera",
             "date": "Tue, 03 Fe",
             "language": "en",
-            "tone": -0.217,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6293,12 +6534,31 @@
             "factuality": "unknown"
           },
           {
+            "title": "The Gold And Silver Crash Could Be Short-Lived, Analysts Say - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxNVjJkX29WT1Y5cURFalEtVjY0TWw3Y3d0WlRNZmc3a2tYZkdNS0ZUZG9JWThUckdRdmw3bjZuNmh5TUxJc2dhQmF1aVlJbFBKSE9RXzVZTERjZTZacEhMZ0xnTHlKOGRoa1dza1pvN19jZzVCSGw5eEtzNGs2LXNnNWJ6M1Q2SUtLTmNuZjhoWk1KSG9rdFdCSTg2N0xwT1pTUEo1VWFJbnN4dktJaTJ6N1Y1QQ?oc=5",
+            "source": "Forbes",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Silver",
+              "Crash",
+              "Could",
+              "Short"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
             "title": "Why Did Gold and Silver Prices Plunge? - Morningstar",
             "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFBJMmlKR1dBSlVXanVnc0xnQnZRNW5fQkRqNWtPYUdlM3JRUFN0RXgyUEF3Nk9WYVJWZzdWTTZFZWxrYjVhOUh5Vm5MWUM4MmdVS3BZM24yOF8tRUJXTWRLdmo2ZE13emUxSUlKWmRtNEFDUQ?oc=5",
             "source": "Morningstar",
             "date": "Mon, 02 Fe",
             "language": "en",
-            "tone": -0.297,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6307,6 +6567,23 @@
               "Prices",
               "Plunge",
               "Morningstar"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold bugs were right about the price hitting US$5,000, but what about that big bank conspiracy theory? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTFBzamlWVEhBTGc4UGJJeExuUl9JS05mVkl1ckRHVGNCdS1NRjVBVTA3VXptV08xc0NjWUhxLUJnQlU4aF9fOEEyYXVKX3dmeENqb2dWdFo5X0IxWVNySzhtcEFlMGRIemROU0Z3NGtyU2pTMXFxRVdBend2dGJrcFE?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Wed, 04 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Yahoo",
+              "Finance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6317,7 +6594,7 @@
             "source": "Morningstar",
             "date": "Tue, 03 Fe",
             "language": "en",
-            "tone": -0.297,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6331,12 +6608,81 @@
             "factuality": "unknown"
           },
           {
+            "title": "Gold rebounds above $5,000 after US downs Iran drone - BBC",
+            "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE54MnVFTkFldGh6bTV0Q2NiOGN2aDRBUHQ4ektpalNkSWRUbEF3SFV4N3BRbnM4c2FnMl90QWN0VUtPTnRPY19oWDVuQnFmV0k1dWE3ZFhoRmVQUQ?oc=5",
+            "source": "BBC",
+            "date": "Wed, 04 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Iran"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold and silver rebound, pulling global mining stocks and precious metal ETFs higher - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxOVmJHM3VzUnF6TXNERjZ0Wkg5SE5TSXpKakIzSkE5NnFOQlNheXVOSHZRZFBzeTJJeWx6bHMzVUdSUjBNZUVQYUhtaG9DanBGSnI5bzZocFlVYmFoYzNUY1otSHdQZmdjRDk4V1pYdjNWdkVMQ3FCdlBLVWRtUGlDMWJHZUdjc2k3SlVSRV80LXhEamU5bVpmWGQtVXJSZTF1SWI4cjl2alE1MEllZWVMZjdkVk9qQWFGWkpRTHZrZTA0cjhmV01xdNIBzgFBVV95cUxObHJ0bDJXZ3Y4VXlpekpsWUNMT2JoN3NCcmgzVUMwRk1sc0Mxdm52Qmt2NDFJbGk4RVN0d2dZaXZsNWNZUGF1aTZaNnNDSE10d2hvaXF5cjhOaTFwb1h1dUVwMGpkR3g5NC1RR2lsMzBNaWNvdHhkcFY1ZlI1YWhlaEdLeGVtNmJ2V1VXSXJkbG1xamZCWjl1UUhzVEVua1A2ZzBvWkZJeXNIQlRtWTkxN0tfVmlLU2N3WjRwOTRHNnN0eG4zbXlva1RsVEEwdw?oc=5",
+            "source": "CNBC",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold in the age of sanctions: How the Russia-Ukraine war reshaped the global bullion market - New Eastern Europe",
+            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxNRTNnYlFDLVFLdGtpM3pQR0d6TEtJczFsRlZrVEVZa0pKcnBuZXVuNGU4X2Q3a0hackJvYnExOTFfZzFXVTJRcGdRakVoUEV5RGpCNk5zalpUNjRSSXNhTmd4aWd2RTBiTWk3YUpXbVpMZW5GanZaRlJqYWJmbHpmemItZEdvbWhfaHhISmFxNVZRWkxXeEdYMkU3YWlxUDlZRG9FNGJ5WEhDdTd2U25VY3p1djFkazU4aXFYdmQ0d1BabFRHOUxTZlBR?oc=5",
+            "source": "New Eastern Europe",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Russia",
+              "Ukraine",
+              "Eastern",
+              "Europe"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold's Path to US$7,000: Insights from VRIC 2026 - Investing News Network",
+            "url": "https://news.google.com/rss/articles/CBMiV0FVX3lxTE9IT3FSc3ZZQXRkclNBX3o1ZFRoRE1JcEstREFTWFJiWXBUejluOEViaGwxUnJwNDVrNFdPU0p6TV9fa2t3UjdzLU9NX1Q5bU02MERkamlxaw?oc=5",
+            "source": "Investing News Network",
+            "date": "Thu, 05 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Path",
+              "Insights",
+              "Investing",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold Price Jumps Back Above $5,000. Why the Precious Metals Rally Is Back. - Barron's",
             "url": "https://news.google.com/rss/articles/CBMieEFVX3lxTFAxc2R5Y3RSNFduQkx5SFQyRXdJbnV4a2k2eFk0V3NiUEFQaUZINWVNSlE4Q3dXbW55cnhHYlY0LWN5emhLTXE2TW9rNkZpQXg2dmcyczVhTm5KcHI0X1YzSWFkSkhhTzF6NG1IdFF4VF9FaUMxck1NLQ?oc=5",
             "source": "Barron's",
             "date": "Wed, 04 Fe",
             "language": "en",
-            "tone": 0.12,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6348,55 +6694,128 @@
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
-          }
-        ]
-      },
-      {
-        "cluster_id": 1,
-        "label": "Commodities",
-        "article_count": 3,
-        "avg_sentiment": 0.069,
-        "dominant_category": "commodities",
-        "bias_distribution": {},
-        "representative_titles": [
-          "Gold price today, Friday, January 30: Gold slides nearly 5% - Yahoo Finance",
-          "Gold price climbs back near $5,100 after investors flock back to precious metals - Yahoo Finance UK",
-          "Gold prices rebound after sell-off as investors buy the dip - Yahoo Finance UK"
-        ],
-        "narrative_summary": "",
-        "articles": [
+          },
           {
-            "title": "Gold price today, Friday, January 30: Gold slides nearly 5% - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxPRzVUckFkWXVpS1F1eXZXS20yNTVxTHRkYlR4UE5MRER4bVMwdXo3U3VtUlpHc3pTRWxWOVpnU3RpLXpYdWVkYjZzTUNLRnhKNy1XTDRhc2dpejB6bk9VVW1XVlVxTkxzYXY2YlpMbDhlQlNzVlpxdHBrQzZLWEQ1bldCaGp4cVBjbFp6ODd1bnNlSlRCMmo3MW5MRWNvWmR1MmFpLXZsSEF0eUFCdnV2TkFQTDJjUkJhT1FqZnF0c0dQV1dZcUJfckZNQQ?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Mon, 02 Fe",
+            "title": "Gold price up a bit, but gains limited by silver sell off - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxQVmVmTWdFR2RFV0RWcVdmdkVQSDJZYlptemtLT3l4ck56Zmtaak9pd09YOW5KejhjWFRXdTdBdF9BSS1LREJwVFpDYTYwS1VJSTlWUUNfSXNFN3ZVSWI1N2lydVpGeWx2ZHNuS2hhd0FMTkVSXzFmdmxfQW1xY3hUMzRlV1ctMVd3TG9DbXQwVQ?oc=5",
+            "source": "KITCO",
+            "date": "Fri, 06 Fe",
             "language": "en",
-            "tone": -0.293,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Gold",
-              "Friday",
-              "January",
-              "Yahoo",
-              "Finance"
+              "Gold"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Gold price climbs back near $5,100 after investors flock back to precious metals - Yahoo Finance UK",
-            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxQRWJWYnF3cjNONk1NU0JjbmVPM0RzR0dyVnNZdjZVNVIxNW1fNUVVUldSeS1GZ3dNc196X0REb0QzRVVyOFRlNXN0M0k3a0tkVVV4Ykl4QXhtT1VPa0lnUGxrZWVmdUE3em5BcE9DbmFDWHNoTm5QaU1wWExIVmlVWU1tQ3BNUzJ3TFcwaGxlTVNvaDdTYVQ5Q0xJYnM5M29iS1NsN2ZVUGtDUXQ5c2tkajM3RFNaWDJkdERyXw?oc=5",
-            "source": "Yahoo Finance UK",
+            "title": "The rise and fall (and rise again) of gold prices – what’s going on? - The Conversation",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxONUlqN05rU25TOFVMQkhDUmpOLVFROXYxZmE0OXlaZzd3T3Q5RHdZT3dBUHZSOEo3YmVzNVpWQVliZ2VIXzdQNjlfZVlCb0ZaWDlvZ05PSVpYZWx2ZGNITy1GMmc1c3RkYnpVaFlHb2J5LU9IZ1FNdE1ILTJKZEdqWFF0M3hta1NqUW5GS3JPRmM1LVh3NU1NX2g4X1lYUQ?oc=5",
+            "source": "The Conversation",
+            "date": "Tue, 03 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Conversation"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "How to trade the market spiral as investors dump gold, silver and oil - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMikAFBVV95cUxPVExEMS14QllrYWNVdFNfS2MzdVg0Y05fQTlJVDVfRGliMzRxUmhFbDFhQnpkTWVNYlVuUzd3aDF5U25WYXNWanVNVXZ0YXRON3RDaWlnTTJzb2dMYm1KUWdqUFhqSXZ3d3l4TGxoWmZBR0N6UERkTURxTTJWeWZFS05SemVPZmZxVDNULVVOVmXSAZYBQVVfeXFMTTZTWWsxMHJBbHZXMXB5eEtDSjM4eUtKQ0pidi1xLW9sS2hfcFhMOG9Ga2hDV3dNMmRmN01JQWhSRzRrZHB2VFI1c1lucHhNSHRtQUpIUHAxSWdwLUlBVFdETTB4NlN0ZVgyMFlYZUhGbEdvTWJFTk1Pdy1NaDBGaWxUM3Z5a3YwSVpvTm8xejN0clY0Z2Z3?oc=5",
+            "source": "CNBC",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Analysts ramp up gold forecasts as global uncertainties mount - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMisAFBVV95cUxNcHZBWGRJRFBnN2NTS094QmdEZC0tM0lWeGVEM0tqbkJBZFB5RTNiY29xRUlfeFVEOGNrTEZzUjVvdnZHaTdScUlTOGI2MWM1QlRwV2E0em0zV1ZPaXQwWWJqSUlpamhFdXFfMzdTRnlnMW5pM2h1WE5MZkFpaHRRMmRVSzFZd2U4ZWtTbDhQRGNpVm14T1JjYkc5eWVIMEpKUHd3Y2xkNzJmSm5oLWZncA?oc=5",
+            "source": "Reuters",
             "date": "Wed, 04 Fe",
             "language": "en",
-            "tone": 0.207,
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Analysts",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "QUANTIFIED FUNDS ANNOUNCES NAME CHANGE OF THE GOLD BULLION STRATEGY FUND TO QUANTIFIED GOLD FUTURES TRACKING FUND - PR Newswire",
+            "url": "https://news.google.com/rss/articles/CBMi_gFBVV95cUxNVDE0YTAtUmNaX1RPR2VkTlhGSmRNV1ZNTkcxQ0Q4SjV2SmRISTNlRUI2dVNOUVE1bVUzWXQwTXlTS05IdTRXRUlUOGR5YkFqajdpblpLU19TaXFycHFDZ2EwLVUtaGpNazI3VmlNNmpVWS16ZlZNa2doZjVLb2VCVHZybG1vdEpYLUgzWGZKOHdIN0toQXpjVmN5VDVQcHdaMTQ2QjRFMXhWWnQ5SzZ4bGJfc1V0azhOSU5tSldSLU5ocHVPRWZ0ZjhfMWdmQzFNSFRtMXFqV01wV2o5MTE5RkdIX3dUMnVFZTdOcU5RZFM2UXlqaVFGcEV0NEowZw?oc=5",
+            "source": "PR Newswire",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Newswire"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Editor's Picks: Is Gold and Silver's Price Correction Over? - Investing News Network",
+            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE9iWW1aUm5RZ1dURFVab0FOcUJaUU44STdTSDVIQjBMSjIxX0JVN2RSX05ZS01GOVhFVnpnNEE0YTEtcXFIcFZENUtQSGdWMDBJeVpMRmMwX3I1UVpRRXhBS2M5b0g2QWEwLWI1U2pVbkpmWVFJN2lwSDJkTWF1cEk?oc=5",
+            "source": "Investing News Network",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Editor",
+              "Picks",
+              "Gold",
+              "Silver",
+              "Price"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and silver prices fall but FTSE 100 hits record high - BBC",
+            "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE82V3J6Y05fSjE0OU9EOHd0ZnFabEp1eXZvWGZUbnNSazJOZWpBR0VHaWxYcWc0YldLbFZOSkM3LXNZb1F1aVdpaXhXNUVoekRjZkgwZVA0WXdMUQ?oc=5",
+            "source": "BBC",
+            "date": "Mon, 02 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold fluctuations baffle Lebanese jewellers, gold market - Al Jazeera",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxPeW9nQml5TUVBN3I4RVhwVjREWVVBUFdjOXhxZUMtdkg2Tm5xVEVkcEVRRGtaZmFjUFM4RTNja3JKdDRqdnJneFhHQnJxZ2VER2JjQlF3UzJFeFFacGFhTHIwUjc5VVVRaUFIeHI2eEh5c0pJT3lpd1hzNFhfRGFjaEYwOEpnRWhXOXlGTGtaWjBYUms1UzRUWVRsR3UtcUdh0gGmAUFVX3lxTE1lcXBYUGZSa2hvaW5yUGo3RzIxNWtfVUV1dFFsaGRqY19RRDB2aW5sY0t0RDdEakRuam1ldE9ZakRaTXloZkYyRTh1VVloVmQyeXVnNE9OUzhuQVV4RTZ4VzBVTFJ6LVBoUEFjVkRBMzZuRHFieTMzLXVfOEMzTmQ0SVlKMFdyR3lOZ3VFVTF2VHQ2a1lWYWl1TUJJNXpTbEVaTEV2VEE?oc=5",
+            "source": "Al Jazeera",
+            "date": "Fri, 06 Fe",
+            "language": "en",
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "Gold",
-              "Yahoo",
-              "Finance"
+              "Lebanese",
+              "Jazeera"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6407,7 +6826,7 @@
             "source": "Yahoo Finance UK",
             "date": "Tue, 03 Fe",
             "language": "en",
-            "tone": 0.294,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6428,7 +6847,7 @@
         "source": "BullionVault",
         "date": "Fri, 06 Fe",
         "language": "en",
-        "tone": -0.46,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.5,
         "keywords": [
@@ -6448,7 +6867,7 @@
         "source": "Investor's Business Daily",
         "date": "Mon, 02 Fe",
         "language": "en",
-        "tone": -0.017,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.5,
         "keywords": [
@@ -6468,7 +6887,7 @@
         "source": "Finance Magnates",
         "date": "Wed, 04 Fe",
         "language": "en",
-        "tone": -0.044,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.5,
         "keywords": [
@@ -6483,31 +6902,12 @@
         "factuality": "unknown"
       },
       {
-        "title": "Gold price today, Friday, January 30: Gold slides nearly 5% - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxPRzVUckFkWXVpS1F1eXZXS20yNTVxTHRkYlR4UE5MRER4bVMwdXo3U3VtUlpHc3pTRWxWOVpnU3RpLXpYdWVkYjZzTUNLRnhKNy1XTDRhc2dpejB6bk9VVW1XVlVxTkxzYXY2YlpMbDhlQlNzVlpxdHBrQzZLWEQ1bldCaGp4cVBjbFp6ODd1bnNlSlRCMmo3MW5MRWNvWmR1MmFpLXZsSEF0eUFCdnV2TkFQTDJjUkJhT1FqZnF0c0dQV1dZcUJfckZNQQ?oc=5",
-        "source": "Yahoo Finance",
-        "date": "Mon, 02 Fe",
-        "language": "en",
-        "tone": -0.293,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Gold",
-          "Friday",
-          "January",
-          "Yahoo",
-          "Finance"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "'Unprecedented' Crash Sees Gold Sink 21% from Record High, Silver Price Drops 40% - BullionVault",
         "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxPb2puUzJmU0o1MzBOSXRlb244S0ZrWHB5a3ZqYzVKZ1pqM0hhWE95clAzaG9JNVg5dlZTSmtZNW9VNDF6cTBaV3hhcUtUVUZHV1FMMjZOTzdhcnBTUHgzY2RVWjhtTjRyT0hoSFVFZzRWVUdKMzJ3LUtkODBJZzhna1hleERrYzVfZTE4?oc=5",
         "source": "BullionVault",
         "date": "Mon, 02 Fe",
         "language": "en",
-        "tone": -0.805,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6521,12 +6921,46 @@
         "factuality": "unknown"
       },
       {
+        "title": "Gold price today, Friday, February 6: Gold volatility continues, prompting another margin increase - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMi_wFBVV95cUxOOVNSLWxWNDBwbFpSVk1FZWhpSzVMSUFsQllVWkxSdXktRmpfVV9mdjNzM3RxYWRSNnZZT3NVdGFldUNKZ2NvaVBmUlJ1LXRwcU1ReEJpY3pnTkdDWXlzWVpXRzh5NWwySHE3Z2hoOGJaOEJNN1V5cmsxVHBFUjY5eTlnNHI2VXppblhjUjh2R0dxYmoxV2xUWUhncno3ZDZfcEdXOFQ3dXNYSDU3YVRLd202S21KVjktUXVWcE84T2VuV0kyQ2JBZ0FpTjNCYjZLdG8yWGlVenJTU0l6UUlreGJkUVB0Ui1JcllZa0JjV3NYczVHVEhfMXVtenhYakU?oc=5",
+        "source": "Yahoo Finance",
+        "date": "Fri, 06 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Friday",
+          "February",
+          "Yahoo",
+          "Finance"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "What's going on with the price of gold? - BBC",
+        "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE13NlgxX0U0NUc3QWx6UTUxeXREa05tR3dQRDkzbFRZeXNNaUdqRE9vYTFOMFlmc09kbkVZc25Oalp1UmZzaWNDWnZIdllNVHdHZEY5T1NUWERJQQ?oc=5",
+        "source": "BBC",
+        "date": "Wed, 04 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "What"
+        ],
+        "bias_label": "center",
+        "factuality": "high"
+      },
+      {
         "title": "Gold’s bull run seen intact despite steep pullback - Reuters",
         "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxQdFd1SGYtZVVWWDFqTlptNnFrWVNSanM2dS1waVU0bUkwY0c1M0RtWVhTck10UjJmNkhfRGM1Q21XZUh3d2Vqc2N6TXUwRmx6WnF0cEptOURhd0xUUUx0dnBsOGNnX1kwOTlGYnh0aGVaZVZvbzZTRFFUcDZMNzJDRTUxb1lUdlBBSW9Lc04tTmdsNUxiU0RfMUhMNElldw?oc=5",
         "source": "Reuters",
         "date": "Mon, 02 Fe",
         "language": "en",
-        "tone": 0.321,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6537,27 +6971,12 @@
         "factuality": "high"
       },
       {
-        "title": "What's going on with the price of gold? - BBC",
-        "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE13NlgxX0U0NUc3QWx6UTUxeXREa05tR3dQRDkzbFRZeXNNaUdqRE9vYTFOMFlmc09kbkVZc25Oalp1UmZzaWNDWnZIdllNVHdHZEY5T1NUWERJQQ?oc=5",
-        "source": "BBC",
-        "date": "Wed, 04 Fe",
-        "language": "en",
-        "tone": -0.172,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "What"
-        ],
-        "bias_label": "center",
-        "factuality": "high"
-      },
-      {
         "title": "Why gold and silver prices suddenly collapsed - DW.com",
         "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxNWVZWSnFuUlJxT1RMRmNuSG9ZVFdrenRKdVg0VDBUcDJnSzZ3a3lybnQ4OXFUVFlQeXVLbTBXVDUtTVpwQ25pTnNqUWYyRmxWQUdoanNZbk9WVlA5TlZ1Z3hpaGU0QzNaNWhJSWlHbTlWYzJFVWtZbkp1UU5NMWtBUnhNdUfSAYQBQVVfeXFMTnZGLW42TnNHUEtFd1hCS29YNTBzVGVXR3dsOEZiRExXdXZMTk5WcGg1X2F5dUlGeTZuY0d0clVFeXBOM0dTdVA2SGdTRHdxcU9wZG5JR19mc21XQ1d4WHdTQVVFUm8xYk1LSVdOblV5Vml6NWZaUmlrdmZYZTBZNFJFSk5w?oc=5",
         "source": "DW.com",
         "date": "Tue, 03 Fe",
         "language": "en",
-        "tone": -0.398,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [],
@@ -6565,29 +6984,12 @@
         "factuality": "high"
       },
       {
-        "title": "Gold Price on 07 February 2026 - Gold Price",
-        "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFBkb1lnNlo2bmtSV3NpUXJfd3Rac2NDN290TFVGdzFqcHRZYjNfRnEtSng2Z2tXcjkyWEpnNHVQSVJGc3J4YTIwalpwYU00dUhWMGhocDlPcThkWC1QWnc?oc=5",
-        "source": "Gold Price",
-        "date": "Sat, 07 Fe",
-        "language": "en",
-        "tone": -0.008,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Gold",
-          "Price",
-          "February"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "Understanding the value of gold: Prices, global reserves, and market trends - Al Jazeera",
         "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxQbXA4X0g0eHgyejVYQUh4YUU4QWpNU3B0alJ2aVJTbVk5dXNoX1A4enRsTXV4eFZlNEplSG1YTU9yN19QbndudlNiMDhNaUFmSlN3UmN6T3h4WXRHSHdYcDhabmF0ZlFneUM5c2lYUC1takNyZjltQnd2em5QaXA0WG93TVRjeFFpN0dYWm9wWGZwU2g5eGNCQ0RUYzZ2ZDNwMHJNOFpxMW9uel9tdVJ1VVBnNnpDQdIBuwFBVV95cUxPVHNIRXozSDVRSjZNNTJIX25QdUM3YXh4QXI5Z0psVDZoQjlySXo0VHFQM0NXRTlwSzRldjRJdVZrd0poMy0zd1dXV09jcFNUOUJlS0hCaGRjdC1pZE1wU3IyVFpTRmpDcHpYektuY19Ka1ZvbFVFWGtJR3gzX0s5WlNBYlBQdXRiZm5na09LemZ3V3VFOWhIeEgwaGhHVHRObXUtekxPRUN4bnQ1T3Fza1ZiNW5QRFFJOFQ0?oc=5",
         "source": "Al Jazeera",
         "date": "Sun, 08 Fe",
         "language": "en",
-        "tone": 0.113,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6597,53 +6999,71 @@
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
+      },
+      {
+        "title": "Gold Price on 07 February 2026 - Gold Price",
+        "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFBkb1lnNlo2bmtSV3NpUXJfd3Rac2NDN290TFVGdzFqcHRZYjNfRnEtSng2Z2tXcjkyWEpnNHVQSVJGc3J4YTIwalpwYU00dUhWMGhocDlPcThkWC1QWnc?oc=5",
+        "source": "Gold Price",
+        "date": "Sat, 07 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Price",
+          "February"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
       }
     ],
     "source_diversity": {
-      "BullionVault": 5,
+      "BullionVault": 4,
       "Investor's Business Daily": 1,
       "Finance Magnates": 1,
       "Yahoo Finance": 2,
-      "Reuters": 5,
-      "BBC": 2,
+      "BBC": 3,
+      "Reuters": 3,
       "DW.com": 1,
-      "Gold Price": 1,
       "Al Jazeera": 3,
-      "The Conversation": 1,
+      "Gold Price": 1,
       "CBS News": 2,
-      "Bloomberg.com": 1,
+      "Bloomberg": 1,
       "Investopedia": 1,
-      "Yahoo Finance Singapore": 1,
       "Yahoo Finance UK": 2,
+      "CNN": 1,
+      "Yahoo Finance Singapore": 1,
       "Forbes": 1,
       "Morningstar": 2,
       "CNBC": 2,
       "New Eastern Europe": 1,
-      "KITCO": 1,
+      "Investing News Network": 2,
       "Barron's": 1,
-      "Investing.com": 1,
-      "Atlantic Council": 1,
-      "Investing News Network": 1
+      "KITCO": 1,
+      "The Conversation": 1,
+      "PR Newswire": 1,
+      "Investing.com": 1
     }
   },
   "political_bias_analysis": {
     "source_bias_distribution": {
       "left": 0,
-      "center-left": 0,
-      "center": 9,
+      "center-left": 1,
+      "center": 8,
       "center-right": 4,
       "right": 0,
       "unknown": 27
     },
-    "bias_diversity_score": 0.384,
+    "bias_diversity_score": 0.534,
     "factuality_distribution": {
-      "high": 13,
-      "mixed": 0,
+      "high": 12,
+      "mixed": 1,
       "low": 0,
       "unknown": 27
     },
     "cluster_bias_assessments": [],
-    "flagged_articles": 4,
+    "flagged_articles": 5,
     "bias_narrative": "",
     "total_analyzed": 40
   },
@@ -6657,5 +7077,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-12T01:11:11.942294+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }

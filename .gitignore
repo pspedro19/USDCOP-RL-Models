@@ -365,3 +365,21 @@ vendor/quant-skills/**/__pycache__/
 .claude/coordination/tmp/
 .claude/coordination/monitor/*.log
 .claude/coordination/.claude/
+
+# --- Scaffolding de agentes / Obsidian (2026-07-30) ---------------------------
+# Scratch efimero de las corridas de Codex: manifiestos de pytest, deltas de monitor,
+# XML/JSON de una sola corrida y scripts de un solo uso. Es basura de proceso, no
+# conocimiento; vivia mezclada con los informes en la raiz de .claude/codex/.
+.claude/codex/_runtime/
+
+# Lock del harness de Claude Code: sessionId + pid, estado por-maquina.
+.claude/scheduled_tasks.lock
+
+# Obsidian: la configuracion COMPARTIDA del vault (app.json, appearance.json) SI se
+# versiona — es la que excluye del indice los 4.2 GB de worktrees y node_modules.
+# Lo que se ignora es el estado local por-maquina: layout de ventanas y caches.
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
+.obsidian/plugins/*/data.json
+.trash/

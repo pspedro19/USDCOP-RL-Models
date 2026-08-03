@@ -9,7 +9,7 @@
   "week_end": "2026-06-28",
   "weekly_summary": {
     "headline": "Bitcoin · Semana 26 de 2026",
-    "markdown": "### Bitcoin — Semana 26 (2026-06-22 → 2026-06-28)\n\nEl cierre semanal de BTC/USDT fue **59577.01 USD**, un cambio de **-5.90%** en la semana (rango 58115.01–65622.83). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 59577.01. RSI(14)=31 (neutral). Soporte 58115.01, resistencia 67292.15.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: Yahoo Finance, Forbes, Fortune.",
+    "markdown": "### Bitcoin — Semana 26 (2026-06-22 → 2026-06-28)\n\nEl cierre semanal de BTC/USDT fue **59577.01 USD**, un cambio de **-5.90%** en la semana (rango 58115.01–65622.83). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 59577.01. RSI(14)=31 (neutral). Soporte 58115.01, resistencia 67292.15.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: Yahoo Finance, Bitcoin Magazine, Forbes.",
     "sentiment": "bearish",
     "ohlcv": {
       "open": 63312.0,
@@ -40,7 +40,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-06-23",
@@ -58,7 +58,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-06-24",
@@ -76,7 +76,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-06-25",
@@ -94,7 +94,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-06-26",
@@ -112,7 +112,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-06-27",
@@ -130,7 +130,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-06-28",
@@ -148,30 +148,30 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-20T22:48:59.305086+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
     "dxy": {
-      "snapshot_date": "2026-06-26",
+      "snapshot_date": "2026-06-23",
       "variable_key": "dxy",
       "variable_name": "DXY (Dollar Index)",
-      "value": 101.36,
-      "sma_5": 101.366,
-      "sma_10": 100.779,
-      "sma_20": 100.1635,
-      "sma_50": 98.578,
-      "bollinger_upper_20": 101.872199,
-      "bollinger_lower_20": 98.454801,
-      "bollinger_width_20": 0.034118,
-      "rsi_14": 72.050596,
-      "macd_line": 0.794463,
-      "macd_signal": 0.693922,
-      "macd_histogram": 0.100541,
-      "roc_5": 0.505702,
-      "roc_20": 2.053967,
-      "z_score_20": 1.4005,
-      "z_score_60": 1.9675,
+      "value": 101.41,
+      "sma_5": 100.844,
+      "sma_10": 100.295,
+      "sma_20": 99.8005,
+      "sma_50": 98.41406,
+      "bollinger_upper_20": 101.265293,
+      "bollinger_lower_20": 98.335707,
+      "bollinger_width_20": 0.029354,
+      "rsi_14": 75.984282,
+      "macd_line": 0.728942,
+      "macd_signal": 0.601251,
+      "macd_histogram": 0.127691,
+      "roc_5": 1.878642,
+      "roc_20": 3.079894,
+      "z_score_20": 2.1976,
+      "z_score_60": 2.3967,
       "z_score_252": null,
       "trend": "above_sma20",
       "signal": "overbought",
@@ -179,25 +179,25 @@
       "png_url": null
     },
     "vix": {
-      "snapshot_date": "2026-06-26",
+      "snapshot_date": "2026-06-23",
       "variable_key": "vix",
       "variable_name": "VIX (Volatilidad)",
-      "value": 18.41,
-      "sma_5": 18.54,
-      "sma_10": 17.693,
-      "sma_20": 20.324,
-      "sma_50": 19.5856,
-      "bollinger_upper_20": 27.95885,
-      "bollinger_lower_20": 12.68915,
-      "bollinger_width_20": 0.751314,
-      "rsi_14": 47.623526,
-      "macd_line": -0.670069,
-      "macd_signal": -0.530868,
-      "macd_histogram": -0.139201,
-      "roc_5": 9.713945,
-      "roc_20": -22.484211,
-      "z_score_20": -0.5014,
-      "z_score_60": -0.2197,
+      "value": 19.49,
+      "sma_5": 17.678,
+      "sma_10": 18.034,
+      "sma_20": 20.951,
+      "sma_50": 19.5836,
+      "bollinger_upper_20": 28.670572,
+      "bollinger_lower_20": 13.231428,
+      "bollinger_width_20": 0.736917,
+      "rsi_14": 49.847632,
+      "macd_line": -0.817685,
+      "macd_signal": -0.36661,
+      "macd_histogram": -0.451075,
+      "roc_5": 18.769043,
+      "roc_20": -9.095149,
+      "z_score_20": -0.3785,
+      "z_score_60": 0.1882,
       "z_score_252": null,
       "trend": "below_sma20",
       "signal": "neutral",
@@ -205,25 +205,25 @@
       "png_url": null
     },
     "gold": {
-      "snapshot_date": "2026-06-26",
+      "snapshot_date": "2026-06-23",
       "variable_key": "gold",
       "variable_name": "Oro",
-      "value": 4096.3,
-      "sma_5": 4100.96,
-      "sma_10": 4201.1,
-      "sma_20": 4445.952,
-      "sma_50": 4814.7862,
-      "bollinger_upper_20": 5290.135949,
-      "bollinger_lower_20": 3601.768051,
-      "bollinger_width_20": 0.379754,
-      "rsi_14": 33.747148,
-      "macd_line": -230.160085,
-      "macd_signal": -204.606937,
-      "macd_histogram": -25.553148,
-      "roc_5": -1.835654,
-      "roc_20": -19.343533,
-      "z_score_20": -0.8284,
-      "z_score_60": -1.7958,
+      "value": 4149.4,
+      "sma_5": 4230.46,
+      "sma_10": 4234.44,
+      "sma_20": 4605.172,
+      "sma_50": 4860.3462,
+      "bollinger_upper_20": 5490.412759,
+      "bollinger_lower_20": 3719.931241,
+      "bollinger_width_20": 0.384455,
+      "rsi_14": 32.314903,
+      "macd_line": -219.346691,
+      "macd_signal": -178.835906,
+      "macd_histogram": -40.510784,
+      "roc_5": -4.707882,
+      "roc_20": -21.880413,
+      "z_score_20": -1.0297,
+      "z_score_60": -1.8615,
       "z_score_252": null,
       "trend": "below_sma20",
       "signal": "neutral",
@@ -231,51 +231,51 @@
       "png_url": null
     },
     "ust10y": {
-      "snapshot_date": "2026-06-26",
+      "snapshot_date": "2026-06-23",
       "variable_key": "ust10y",
       "variable_name": "US Treasury 10Y",
-      "value": 4.372,
-      "sma_5": 4.4328,
-      "sma_10": 4.4463,
-      "sma_20": 4.3952,
-      "sma_50": 4.23638,
-      "bollinger_upper_20": 4.670306,
-      "bollinger_lower_20": 4.120094,
-      "bollinger_width_20": 0.125185,
-      "rsi_14": 52.558671,
-      "macd_line": 0.065464,
-      "macd_signal": 0.080503,
-      "macd_histogram": -0.015039,
-      "roc_5": -2.58467,
-      "roc_20": 5.451037,
-      "z_score_20": -0.1687,
-      "z_score_60": 0.8778,
+      "value": 4.493,
+      "sma_5": 4.4804,
+      "sma_10": 4.4789,
+      "sma_20": 4.35125,
+      "sma_50": 4.22908,
+      "bollinger_upper_20": 4.701617,
+      "bollinger_lower_20": 4.000883,
+      "bollinger_width_20": 0.161042,
+      "rsi_14": 66.297902,
+      "macd_line": 0.094611,
+      "macd_signal": 0.08697,
+      "macd_histogram": 0.007642,
+      "roc_5": 1.467931,
+      "roc_20": 10.883514,
+      "z_score_20": 0.8092,
+      "z_score_60": 1.752,
       "z_score_252": null,
-      "trend": "below_sma20",
+      "trend": "above_sma20",
       "signal": "neutral",
       "chart_data": null,
       "png_url": null
     },
     "wti": {
-      "snapshot_date": "2026-06-26",
+      "snapshot_date": "2026-06-23",
       "variable_key": "wti",
       "variable_name": "WTI Petroleo",
-      "value": 69.23,
-      "sma_5": 71.904,
-      "sma_10": 74.413,
-      "sma_20": 82.0095,
-      "sma_50": 72.2078,
-      "bollinger_upper_20": 98.816775,
-      "bollinger_lower_20": 65.202225,
-      "bollinger_width_20": 0.409886,
-      "rsi_14": 40.275798,
-      "macd_line": -0.786174,
-      "macd_signal": 1.48695,
-      "macd_histogram": -2.273124,
-      "roc_5": -9.515096,
-      "roc_20": -14.541415,
-      "z_score_20": -1.5207,
-      "z_score_60": -0.0909,
+      "value": 73.21,
+      "sma_5": 75.586,
+      "sma_10": 79.526,
+      "sma_20": 82.9465,
+      "sma_50": 71.5892,
+      "bollinger_upper_20": 97.806389,
+      "bollinger_lower_20": 68.086611,
+      "bollinger_width_20": 0.358301,
+      "rsi_14": 44.100189,
+      "macd_line": 0.970965,
+      "macd_signal": 3.220995,
+      "macd_histogram": -2.250031,
+      "roc_5": -2.736814,
+      "roc_20": 2.779728,
+      "z_score_20": -1.3104,
+      "z_score_60": 0.3411,
       "z_score_252": null,
       "trend": "below_sma20",
       "signal": "neutral",
@@ -283,25 +283,25 @@
       "png_url": null
     },
     "brent": {
-      "snapshot_date": "2026-06-26",
+      "snapshot_date": "2026-06-23",
       "variable_key": "brent",
       "variable_name": "Brent",
-      "value": 71.99,
-      "sma_5": 75.062,
-      "sma_10": 77.501,
-      "sma_20": 85.235,
-      "sma_50": 76.459,
-      "bollinger_upper_20": 102.36341,
-      "bollinger_lower_20": 68.10659,
-      "bollinger_width_20": 0.40191,
-      "rsi_14": 39.46597,
-      "macd_line": -0.99336,
-      "macd_signal": 1.322146,
-      "macd_histogram": -2.315506,
-      "roc_5": -10.068707,
-      "roc_20": -15.712446,
-      "z_score_20": -1.5466,
-      "z_score_60": -0.2455,
+      "value": 76.8,
+      "sma_5": 78.622,
+      "sma_10": 82.483,
+      "sma_20": 86.596,
+      "sma_50": 75.9212,
+      "bollinger_upper_20": 101.102861,
+      "bollinger_lower_20": 72.089139,
+      "bollinger_width_20": 0.335047,
+      "rsi_14": 44.208459,
+      "macd_line": 0.747522,
+      "macd_signal": 3.084622,
+      "macd_histogram": -2.3371,
+      "roc_5": -2.377018,
+      "roc_20": -1.209159,
+      "z_score_20": -1.3505,
+      "z_score_60": 0.2894,
       "z_score_252": null,
       "trend": "below_sma20",
       "signal": "neutral",
@@ -313,6 +313,30 @@
     "dxy": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-09",
+          "value": 99.285,
+          "sma20": 97.54025,
+          "bb_upper": 98.905535,
+          "bb_lower": 96.174965,
+          "rsi": 66.649675
+        },
+        {
+          "date": "2025-10-10",
+          "value": 98.732,
+          "sma20": 97.60005,
+          "bb_upper": 99.060786,
+          "bb_lower": 96.139314,
+          "rsi": 59.370917
+        },
+        {
+          "date": "2025-10-13",
+          "value": 99.03,
+          "sma20": 97.67915,
+          "bb_upper": 99.26441,
+          "bb_lower": 96.09389,
+          "rsi": 61.792418
+        },
         {
           "date": "2025-10-14",
           "value": 98.81,
@@ -1248,36 +1272,36 @@
           "bb_upper": 101.265293,
           "bb_lower": 98.335707,
           "rsi": 75.984282
-        },
-        {
-          "date": "2026-06-24",
-          "value": 101.61,
-          "sma20": 99.9285,
-          "bb_upper": 101.547849,
-          "bb_lower": 98.309151,
-          "rsi": 77.242803
-        },
-        {
-          "date": "2026-06-25",
-          "value": 101.43,
-          "sma20": 100.0615,
-          "bb_upper": 101.714985,
-          "bb_lower": 98.408015,
-          "rsi": 73.509153
-        },
-        {
-          "date": "2026-06-26",
-          "value": 101.36,
-          "sma20": 100.1635,
-          "bb_upper": 101.872199,
-          "bb_lower": 98.454801,
-          "rsi": 72.050596
         }
       ]
     },
     "vix": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-10",
+          "value": 21.66,
+          "sma20": 16.492,
+          "bb_upper": 19.035239,
+          "bb_lower": 13.948761,
+          "rsi": 73.219882
+        },
+        {
+          "date": "2025-10-13",
+          "value": 19.03,
+          "sma20": 16.659,
+          "bb_upper": 19.400561,
+          "bb_lower": 13.917439,
+          "rsi": 59.161303
+        },
+        {
+          "date": "2025-10-14",
+          "value": 20.81,
+          "sma20": 16.8815,
+          "bb_upper": 20.159672,
+          "bb_lower": 13.603328,
+          "rsi": 64.174893
+        },
         {
           "date": "2025-10-15",
           "value": 20.64,
@@ -2213,36 +2237,36 @@
           "bb_upper": 28.670572,
           "bb_lower": 13.231428,
           "rsi": 49.847632
-        },
-        {
-          "date": "2026-06-24",
-          "value": 18.63,
-          "sma20": 20.704,
-          "bb_upper": 28.388617,
-          "bb_lower": 13.019383,
-          "rsi": 48.105052
-        },
-        {
-          "date": "2026-06-25",
-          "value": 18.89,
-          "sma20": 20.591,
-          "bb_upper": 28.312437,
-          "bb_lower": 12.869563,
-          "rsi": 48.689059
-        },
-        {
-          "date": "2026-06-26",
-          "value": 18.41,
-          "sma20": 20.324,
-          "bb_upper": 27.95885,
-          "bb_lower": 12.68915,
-          "rsi": 47.623526
         }
       ]
     },
     "gold": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-08",
+          "value": 4070.5,
+          "sma20": 3811.365,
+          "bb_upper": 4037.165578,
+          "bb_lower": 3585.564422,
+          "rsi": 82.43909
+        },
+        {
+          "date": "2025-10-09",
+          "value": 3972.6,
+          "sma20": 3826.315,
+          "bb_upper": 4053.240973,
+          "bb_lower": 3599.389027,
+          "rsi": 67.724443
+        },
+        {
+          "date": "2025-10-10",
+          "value": 4000.4,
+          "sma20": 3842.015,
+          "bb_upper": 4071.482455,
+          "bb_lower": 3612.547545,
+          "rsi": 69.39498
+        },
         {
           "date": "2025-10-14",
           "value": 4163.4,
@@ -3178,36 +3202,36 @@
           "bb_upper": 5490.412759,
           "bb_lower": 3719.931241,
           "rsi": 32.314903
-        },
-        {
-          "date": "2026-06-24",
-          "value": 4008.8,
-          "sma20": 4549.427,
-          "bb_upper": 5437.446615,
-          "bb_lower": 3661.407385,
-          "rsi": 29.006409
-        },
-        {
-          "date": "2026-06-25",
-          "value": 4047.6,
-          "sma20": 4495.072,
-          "bb_upper": 5366.058879,
-          "bb_lower": 3624.085121,
-          "rsi": 31.102743
-        },
-        {
-          "date": "2026-06-26",
-          "value": 4096.3,
-          "sma20": 4445.952,
-          "bb_upper": 5290.135949,
-          "bb_lower": 3601.768051,
-          "rsi": 33.747148
         }
       ]
     },
     "ust10y": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-15",
+          "value": 4.045,
+          "sma20": 4.11665,
+          "bb_upper": 4.206323,
+          "bb_lower": 4.026977,
+          "rsi": 41.371116
+        },
+        {
+          "date": "2025-10-16",
+          "value": 3.976,
+          "sma20": 4.1085,
+          "bb_upper": 4.216353,
+          "bb_lower": 4.000647,
+          "rsi": 35.333836
+        },
+        {
+          "date": "2025-10-17",
+          "value": 4.009,
+          "sma20": 4.1017,
+          "bb_upper": 4.216421,
+          "bb_lower": 3.986979,
+          "rsi": 39.854447
+        },
         {
           "date": "2025-10-20",
           "value": 3.988,
@@ -4143,36 +4167,36 @@
           "bb_upper": 4.701617,
           "bb_lower": 4.000883,
           "rsi": 66.297902
-        },
-        {
-          "date": "2026-06-24",
-          "value": 4.4,
-          "sma20": 4.3684,
-          "bb_upper": 4.692035,
-          "bb_lower": 4.044765,
-          "rsi": 55.489527
-        },
-        {
-          "date": "2026-06-25",
-          "value": 4.392,
-          "sma20": 4.3839,
-          "bb_upper": 4.679678,
-          "bb_lower": 4.088122,
-          "rsi": 54.663958
-        },
-        {
-          "date": "2026-06-26",
-          "value": 4.372,
-          "sma20": 4.3952,
-          "bb_upper": 4.670306,
-          "bb_lower": 4.120094,
-          "rsi": 52.558671
         }
       ]
     },
     "wti": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-20",
+          "value": 57.52,
+          "sma20": 61.1285,
+          "bb_upper": 66.259099,
+          "bb_lower": 55.997901,
+          "rsi": 31.517363
+        },
+        {
+          "date": "2025-10-21",
+          "value": 57.82,
+          "sma20": 60.849,
+          "bb_upper": 66.060406,
+          "bb_lower": 55.637594,
+          "rsi": 33.669532
+        },
+        {
+          "date": "2025-10-22",
+          "value": 58.5,
+          "sma20": 60.5245,
+          "bb_upper": 65.465303,
+          "bb_lower": 55.583697,
+          "rsi": 38.395397
+        },
         {
           "date": "2025-10-23",
           "value": 61.79,
@@ -5108,36 +5132,36 @@
           "bb_upper": 97.806389,
           "bb_lower": 68.086611,
           "rsi": 44.100189
-        },
-        {
-          "date": "2026-06-24",
-          "value": 70.34,
-          "sma20": 82.7355,
-          "bb_upper": 98.174292,
-          "bb_lower": 67.296708,
-          "rsi": 40.88599
-        },
-        {
-          "date": "2026-06-25",
-          "value": 71.92,
-          "sma20": 82.5985,
-          "bb_upper": 98.366616,
-          "bb_lower": 66.830384,
-          "rsi": 43.334549
-        },
-        {
-          "date": "2026-06-26",
-          "value": 69.23,
-          "sma20": 82.0095,
-          "bb_upper": 98.816775,
-          "bb_lower": 65.202225,
-          "rsi": 40.275798
         }
       ]
     },
     "brent": {
       "png_url": null,
       "data": [
+        {
+          "date": "2025-10-06",
+          "value": 24.33,
+          "sma20": 49.743,
+          "bb_upper": 92.748335,
+          "bb_lower": 6.737665,
+          "rsi": 15.798391
+        },
+        {
+          "date": "2025-10-07",
+          "value": 24.05,
+          "sma20": 47.626,
+          "bb_upper": 91.308189,
+          "bb_lower": 3.943811,
+          "rsi": 15.67039
+        },
+        {
+          "date": "2025-10-08",
+          "value": 24.38,
+          "sma20": 45.4705,
+          "bb_upper": 89.273565,
+          "bb_lower": 1.667435,
+          "rsi": 16.528769
+        },
         {
           "date": "2025-10-09",
           "value": 23.41,
@@ -6073,30 +6097,6 @@
           "bb_upper": 101.102861,
           "bb_lower": 72.089139,
           "rsi": 44.208459
-        },
-        {
-          "date": "2026-06-24",
-          "value": 73.74,
-          "sma20": 86.213,
-          "bb_upper": 101.624617,
-          "bb_lower": 70.801383,
-          "rsi": 40.756648
-        },
-        {
-          "date": "2026-06-25",
-          "value": 75.26,
-          "sma20": 85.906,
-          "bb_upper": 101.921667,
-          "bb_lower": 69.890333,
-          "rsi": 43.131939
-        },
-        {
-          "date": "2026-06-26",
-          "value": 71.99,
-          "sma20": 85.235,
-          "bb_upper": 102.36341,
-          "bb_lower": 68.10659,
-          "rsi": 39.46597
         }
       ]
     }
@@ -6156,17 +6156,21 @@
     "article_count": 40,
     "avg_sentiment": 0.0,
     "source_breakdown": {
-      "Yahoo Finance": 13,
-      "Forbes": 3,
-      "Fortune": 2,
+      "Yahoo Finance": 7,
       "Bitcoin Magazine": 4,
-      "FOREX.com": 1,
-      "Business Insider": 1,
-      "CoinDesk": 11,
-      "Barron's": 2,
+      "Forbes": 2,
+      "Fortune": 1,
+      "CoinDesk": 12,
+      "Bitcoin Foundation": 1,
+      "Cryptonews.net": 1,
+      "Investing News Network": 2,
+      "Moomoo": 1,
+      "TradingView": 3,
+      "Benzinga": 1,
+      "markets.businessinsider.com": 1,
       "CNBC": 1,
-      "Investopedia": 1,
-      "Investor's Business Daily": 1
+      "Crypto News": 2,
+      "Barron's": 1
     }
   },
   "news_intelligence": {
@@ -6182,35 +6186,35 @@
       {
         "cluster_id": 0,
         "label": "General",
-        "article_count": 37,
+        "article_count": 38,
         "avg_sentiment": 0.0,
         "dominant_category": "general",
         "bias_distribution": {},
         "representative_titles": [
-          "The Latest Crypto Tumble Has Bitcoin Under $60,000—And It's Pressuring Strategy Stock - Investopedia",
+          "Strategy Survives Bitcoin Crash in 3-Year MSTR Stress Test - Bitcoin Foundation",
           "Is bitcoin's price volatility an investing opportunity? Here's how to buy bitcoin. - Yahoo Finance",
-          "The ‘Ponzi Scheme’ Is Collapsing—Bitcoin Suddenly Braced For A Massive Price Crash - Forbes",
-          "Current price of Bitcoin for June 26, 2026 - Fortune",
-          "Bitcoin Price Crashes Toward $61,000 as Bloodbath Engulfs Crypto Stocks - Bitcoin Magazine"
+          "Bitcoin Price Crashes Toward $61,000 as Bloodbath Engulfs Crypto Stocks - Bitcoin Magazine",
+          "Next ‘Generational Wealth’ Creator—The Massive 50x Crypto Price Prediction That Could Be About To Smash Bitcoin - Forbes",
+          "Is the Bottom In For BTC USD Price? 22 Months Until Next Bitcoin Halving – Time to Buy? - Yahoo Finance"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "The Latest Crypto Tumble Has Bitcoin Under $60,000—And It's Pressuring Strategy Stock - Investopedia",
-            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQNUNCckZXcUJVYWZMNTQxbGlIaVpMWHN2N1FxYm52dmNJUVZIcXROa01YOV9fd2ZYOVMxU3VYRFpCZkJtaXBrLWthZHZlRlJ1X1IyQ19wTHVFWnMzeGoyeG9VTkNBNXk1M3VFeDFSZE90SzRaZnYzWmtOMDl3YkhySjZFVW1DRmMyRWh4RUhqRkluNk5oWC1Hclg3QmJUYTgzZlBReUhOcWZXMlNMeXJwUktyTXRLMXN4NWZ5M3NJT3BsanJyZ1pnRHlR?oc=5",
-            "source": "Investopedia",
-            "date": "Thu, 25 Ju",
+            "title": "Strategy Survives Bitcoin Crash in 3-Year MSTR Stress Test - Bitcoin Foundation",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxQX25nMzRHN1RISmlWMzlKV1E5dVJscGZaeWdoZXlCVVNSTXQxTFQ5RllrVjlVWTFISE9tVnlGdlAzUm5rQWNGQ3ZMd0FZcDM2b2lIdGdtOEQ5bzJEWjhKTndvV2dnTHlLTnJyak9Ra3VTOFJxWl9CNkhYX1NmZnhXWUF3QUtJM2pxRlVVUUNpQjUwaTh0bnFBanlBOU4yZmJEVTFBOA?oc=5",
+            "source": "Bitcoin Foundation",
+            "date": "Fri, 26 Ju",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.5,
             "keywords": [
               "TES",
-              "Latest",
-              "Crypto",
-              "Tumble",
               "Bitcoin",
-              "Under"
+              "Strategy",
+              "Survives",
+              "Crash",
+              "Year"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6228,43 +6232,6 @@
               "Here",
               "Yahoo",
               "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "The ‘Ponzi Scheme’ Is Collapsing—Bitcoin Suddenly Braced For A Massive Price Crash - Forbes",
-            "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxQZFN4YWN5YzZfNk1TUHRkMWczdVdmdmgtaXJNdlB6ZDBPZTVwRDBqaUk0SzRYU2M0YWVCUGpvQXBxU3hiODJRbjdrdldKV3JkaTFhNUxzSTdJRHJNVVk1WFBEcFNJdWN6M2h4U0pHZkFianFqN0w3ZEtDeVpEbDNRWHNtLXd6bDRwcXlIOTZGbDViVjVMdjd5UWw4VHdUS2IxMk5jb2o0aXpnZ2tYeEh1M1RKX1F2dkxESzlyWFVKOU5sbGdP?oc=5",
-            "source": "Forbes",
-            "date": "Fri, 26 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Ponzi",
-              "Scheme",
-              "Collapsing",
-              "Bitcoin",
-              "Suddenly"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "Current price of Bitcoin for June 26, 2026 - Fortune",
-            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE40cEdGVXp2SC1HZlk4UGFhaXJIVWdzcTY4NU5ES3pBQlNyMnVaOEJQRTNwS05jTnpZOVFLZ1d4c1lLSHdaVWFTY1hMbHlvSmRQdW0tRHJReGk0emE5NFpfRGRmMUwxMmM?oc=5",
-            "source": "Fortune",
-            "date": "Fri, 26 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Current",
-              "Bitcoin",
-              "June",
-              "Fortune"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6289,26 +6256,48 @@
             "factuality": "unknown"
           },
           {
-            "title": "Now is the winter of our dis-coin-tent: Why bitcoin is trading at a 2-year low - Business Insider",
-            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNQV9BUEJOdFhxZ2lmMFJCenhQWnotcHhTazV5OXBzWGpPOV94TnVKV0lZalNzU3RPMFgxOG1iSHl2R1o0eTg4a3hnZnBGSUNVUWlhLUpON2lvT0c2anp3WllsSGs2VzY3MGNhNUtpNUJSNnlHZTNUNENRU1J4NHRpcnpaNGZraXhUS0NYMmY0MXA2VjQ?oc=5",
-            "source": "Business Insider",
-            "date": "Fri, 26 Ju",
+            "title": "Next ‘Generational Wealth’ Creator—The Massive 50x Crypto Price Prediction That Could Be About To Smash Bitcoin - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMi-AFBVV95cUxNWk1xSjFESE5JVkE0Q0FUOVhWYVkyWVcxWGxoUTd2N2I5azFfOHVXR2hjcnhnUnUtajU5a0xCT3VGQlJxMmZYUEo2aDlSNGZWTGVILXpzdHpxSm1jM0dDczVpUVN4R3lsSjNpeHZFRmhDRFRlWVRRM2tUaEJwXzZBUW1SeFVQTU1sMnNERndpSnVGWnk0X3owaWdOd1FORnhqOTFaeTBMN1plWE1uakYzZzgzU2pCUVR0SkRhZmJIc0gyR3FtRmFDU0dlQml4WmcxUzdVRjVfdXk3c0ZWWDVfY2xaQzI2ZVpFWWdKN2VSTURRekJxMUxjeg?oc=5",
+            "source": "Forbes",
+            "date": "Sun, 28 Ju",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Business",
-              "Insider"
+              "Next",
+              "Generational",
+              "Wealth",
+              "Creator",
+              "Massive"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Is the Bottom In For BTC USD Price? 22 Months Until Next Bitcoin Halving – Time to Buy? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNSDdjVXMzMXVnSU5keW5heURkVklodmlabERYSVRTMks4S1BpRm5PZTNsQVFyUHQ3M3Z5ZHdqNTdwWVNyU3BKYV9xSWFDOU03SmVRMktMdGlIWDNlcGpKam9zalEzWDhMQkZ6c2h5VTdwVU5xV2s1c1ExRkFmVmk3UEZfT1Bqdlh0SHlmRGJmcTBYdw?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Sat, 27 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bottom",
+              "Price",
+              "Months",
+              "Until",
+              "Next"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Current price of Bitcoin for June 25, 2026 - Fortune",
-            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBRelpVRlJON09YVUF2Z0ViVmM2TThLVDdhZFo5TUQ1SllNdVpvc2dWb1hsNGw1LW1hOWZWREI0TXkyTVlVUG5fbFdEQ1N0WlJVZnNBRTZLbU50U09xOTExZ1hSN0RHZ2M?oc=5",
+            "title": "Current price of Bitcoin for June 26, 2026 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE40cEdGVXp2SC1HZlk4UGFhaXJIVWdzcTY4NU5ES3pBQlNyMnVaOEJQRTNwS05jTnpZOVFLZ1d4c1lLSHdaVWFTY1hMbHlvSmRQdW0tRHJReGk0emE5NFpfRGRmMUwxMmM?oc=5",
             "source": "Fortune",
-            "date": "Thu, 25 Ju",
+            "date": "Fri, 26 Ju",
             "language": "en",
             "tone": 0.0,
             "category": "general",
@@ -6318,41 +6307,6 @@
               "Bitcoin",
               "June",
               "Fortune"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Billionaire Saylor Says He’s ‘Focused On Bitcoin’ Despite Stock Plunge - Forbes",
-            "url": "https://news.google.com/rss/articles/CBMi5gFBVV95cUxOT0V3WDFQNDNVZ0xUTmo5cF9KSFlXNGMxNXJoWGZ5UC03dnRLX2FndVZjQmdOQzhuVkNyRkt1Y1cwSDUtWlktNWJncHVOZ213eTVydkJFbnpSRmd4dnIxaG5NempGQmd6blhrU0EtUHFya3Fub1lvdkpLUWhqTkhQXzV1S3UwN2w0alFwdWRsenVCazhpQWVwdjR5b2VVNlV0NlNqZ1BTMnlPd3pNUHpOUXRCempyaFY4anVnUHVxbjRUa3FNTlRrMVpoNmFPWkRMZEFKek9CejJmdWxaY0Q2eDBoMHBiUQ?oc=5",
-            "source": "Forbes",
-            "date": "Fri, 26 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Billionaire",
-              "Saylor",
-              "Says",
-              "Focused",
-              "Bitcoin"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "Bitcoin price analysis: BTC may be close to a bottom. Here's why. - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxPVWtRY2U5RXpXQ0NoSDl5SHZDWTBfWVhfY3k3ckJjQXVFek93RkdEY09BMEtUVTZNT1ZNMVk5R2d2TlF1a3ZDOXhNQXRoSmd3R1hOdkxhX1dZZ1NJS1lmX1I5NlpXMGRhX3Jfam9UTFluQnluUkQ3Unh2R1ZwVEhubXJqRUR6TFNBeWRHTkN1VnFtUHBrVWRvOS0yY3h4S29JaXA1b1VuQ25vTTVxbzQ5MkdQc1d3bVZzakdTemRnQ1U4bUxGWFE?oc=5",
-            "source": "CoinDesk",
-            "date": "Tue, 23 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Here"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6377,20 +6331,17 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price Forecast Suggests More Downside May Be on the Horizon - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQcV9OTFhDMnpMUnlodzJLWXc4SlFSLThMUzgwVXA2bldnYUFka3JVYnR0Ulg5YlhCR0VReFliYmxKcG9zcm1tNGpCTWJkUkZBWUtTMlRibVJVU080NmtrVG9VZ1dYMWc4Y1dtQ0ZGRFlxRW5jMDNVMXJpMkxUNlY2YmZsUW93d0UyTXN2TkFWRm45ZzNTc3A4ejJaeGtqZ3dFd3Q4?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Wed, 24 Ju",
+            "title": "Bitcoin price analysis: BTC may be close to a bottom. Here's why. - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxPVWtRY2U5RXpXQ0NoSDl5SHZDWTBfWVhfY3k3ckJjQXVFek93RkdEY09BMEtUVTZNT1ZNMVk5R2d2TlF1a3ZDOXhNQXRoSmd3R1hOdkxhX1dZZ1NJS1lmX1I5NlpXMGRhX3Jfam9UTFluQnluUkQ3Unh2R1ZwVEhubXJqRUR6TFNBeWRHTkN1VnFtUHBrVWRvOS0yY3h4S29JaXA1b1VuQ25vTTVxbzQ5MkdQc1d3bVZzakdTemRnQ1U4bUxGWFE?oc=5",
+            "source": "CoinDesk",
+            "date": "Tue, 23 Ju",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Price",
-              "Forecast",
-              "Suggests",
-              "More"
+              "Here"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6412,25 +6363,6 @@
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
-          },
-          {
-            "title": "Next ‘Generational Wealth’ Creator—The Massive 50x Crypto Price Prediction That Could Be About To Smash Bitcoin - Forbes",
-            "url": "https://news.google.com/rss/articles/CBMi-AFBVV95cUxNWk1xSjFESE5JVkE0Q0FUOVhWYVkyWVcxWGxoUTd2N2I5azFfOHVXR2hjcnhnUnUtajU5a0xCT3VGQlJxMmZYUEo2aDlSNGZWTGVILXpzdHpxSm1jM0dDczVpUVN4R3lsSjNpeHZFRmhDRFRlWVRRM2tUaEJwXzZBUW1SeFVQTU1sMnNERndpSnVGWnk0X3owaWdOd1FORnhqOTFaeTBMN1plWE1uakYzZzgzU2pCUVR0SkRhZmJIc0gyR3FtRmFDU0dlQml4WmcxUzdVRjVfdXk3c0ZWWDVfY2xaQzI2ZVpFWWdKN2VSTURRekJxMUxjeg?oc=5",
-            "source": "Forbes",
-            "date": "Sun, 28 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Next",
-              "Generational",
-              "Wealth",
-              "Creator",
-              "Massive"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
           },
           {
             "title": "Michael Saylor's Strategy faces no easy way out as bitcoin prices continue to drop - Yahoo Finance",
@@ -6467,8 +6399,8 @@
             "factuality": "unknown"
           },
           {
-            "title": "How Much Will One Bitcoin Be Worth in 2030? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxOM0ZDVkVTTUxwUzlreE1lMFRvUXFSbTM3Uy1xZDdaZHBhdGFUbms0eGJmb2doVk5LMjBtTnJjeFhCcHhWSXcwNXBMZzQ0U2hyWjZzZkhGTGRsUmpuaWRteVZYOTY0Y3FleUFmVHBQV19lOUxESUhYX2I4cFdtdXNxcmFqejRfSTVKSmh6VnJ0SlBKTFZCaU1r?oc=5",
+            "title": "Crypto Market Today, June 25: Crypto Selloff Deepens as Bitcoin Hits Multi-Year Low - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxPdlcwM0owSzNGQllGWldLd3JGUGtiamJrZ3pLN1BBVnNuRHJQeEY2aF9GdEs5MDRNVW41VkUtYXVyaDhyOHNUNWo3X2NqcnNFTFFBcG5iRU93bi1IWkpZTE03XzdsR09PcktfUlZUTzRjTzMxckpMNFlEQ29BNzNFMzBfS3V6MGRZUUctdXQxYVU5RjlPaGJJ?oc=5",
             "source": "Yahoo Finance",
             "date": "Thu, 25 Ju",
             "language": "en",
@@ -6476,11 +6408,46 @@
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Much",
-              "Will",
-              "Bitcoin",
-              "Worth",
-              "Yahoo"
+              "Crypto",
+              "Market",
+              "Today",
+              "June",
+              "Selloff"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "This is 'the most important driver' for bitcoin price momentum: BlackRock's Mitchnick - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxQQXIxZ0xXZlVVMm5GaDFWQXFPeU4ydGlfYnpsaXZqQnhrT1B2OVJxdUtGNHNPdEN0YmxybVU1dkpGTVAwRVV2MWdaNVA4SXU0Z2M0aFVJQVBFck8zQndLZ0tlazVxS0cydnpIZGVvOGJMVUhzQUJ4c3BsWUtidWh0c1pBbE02eU5pbVE?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 22 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "This",
+              "Mitchnick",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Crypto market clings to support as bitcoin hits 21-month low: Crypto Markets Today - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxPbFhubzBKcXpwYkhQUkFhekdaNGFfQzd2UFBqald0bkxqeUxFazFNR0pYVVpBT2U3TnY4X3RWa3BVS0wzUTRwVjZYT3o4UXNvbm4xbFhHY1Vvczh6cGE5YlgydUpmVFZtaGJxNDFhNVJwWWFiUGVjazMtb1Zoc1I4Z0ZqU2oyTldjeF9GWXFiZzFramlKcmVQZzdwcmZETnA5aXZCaTRxQmFoM1BXcDlndDY1TFdyMEZrRUZhY2xERQ?oc=5",
+            "source": "CoinDesk",
+            "date": "Fri, 26 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Crypto",
+              "Markets",
+              "Today"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6489,7 +6456,7 @@
             "title": "Bitcoin Just Dropped Below $60,000. History Says This Is What Happens Next. - Yahoo Finance",
             "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxPQzlrUTNOc2RhbWplT0FMdE5qUFM0QzdYV2hvUWlxSDFTUnI0SnhRdUIzTWV6ZDZpZ01yalNQWWEzVXdKQ0NrdGNxSEdma3dKTUw1bHRCdEZDeEVnMmtRUG5yekpmVGVnSndsNDlsSU5MaTZqQm1kbl90WHZsczVTa2RTcmZPTUcxRHBmVWMya1lmaHFKcXozNzJB?oc=5",
             "source": "Yahoo Finance",
-            "date": "Sun, 28 Ju",
+            "date": "Sat, 27 Ju",
             "language": "en",
             "tone": 0.0,
             "category": "general",
@@ -6505,20 +6472,17 @@
             "factuality": "unknown"
           },
           {
-            "title": "Crypto Market Flashes Recovery Signs Ahead of $10.8B Bitcoin, ETH, XRP, SOL Options Expiry - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxNVlVoYnVvRGNZUmxXQ1d3TjNUUXdjdW5kMnZjTC10S0RkLTNJX2tPYVdpcFNKVUwzbEE2aGNiOXN2ek1GdVV5bkx2M0dtX1YwZ3FZc3UzYUZHSXhKMjhIMG5zZDItQzQ4RHo5T2k4YkRISW40bXRJYnYxUXJ4U09xTGFleHh4Z1ptWUtDaFhlV3AxMHh5dFFqY2tHT0cxWjNRWFAw?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Thu, 25 Ju",
+            "title": "Grant Cardone says he will keep buying bitcoin using real estate cash flows - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxQZXZBdHFhcGtOaFotXzhjNXlkZUZucU12RVBSUl9UZV9iTTg0QW5fQWNHQS1LaGtSTTBLbHhtQVVHQ2pDYlBiMFVkQTlnNGd6NDAzWlZvZE1uT2ZBdGk4aXM3ZUl2aHh2b2lQSVFmakZzdGxWVEM4XzVfNHNQdEZzd1IybllhVW9sSEItSXZ5TS14clBSM1dvNmJ6aGlBUldkN1UwcTMtaWVxWmlGXzFmOVRqT2xfQmZWZmc3Mg?oc=5",
+            "source": "CoinDesk",
+            "date": "Fri, 26 Ju",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Crypto",
-              "Market",
-              "Flashes",
-              "Recovery",
-              "Signs"
+              "Grant",
+              "Cardone"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6537,6 +6501,40 @@
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin clings to $62,500 as bears tighten grip on crypto market - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxQVk5iRVJsazBYUXZWLU5xWlpUU1ZmLWsxWE56NGF3djRUN3AyQ0JPZm1fRVdQWi1iRmJ5UmE0Rm96bzduTjczZlBDTnA0aVJDN0V4d3dfenRLaHpGb3JMYTR4VkNwRXkwMjBKd0UyU3dzdkphQUlqS0dIVU43Q3pJRW1RSFVOSEFSTmFBbm9XS1d1T0VURml3TTJvUk56aWE0cTRXMnhGQlJVWEV4b2xr?oc=5",
+            "source": "CoinDesk",
+            "date": "Wed, 24 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "The ‘Ponzi Scheme’ Is Collapsing—Bitcoin Suddenly Braced For A Massive Price Crash - Forbes",
+            "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxQZFN4YWN5YzZfNk1TUHRkMWczdVdmdmgtaXJNdlB6ZDBPZTVwRDBqaUk0SzRYU2M0YWVCUGpvQXBxU3hiODJRbjdrdldKV3JkaTFhNUxzSTdJRHJNVVk1WFBEcFNJdWN6M2h4U0pHZkFianFqN0w3ZEtDeVpEbDNRWHNtLXd6bDRwcXlIOTZGbDViVjVMdjd5UWw4VHdUS2IxMk5jb2o0aXpnZ2tYeEh1M1RKX1F2dkxESzlyWFVKOU5sbGdP?oc=5",
+            "source": "Forbes",
+            "date": "Fri, 26 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Ponzi",
+              "Scheme",
+              "Collapsing",
+              "Bitcoin",
+              "Suddenly"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
           },
           {
             "title": "Bitcoin Price Flash Crashes from $61,000 to $58,000 as Market Waits For Support - Bitcoin Magazine",
@@ -6558,90 +6556,18 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Is Paying the Price for the End of the Dollar Debasement Trade - Barron's",
-            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxQd0NzNjF6ell3SGlCRXM5MXFUVGoyaURaRThHXy1oazN3UDcwRXFIeW1ab1BYbVdzUjhnQzVyZGZNSzVjNlhiZUtiM3EwUUdaMXFlaEpPZm1hSGZ6TlJxVHhZTExPYWZpSU8yUnhsT3JsOGxlNUdNTnM2ZS1mZ3NRZDdlVExPMU0?oc=5",
-            "source": "Barron's",
-            "date": "Thu, 25 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Paying",
-              "Price",
-              "Dollar",
-              "Debasement"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin clings to $62,500 as bears tighten grip on crypto market - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxQVk5iRVJsazBYUXZWLU5xWlpUU1ZmLWsxWE56NGF3djRUN3AyQ0JPZm1fRVdQWi1iRmJ5UmE0Rm96bzduTjczZlBDTnA0aVJDN0V4d3dfenRLaHpGb3JMYTR4VkNwRXkwMjBKd0UyU3dzdkphQUlqS0dIVU43Q3pJRW1RSFVOSEFSTmFBbm9XS1d1T0VURml3TTJvUk56aWE0cTRXMnhGQlJVWEV4b2xr?oc=5",
-            "source": "CoinDesk",
-            "date": "Wed, 24 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin and ethereum prices today, Thursday, June 25, 2026: Bitcoin tumbles further below $60,000 - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxQN1ZFTWduY0VtTUZHT3Q4T3pUSDlaV3FtWVliRXMzdmpRTjFpaGtBN2JVZEE2blZIVVJENE1JVzVJelI0Y00tNG1KdTBXWnYyX2VYNF9YNXhPajNEdFZ0TFVzcmhUU1Z5bmVBQmtsQ1NFNV9iQmV0aV93RUtWSlJPMTl5dWR4ZWN1azRpU2I4TU9FRERKc1U3UE9SWGZUNHhxWWQyTEU1TDlZNWRfSFJfQmctWjFndHMtaHFJT3JMY0oySWJsOFFva3hDdXMwYkVNb1Q3WmpQNHpYOHlIVjd5V05DZU5XWVdmMUtFM0dCV2dUVUIxTjBZT19Ddw?oc=5",
+            "title": "Bitcoin has crashed 99% before in 2011. But, it's still here. - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxQSVh6YjJmMjFVRTFQamNBaU1ELVlNcFgzZkg3dkpUMkVVWWdhU01rajEyN0RzYjdZdFJodHVicUN1NmtVRUJuOGYzY3RINDFRRjNobkQ3XzRWYkNwb040R1R5bkoxMVV1Zjg1bDN3Q09hcW9SM2JpMEg2ekZKeHFfUWxR?oc=5",
             "source": "Yahoo Finance",
-            "date": "Thu, 25 Ju",
+            "date": "Sun, 28 Ju",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Thursday",
-              "June",
               "Yahoo",
               "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Billionaire investor Jeremy Grantham says bitcoin will 'dwindle away with a whimper' - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxOMGFGZjhucWpMTXVwdXNOeTc5dUdTY0ttajFwZzBFLWtUUW1yaVZRZHZ2VHphZEZxeWpnYkg0Q3hEal9SM2JZT0ZYajBlUVRqX3gwbGR1OUZISTRINU91OE03c3BYOFp0MEpsd05vQW51NHNFVEhsRUlaLXNFZWZzenljOW5rSEVnUi1PUldvMkdObTV2ZWk0Y2FRUE1adDEySTNRRzh1VldaME5FSjVWTjM1V1ZxQUlvdmZZ0gHAAUFVX3lxTE9VV0VsMHFLR18ydXZ2QklLWk5Kd01ITEt2N1U0OWdMaEx3dFRoTUNNMWlVVHc5dW9HMm83WkQweTh0cXJ4TVZXU1BvVmFmOWNGY1VISG1NamxMQUJCckg2NjkxVkhwWnRGUy1NRVFJaDV3MDNmb0xkcS1TZmVqdmJHQWI0VjFIZWFiclY0Nk1jRUl2djJONkpjSHhKenowTk9Wdzdqc1RndEVOeDloeENqdEdFa3JzcmIxUVBNTERpbQ?oc=5",
-            "source": "CNBC",
-            "date": "Fri, 26 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Billionaire",
-              "Jeremy",
-              "Grantham"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "China’s Top Bitcoin Miner Suggests Arthur Hayes Is Right About BTC Bottom - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPc00wSkFSUTVNMkJrQWF3ZGNHM2k3NDkxYkIxZE95Q0Nwa1ZISFAwQlNHVm1DRjlOSzdPRjZ6X3V4VThISzNjODJSdG8xemdQYWpmdjU0YkE4WlRZNG1wQkIzRDJtU3prNkdsSEcxckptUFFrcXNoY19YdDhEMlRNb0VhU2RYaWdXcFo2dnRscGtIREpqdTBhcmxVMGtCQQ?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Thu, 25 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "China",
-              "Bitcoin",
-              "Miner",
-              "Suggests",
-              "Arthur"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6657,23 +6583,6 @@
             "relevance": 0.2,
             "keywords": [
               "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Crypto market clings to support as bitcoin hits 21-month low: Crypto Markets Today - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMivwFBVV95cUxPbFhubzBKcXpwYkhQUkFhekdaNGFfQzd2UFBqald0bkxqeUxFazFNR0pYVVpBT2U3TnY4X3RWa3BVS0wzUTRwVjZYT3o4UXNvbm4xbFhHY1Vvczh6cGE5YlgydUpmVFZtaGJxNDFhNVJwWWFiUGVjazMtb1Zoc1I4Z0ZqU2oyTldjeF9GWXFiZzFramlKcmVQZzdwcmZETnA5aXZCaTRxQmFoM1BXcDlndDY1TFdyMEZrRUZhY2xERQ?oc=5",
-            "source": "CoinDesk",
-            "date": "Fri, 26 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Crypto",
-              "Markets",
-              "Today"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6709,9 +6618,46 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Whale In Dash For Cash As Preferred Stock Crashes - Investor's Business Daily",
-            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxOdGJnUFg4d1pMMnFiUDc4UjNqOUxnRVVNY2hrUHhTc092MzlfUnlYMHdVVWdqRUhQc3RUT1JjRDV3OHpMcUJTbWloemRUdV81RmE2YlQ4b3dPREhvTXZSMUpfX2hWVndycDFDNWpwcXFieE4wQ1FMZ243UXVicnZubllqYWVxT2xDSmVpbXVGSldtbGo4WE1DQTR4VVFsV0N0?oc=5",
-            "source": "Investor's Business Daily",
+            "title": "Will Bitcoin price recover in July? - Cryptonews.net",
+            "url": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE94cURXMFY3NE5nYU1LNS1KSHhYbEFFRzZicEdBUEtEX1FDZnBVamV6SXdleWdraTY0dmFCTXRobGxyMERMWkFkblFWNDlwdzlubjVkejllalk?oc=5",
+            "source": "Cryptonews.net",
+            "date": "Sun, 28 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Will",
+              "Bitcoin",
+              "July",
+              "Cryptonews"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Crypto Market Update: Binance Suspends EU Operations After MiCA License Rejection - Investing News Network",
+            "url": "https://news.google.com/rss/articles/CBMihgFBVV95cUxQUTZkUGIyU3huTVE5ckgxazM4Q2pXWVoxb1RaTjdmOHFnSnZ4M19PTGUzMTJsNVladlBRa1dEOEZjM25oamZlVEg3UThGS1hlRDg2TmhMdmdsaTRENU5nZFBZT2l5VlFfSFpzU3JDSUhOc3FhQWpSWkI3UjhLRnpsc3M3VkVNZw?oc=5",
+            "source": "Investing News Network",
+            "date": "Fri, 26 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Crypto",
+              "Market",
+              "Update",
+              "Binance",
+              "Suspends"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "CoinDesk Bitcoin Price Index Gained 0.91% to $59740.62 -- Data Talk - Moomoo",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOMzY0MHpZSXBCdUdBdnVGY0dwOHhyVE9zUlY0SUtNbGtuVVdWNHdsOFJId3czT09fNDNNOGJFeWplZkVlOXlIZVNtWEJvNTJNY2RudmxMMFpoQmdQU1pMLVhsSi1hX25GcWxkQWNMYWcydUs3MHh0c0tMQ2tZVjBrcnBTWWNRMW15OGpocHZkdWlzU083Ry0zOEhB?oc=5",
+            "source": "Moomoo",
             "date": "Fri, 26 Ju",
             "language": "en",
             "tone": 0.0,
@@ -6719,10 +6665,193 @@
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Whale",
-              "Dash",
-              "Cash",
-              "Preferred"
+              "Price",
+              "Index",
+              "Gained",
+              "Data"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Will Bitcoin Price Dip Below $50,000? - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxPWlEzaFRORnpHc1I5NE5kQTFFQWR4emlEajZuSHpJZllrbjc0ZUsxalFIempTbzZfX2MwZ0hIdzgwRTlDeFdyd0d5Q3k4LUJsNm5DclFYeVdFRGhNY1BqYVhIUGU3azVKVXJReDE2UHYxNW1qc2N2S0l4UmNOSmloRGZBYklvQlo5cFh6NEpjRy1LdmZVdjhmTHQtRQ?oc=5",
+            "source": "TradingView",
+            "date": "Thu, 25 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Will",
+              "Bitcoin",
+              "Price",
+              "Below"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Stalls at Key Support as ETF Outflows Reach Monthly Record - Benzinga",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxOTnBrdjY4T0ZIbllhWlJaRFZWcnNDR3lOcXFrcXRsZWxTMUw4X0pueVNTekl4ZnN0WTVIYWVIOXF4aEY4M08zN2NSZzRtMHlxUU9xeU5lMGNzaGxuYWo5dmVTektSZU53anJKdUhBU1lRRzMtZC1pQ3d1dE5ab1hvcHFhZjlzMUxHLTRFNWVNOHB0Y3Q2N1c0Q2VWWjdxRGdfU2Eza1owNWRDWlFva3JMN2x3cG85Qkt3RDZF?oc=5",
+            "source": "Benzinga",
+            "date": "Sat, 27 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Stalls",
+              "Support",
+              "Outflows"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Crypto Market Update: Catholic Leaders Oppose CLARITY Act Provisions - Investing News Network",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxOclRhdGFqbVlkWEl2cWg2QUd6Tk9md0tqVHJ2VWFMN2NQY3NMbnpOa1ozTlN0X2tiM3hicnlxR19jcDNfTEtxN3BFZklVWWZ2eEUxeUkyQzVuRmZMYVY1eU50QkNENllGYkxzeWhKUWN6Z0ZEbDlsYmJUb21mbmdDeA?oc=5",
+            "source": "Investing News Network",
+            "date": "Wed, 24 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Crypto",
+              "Market",
+              "Update",
+              "Catholic",
+              "Leaders"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Pepeto Launches DeFi Tools While Bitcoin Price Targets $150,000 and Whales Found Next Dogecoin - markets.businessinsider.com",
+            "url": "https://news.google.com/rss/articles/CBMi5wFBVV95cUxNaVdza0hyTHlpQlFYaW0zTldhVXF0ZmVpTEdCX3UwaWVzcExfaUMteUtETUI0SmRVUDFXdW5Za0lheDZxeVBxOF9INjlCNDdNdGxtaVBwSm1ZMk9sS2M2a0U2XzVCcE9BNE9UbmotQkdyQ29NMlNBSHozNDZUZDByaC1yUEk4ckJ2TTF0Q1NpUWZlV0V2TzVvMXN4RW1KOHpmTnNXd0h0NXFJOUIzMWtOcDNNY1FaSEdJVEE2OXA0elZOdVNtc0NZOFNrNHVGYjNRU2gyZF9ISnhoeHlHZlltT0NPZW9oblU?oc=5",
+            "source": "markets.businessinsider.com",
+            "date": "Thu, 25 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Pepeto",
+              "Launches",
+              "Tools",
+              "While",
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "BTC/USD: Bitcoin Slides Back to Key Support at $60,000. Can Saylor Stay Afloat? - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMi0wFBVV95cUxPUl9hZTEwbEFMNlBYWmE0QV9ab1NMUll1aTFZbFVHU1NoeDFybnZZa1dmU1JyNzNLMGFManh2NTBHRXdlVDdLeDdudDViU0tweTNrSVB4ZjFxbkJCMVpFN2R1eXBaMjA2eWFxNXE5OUs5clM0djRZbXNOalh4enJaaWg0WHF5YlJQZ2psUkpHVE80TEJsX28yalotX1hiT1ZuZ1FEU2M0RGNQTklSN1ltZ0JKRnhTRHdGQlA5TkJiNGRnMkk3RE1DclU2d2tOdFMyRWs0?oc=5",
+            "source": "TradingView",
+            "date": "Fri, 26 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Slides",
+              "Back",
+              "Support",
+              "Saylor"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Reclaims Key Support as On-Chain Data Signals Cooler Whale Selling - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxNaXctWmJxQ2Q3dWI5RGplREJMbHZmQjZlbWVhV0tmeWI3YTktRWhmaFZ1UGdmUW11MjRqeTBhZHV5UnFYS3ZQSldXTUJQamR5TVRvVTdrdzJ4WTYxdU1fZUE3RG03blVyVXF2YlVZdVpESmh0SHJQZ21CaEFIWTdIUDF5WjU3M1FuUmZDaVhSaGptM2NEaTNJQ2QwYms5NlRMcmdaZHZGY2NVbFRqTEgyU2xocmxMVS1tNnhFelBtWHJSZ2pSWmx4dHZxMGg?oc=5",
+            "source": "TradingView",
+            "date": "Sat, 27 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Reclaims",
+              "Support",
+              "Chain",
+              "Data"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Billionaire investor Jeremy Grantham says bitcoin will 'dwindle away with a whimper' - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxOMGFGZjhucWpMTXVwdXNOeTc5dUdTY0ttajFwZzBFLWtUUW1yaVZRZHZ2VHphZEZxeWpnYkg0Q3hEal9SM2JZT0ZYajBlUVRqX3gwbGR1OUZISTRINU91OE03c3BYOFp0MEpsd05vQW51NHNFVEhsRUlaLXNFZWZzenljOW5rSEVnUi1PUldvMkdObTV2ZWk0Y2FRUE1adDEySTNRRzh1VldaME5FSjVWTjM1V1ZxQUlvdmZZ0gHAAUFVX3lxTE9VV0VsMHFLR18ydXZ2QklLWk5Kd01ITEt2N1U0OWdMaEx3dFRoTUNNMWlVVHc5dW9HMm83WkQweTh0cXJ4TVZXU1BvVmFmOWNGY1VISG1NamxMQUJCckg2NjkxVkhwWnRGUy1NRVFJaDV3MDNmb0xkcS1TZmVqdmJHQWI0VjFIZWFiclY0Nk1jRUl2djJONkpjSHhKenowTk9Wdzdqc1RndEVOeDloeENqdEdFa3JzcmIxUVBNTERpbQ?oc=5",
+            "source": "CNBC",
+            "date": "Fri, 26 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Billionaire",
+              "Jeremy",
+              "Grantham"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Bitcoin price holds $60K as Middle East tensions fail to spark panic - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxPZnR4UEdPTFBfOERUdlp5MnJyWlN1VzBYbDNlbGFXZmRjZjhlWlEwaC03ekR1b2oyejJpdUo3ZUo2NEoza2owb25ybnFqaG1PRldWOTVOeW9ISmI2RFRpbmFRTmZoVmtoRy1Ma3Y2eFNsUEF0Z1dVdDFsOEgwVVd0dnBzeVlpZHpYOG51cUlfb2U2UQ?oc=5",
+            "source": "Crypto News",
+            "date": "Sun, 28 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Middle",
+              "East",
+              "Crypto",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin (BTC) price is forming a bear flag that may signal crash to $55,000, analyst says - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMizwFBVV95cUxOR1NyTFFFdk5wOGc4NVJ2NTQ5MG9ObUsxeWxLVjFnemcwMjU2UVJEVU1FbnRZNVdHbE42U1lkNzAxVjVpMGxyb3FDeDZPekNaQ1lRcnEyVWsyTmZlcmlsMlBHRUJScW55WFVncVdxZXF5ajk2YTlPd1oxSmFpOWZ1eEVucWZrWFJpVjVIcHZSaXVuV004UXc4UWtiNGh0cDJkb3NxOVpGNWhtY2xqbkt4dXR1S3BoazdYVVVnQzhhTGZoblBRYWhBY2NTLXp5OXc?oc=5",
+            "source": "CoinDesk",
+            "date": "Mon, 22 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Prediction: Is the 4-Year Cycle Dead? - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTE9hVW1SYzBxdWJUMlg0M0lnTlRsVVFyeW4xRnFGc3pBdzU1dWVLaDRIbEYxS2F4ZDkzNnZ5bU5aWjVydXM4TnFtdnRJMW5DMVVSSWR2YTEtX1hUaDA1VjhHYWRjWEhhZDlFcjFWdWdfd18tRjdCanNJT2hicw?oc=5",
+            "source": "Crypto News",
+            "date": "Fri, 26 Ju",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Prediction",
+              "Year",
+              "Cycle"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6745,156 +6874,27 @@
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
-          },
-          {
-            "title": "Grant Cardone says he will keep buying bitcoin using real estate cash flows - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxQZXZBdHFhcGtOaFotXzhjNXlkZUZucU12RVBSUl9UZV9iTTg0QW5fQWNHQS1LaGtSTTBLbHhtQVVHQ2pDYlBiMFVkQTlnNGd6NDAzWlZvZE1uT2ZBdGk4aXM3ZUl2aHh2b2lQSVFmakZzdGxWVEM4XzVfNHNQdEZzd1IybllhVW9sSEItSXZ5TS14clBSM1dvNmJ6aGlBUldkN1UwcTMtaWVxWmlGXzFmOVRqT2xfQmZWZmc3Mg?oc=5",
-            "source": "CoinDesk",
-            "date": "Fri, 26 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Grant",
-              "Cardone"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Michael Saylor’s Bitcoin Treasury Strategy Has Finally Hit Its Breaking Point - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOSTBxYk9pRmZPWTFaSS1Zd1VJYTdpeElNTjNIVkM5amxzY29qRlpEc3QxNGUza0c5WFNRajdhcWJwRUtaOF9VMzVfU1k1MVRacnJvZzh0cldFam9zczlneHNjWDhXaXJFMlVqRVU1U1BTNk5WS0g4QjVTU09XX1RfOFpzZlRwbmk2VmhOYUwydTNfYTI4cjJ0dmM1SlJJd1RsQlMtUzdya3M?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Sun, 28 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Michael",
-              "Saylor",
-              "Bitcoin",
-              "Treasury",
-              "Strategy"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Has Had a Terrible 2026. What Can Make the Second Half of the Year Better? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxOekdUZF9NNmFVYUhIZHh3XzFBVW90UVJVN3h0RHBVT3BISDFSSGZyYXBySS1Jdmo5UDQ3ck00SkJmVV9uelhrMkljYVJwaXFFUTFWbW56QkRNU0h6dEtzM05LUkc3UXM1cDk0elFtYjQtRnNUZGpGanVGYlNmUHhkakVPc09fckVjV3NFOFhpdE5yc2pEOTJ2MHRPdkhSdw?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Sun, 28 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Terrible",
-              "What",
-              "Make",
-              "Second"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Faces Record $10.6B Options Expiry as Bitfinex Warns 'Max Pain' Is a Distraction - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxOREVfQ0UtdTBTcWoyOXZHSmd5Ty1FdmJCSXNBMjRxMjZMOU9McFJ5QkdfS0x6UF81TEkyTjVLVndFU0NmNTg3bGN6NTltdGhOZldZNUlqME1qcWpvQ3k2SXhVU2F0YTFmNXIzbHBManYzRkJNYVlLbkVLNWtPQkM4WkM5Ynl6QXNyYTJCM1dPWnBqVngxYVFj?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Thu, 25 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Faces",
-              "Record",
-              "Options",
-              "Expiry"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Should You Buy Bitcoin While It's Under $70,000? The Answer Might Surprise You. - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxPSUdmS2VoNUQtcDRwdDJ6TDZ2MmpQMnBiNnBKUDBlV1UwTHZxdGdVTDJQbzFjcF9BMm16WHZWVlRJYlU0UnlLTDVlTnZWZGxXTUVnaE9lUUdoUmk2eHFUYkJXRVpDLXlUUEJUdmNpWVZTaXBRRk1Zc1BQa1VHdHpiYk9FNmxaQ2k3NWpRMEdZY0dfWjN6OUE?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Sat, 27 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Should",
-              "Bitcoin",
-              "While",
-              "Under",
-              "Answer"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "With bitcoin price tumbling, bitcoin miners face revenue pressure - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMijAFBVV95cUxPMk5ESEctM0FUVFlDeWNNLTRTN0hjby1lMlFXazdCMGVLeHA4bHNPY0NraXNPWTJCWVpDaHJ1S1hqV09weXhWa1BhNHU0VzFvQUEtOUJyZERoUjZBdThfWHZHRzYtRGhHcHlDY2xRQ3p0cWlhZmtMU2ZsVEpwXzVhRy1fbnNlVGVPVThFVA?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Fri, 26 Ju",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "With",
-              "Yahoo",
-              "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
           }
         ]
       }
     ],
     "top_stories": [
       {
-        "title": "Bitcoin Price Forecast: BTC/USD 30% Selloff Tests Major Support—Bottoming Risk Builds 6 25 2026 - FOREX.com",
-        "url": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxPRE8xRUE1V2FqbGtvZ0ZHM01WSFpqZHNJa1hpeXpWemNsWnhUMW90RXhaLUMzbFhTY1JSekd4Q3U5QjNqWEdlZFlnSW9MUTc1ZEtCTHZLdkxyVFVoUmhLcHhHRGYzYnNDMDlhRlhPVlVJNnkwMjlyeEVfYUdibldkVUF0bGpwQ3RycmxTdUlib1dpYVVlQmhXc2t3M3VxNkhFeTA5UVNxSVdrZ19nTlFBNmVZU05wWDBibklpOFA2c1BSbDViN0t2alMxX21mdndUaE1VejhWMA?oc=5",
-        "source": "FOREX.com",
-        "date": "Thu, 25 Ju",
-        "language": "en",
-        "tone": 0.0,
-        "category": "fx_market",
-        "relevance": 0.5,
-        "keywords": [
-          "TES",
-          "Bitcoin",
-          "Price",
-          "Forecast",
-          "Selloff",
-          "Tests"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "The Latest Crypto Tumble Has Bitcoin Under $60,000—And It's Pressuring Strategy Stock - Investopedia",
-        "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQNUNCckZXcUJVYWZMNTQxbGlIaVpMWHN2N1FxYm52dmNJUVZIcXROa01YOV9fd2ZYOVMxU3VYRFpCZkJtaXBrLWthZHZlRlJ1X1IyQ19wTHVFWnMzeGoyeG9VTkNBNXk1M3VFeDFSZE90SzRaZnYzWmtOMDl3YkhySjZFVW1DRmMyRWh4RUhqRkluNk5oWC1Hclg3QmJUYTgzZlBReUhOcWZXMlNMeXJwUktyTXRLMXN4NWZ5M3NJT3BsanJyZ1pnRHlR?oc=5",
-        "source": "Investopedia",
-        "date": "Thu, 25 Ju",
+        "title": "Strategy Survives Bitcoin Crash in 3-Year MSTR Stress Test - Bitcoin Foundation",
+        "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxQX25nMzRHN1RISmlWMzlKV1E5dVJscGZaeWdoZXlCVVNSTXQxTFQ5RllrVjlVWTFISE9tVnlGdlAzUm5rQWNGQ3ZMd0FZcDM2b2lIdGdtOEQ5bzJEWjhKTndvV2dnTHlLTnJyak9Ra3VTOFJxWl9CNkhYX1NmZnhXWUF3QUtJM2pxRlVVUUNpQjUwaTh0bnFBanlBOU4yZmJEVTFBOA?oc=5",
+        "source": "Bitcoin Foundation",
+        "date": "Fri, 26 Ju",
         "language": "en",
         "tone": 0.0,
         "category": "general",
         "relevance": 0.5,
         "keywords": [
           "TES",
-          "Latest",
-          "Crypto",
-          "Tumble",
           "Bitcoin",
-          "Under"
+          "Strategy",
+          "Survives",
+          "Crash",
+          "Year"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6912,43 +6912,6 @@
           "Here",
           "Yahoo",
           "Finance"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "The ‘Ponzi Scheme’ Is Collapsing—Bitcoin Suddenly Braced For A Massive Price Crash - Forbes",
-        "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxQZFN4YWN5YzZfNk1TUHRkMWczdVdmdmgtaXJNdlB6ZDBPZTVwRDBqaUk0SzRYU2M0YWVCUGpvQXBxU3hiODJRbjdrdldKV3JkaTFhNUxzSTdJRHJNVVk1WFBEcFNJdWN6M2h4U0pHZkFianFqN0w3ZEtDeVpEbDNRWHNtLXd6bDRwcXlIOTZGbDViVjVMdjd5UWw4VHdUS2IxMk5jb2o0aXpnZ2tYeEh1M1RKX1F2dkxESzlyWFVKOU5sbGdP?oc=5",
-        "source": "Forbes",
-        "date": "Fri, 26 Ju",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Ponzi",
-          "Scheme",
-          "Collapsing",
-          "Bitcoin",
-          "Suddenly"
-        ],
-        "bias_label": "center-right",
-        "factuality": "high"
-      },
-      {
-        "title": "Current price of Bitcoin for June 26, 2026 - Fortune",
-        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE40cEdGVXp2SC1HZlk4UGFhaXJIVWdzcTY4NU5ES3pBQlNyMnVaOEJQRTNwS05jTnpZOVFLZ1d4c1lLSHdaVWFTY1hMbHlvSmRQdW0tRHJReGk0emE5NFpfRGRmMUwxMmM?oc=5",
-        "source": "Fortune",
-        "date": "Fri, 26 Ju",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Current",
-          "Bitcoin",
-          "June",
-          "Fortune"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6973,26 +6936,48 @@
         "factuality": "unknown"
       },
       {
-        "title": "Now is the winter of our dis-coin-tent: Why bitcoin is trading at a 2-year low - Business Insider",
-        "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNQV9BUEJOdFhxZ2lmMFJCenhQWnotcHhTazV5OXBzWGpPOV94TnVKV0lZalNzU3RPMFgxOG1iSHl2R1o0eTg4a3hnZnBGSUNVUWlhLUpON2lvT0c2anp3WllsSGs2VzY3MGNhNUtpNUJSNnlHZTNUNENRU1J4NHRpcnpaNGZraXhUS0NYMmY0MXA2VjQ?oc=5",
-        "source": "Business Insider",
-        "date": "Fri, 26 Ju",
+        "title": "Next ‘Generational Wealth’ Creator—The Massive 50x Crypto Price Prediction That Could Be About To Smash Bitcoin - Forbes",
+        "url": "https://news.google.com/rss/articles/CBMi-AFBVV95cUxNWk1xSjFESE5JVkE0Q0FUOVhWYVkyWVcxWGxoUTd2N2I5azFfOHVXR2hjcnhnUnUtajU5a0xCT3VGQlJxMmZYUEo2aDlSNGZWTGVILXpzdHpxSm1jM0dDczVpUVN4R3lsSjNpeHZFRmhDRFRlWVRRM2tUaEJwXzZBUW1SeFVQTU1sMnNERndpSnVGWnk0X3owaWdOd1FORnhqOTFaeTBMN1plWE1uakYzZzgzU2pCUVR0SkRhZmJIc0gyR3FtRmFDU0dlQml4WmcxUzdVRjVfdXk3c0ZWWDVfY2xaQzI2ZVpFWWdKN2VSTURRekJxMUxjeg?oc=5",
+        "source": "Forbes",
+        "date": "Sun, 28 Ju",
         "language": "en",
         "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
-          "Business",
-          "Insider"
+          "Next",
+          "Generational",
+          "Wealth",
+          "Creator",
+          "Massive"
+        ],
+        "bias_label": "center-right",
+        "factuality": "high"
+      },
+      {
+        "title": "Is the Bottom In For BTC USD Price? 22 Months Until Next Bitcoin Halving – Time to Buy? - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNSDdjVXMzMXVnSU5keW5heURkVklodmlabERYSVRTMks4S1BpRm5PZTNsQVFyUHQ3M3Z5ZHdqNTdwWVNyU3BKYV9xSWFDOU03SmVRMktMdGlIWDNlcGpKam9zalEzWDhMQkZ6c2h5VTdwVU5xV2s1c1ExRkFmVmk3UEZfT1Bqdlh0SHlmRGJmcTBYdw?oc=5",
+        "source": "Yahoo Finance",
+        "date": "Sat, 27 Ju",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Bottom",
+          "Price",
+          "Months",
+          "Until",
+          "Next"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
       },
       {
-        "title": "Current price of Bitcoin for June 25, 2026 - Fortune",
-        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTFBRelpVRlJON09YVUF2Z0ViVmM2TThLVDdhZFo5TUQ1SllNdVpvc2dWb1hsNGw1LW1hOWZWREI0TXkyTVlVUG5fbFdEQ1N0WlJVZnNBRTZLbU50U09xOTExZ1hSN0RHZ2M?oc=5",
+        "title": "Current price of Bitcoin for June 26, 2026 - Fortune",
+        "url": "https://news.google.com/rss/articles/CBMiZ0FVX3lxTE40cEdGVXp2SC1HZlk4UGFhaXJIVWdzcTY4NU5ES3pBQlNyMnVaOEJQRTNwS05jTnpZOVFLZ1d4c1lLSHdaVWFTY1hMbHlvSmRQdW0tRHJReGk0emE5NFpfRGRmMUwxMmM?oc=5",
         "source": "Fortune",
-        "date": "Thu, 25 Ju",
+        "date": "Fri, 26 Ju",
         "language": "en",
         "tone": 0.0,
         "category": "general",
@@ -7007,23 +6992,23 @@
         "factuality": "unknown"
       },
       {
-        "title": "Billionaire Saylor Says He’s ‘Focused On Bitcoin’ Despite Stock Plunge - Forbes",
-        "url": "https://news.google.com/rss/articles/CBMi5gFBVV95cUxOT0V3WDFQNDNVZ0xUTmo5cF9KSFlXNGMxNXJoWGZ5UC03dnRLX2FndVZjQmdOQzhuVkNyRkt1Y1cwSDUtWlktNWJncHVOZ213eTVydkJFbnpSRmd4dnIxaG5NempGQmd6blhrU0EtUHFya3Fub1lvdkpLUWhqTkhQXzV1S3UwN2w0alFwdWRsenVCazhpQWVwdjR5b2VVNlV0NlNqZ1BTMnlPd3pNUHpOUXRCempyaFY4anVnUHVxbjRUa3FNTlRrMVpoNmFPWkRMZEFKek9CejJmdWxaY0Q2eDBoMHBiUQ?oc=5",
-        "source": "Forbes",
-        "date": "Fri, 26 Ju",
+        "title": "Bitcoin Price Collapses to $59,000 — and the Worst May Not Be Over - Bitcoin Magazine",
+        "url": "https://news.google.com/rss/articles/CBMid0FVX3lxTFByczhyMFB4eWFJUG9MeVpVVWhGRHlJcU12TFV4OXNYbFNtbHRNR2EwUlE4MHpWMDNiMlJIeVk2VDdlMi1YMEZSa3JUNmdfTFFkSm96ZzU3LWlaLUdFZW5pTm9LSFJHdkhXRmdxMEhqdG8tSHlzZUVj?oc=5",
+        "source": "Bitcoin Magazine",
+        "date": "Wed, 24 Ju",
         "language": "en",
         "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
-          "Billionaire",
-          "Saylor",
-          "Says",
-          "Focused",
-          "Bitcoin"
+          "Bitcoin",
+          "Price",
+          "Collapses",
+          "Worst",
+          "Over"
         ],
-        "bias_label": "center-right",
-        "factuality": "high"
+        "bias_label": "unknown",
+        "factuality": "unknown"
       },
       {
         "title": "Bitcoin price analysis: BTC may be close to a bottom. Here's why. - CoinDesk",
@@ -7040,20 +7025,61 @@
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
+      },
+      {
+        "title": "Bitcoin (BTC) price could fall to $55,000 to find a bottom in August-October, 10x Research says - CoinDesk",
+        "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxNb1lOVUFXbS1PZnhvVUZ4ck5VSUtWQ2VxUGZ4bjVrTm11dkZYWmQ1djMySmV1MHg0NVA1X2Q3U0hfZzRyZ1RqeTQ4VTM2NVNZejNkaU1NajBTUTZ0M0JHd0JfaFJtbDNQMGNSQUtXTE53R29CYmN6Q0RoZVBFckhmdmVNN24zMkEtd2R1VlNZYjcwcWNVVVFvS3E0S19ydmRWazVNdTRKTEdvZGlZd3Fqc0djenhCbG56?oc=5",
+        "source": "CoinDesk",
+        "date": "Wed, 24 Ju",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Bitcoin",
+          "August",
+          "October",
+          "Research"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Michael Saylor's Strategy faces no easy way out as bitcoin prices continue to drop - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMi1AFBVV95cUxPUXRTcmVuaU9PZkpUUFBJcEVfQktwMzhoQlZnU1hxdTZONlRtMVYzVHRpZjJwRWdxVTRMVk1hWGNSbGl0WnFtQXVJNC0tcFFIUWYxdkxsSDlUcjBtem5zbVRTSS1DTC1HeWo5dVNQMWR5Ql9QZWQ0Q1Jla2pTdXlLcy1tNC1taWhQeGVHR2RIbXpKRWtzaG95d3lyZFRvZ1hrdUxwRzRfalMtdkl0R054WERhS09HeXY2QlM2T2d1d1kzYTAyYjhDeHdOMjhQelFyRmxzTg?oc=5",
+        "source": "Yahoo Finance",
+        "date": "Fri, 26 Ju",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Michael",
+          "Saylor",
+          "Strategy",
+          "Yahoo",
+          "Finance"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
       }
     ],
     "source_diversity": {
-      "FOREX.com": 1,
-      "Investopedia": 1,
-      "Yahoo Finance": 13,
-      "Forbes": 3,
-      "Fortune": 2,
+      "Bitcoin Foundation": 1,
+      "Yahoo Finance": 7,
       "Bitcoin Magazine": 4,
-      "Business Insider": 1,
-      "CoinDesk": 11,
-      "Barron's": 2,
+      "Forbes": 2,
+      "Fortune": 1,
+      "CoinDesk": 12,
+      "Cryptonews.net": 1,
+      "Investing News Network": 2,
+      "Moomoo": 1,
+      "TradingView": 3,
+      "Benzinga": 1,
+      "markets.businessinsider.com": 1,
       "CNBC": 1,
-      "Investor's Business Daily": 1
+      "Crypto News": 2,
+      "Barron's": 1
     }
   },
   "political_bias_analysis": {
@@ -7061,19 +7087,19 @@
       "left": 0,
       "center-left": 0,
       "center": 0,
-      "center-right": 4,
+      "center-right": 3,
       "right": 0,
-      "unknown": 36
+      "unknown": 37
     },
     "bias_diversity_score": 0.0,
     "factuality_distribution": {
-      "high": 4,
+      "high": 3,
       "mixed": 0,
       "low": 0,
-      "unknown": 36
+      "unknown": 37
     },
     "cluster_bias_assessments": [],
-    "flagged_articles": 4,
+    "flagged_articles": 3,
     "bias_narrative": "",
     "total_analyzed": 40
   },
@@ -7087,5 +7113,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-20T22:48:59.305086+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }

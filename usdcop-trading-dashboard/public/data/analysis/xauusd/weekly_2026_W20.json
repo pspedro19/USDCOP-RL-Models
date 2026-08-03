@@ -9,7 +9,7 @@
   "week_end": "2026-05-17",
   "weekly_summary": {
     "headline": "Oro (Gold) · Semana 20 de 2026",
-    "markdown": "### Oro (Gold) — Semana 20 (2026-05-11 → 2026-05-17)\n\nEl cierre semanal de XAU/USD fue **4540.15 USD/oz**, un cambio de **-3.73%** en la semana (rango 4512.33–4773.50). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 4540.15. RSI(14)=39 (neutral). Soporte 4503.72, resistencia 4834.32.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: CNBC, GoldSilver, BullionVault.",
+    "markdown": "### Oro (Gold) — Semana 20 (2026-05-11 → 2026-05-17)\n\nEl cierre semanal de XAU/USD fue **4540.15 USD/oz**, un cambio de **-3.73%** en la semana (rango 4512.33–4773.50). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 4540.15. RSI(14)=39 (neutral). Soporte 4503.72, resistencia 4834.32.\n\n### Estrategia\nLa estrategia **Gold · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Oro (Gold) esta semana, principales fuentes: Morningstar, Yahoo Finance, BullionVault.",
     "sentiment": "bearish",
     "ohlcv": {
       "open": 4715.3775,
@@ -40,7 +40,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-12",
@@ -58,7 +58,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-13",
@@ -76,7 +76,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-14",
@@ -94,7 +94,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     },
     {
       "analysis_date": "2026-05-15",
@@ -112,7 +112,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-12T01:11:11.942294+00:00"
+      "generated_at": "2026-07-29T13:00:11.510212+00:00"
     }
   ],
   "macro_snapshots": {
@@ -6118,69 +6118,251 @@
   },
   "news_context": {
     "article_count": 40,
-    "avg_sentiment": -0.133,
+    "avg_sentiment": 0.0,
     "source_breakdown": {
-      "CNBC": 1,
-      "GoldSilver": 2,
-      "BullionVault": 1,
+      "Morningstar": 1,
+      "Yahoo Finance": 6,
+      "BullionVault": 2,
+      "CNBC": 2,
+      "GoldSilver": 3,
       "Robin J Brooks | Substack": 1,
-      "Reuters": 2,
-      "Gold Price": 2,
       "World Gold Council": 1,
-      "Forbes": 1,
-      "NewsNation": 1,
-      "VanEck": 1,
-      "Yahoo Finance": 3,
-      "Investing.com": 2,
+      "Reuters": 3,
+      "Gold Price": 1,
+      "FXEmpire": 2,
       "KITCO": 4,
-      "TradingView": 1,
-      "TD Economics": 1,
-      "FXStreet": 1,
-      "Українські Національні Новини (УНН)": 1,
-      "FXEmpire": 5,
-      "Quiver Quantitative": 1,
+      "TIKR.com": 1,
+      "Forbes": 1,
+      "FOREX.com": 1,
+      "FXStreet": 3,
+      "StoneX": 1,
       "Mining.com": 1,
-      "Investing News Network": 2,
-      "investingLive": 1,
-      "OregonLive.com": 1,
-      "Moomoo": 1,
-      "PR Newswire": 1,
-      "BeInCrypto": 1
+      "NewsNation": 1,
+      "USA Today": 2,
+      "U.S. News - Money": 1,
+      "Investing.com": 1,
+      "Texas Monthly": 1
     }
   },
   "news_intelligence": {
     "total_articles": 40,
     "relevant_articles": 40,
-    "avg_sentiment": -0.133,
+    "avg_sentiment": 0.0,
     "sentiment_distribution": {
-      "positive": 8,
-      "negative": 20,
-      "neutral": 12
+      "positive": 0,
+      "negative": 0,
+      "neutral": 40
     },
     "clusters": [
       {
-        "cluster_id": 1,
+        "cluster_id": 0,
         "label": "Commodities",
-        "article_count": 7,
-        "avg_sentiment": -0.114,
+        "article_count": 35,
+        "avg_sentiment": 0.0,
         "dominant_category": "commodities",
         "bias_distribution": {},
         "representative_titles": [
-          "Gold Price on 15 May 2026 - Gold Price",
-          "Gold Price Forecast: XAU/USD remains under bearish pressure near $4,550 - FXStreet",
-          "Gold (XAUUSD) Price Forecast: Will Rising Yields Push Gold Toward 52-Week MA - FXEmpire",
-          "Gold Price Forecast – Metals and Miners Heading Toward Projected Mid-Year Lows - FXEmpire",
-          "Gold (XAUUSD), Silver, Platinum Forecasts – Silver Dives 7.5% Amid Sell-Off In Precious Metals Markets - FXEmpire"
+          "Gold Down $200 This Week, Silver Spike Gone on Rates, India, Bitcoin Reserve | Gold News - BullionVault",
+          "Gold ticks up as markets digest US-Iran updates, await inflation data - Reuters",
+          "Gold (XAUUSD) & Silver Price Forecast: Ceasefire Holds — Gold Tests $4,700 Support, Silver Hits $84.10 — Next Break? - FXEmpire",
+          "Barrick Earnings: Another Strong Quarter Due to the Higher Gold Price - Morningstar",
+          "Gold and silver prices today, Tuesday, May 12: Silver surges, gold slips - Yahoo Finance"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Gold Price on 15 May 2026 - Gold Price",
-            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFBHdWdHdTJvUzV5NE5oXzloZXdhRUpqdFJFazF6ZV9nSzd6OW16amtQMVRqSWpOSEswTHh5S2lZZG9ncnVlVTN4bm50aHBWNkVaaFJHeTBQdVc1Wmx0WXc?oc=5",
-            "source": "Gold Price",
+            "title": "Gold Down $200 This Week, Silver Spike Gone on Rates, India, Bitcoin Reserve | Gold News - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxQeW5uRGMxVUdiV0lSdzJlcHdjWl9SRUFTdUlPVkNOckxCcEYzWkxPclk5WE1WRnN4aE1sUDdSMGtyaDZIdU1Qc3FuVzR1dU1tMFJHV1lNWFFVRjQzdUZTbTJLWE9SX2xUUFBwSS1IbnlHa3F6SjhRak1qMGEzcGlNT09mZE56bHRGbWplbDhJX0RIc0pOTDVMck9ZUng?oc=5",
+            "source": "BullionVault",
             "date": "Fri, 15 Ma",
             "language": "en",
-            "tone": -0.008,
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Gold",
+              "Down",
+              "This",
+              "Week",
+              "Silver"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold ticks up as markets digest US-Iran updates, await inflation data - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxNS1R4YmxvUWpZMGJaX3FrMXY2aGNsNG1TZ1JFc08weHF0cXRWd0s5a04xV2xEamNKNWFrT1VXWEZnRHIyZlczejVDblEzS1Z6N2NmTG14aVVkcHJQOUtreDd3TTZKUWtkSmp1aXRuckNFaXdJbThub1RPV3E0aDc4OHNPZnYweWt4MWR4UG1nU0NEMXpaU2V4OUhLNE5JdDVJQlZWREFFRUtqV2N4MVlnbDB0cw?oc=5",
+            "source": "Reuters",
+            "date": "Mon, 11 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Gold",
+              "Iran",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold (XAUUSD) & Silver Price Forecast: Ceasefire Holds — Gold Tests $4,700 Support, Silver Hits $84.10 — Next Break? - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMi6AFBVV95cUxQeG10VUhvLWVUWGxURnhKNFhHYjRqMlZVWERYSm53enR3T3RpLTNmZTJfVHM5VWw0ckd4MFkzcVhNdFRoY19BN1dBMmVrVUNVd0hGUUhLWVBCMWJTSW5Jc2tsdXFNdjI2a3lRYkV2UnFjb3g5UlZjbC1LWmRYbFBCV0ZaVUZrcDk3Ymw0SjYyVFA5LTBOUkZTOGVUNGVwVnFyNDVMdmhzYlpkSTZBY0JxanhXTGJoY3ExUEJnWUtXYmVFLU9TU0c0X2NHR0F5ZEp4eDJTay0yQmZkRnB2WmVwSUFIQ3hKNldJ?oc=5",
+            "source": "FXEmpire",
+            "date": "Tue, 12 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.5,
+            "keywords": [
+              "TES",
+              "Gold",
+              "Silver",
+              "Price",
+              "Forecast",
+              "Ceasefire"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Barrick Earnings: Another Strong Quarter Due to the Higher Gold Price - Morningstar",
+            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxPa2hOUXY1MF9VNXhRdklQZkFDX2NlcVg3dUdIWkJaWlp1Y1B3MzVMcURrZGYxUmtNR01pdkhHYVZuUjBiSVJxdmJ1MkNkODFKUWpIcXktWk9xdVl4bUFjcUJ5eElGMllSby1GV1FQUElUZzhSZVJibkhDTWc2NVhIeklCWks1QjhHbnBHNUFVZE4teXhUa192V3Y5WWZCWEtyUUNQTWNxekk?oc=5",
+            "source": "Morningstar",
+            "date": "Wed, 13 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Barrick",
+              "Earnings",
+              "Another",
+              "Strong",
+              "Quarter"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and silver prices today, Tuesday, May 12: Silver surges, gold slips - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMi3AFBVV95cUxQOXVDYzUtMlJmQ0t0ZU4tSlFMN1hGS1B1SDBac1JTMldmRFZETXNLT0hqTE0xaWZ2OTlJX0JjN0VMWUIyZHRJQVJ1Y2hGaWFZYXl5Y2k5MUExc1NUNHVLclpjUTR2eE14Qk0yRzIyM3VISmxJOEtzdnFSTjJXTFdjNVY2U3NZNzRBRE5HUjh6UDlESnBVSXkyeU9hbnZ1QTFOZnU3RlZkY0JPOVBBalcxRDJtOG43QXNuWjMwRXZLWXktSmxOVXN2UU5FSklhM0FBRkpuQlJoTGdVaDZW?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Tue, 12 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Tuesday",
+              "Silver",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold at over one-week low as dollar, yields climb, Middle East tensions stoke inflation - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPTmFTdThURWJGRThCY2hodkNFVkdBZEx3T2dyREdTTXZNVVdLNmZzeHpNdjZrQlV4bmhiSXlhNndCNXpjdTVCaXRzcnE0LVI1RVo0anR1TXdYY0wxNnkwSmdaa0lRUWhHUUNtd2V5U21VTGdxU2ZoY3lHVFBwVWp2LTBZMndxVEl2VDBhUzc0ZDRidU5LUDJ6THBwdXB4ZXFGOEVDVVJUUdIBrAFBVV95cUxOd1dOMVZGa1IxbXJ1SHA4NjBTRDc3TzE4S0k1aVBuUjd3Y1BNeG9DUF9YNmU0WmtDVXE0eVVjN2tDQkxQeHRQd0RGSlRFTE1DRHg3dWZlblVHM3BvaG0wVjYzeE9IV1k5NkRxQ0xQRTRfNENIN1lobE1mcVVIbWp3WXFEUzhGVnZWUk93YjgybmNNX2tIVVBiZ3FraFcwZ0ZwQV9fQmM5T0puWU0w?oc=5",
+            "source": "CNBC",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Middle",
+              "East"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "What Moves Gold Prices? 6 Key Gold Price Factors Explained - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxQTmgzaEktTUVYMGNzRTIzVHpmZUhZZnNpRnZiOERyVGNuMGc4dzVDUXFyRm1XSWxQMWRWRzM3WXljUW1McHhZSEZxS1B0U0tKOV9ZM1c1Ujkwek1VeTdpbDc5MVlKMU1leU9IM1d4d2NiRnhYWm50NmJJRkpDSEU2WW82NFQ3djM5WEtKYUtKUC1yc1IyYk1QdmcyLXVHc1hSaDhIZzNB?oc=5",
+            "source": "GoldSilver",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "What",
+              "Moves",
+              "Prices",
+              "Price"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "A Moment of Truth for Gold - Robin J Brooks | Substack",
+            "url": "https://news.google.com/rss/articles/CBMickFVX3lxTFBLWlF1YUdwWFJHN2ctRklBNjFFY185aWphU3hCazhnNGRlei1VU1lrbXU1MU55QlFBMDJNMXZkZVhMdVgwTWRkUmVpdkpGc0JYcjBLMHZ0T1NiaDl3MFlJbnhHTWZJVTF3eVZoLTZOUG9ydw?oc=5",
+            "source": "Robin J Brooks | Substack",
+            "date": "Sat, 16 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Moment",
+              "Truth",
+              "Gold",
+              "Robin",
+              "Brooks"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "China gold market update: A notable rise in gold reserves | Post by Ray Jia | Insights - World Gold Council",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQdUExajAwZWY2SkxlbThXWE9xOVdMaE0ySDM5bXJBbzQzUXRQeUpPb09YSFpUcnVyOWUweWtDelBlLUJEUi1hOEw5WGxQTkRjV3VlcG9HaGtRODQ0UnZjV2d1ZjdrWEc5Z3k4NkxxeHI4VnMyWGkxcTg5MVc4QUlvbWU5N2ZERzB1YV94VWFMeUZqRVNKOUFhVmNPeUhqQkNP?oc=5",
+            "source": "World Gold Council",
+            "date": "Thu, 14 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "China",
+              "Post",
+              "Insights",
+              "World",
+              "Gold"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold dips as oil gains add to rate uncertainty - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxPQnhPNWJVbm1JU1pqZExkQ05UcWxobXdCbVlUOFZNWGJxU1VkNU5tS3hXTVVfT0dzei00c0FPNUp4cDZuY0JOYmNpMjM4RkZlSENrRmZEWVhPeG1sMVRUXzMtT1l1YkRNSkxjNXVBZkRiWnJCXzFxUTZsTWxFUVI1LVk0WW9jSG5sVnpnai1VY09lNDkyeGlDOWZTV0NVMUpOd0E?oc=5",
+            "source": "Reuters",
+            "date": "Tue, 12 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold Price on 12 May 2026 - Gold Price",
+            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5FNGk2N2VtS21VeWF4QWhyV25HSENTc1ZrVi1NcFNhU2dabEZ6OTBOOXEtOGVnYkdBaGR6R01jY1A5RlotdXFUUV83TWJQN1FyTjE4dmZWMzliUS1sVUE?oc=5",
+            "source": "Gold Price",
+            "date": "Tue, 12 Ma",
+            "language": "en",
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6191,12 +6373,227 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold Price Forecast: XAU/USD remains under bearish pressure near $4,550 - FXStreet",
-            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOcEdnU0lUa1hhQWdPd2FWbGxMZmFfbXF0QjF0Qk9GLWtVamxjdEpWbDZ3dkMwczJpbzJxVV9jdGpiSFBWQW9sNENpZTFKUDVnVXBlNzl3SUFGSU9ZaTNkMkpZMy02eUJKWHNaeHBHOEk1bHVrSnpZSW9mNVFIaTRTUFd3aWg1SlVBT2s2SDRKeXN4NHozNnpDRXZra0ZZS2J2QjVfc1pUcnRYV2NHYXlLakZn?oc=5",
-            "source": "FXStreet",
+            "title": "Gold Price Outlook May 2026: Why Institutional Forecasters Still See $5,000 - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxPN2kzMUYwRmNTZU93NGtwTE1IRjRLTVBKeXVCU21BV0pLWlQ1SGlXUTdSVUNLX1Z0UU9Bbkg1V21DM3RuUDVMNmhPZGZKM0lPUUdSYjJSUDdDZmJGZ29QeUMxVzY4czRnQUtlNTVIOWV0U1NoWG1vSzQxSVkwU2pRUGhIamhjWkhCb2JOcGtsZk8wQnlrWWFDbF82SzcwREdOZVVmaWxNM3NJcE55N1M4ZFVNQmRYNHBheXc?oc=5",
+            "source": "GoldSilver",
+            "date": "Tue, 12 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Outlook",
+              "Institutional",
+              "Forecasters"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold dips as rising oil price adds to interest rate uncertainty - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxPQ2JFQkZ1SmtJNVJTSTZRdmEyNnY5RHlGNW9JX055QUhkeDFsRThHa2R5a2czQ1ZnOHRzSkdwUmhqdXFvN3B0WGRlV0JrNEtXemFqRzhoU1E5SVZvamVjQU9yVUE1UExlRGtZcjdxVmw5bEViTGtlWnVCb3AwN3poUHYtdVBnaGFnZUYtYzFIX3hSbTlmZlVMb3Y2N3ZFZ9IBowFBVV95cUxQX1R5TW13Wm1yc2c1cWZzQjZ1SWJ4UEdBd3FjZDlUZEh4NnRtOFNyb1VtRmNOWkJyUUk3aDk4N2JPMHFQTFpyWTVicEFMT3Q5M3habU9RWEt3dUVHUDItUlExN0lsT0c4SGdDRGJER0R6OWVxZmpmNmdZejYxNEtJalliT2ZrZkVjVTB0UjN5RmY0MkxGN2NIRTdJTGVKU05zSG4w?oc=5",
+            "source": "CNBC",
+            "date": "Tue, 12 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold and silver prices today, Thursday, May 14: Gold holds, silver stays strong - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMi5gFBVV95cUxNazVHUXpfQ3Y1WFc1ZUh4cUttNnFiU2JuR0ZlZGJKYkE2alVPbXhlV3VKUVhKLVdpR1ExV0FFTnhaVmN0RVVwZ29SZmVEaFNSdlZINWVpTlNFUTdsUWRiajNkdVBsY3lFd0hxeFFlUTA1aWlLRUVVMTh0d0dPV1YxZWNmT0lfVUFVTDRuaTRORHJidzlTMXgyZFg0ZmNMNl82b1c1WWpVZXZpZktKRDdQeWhlUFBKZ2NmdWhsdWRZNmZkX1ROZEN1dURVUlpfOGpkemdkUUV5akpTWjhTRDhvX3QtZFFpdw?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Thu, 14 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Thursday",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "What’s Moving Gold Prices This Week: CPI, Seoul & Beijing - GoldSilver",
+            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxPQnNEcjFlazgtenJxanltZG1JQll2MFMxOUQ1M0lvYVJkcWRvOHBWa2xIdWRNaXZteFNWcDA0bkxIV3puR1NrZmdKdlFIRFF6U2E0bkJmSzEwRFduUkg1U00yZllYRXg4cDJrLVNEakxpbVZWZ3VXaXc3S245bUNJQlU1a0dFQXljcEJqV3lyUzBVcDRtMUxxeVVNV1NGbENKckoxbGlaY05nc2o0SmVr?oc=5",
+            "source": "GoldSilver",
+            "date": "Mon, 11 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "What",
+              "Moving",
+              "Gold",
+              "Prices",
+              "This"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and silver prices today, Monday, May 11: Gold and silver down this morning after Trump rejects Iran's peace plan - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMimAJBVV95cUxQNW5PLUw4Mk83c1Q4T2Y1V1RRVkY3alprbkxSUkdFb3UwOTI0UWhmdVhpSXhuLWVINE1KeTdzOEVIckNYaUFPV2hSSVpXYnByZldodGFXRGlNcjgwaENXS3FPdVFxdGR6blJVYmx1QUhmYjM4TlNYTjQxTnBUVkdHbFVCVEhaM0NNWkVqRmxlMjk2bE92REdnQV9oU3l3eHJHZ3hNZzdybHRpdTh4NUQ1RkZMNW1oYmJkaF95VnpSV3l5TDRlXy0wWWJpbGM4dE5fMWJGbzZzWmVXRElyOWxsanRxdG9acTF1c1hTMmxaeDFKTS1oYzN5LWVqcm5QSjJKVmVMUV9mR2ZFRnNsS0VHZWtMRERMcXZT?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 11 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Monday",
+              "Trump",
+              "Iran",
+              "Yahoo"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and silver prices today, Wednesday, May 13: Silver prices surge again, gold sits tight - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMi9gFBVV95cUxNeklIT2FRajhLeDFWaWxucG9yS3hNS2o4S1pGOTEyZDN3MDRTNWFpQmJtMDQ3SUt2TXFzZXpsRUpNZG5PQXRfYVlFdWg5NVQ4Rnd3d2hxVHN5djlvRG5xYkNGS2ZJQkpubmlvYVdIcmp5cTNlcU55LW9jbURzX2xmSFpxVC1RRGdwdjF2VDlFM1R0SlJzSVduOUdDbFRuMi01c1JvMzJrZllwYjNZdXRtakd3cnh0dzA4WjZiUTFMaktrRUpVU0tsRW0wYjNpWTJjcUV2V2ZTa2F1dU5WNVVQVjBrZnVVd1BNQ2NTc1JqTnlmb0xWbGc?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Wed, 13 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Wednesday",
+              "Silver",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and silver prices today, Friday, May 15: Prices headed for weekly losses with Iran negotiations at a standstill - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMimAJBVV95cUxNb1FZeWRCY3k4cERzdU9IbGgwcEE3dDZYLWF1X3pGQzVpR0phTHBtaVozdmpibm5Nazc1NGJqUmh4SzZYQjZzdzdYMVFrZ3JpeGlsUm5MdHU4S3JzM3Y1R29wYTVXOEdDalR6ekRaQi1zRkdYUlpEc3N0MHp1ZHZsZV9lRW1wdGlXS3p6Nkk1RWVWNEl2Tm8zQzlKUHNDbnRFc21YU2daNHZyWDBpVkJLcV82NU9JM1JvdGRaRVhyWlV2V1ZmV25zc05lTXpRci1oLUxaNV9LR05weEgyLWRNckkwbUZ6RVlkV09pZE5QZjhCX1U1by05Ri1CWk1ZVF9USnJuUmNhYmtwd0d2VnVBN0RPSXJpNnp6?oc=5",
+            "source": "Yahoo Finance",
             "date": "Fri, 15 Ma",
             "language": "en",
-            "tone": -0.422,
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Friday",
+              "Prices",
+              "Iran",
+              "Yahoo"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Wall Street’s Boldest Gold Prediction Has Russians Rushing to Buy - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxOTGV3dzIxTW5Nam5nNGJrRjVCY0pzY3Y1UVJBdFVPbFpSQVYwTWxoRGJtZjJJWjFEUFlZWTFVcHBndUplVEpJNklJVDJnMTB0ZlR5WDZkdlNOZldIRVhaZFpiWjVJNzE5UjJTalFXQnZnQTZaQnZsYXRjd1drTjBsNnRrWUpMV0JWbTV4RlZTWEpVUmNSUlVWb3R6d2ctS25XVjJCZkl2aDE?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Wall",
+              "Street",
+              "Boldest",
+              "Gold",
+              "Prediction"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price holding the line at $4,700 as U.S. retail sales rise 0.5% in April - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPcHBHd0xOeUFjM2F0cFI0WjVyODd3akdJSGVhV2lrb1RZRzAxbVZBNGtCZ3hoVm1rNkdxdExfQzY4UHJENjBNMWY4d1M1WVFlNzdBaUlBTFZoNkx1eTZUTVg3RW9FczFVWHZGRDFOUHB4QjVzaUZ3ZHFubUtORm9DcmgxaUpXXzVpVjdOLTlydkJQSGFMd1U1SEl5WHR2a0dSUFVoQ25OMA?oc=5",
+            "source": "KITCO",
+            "date": "Thu, 14 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "April"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Barrick Mining Posts 67% Revenue Jump as Gold Price Leverage Hits Full Stride - TIKR.com",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxPdVVCOWhPTWp5THZfNUlUWHROc1l2UUxRNjZpTXRSSXBhTGNaYVkxenVKcDdMQ0pZdzdBcXhmSEZkR0Ewd2dtVGpoUEl0ZFlLYnc1UVBVckM5ZUJNOXNWZG1ha2V0Nm14U0dxZDhHX1BvY3JySmJZeE9seG9pTi1sQkNsMnYtU0lUVUEyUUpneVVraTRXUzNKbkNtS1RsVWdvQm0xSQ?oc=5",
+            "source": "TIKR.com",
+            "date": "Wed, 13 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Barrick",
+              "Mining",
+              "Posts",
+              "Revenue",
+              "Jump"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Wall Street sees gold dropping further as yields and the dollar strengthen, Main Street maintains bullish bias as $4,500 emerges as critical support - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxOMU1UVmVMX3FVS2ZLWHUyandIaGRNMnpFVE80djAxWEI1X09NLXJNT1VzTFRDbVJrandub2J1aU9FSlk0cjlqNC1Kb0RJS0JsTkJUS3plME1LLXBpaXNxdU1zTGxmUGp5V2NkZkREMF9mMHNjVW1sQzg2YlBWaF9kWkNOemdRVUMtUlNHOTJDckwtNWF4UENjMW5vd1lKazBoZVhSNlJyUEhEejFud09MNGhnWXl0QXdvN0E?oc=5",
+            "source": "KITCO",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Street",
+              "Wall",
+              "Main"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Pierre Lassonde says the $40 trillion U.S. debt crisis is paving the way for gold to reach $17,250 an ounce - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxPRVRxTVJhaVRpMS1kOGE5LV9mS19TQkdzbFRzYmxnT3J4X3QyT20xOHNsRUZmdXF0RmxFSmhHS0ZobTJVbTRsZEh4djl1ZFJxLUFNSHdGcWZOaHdvdjg0SmFIVDdQTzFXNjBnQzVrUERmaEpiUnZDcmt5UXp1SjRhdUFycFNIRXJIYkxQX25pR2ZOUThOOHlQRmVoRUtxQVVjM2xDWGF3YmRvMWRHQS1rOWNWY0dONTZYOTA4aWp3?oc=5",
+            "source": "KITCO",
+            "date": "Tue, 12 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Pierre",
+              "Lassonde"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Forecast: XAU/USD holds near $4,700 despite high US yields - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxNVVRxaEQxZkx4bHFkcUtFcUxJeUlVRFpxNklFZ2xYV3QyM0JJcDdSbG1ybFk3RXN4VFRrOHFibW5iaFFzUDdVQkRVRWJ6cEhoWHJyYmZGVlRRVm0tdVBCRXhaMVBWVXBxNUxCdmR4aFhMMW9Bekp5WjVocVhiZEJmd2NaOTkwdjNLY3lFUUozXzdIRlJxZGYwZExmMFEtSEF3UGI3cVJOV1BpSzcxdXVj?oc=5",
+            "source": "FXStreet",
+            "date": "Wed, 13 Ma",
+            "language": "en",
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6208,12 +6605,116 @@
             "factuality": "unknown"
           },
           {
+            "title": "Gold Price Forecast: XAU/USD remains under bearish pressure near $4,550 - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOcEdnU0lUa1hhQWdPd2FWbGxMZmFfbXF0QjF0Qk9GLWtVamxjdEpWbDZ3dkMwczJpbzJxVV9jdGpiSFBWQW9sNENpZTFKUDVnVXBlNzl3SUFGSU9ZaTNkMkpZMy02eUJKWHNaeHBHOEk1bHVrSnpZSW9mNVFIaTRTUFd3aWg1SlVBT2s2SDRKeXN4NHozNnpDRXZra0ZZS2J2QjVfc1pUcnRYV2NHYXlLakZn?oc=5",
+            "source": "FXStreet",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Forecast"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold and Silver Lose Momentum as Yields Rise - StoneX",
+            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNSUxBX1k2bzVVRFdPbnZ0WjQyUTAyVVI1Rlp5ZGtUZHhjaF9GS0NoZjdHRzg3cF94V0ZqRjd3Y0o4bE1FWndsNFJsMmhraWFKbHhwYXJDWWlPb2ZqSEtjbmR0WHZZNkJraEpQLWJhQ0RhSkNCZ0FZQWgtaWd2MjdpX0ZmN2NjV00?oc=5",
+            "source": "StoneX",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Silver",
+              "Lose",
+              "Momentum",
+              "Yields"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold price steadies as inflation revives higher-rate bets - Mining.com",
+            "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxOMTZBOTVhRllPMlRVdVZmZUZ0dFUtWXhwSGtlQzRzc1BtUU9fb0p4Unk2T0hJRUE4ZUpzT1VOWjNVdjhQdHJvMXA4TWRRbm1PZllHREJZOXdzcU5xUTBiRWV2eFZkOFVjRlN4VUxPelRLYzVUS3BocXVyU3lucWpxREhNUE90QUY0NVE?oc=5",
+            "source": "Mining.com",
+            "date": "Thu, 14 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Mining"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold prices drop resulting from Strait of Hormuz closure, dealer says - NewsNation",
+            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxPS09fUnBCUERNR2cyZTliU29vSGpHdjc4ZktydVZzZlJpMXNLaVlFVVhNVzJUR01lRFJGbHJOQ19INUtRc2pUYnJIVno2OUk3Z0lBSFRpcUJOc21wUjlmSzNNaVNFMGlCSG9QUXJvU1pDNExhU0s4eE0wNldaakNCaHJzN09SblhrcnZ3VjRKeU53S2ZoV1BQaWdHYVbSAaIBQVVfeXFMTkNQNmhwSmdGT0F5RmdIV1A3OXpSTkdOV2FiSmw0WXhvcTlkRWFyakI4T2lUWVBhLU5LOGRVSUFTVmk0WjZaZVNWVlFZak9vaHBadjNaMWRFRW9oejExaVk4VFFXa3lxczV0bjh3RTN4cGdRc1NsU1RWR01KcWZmN2QyZFVjeXdIMTFMeUl4UllLWElRRGdObmdDSmZ3ZDBxYmN3?oc=5",
+            "source": "NewsNation",
+            "date": "Sun, 17 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Strait",
+              "Hormuz"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold prices gain on Iran optimism despite India import issues, silver producers see strong output in 2026 – Heraeus - KITCO",
+            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNaXlyZm1Ec3FFVWlYcXZBMkotNnA2V1J4TzViSHlGS1EyZ1pfXzVwdEJ0c1VueU5pdEpRQ01lM19xRkhvV1NfY2dDTEwtNGpDU25scjhjYU5xb2hWeFFNSE1rVnRLVFRyLTdmOEhCLVhhWWZBWDdLYzJoNlFKb09BeGRkN29VaWVlZDRlZjZoTFQ3LWlOVkFxSDhqRVR1bGtMbWhKY0hiWWdOcGNsQktmUFVxbnJQbUsxbE9COWN3?oc=5",
+            "source": "KITCO",
+            "date": "Mon, 11 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Iran",
+              "India",
+              "Heraeus"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Today on May 13, 2026 - USA Today",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxOMmpOamloUHY4YUEyYlh3VWVNMHY4UXJaZlVrTllZd2hwcWl2Ykt2N3pHd0ItZGJTTGw3UnpvaG00V2lwVmV0cTU2Mnd3Q2x1aVYyTk1uVUpRX1R1RnlTLWU5MkFyWWoxeVBmTlo4ZVFQMllyak5QR19pbDlkRjM3MzNnT3VmODEwQWJlY1BrREhKV2ptckM5QU1zOXRqWE1RbGdZRA?oc=5",
+            "source": "USA Today",
+            "date": "Wed, 13 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Today",
+              "Gold",
+              "Price"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold (XAUUSD) Price Forecast: Will Rising Yields Push Gold Toward 52-Week MA - FXEmpire",
             "url": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxPZi1pOXhScEV2bVBMZjlZdnJRaDF0WUJDVnJBYUVTUHA4b3VoVUwwelRyMG8xcnM4VTk4X0NQV3c1WERPaUZKeGlid3g4WGtwSnNGR3pkbTVYbHRlS21xY0doMWpiSDc5eFRfMnR3WWZFTDZ0MXQ3WVQ0ejQ0dGtmMzBtbVd6OVpUTzg4VzdTdnE3VzBOV1lMVlZWODBHdTJmcVJCMlNrSGNJWDZMM3BidEltdVBkMGVrNm5fdjBrZGhHQQ?oc=5",
             "source": "FXEmpire",
             "date": "Sun, 17 Ma",
             "language": "en",
-            "tone": 0.49,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
@@ -6227,74 +6728,75 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold Price Forecast – Metals and Miners Heading Toward Projected Mid-Year Lows - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxQNHhFa3M1a1llNF9aUW1rM1NYZUJXYXJLcGIzT05BdThBWXBWRjQ0YlBzYTQ3MmplOHpNN1RiNTZIOFM0M2I1Y05MVW1WTFFiNDJNX193aWNnX3hnTnYxWVNiRGVhaWZWYWMxS0dqdm1iVkhuWm5kbzA3RDZpM3ptVWhFT0JNZlBTVXp1cGpzeDVWNkpmSS1CbjkwVFZmNEJCMW11UFVMMGRNWG9hRlBmLUZFcUtlYnNCa2U5TTBxZ21pR2d0MWc?oc=5",
-            "source": "FXEmpire",
+            "title": "7 of the Best Gold Stocks to Buy for 2026 - U.S. News - Money",
+            "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTE00RENaSUowMFFKRWN5Vm5XbGtnTEFrcWplcHBhUGNkRmpRNjlJeVZfUzlnQV81eDdCZEt0ZjZaSC1xLXZkdVExVFhQR3NmcThDS25jWnZNRzk5R3ZWXzF3Z3J6Q0FzcFFKMzV2ZGYzbkRLa1Q3RmlKRVZWSQ?oc=5",
+            "source": "U.S. News - Money",
             "date": "Fri, 15 Ma",
             "language": "en",
-            "tone": -0.407,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
+              "Best",
               "Gold",
-              "Price",
-              "Forecast",
-              "Metals",
-              "Miners"
+              "Stocks",
+              "News",
+              "Money"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Gold (XAUUSD), Silver, Platinum Forecasts – Silver Dives 7.5% Amid Sell-Off In Precious Metals Markets - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxQaHYxTDVvNTkwSXcwdmVOd2lSaWpteV9IOUQ0VzBTRVowb1puVmNHdDlxSEhHUEJrZ3RYNDRrX1FZV2p3dnVTRHBaUllvaXp5OHExUHQtVF9ON1NLQVV6aW1nX3lWQTdUUnlWdHZtSm15TEI4QTc1RklQWl9KdkF0RDBJX2V2ZE9oTHV3UjJpckc2SFY1NmpXdDZwS0xPaUF5NnNRNUV1UWdVcUdrV0FSclVneFdlNTFUQWFwNUQzV2ZjUkxLY3FUb01NRWMtN19RTDRGbzdfOXl3bDZEbE80?oc=5",
-            "source": "FXEmpire",
-            "date": "Fri, 15 Ma",
+            "title": "Gold Price Today on May 11, 2026 - USA Today",
+            "url": "https://news.google.com/rss/articles/CBMipAFBVV95cUxNalBpWTJ1eFJpZ00yUTRtSmVIT2ZheXZJU2NNcFZzTGUyanhUWmhIems0YmtUYlgtZG1yRXdJa29sVnFpdkZtLWU2dlRkUVkzT3RJOUpRNGZMRkItZC13S0F4TTlXeXpjbVlPNkwzMFNBZl93TG0xTTlNbURGUXpfOV9qVnNGcUtOUTZNeUVscjg4MTdiOFZTTUJTRkVVU3ljWWFWSw?oc=5",
+            "source": "USA Today",
+            "date": "Mon, 11 Ma",
             "language": "en",
-            "tone": -0.458,
+            "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Silver",
-              "Gold",
-              "Platinum",
-              "Forecasts",
-              "Dives"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold (XAU/USD) Price Forecast: Bearish Breakdown Targets Major Support - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMiugFBVV95cUxObmlCTkZjSE9jWEFGelZXTW5wc1dhT2duNVZ6NWN3U0FFNjVJZjFzZG5xN2Rud3FOcGtmbTJRTXl4TE5xbWNNWkh1LWV2WUQ3SDFPbEVsOG1ZTE41ZmlhQVcwMnIwWHZVNWhTRU9pWWprM2hRV1pnS1VwUi1obzJOVnZ3c2tFdUEtOEw1LVdhbUM2MHExTlJWLXBsVGFTajV1RmdfelMtdGpQRkZ5TDQxWVkwOGRJbGVqSXc?oc=5",
-            "source": "FXEmpire",
-            "date": "Fri, 15 Ma",
-            "language": "en",
-            "tone": 0.014,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Price",
-              "Forecast",
-              "Bearish",
-              "Breakdown"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Price on 17 May 2026 - Gold Price",
-            "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTE5NN0tEUFFnUEVpQVBZTFFoVkl6ZDlGYlBTWXV4UUhqMkxhOTUtYnB1VGhxdUpwMXhsbmpGa0lTa0JMVzI4MTJMakVlUmFzS3I2WkV2WHVPOWZRZjRNX1E?oc=5",
-            "source": "Gold Price",
-            "date": "Sun, 17 Ma",
-            "language": "en",
-            "tone": -0.009,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
+              "Today",
               "Gold",
               "Price"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Slide Deepens as Real Yields Punish Bullion - Investing.com",
+            "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxPZmpSZ3VpakVtNWxRRTVjSHNZWjYwV3MxTWVyd0d2WDdaUjhZajVPdzY1Tm9ST3B6WkZjYlQwLU9LUW5rZWl5S1JmdDY4WVdnVTNJM3JzbERBRm9Id0YwTlhJcTZsRTJoNjNJZW5ZSm9OQmVRMUZSYTlYT2tSUzNYbGZvcmdRcnFPenlpYmxVS0ExeVRDcWR6MnVPVVIwTUxi?oc=5",
+            "source": "Investing.com",
+            "date": "Fri, 15 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Price",
+              "Slide",
+              "Deepens",
+              "Real"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Texas Is Now Issuing Its Own Gold Coins. That Might Be a Problem. - Texas Monthly",
+            "url": "https://news.google.com/rss/articles/CBMiigFBVV95cUxQRWpNNjVsSXQtWFFHenlwRDZyX1pweTlnemd4bHdPMEkwcGNfMzZrbzJ0Ry1GU0pxdUZOdmxKaTE3bDA3VE9jcUthWTlCdjhvdHhJWTRzRWgwZ0FyU1hoek9qcWdCUHc4QlRuYy1iVk1pejRpaFdYZE5KczNEbnVYOXpwaXJYS0ZvWXc?oc=5",
+            "source": "Texas Monthly",
+            "date": "Tue, 12 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Texas",
+              "Issuing",
+              "Gold",
+              "Coins",
+              "That"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6302,122 +6804,100 @@
         ]
       },
       {
-        "cluster_id": 0,
-        "label": "Commodities",
-        "article_count": 6,
-        "avg_sentiment": -0.414,
-        "dominant_category": "commodities",
-        "bias_distribution": {
-          "center-right": 1
-        },
+        "cluster_id": 1,
+        "label": "Fx Market",
+        "article_count": 2,
+        "avg_sentiment": 0.0,
+        "dominant_category": "fx_market",
+        "bias_distribution": {},
         "representative_titles": [
-          "Gold at over one-week low as dollar, yields climb, Middle East tensions stoke inflation - CNBC",
-          "Gold prices fall amid inflation fears fueled by a protracted war with Iran and the crisis in the Strait of Hormuz - Українські Національні Новини (УНН)",
-          "Gold price falls back to $4,500 on heightened inflation fears - Mining.com",
-          "Gold News: Gold Price Breaks Lower as Dollar Hits 99 and Yields Surge - FXEmpire",
-          "Gold prices plummeted over 2% in a single day, analysis of multiple pressure factors - Moomoo"
+          "Silver Leaps, Gold Gains as China 'Buys Bullion as Hard Currency' - BullionVault",
+          "Gold Price Short-term Outlook: XAU/USD Rebound Stalls at Resistance—Range Breakout in Focus - FOREX.com"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Gold at over one-week low as dollar, yields climb, Middle East tensions stoke inflation - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPTmFTdThURWJGRThCY2hodkNFVkdBZEx3T2dyREdTTXZNVVdLNmZzeHpNdjZrQlV4bmhiSXlhNndCNXpjdTVCaXRzcnE0LVI1RVo0anR1TXdYY0wxNnkwSmdaa0lRUWhHUUNtd2V5U21VTGdxU2ZoY3lHVFBwVWp2LTBZMndxVEl2VDBhUzc0ZDRidU5LUDJ6THBwdXB4ZXFGOEVDVVJUUdIBrAFBVV95cUxOd1dOMVZGa1IxbXJ1SHA4NjBTRDc3TzE4S0k1aVBuUjd3Y1BNeG9DUF9YNmU0WmtDVXE0eVVjN2tDQkxQeHRQd0RGSlRFTE1DRHg3dWZlblVHM3BvaG0wVjYzeE9IV1k5NkRxQ0xQRTRfNENIN1lobE1mcVVIbWp3WXFEUzhGVnZWUk93YjgybmNNX2tIVVBiZ3FraFcwZ0ZwQV9fQmM5T0puWU0w?oc=5",
-            "source": "CNBC",
-            "date": "Fri, 15 Ma",
+            "title": "Silver Leaps, Gold Gains as China 'Buys Bullion as Hard Currency' - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxNN2FCWUpDZzNkZ1NNV1FtT1pjcFJZb3l6RnZXbXVmdW5wbEUyUTRRLTFtdk05emc4elc5MFIyaGlqWXY1aEZ2eUc5SHg3UkgwSkhIMDdMRHJvcWdrTFBSR25HeGh5YnVwSVduSmZMdkVTREpHdkdaLUdNVjJzMlNaMEp5MkRiZHhDSnE5SU43cjEtMVk?oc=5",
+            "source": "BullionVault",
+            "date": "Mon, 11 Ma",
             "language": "en",
-            "tone": -0.33,
-            "category": "commodities",
+            "tone": 0.0,
+            "category": "fx_market",
+            "relevance": 0.2,
+            "keywords": [
+              "Silver",
+              "Leaps",
+              "Gold",
+              "Gains",
+              "China"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Price Short-term Outlook: XAU/USD Rebound Stalls at Resistance—Range Breakout in Focus - FOREX.com",
+            "url": "https://news.google.com/rss/articles/CBMi4AFBVV95cUxOY0pYbHM0cUwtT3FBSGNuLWE1cGVOa2pFSFJwUnhZN2FMLWJUV2QxQm1BWERndnpHdWRMOGQ3a3NBbkdsUHBKSGZ6c0R4MEJtMWdqYzRWRExVZ3Z6QzFOYkRNTGdROTBMa0x5WFNjV3g3S3FyOUNPR05lUXpzSWxIQzEydGFCVlZuWTZVTjdRLXdfRG5kbkdYQVBIRjNmN3hTWExlN3JZQ0NWTERQTzJMM3o0RjFfZ1o2MzliWHVtbnpmczBXa1Y4TTNXU0R5bGd4RjlRTWJJUERNSnlGalVQd9IB7AFBVV95cUxPdHNHVVpfVUdVTzdVb2xJdF8zYTljRk1VejRxWkZfRDFNQl9qVnowWjQ4ay1vR3pkRTI3VXdVaF9iaTRYd3k0MG5VVUd6OXZObTdPeDcxaFpLTkludWQyMXk1bXJLYmRTX2hoa0tZOERzQTZuNzFOeDBHZDcyemx1a3RwbTdTX3BZRkhJSFBmTzFnY0NlUU1qQWZ4UkFwdWpGZldJc3pQWEdvSVE1MG0yN1FRei03b1NjdF8xM3pPaTdpUWlWNHFGOUgtUzZUY3RGdXFVSFRVNjJqUnlFRm1SRUR4RnRFTmprMld4Zg?oc=5",
+            "source": "FOREX.com",
+            "date": "Thu, 14 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "fx_market",
             "relevance": 0.2,
             "keywords": [
               "Gold",
-              "Middle",
-              "East"
+              "Price",
+              "Short",
+              "Outlook",
+              "Rebound"
             ],
-            "bias_label": "center-right",
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          }
+        ]
+      },
+      {
+        "cluster_id": 2,
+        "label": "Monetary Policy",
+        "article_count": 2,
+        "avg_sentiment": 0.0,
+        "dominant_category": "monetary_policy",
+        "bias_distribution": {},
+        "representative_titles": [
+          "Gold extends decline as inflation concerns weigh on rate cut bets - Reuters",
+          "Gold Price Forecast: XAU/USD hits lows near $4,650 as Fed easing hopes dim - FXStreet"
+        ],
+        "narrative_summary": "",
+        "articles": [
+          {
+            "title": "Gold extends decline as inflation concerns weigh on rate cut bets - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxNb0YxWTQtdnBNQWp3bDVEbG4xR25VVXotTFhGZ1FKZHZJcVR3enNNSl9PNWFDNWYxc19JanlyY05ldTZ5MVZ1U2dhdWdDZ2pmZXlpV1EzaFd1ZVVTYVZWbnN3Q1dUc1kxR0VMQTZfUFF1dFZUdHR0YjhnYTNyeG1pT0tDQ1Bmc0owRllobmVKc2doeVF1VkVjVmVLNXkzaUZfbWZzTTZjZTJPMVU?oc=5",
+            "source": "Reuters",
+            "date": "Wed, 13 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "monetary_policy",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Reuters"
+            ],
+            "bias_label": "center",
             "factuality": "high"
           },
           {
-            "title": "Gold prices fall amid inflation fears fueled by a protracted war with Iran and the crisis in the Strait of Hormuz - Українські Національні Новини (УНН)",
-            "url": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxOX0EzTHJKQXVHeFdTY0xjWjN0by0zX1BvbHA2M0RmOHFHRC1Xd0Fyb295MkNlVW9kVXpjSjNzSWR1NnkwQnZrcU5ibU5JdmNZTkFEeF9TNkpSSXZVOXI1cUg0TU5UOEdoX3lRUGJ0QWUwcG0xUU56eERXU2R5anNEeXI3YWtLRGs5T2lHMlhvWkptZkxBWXExYVRDQnF4TkRrTEptQ3pkSklia2FXMmdPR0kybmxRT005LVZTVTBNcE01NlQ1UEFRSm84MDZsdnViekHSAdABQVVfeXFMT0RsWEpaYl9iS2wyLUY0OHVzd3oyMnZ5a29fNmYtOVV4dU9DV2R4UVpYRjVfdGFaekVQNUpkVklRTS05SEJHS2VmRUVUTXdqVkdYU2ota1RJdVltVWpqN1NVekFQemxSMDU3ZElHQlZNQVBfR3dfS2tKZ0NkelUwSEItdHBETFFuVTFudFd0NlA0QXg0VHBSYTZBazMzZm96VUV4Z3FZUzJXb0x5dTVDaFZkeHZnX3RVTW1TMG43TzgzU180QVNzNDFMOWlaeUNHQQ?oc=5",
-            "source": "Українські Національні Новини (УНН)",
-            "date": "Sun, 17 Ma",
+            "title": "Gold Price Forecast: XAU/USD hits lows near $4,650 as Fed easing hopes dim - FXStreet",
+            "url": "https://news.google.com/rss/articles/CBMitgFBVV95cUxNZ0Q1TXJEOFhmVU81WlRBclhraGRETlJuUGtoc0RmN2hXV1JQNDZhUml0dXpHZ3JJaG5OVDJ3ZEZzSC1PRWFMdWFIZHhhWEwtNkV1SGxmOUhTT2NrYkhuN1ZQSHlWd2pudndhSC1RUDZNYURuYTZCeDcwaU1rbEtCTlVobDlsU2c2STh1by1rbFFjUWp4WUFrczRhdkwzc01ESlhqeDBGSjlLU0tvYVpvLWtVdFc2Zw?oc=5",
+            "source": "FXStreet",
+            "date": "Mon, 11 Ma",
             "language": "en",
-            "tone": -0.848,
-            "category": "commodities",
+            "tone": 0.0,
+            "category": "monetary_policy",
             "relevance": 0.2,
             "keywords": [
               "Gold",
-              "Iran",
-              "Strait",
-              "Hormuz"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold price falls back to $4,500 on heightened inflation fears - Mining.com",
-            "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQWGUySTZZaDk1ZW9hU3BoUFBBbFpGaTFJR3ktaUxKVUtNYVZjRW9vR05nbUxtOFFqbWxPMjFPSVROTkJmbUJEbXd3Nlg1b2Rnak16Q0FpQlBjdmlWLS0ySlE5X1ZYZ3QyeHU2MHZyRWdZaFM5QTJXRkYySkk3d3E3N3lpTkxLbWZjSzRF?oc=5",
-            "source": "Mining.com",
-            "date": "Fri, 15 Ma",
-            "language": "en",
-            "tone": -0.568,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Mining"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold News: Gold Price Breaks Lower as Dollar Hits 99 and Yields Surge - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxNNzRHRzFqNGRZVXdhTURrUFpzSV9ZQTJXTnBNU3dHWkRMeks4WGEwYU1kMjhvV1c3ekZqSTNKRGtwOHA4cExvVFE1S2FhdjdPanFLbEdqQUt6WWhQZkw2d2s1WXRoYWgxejVQZnFiVktsbmtPM3AyQmZVY09sR0dEbm9PM1BvbjdIaGlHWHhtTmNpaWJRQnE1bFhoSnJ2R0s4R3J3eXlGRjVrUXY3RVp0VG05d292WWFRaTYw?oc=5",
-            "source": "FXEmpire",
-            "date": "Fri, 15 Ma",
-            "language": "en",
-            "tone": -0.475,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "News",
               "Price",
-              "Breaks",
-              "Lower"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold prices plummeted over 2% in a single day, analysis of multiple pressure factors - Moomoo",
-            "url": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOQ3dsRnZfMEF3RzFyQl9Ua0FfTlJNOFd2enZiQmdPSUtOZTNEMkE5U0ltRTZPeTNVaHViMlY4Q0RqNklpeE9NY2d3Ri02M3plcTVzODd6ZGxRT2NTVjYwdHJyZnVEVjFha3VkV1M1dEZia3MzNGhCNlVjbXF0cGpPOUxHelFPNFA4aDVRSlYyU1VGUkJkSWNsVFM1bw?oc=5",
-            "source": "Moomoo",
-            "date": "Fri, 15 Ma",
-            "language": "en",
-            "tone": -0.374,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Moomoo"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold breaks below $4,600 as dollar, yields overpower haven demand - Kitco AM Report - KITCO",
-            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNYzdZYmlLSExQcUNqQ1JGVm9HLXpmQ0VkbkZTWDJzeXVvM2p0UmtFWi1YS25UaUFpX29uZUVVcFpsQlZQUnZiVEI0dEc3N3ZSeVpXNENvY19kQ2FydlE2dndlSlVsdEhSV1dLa3NYbWZrU3V1UWtxZ09Wa3J1Q1BWSmgyanJidFgtcjdmeUF4cWx4czk2LVcyVWNQQzdDQi1ETGszRGNlN2FEcG1VUmE5NzR5R3lSVlhnczNycHl3?oc=5",
-            "source": "KITCO",
-            "date": "Fri, 15 Ma",
-            "language": "en",
-            "tone": 0.11,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Kitco",
-              "Report"
+              "Forecast"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6432,7 +6912,7 @@
         "source": "BullionVault",
         "date": "Fri, 15 Ma",
         "language": "en",
-        "tone": -0.418,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.5,
         "keywords": [
@@ -6447,21 +6927,77 @@
         "factuality": "unknown"
       },
       {
-        "title": "AngloGold Ashanti Q1 Earnings Beat Estimates on Higher Gold Prices - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxQbTZRbUFrV1Z2TktXc2FpRXRqLWhEeV9ZaE1xUjl0aXNaTDNKRm14ckNfbEhsRzBVU0d6djliSDhqOC00T3BqWnA0YU1kSDZNUUFhT0hfTG5CRzFtVGhTMDRmeTVWdmdDZkJvR0RDbUtZUzFOcDdfaWdoZU91NU5TYVdpel9sUFh3RGFaa0NicVpONUJOOG96b3NBbTFqUlA1YkxJdnZxZw?oc=5",
-        "source": "Yahoo Finance",
-        "date": "Tue, 12 Ma",
+        "title": "Gold ticks up as markets digest US-Iran updates, await inflation data - Reuters",
+        "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxNS1R4YmxvUWpZMGJaX3FrMXY2aGNsNG1TZ1JFc08weHF0cXRWd0s5a04xV2xEamNKNWFrT1VXWEZnRHIyZlczejVDblEzS1Z6N2NmTG14aVVkcHJQOUtreDd3TTZKUWtkSmp1aXRuckNFaXdJbThub1RPV3E0aDc4OHNPZnYweWt4MWR4UG1nU0NEMXpaU2V4OUhLNE5JdDVJQlZWREFFRUtqV2N4MVlnbDB0cw?oc=5",
+        "source": "Reuters",
+        "date": "Mon, 11 Ma",
         "language": "en",
-        "tone": 0.45,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.5,
         "keywords": [
           "TES",
-          "Ashanti",
+          "Gold",
+          "Iran",
+          "Reuters"
+        ],
+        "bias_label": "center",
+        "factuality": "high"
+      },
+      {
+        "title": "Gold (XAUUSD) & Silver Price Forecast: Ceasefire Holds — Gold Tests $4,700 Support, Silver Hits $84.10 — Next Break? - FXEmpire",
+        "url": "https://news.google.com/rss/articles/CBMi6AFBVV95cUxQeG10VUhvLWVUWGxURnhKNFhHYjRqMlZVWERYSm53enR3T3RpLTNmZTJfVHM5VWw0ckd4MFkzcVhNdFRoY19BN1dBMmVrVUNVd0hGUUhLWVBCMWJTSW5Jc2tsdXFNdjI2a3lRYkV2UnFjb3g5UlZjbC1LWmRYbFBCV0ZaVUZrcDk3Ymw0SjYyVFA5LTBOUkZTOGVUNGVwVnFyNDVMdmhzYlpkSTZBY0JxanhXTGJoY3ExUEJnWUtXYmVFLU9TU0c0X2NHR0F5ZEp4eDJTay0yQmZkRnB2WmVwSUFIQ3hKNldJ?oc=5",
+        "source": "FXEmpire",
+        "date": "Tue, 12 Ma",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.5,
+        "keywords": [
+          "TES",
+          "Gold",
+          "Silver",
+          "Price",
+          "Forecast",
+          "Ceasefire"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Barrick Earnings: Another Strong Quarter Due to the Higher Gold Price - Morningstar",
+        "url": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxPa2hOUXY1MF9VNXhRdklQZkFDX2NlcVg3dUdIWkJaWlp1Y1B3MzVMcURrZGYxUmtNR01pdkhHYVZuUjBiSVJxdmJ1MkNkODFKUWpIcXktWk9xdVl4bUFjcUJ5eElGMllSby1GV1FQUElUZzhSZVJibkhDTWc2NVhIeklCWks1QjhHbnBHNUFVZE4teXhUa192V3Y5WWZCWEtyUUNQTWNxekk?oc=5",
+        "source": "Morningstar",
+        "date": "Wed, 13 Ma",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Barrick",
           "Earnings",
-          "Beat",
-          "Estimates",
-          "Higher"
+          "Another",
+          "Strong",
+          "Quarter"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Gold and silver prices today, Tuesday, May 12: Silver surges, gold slips - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMi3AFBVV95cUxQOXVDYzUtMlJmQ0t0ZU4tSlFMN1hGS1B1SDBac1JTMldmRFZETXNLT0hqTE0xaWZ2OTlJX0JjN0VMWUIyZHRJQVJ1Y2hGaWFZYXl5Y2k5MUExc1NUNHVLclpjUTR2eE14Qk0yRzIyM3VISmxJOEtzdnFSTjJXTFdjNVY2U3NZNzRBRE5HUjh6UDlESnBVSXkyeU9hbnZ1QTFOZnU3RlZkY0JPOVBBalcxRDJtOG43QXNuWjMwRXZLWXktSmxOVXN2UU5FSklhM0FBRkpuQlJoTGdVaDZW?oc=5",
+        "source": "Yahoo Finance",
+        "date": "Tue, 12 Ma",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Tuesday",
+          "Silver",
+          "Yahoo",
+          "Finance"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6472,7 +7008,7 @@
         "source": "CNBC",
         "date": "Fri, 15 Ma",
         "language": "en",
-        "tone": -0.33,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6489,7 +7025,7 @@
         "source": "GoldSilver",
         "date": "Fri, 15 Ma",
         "language": "en",
-        "tone": 0.046,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6508,7 +7044,7 @@
         "source": "Robin J Brooks | Substack",
         "date": "Sat, 16 Ma",
         "language": "en",
-        "tone": 0.106,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6522,44 +7058,12 @@
         "factuality": "unknown"
       },
       {
-        "title": "Brokerages stay bullish on gold despite near-term pressure - Reuters",
-        "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPbVFMR0g0OXZDWkRaT0UxZS1SNjB1X29CaWx5bWNpSDdXTmFobllPeTNaeVd0eHBUb0xsYVU0UEFIcldrbGJOMEJvX0JyOXo1dkVIb1FkQ0VSemFaeUNfcmdIN1IwUFlPWUUwNzdUN1hqVlgwUExkbExZQWxiclRRY0NIWWpZNTRDbjMwaDFUNlExUlVCX2hnaXdHNHA5Z0FhN3pmRXhXYVBfQUk?oc=5",
-        "source": "Reuters",
-        "date": "Sun, 17 Ma",
-        "language": "en",
-        "tone": -0.078,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Brokerages",
-          "Reuters"
-        ],
-        "bias_label": "center",
-        "factuality": "high"
-      },
-      {
-        "title": "Gold Price on 15 May 2026 - Gold Price",
-        "url": "https://news.google.com/rss/articles/CBMiXkFVX3lxTFBHdWdHdTJvUzV5NE5oXzloZXdhRUpqdFJFazF6ZV9nSzd6OW16amtQMVRqSWpOSEswTHh5S2lZZG9ncnVlVTN4bm50aHBWNkVaaFJHeTBQdVc1Wmx0WXc?oc=5",
-        "source": "Gold Price",
-        "date": "Fri, 15 Ma",
-        "language": "en",
-        "tone": -0.008,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Gold",
-          "Price"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "China gold market update: A notable rise in gold reserves | Post by Ray Jia | Insights - World Gold Council",
         "url": "https://news.google.com/rss/articles/CBMioAFBVV95cUxQdUExajAwZWY2SkxlbThXWE9xOVdMaE0ySDM5bXJBbzQzUXRQeUpPb09YSFpUcnVyOWUweWtDelBlLUJEUi1hOEw5WGxQTkRjV3VlcG9HaGtRODQ0UnZjV2d1ZjdrWEc5Z3k4NkxxeHI4VnMyWGkxcTg5MVc4QUlvbWU5N2ZERzB1YV94VWFMeUZqRVNKOUFhVmNPeUhqQkNP?oc=5",
         "source": "World Gold Council",
         "date": "Thu, 14 Ma",
         "language": "en",
-        "tone": 0.357,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
@@ -6573,69 +7077,45 @@
         "factuality": "unknown"
       },
       {
-        "title": "Silver Price Plunges 10% From Two-Month High—Here’s Why - Forbes",
-        "url": "https://news.google.com/rss/articles/CBMizgFBVV95cUxQNFBVRFJEVDJqejljU1pWbTJWYmljYWdUUzdabDZ2RU9LNmZzdGhGRUhYRUIxaDhUcDd1MUFrdk5UTGtfLUI0SE9HXzQ5allpdFZaU3VfUDl5RzlNX0FwQTBZZ2E5R3JRbndxR0lzZXZiNmtkM1BXM3M0NlF3OFZGcno5MHBsZ05SX3Q3MnVfX3ctcmM5NUdacjR2aElkc2lEWUFrR0hBdldwSGpfeGpzckQ1LTg2LURXRGFFZ0RvTnRxak1PYVV6a2tobXAzUQ?oc=5",
-        "source": "Forbes",
-        "date": "Fri, 15 Ma",
+        "title": "Gold dips as oil gains add to rate uncertainty - Reuters",
+        "url": "https://news.google.com/rss/articles/CBMiogFBVV95cUxPQnhPNWJVbm1JU1pqZExkQ05UcWxobXdCbVlUOFZNWGJxU1VkNU5tS3hXTVVfT0dzei00c0FPNUp4cDZuY0JOYmNpMjM4RkZlSENrRmZEWVhPeG1sMVRUXzMtT1l1YkRNSkxjNXVBZkRiWnJCXzFxUTZsTWxFUVI1LVk0WW9jSG5sVnpnai1VY09lNDkyeGlDOWZTV0NVMUpOd0E?oc=5",
+        "source": "Reuters",
+        "date": "Tue, 12 Ma",
         "language": "en",
-        "tone": -0.476,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Silver",
-          "Price",
-          "Plunges",
-          "From",
-          "Month"
-        ],
-        "bias_label": "center-right",
-        "factuality": "high"
-      },
-      {
-        "title": "Gold prices drop resulting from Strait of Hormuz closure, dealer says - NewsNation",
-        "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxPS09fUnBCUERNR2cyZTliU29vSGpHdjc4ZktydVZzZlJpMXNLaVlFVVhNVzJUR01lRFJGbHJOQ19INUtRc2pUYnJIVno2OUk3Z0lBSFRpcUJOc21wUjlmSzNNaVNFMGlCSG9QUXJvU1pDNExhU0s4eE0wNldaakNCaHJzN09SblhrcnZ3VjRKeU53S2ZoV1BQaWdHYVbSAaIBQVVfeXFMTkNQNmhwSmdGT0F5RmdIV1A3OXpSTkdOV2FiSmw0WXhvcTlkRWFyakI4T2lUWVBhLU5LOGRVSUFTVmk0WjZaZVNWVlFZak9vaHBadjNaMWRFRW9oejExaVk4VFFXa3lxczV0bjh3RTN4cGdRc1NsU1RWR01KcWZmN2QyZFVjeXdIMTFMeUl4UllLWElRRGdObmdDSmZ3ZDBxYmN3?oc=5",
-        "source": "NewsNation",
-        "date": "Sun, 17 Ma",
-        "language": "en",
-        "tone": -0.565,
+        "tone": 0.0,
         "category": "commodities",
         "relevance": 0.2,
         "keywords": [
           "Gold",
-          "Strait",
-          "Hormuz"
+          "Reuters"
         ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
+        "bias_label": "center",
+        "factuality": "high"
       }
     ],
     "source_diversity": {
-      "BullionVault": 1,
-      "Yahoo Finance": 3,
-      "CNBC": 1,
-      "GoldSilver": 2,
+      "BullionVault": 2,
+      "Reuters": 3,
+      "FXEmpire": 2,
+      "Morningstar": 1,
+      "Yahoo Finance": 6,
+      "CNBC": 2,
+      "GoldSilver": 3,
       "Robin J Brooks | Substack": 1,
-      "Reuters": 2,
-      "Gold Price": 2,
       "World Gold Council": 1,
-      "Forbes": 1,
-      "NewsNation": 1,
-      "VanEck": 1,
-      "Investing.com": 2,
+      "Gold Price": 1,
       "KITCO": 4,
-      "TradingView": 1,
-      "TD Economics": 1,
-      "FXStreet": 1,
-      "Українські Національні Новини (УНН)": 1,
-      "FXEmpire": 5,
-      "Quiver Quantitative": 1,
+      "TIKR.com": 1,
+      "Forbes": 1,
+      "FOREX.com": 1,
+      "FXStreet": 3,
+      "StoneX": 1,
       "Mining.com": 1,
-      "Investing News Network": 2,
-      "investingLive": 1,
-      "OregonLive.com": 1,
-      "Moomoo": 1,
-      "PR Newswire": 1,
-      "BeInCrypto": 1
+      "NewsNation": 1,
+      "USA Today": 2,
+      "U.S. News - Money": 1,
+      "Investing.com": 1,
+      "Texas Monthly": 1
     }
   },
   "political_bias_analysis": {
@@ -6643,19 +7123,19 @@
       "left": 0,
       "center-left": 0,
       "center": 4,
-      "center-right": 2,
+      "center-right": 3,
       "right": 0,
-      "unknown": 34
+      "unknown": 33
     },
-    "bias_diversity_score": 0.395,
+    "bias_diversity_score": 0.424,
     "factuality_distribution": {
-      "high": 6,
+      "high": 7,
       "mixed": 0,
       "low": 0,
-      "unknown": 34
+      "unknown": 33
     },
     "cluster_bias_assessments": [],
-    "flagged_articles": 2,
+    "flagged_articles": 3,
     "bias_narrative": "",
     "total_analyzed": 40
   },
@@ -6669,5 +7149,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-12T01:11:11.942294+00:00"
+  "generated_at": "2026-07-29T13:00:11.510212+00:00"
 }
