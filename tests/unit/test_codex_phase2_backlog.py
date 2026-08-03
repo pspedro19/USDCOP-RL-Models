@@ -237,15 +237,20 @@ def test_ci_and_readiness_matrix_are_executable_honest_contracts() -> None:
 
     assert "legacy_bypass_allowlist" in validator
     assert "test_codex_phase2_backlog.py" in workflow
-    for domain in (
-        "Técnica",
-        "Riesgo",
-        "Ejecución",
-        "Seguridad",
+    control_domains = {
+        columns[2].strip()
+        for line in matrix.splitlines()
+        if len(columns := line.split("|")) > 2
+        and re.fullmatch(r"[A-Z]+-\d+", columns[1].strip())
+    }
+    assert control_domains == {
+        "Technology",
+        "Risk",
+        "Execution",
+        "Security",
         "Compliance",
-        "Operaciones",
-        "Investor",
-    ):
-        assert domain in matrix
+        "Operations",
+        "Investors",
+    }
     assert "timescaledb_information.hypertables" in profiler
     assert "timescaledb_information.continuous_aggregates" in profiler
