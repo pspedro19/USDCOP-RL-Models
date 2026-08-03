@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-28
+version: 1.1.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - src/contracts/signal_contract.py
@@ -65,3 +65,67 @@ está vigilada por CI; la paridad de los motores migrados, no.
 
 ## Notas constitución
 Regla siempre-cargada nueva: .claude/rules/strategy-engines.md (invariantes 1-9). Las reglas también cobran trials — cada variante de ventana/umbral/filtro = +1 en su familia.
+
+
+## Auditoría de las 17 validaciones §11 (CLAUDE, 2026-08-03)
+
+La brecha declarada arriba dice *"R1: contracts/policy.py (...)"* como si R1 estuviera por
+hacer. **Está en gran parte construido** y esa frase induce a error: `src/contracts/policy.py`
+tiene `EngineRef`, `PolicyContext`, `StrategyDecision`, el protocolo `Policy` con
+`required_features`/`validate_inputs`/`evaluate`, y `POLICY_MODES` con los cuatro modos.
+Existen además `rule_trace.py`, `policy_dsl.py` y `policy_version.py`.
+
+Lo que **no** está es R3. Y de las 17 validaciones de §11, esto es lo que se aplica de verdad
+— cada fila comprobada contra el código, no contra el docstring que la anuncia:
+
+| # | Validación §11 | Estado | Dónde |
+|---|---|---|---|
+| 1 | `rule_based` ⇒ `retrain=never` | ✅ | `loader.py:166` |
+| 2 | `rule_based` no declara `capability=train` | ✅ | `loader.py:176` |
+| 3 | `rule_based` no exige `model_snapshot_id` | ✅ | `loader.py:170` |
+| 4 | toda policy referencia `feature_set` y `resample_policy` | ✅ | `loader.py:181` |
+| 5 | los `required_features` existen en el snapshot | ✅ | `base.py:79-81` (`validate_inputs`) |
+| 6 | **ningún input supera `decision_cutoff`** | ❌ **no implementable hoy** | ver abajo |
+| 7 | todo operador declarativo pertenece al whitelist | ✅ | `loader.py:222` → AST de `policy_dsl` |
+| 8 | el YAML no contiene `eval`, SQL libre ni Python | ✅ | `validate_policy_specs.py::_check_text` |
+| 9 | toda política tiene default/fallback explícito | ✅ | `loader.py:44` |
+| 10 | conflictos entre reglas con prioridad declarada | ✅ | `_check_outputs` |
+| 11 | la salida respeta `direction` y caps de exposición | ✅ | exposición en `_check_outputs`; **`direction` en el contrato** (`policy.py:385`), no duplicado en el validador |
+| 12 | determinismo (mismos inputs ⇒ misma decisión) | ✅ | `_check_determinism` |
+| 13 | `rule_trace` contiene todas las condiciones relevantes | ⚠️ **schema sí, completitud NO** | `rule_trace.py` valida forma, nadie exige cobertura |
+| 14 | `policy_hash` coincide con params y schema | ✅ | `loader.py` (`governance.policy_hash`) |
+| 15 | cambiar ventana/threshold exige nueva versión | ⚠️ parcial | `check_policy_parity.py` cubre paridad legacy↔motor (BL-47), no "cambio ⇒ versión" |
+| 16 | el frontend no recalcula condiciones | ➡️ BL-46 | fuera de R1-R3 |
+| 17 | `WITHDRAWN` conserva bundles y manifiesto | ⚠️ | estado en `governance/declaration.py`; cobertura en carril CODEX |
+
+**Recuento honesto: 12 aplicadas, 3 parciales, 1 no implementable, 1 diferida a BL-46.**
+
+### El hueco #6 es constitucional y NO se puede tapar con un check más
+
+`quant-constitution.md` §4 exige anti-look-ahead en tres capas. El motor tiene `as_of` en
+`PolicyContext` **y lo valida como ISO**, pero el snapshot es un `Mapping[str, Any]` de
+`{nombre: valor}` **sin marca temporal por feature**. No hay contra qué comparar el cutoff:
+la validación #6 no es un check que falte escribir, es **una comprobación que la forma actual
+del contrato no permite expresar**.
+
+Salidas posibles, ninguna tomada aquí porque tocan contrato compartido:
+1. que el snapshot lleve `available_at` por feature ⇒ **cambio de contrato, exige `C-NNN` + ACK**;
+2. que lo garantice aguas arriba `resolve_feature_snapshot`, que es **precisamente la tarea de
+   R3 que no existe**.
+
+Mientras tanto, el motor **no puede demostrar** que sus inputs respeten el cutoff. Eso se
+declara aquí en vez de dejar la casilla §11 como si estuviera cubierta.
+
+### Estado real de R2 y R3
+
+- **R2 parcial**: 4 specs en `config/policies/` compilan y pasan el validador
+  (`[OK] 4 specs de política válidos`), pero los campos exigidos no están uniformemente:
+  `resample_policy_id` y `explainability` aparecen en 4 ficheros y `fallbacks` en **1**.
+- **R3 NO existe**: `airflow/dags/asset_pipeline_factory.py` ramifica por **`strategy_ids`**
+  (`:107`, `:117`, `:176`), que es exactamente lo que `strategy-engines.md` prohíbe
+  (*"el factory ramifica por `engine.type` (...), nunca por `strategy_id`"*). Las tareas
+  genéricas `resolve_feature_snapshot→validate_policy_inputs→evaluate_policy→publish` no
+  existen. **Verificar un cambio ahí exige Airflow vivo ⇒ STACK_OR_CI.**
+
+**BL-45 sigue PARTIAL.** Esta auditoría no cierra alcance: sustituye una brecha mal descrita
+por el mapa real, y aísla el único punto (#6) que no es trabajo sino decisión de contrato.
