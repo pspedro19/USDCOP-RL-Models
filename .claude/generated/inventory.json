@@ -109,7 +109,7 @@
     "total_ids": 53
   },
   "frontend": {
-    "api_routes": 98,
+    "api_routes": 95,
     "pages": 32,
     "pages_active": 24,
     "pages_legacy": 8
@@ -139,7 +139,7 @@
     ],
     "agents": 3,
     "rules": 10,
-    "rules_bytes": 22448,
+    "rules_bytes": 22250,
     "rules_words": 2910,
     "skill_definitions": [
       {

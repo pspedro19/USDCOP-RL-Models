@@ -222,7 +222,7 @@ Script: `scripts/pipeline/generate_weekly_analysis.py`. Migration: 046. See `new
 ### Dashboard (Next.js 15 App Router)
 
 <!-- inv:frontend -->
-**24 páginas activas** (8 en `/legacy`) · **98 rutas API**
+**24 páginas activas** (8 en `/legacy`) · **95 rutas API**
 <!-- /inv -->
 
 Pages (8 sections + 5 `/execution` sub-pages): `/`, `/hub`, `/dashboard`, `/production`, `/forecasting`, `/analysis`, `/execution/*`, `/login`.
