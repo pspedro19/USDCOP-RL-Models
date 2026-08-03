@@ -1,6 +1,38 @@
-schema_version: "1.0.0"
+schema_version: "1.1.0"
 policy: no_new_bypasses
+max_entries: 30
 description: >-
-  Explicit inventory of temporary metric-engine bypasses. New entries require
-  owner, reason, expiry and a removal issue; an empty list is the target state.
-entries: []
+  Factual AST inventory of temporary Sharpe/Calmar implementations outside the
+  governed SSOT. The validator requires exact correspondence and never permits
+  this ceiling to increase; removing every entry remains the target state.
+entries:
+  - scripts/analysis/cop_latam_deep_run.py::ann_dd_calmar
+  - scripts/analysis/cop_latam_deep_run.py::main::calmar_stat
+  - scripts/analysis/cop_null_suite.py::block_bootstrap_delta_calmar
+  - scripts/analysis/decompose_sharpe_h5.py::compute_sharpe
+  - scripts/analysis/full_2025_backtest.py::calculate_sharpe
+  - scripts/pipeline/run_full_pipeline.py::_calculate_sharpe
+  - scripts/validation/walk_forward_validation.py::calculate_sharpe
+  - services/pipeline_data_api.py::calculate_calmar_ratio
+  - services/pipeline_data_api.py::calculate_sharpe_ratio
+  - services/trading_analytics_api.py::calculate_calmar_ratio
+  - services/trading_analytics_api.py::calculate_sharpe_ratio
+  - src/evaluation/benchmarks.py::calculate_sharpe_ratio
+  - src/forecasting/evaluation/metrics.py::Metrics::sharpe_ratio
+  - src/inference/ab_statistics.py::ABStatistics::_bootstrap_sharpe_ci
+  - src/inference/ab_statistics.py::ABStatistics::_bootstrap_sharpe_ci::calc_sharpe
+  - src/inference/ab_statistics.py::ABStatistics::compare_sharpe_ratios
+  - src/monitoring/model_monitor.py::ModelMonitor::get_rolling_sharpe
+  - src/strategies/spx500_regime_gated_v1/costs.py::break_even_cost::net_sharpe
+  - src/strategies/spx500_regime_gated_v1/deflated_sharpe.py::deflated_sharpe
+  - src/strategies/spx500_regime_gated_v1/deflated_sharpe.py::deflated_sharpe_from_registry
+  - src/strategies/spx500_regime_gated_v1/deflated_sharpe.py::expected_max_sharpe
+  - src/strategies/spx500_regime_gated_v1/deflated_sharpe.py::probabilistic_sharpe
+  - src/strategies/spx500_regime_gated_v1/economic_metrics.py::sharpe
+  - src/strategies/spx500_regime_gated_v1/economic_metrics.py::sharpe_distribution
+  - src/strategies/spx500_regime_gated_v1/pbo.py::_sharpe_from_moments
+  - src/strategies/spx500_regime_gated_v1/test_strategy.py::test_dsr_with_989_trials_rejects_a_sharpe_of_1
+  - src/trading/paper_trader.py::PaperTrader::_calculate_sharpe_ratio
+  - src/training/curriculum_scheduler.py::AdaptiveCurriculumScheduler::_calculate_phase_sharpe
+  - src/training/reward_components/dsr.py::DifferentialSharpeRatio::_get_implied_sharpe
+  - src/training/reward_components/dsr.py::DifferentialSharpeRatio::implied_sharpe

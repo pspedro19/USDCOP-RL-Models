@@ -121,6 +121,8 @@ jobs:
       - run: python scripts/validation/check_trial_ledger.py
       - run: python scripts/validation/report_ledger_dsr.py
       - run: python scripts/validation/validate_policy_specs.py
+      - name: Reject new governed-metric bypasses
+        run: python scripts/validation/validate_fabric_contracts.py
       - name: Publish baseline contract
         run: test -f .claude/coordination/BASELINE.md
 
