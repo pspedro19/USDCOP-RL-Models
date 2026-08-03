@@ -16,8 +16,10 @@ Mi carril son **23 BLs**, de los cuales **7 IMPLEMENTED** (BL-01, 02, 04, 09, 11
 
 | Clase | N | BLs |
 |---|---:|---|
-| LOCAL_CLOSABLE | 4 | BL-03, BL-15, BL-20, BL-45 |
-| LOCAL_pero_CARRIL_CODEX | 1 | BL-06 |
+| LOCAL_CLOSABLE | 2 | BL-15, BL-45 |
+| ~~LOCAL_pero_CARRIL_CODEX~~ CERRADO | 0 | ~~BL-06~~ -> **IMPLEMENTED** `c30bd666` |
+| LOCAL_pero_M/L (reclasificado) | 1 | BL-03 |
+| CERRADO desde este triage | 1 | BL-20 (ficha corregida `0211a5cc`, sigue PARTIAL de alcance) |
 | STACK_OR_CI | 4 | BL-05, BL-25, BL-32, BL-46 |
 | OPERATOR | 2 | BL-36, BL-42 |
 | FROZEN_DRIFT | 2 | BL-13, BL-14 |
@@ -62,3 +64,43 @@ son **artefactos inmutables de investigación que ningún checkout limpio tiene*
 distintos dependen de ellos y los tres son irreproducibles fuera del árbol donde se generaron.
 O se trackean, o los tests que los exigen deben declararse `skip` explícito con motivo — hoy
 unos saltan en silencio y otro muere con `FileNotFoundError`.
+
+
+## Correcciones a este mismo triage (2026-08-03, posteriores a `272753ab`)
+
+Este documento nació para no repetir el error de clasificar por una sonda única. Dos de sus
+filas ya se movieron **al ejecutarlas**, que es exactamente para lo que servía:
+
+- **BL-06 -> IMPLEMENTED (`c30bd666`).** Estaba como *"LOCAL pero carril CODEX"*. CODEX cableó
+  el step de CI y CLAUDE lo verificó adversarialmente por dos ejes; cerrado. Marcador **10/35/2**.
+
+- **BL-03: retirada mi propia clasificación de LOCAL_CLOSABLE.** Lo puse ahí razonando que el
+  bloqueo de `CXD-189` (SSOT dirty del operador) había caducado al commitearse. **Era un
+  razonamiento correcto sobre un hecho incompleto.** Al ir a mirar el código antes de tocarlo:
+  `ForecastingDashboard()` **no acepta props** y hardcodea `/api/forecasting/bi_dashboard_unified.csv`,
+  el CSV de COP. Luego "que legacy consuma `forecast_mode`" — mi propuesta — **rutearía Oro/BTC
+  a un componente que sirve datos de COP**: convertiría una contradicción de relato en un **bug
+  de atribución de datos**, que es peor. El `isUsdcop` de legacy es **accidentalmente protector**.
+  El arreglo real exige hacer `ForecastingDashboard` asset-aware: trabajo M/L, no wording.
+  **Reclasificado a LOCAL_pero_M/L.**
+
+### Deriva SSOT↔realidad detectada de paso (decisión de producto, no de ingeniería)
+
+`analysis-assets.ts` declara los **cuatro** activos `forecast_mode: 'model_zoo'`. Contra los
+artefactos realmente servidos:
+
+| Activo | Artefactos | Lectura |
+|---|---|---|
+| `usdcop` | CSV de zoo, 0 weekly | coherente |
+| `xauusd` | zoo (`backtest_ard_*.png`) **y** 2 `weekly_inference` | `model_zoo` es defendible, pero **CLAUDE.md sigue diciendo que Oro es rule-based weekly**: uno de los dos está stale |
+| `btcusdt` | zoo **y** 2 `weekly_inference` | igual |
+| `spx500` | **cero artefactos** | declarado `model_zoo`; `/forecasting?asset=spx500` renderiza vacío — esto sí parece defecto puro |
+
+### Qué queda de alcance real en BL-03
+
+`REGIME_STYLE` (`WeeklyInferenceView.tsx:78-83`) colorea `markup`->verde y `markdown`->rojo en
+superficie DIAGNOSTIC. Es una paleta de **4 categorías**, no un binario pos/neg, así que
+neutralizarla a lo bruto destruiría la legibilidad de una taxonomía que no es binaria.
+**Descartados como legítimos** tras mirarlos: el badge verde de `ForecastingLegacy.tsx:44` (es
+*mercado abierto*, no una predicción) y el verde/rojo de `realized_return_pct` (es un **hecho
+pasado**, no una predicción). `expected_return_pct` ya está en tono neutro.
