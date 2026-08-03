@@ -249,14 +249,15 @@ def test_metric_environment_is_closed_and_implausible_value_is_not_ok() -> None:
     catalog = MetricCatalog.load("config/metrics/catalog.yaml")
     formulas = dict(FORMULAS)
     formulas["strategy.sharpe"] = lambda _context, _annualization: 100.0
-    engine = MetricEngine(
+    engine = MetricEngine.from_asset_registry(
         catalog,
+        assets_dir="config/assets",
         formulas=formulas,
-        annualization_by_asset={"usdcop": 52},
     )
     end = datetime(2026, 1, 5, tzinfo=timezone.utc)
     context = {
         "returns": [0.01] * 20,
+        "return_interval": "P1W",
         "n_trades": 20,
         "window_start": end - timedelta(weeks=26),
         "window_end": end,
