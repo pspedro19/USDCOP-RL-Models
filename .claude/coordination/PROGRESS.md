@@ -1,9 +1,11 @@
 # PROGRESS — tablero conjunto
 
-Refresco CLAUDE `2026-08-03T12:15:17-05:00` (`claude-root-152c263e`).
-**CORTE COFIRMADO 10/35/2 (21.3% DONE estricto).** El corte anterior 9/36/2 quedó superado por
-el cierre bilateral de BL-06 en `c30bd666`. El tablero anterior llevaba desde el
-2026-07-31 sin moverse y ya no describía el árbol. Este archivo es runtime del protocolo: se
+Refresco conjunto `2026-08-03` (CLAUDE `CLD-300`, CODEX `4c31d584`).
+**CORTE COFIRMADO 10/36/1 (21.3% DONE estricto).** BL-28 pasó de `PLANNED` a `PARTIAL` porque
+sus factories y diff semántico existen, pero conserva las brechas E7/BL-17 declaradas. Sus dos
+garantías centrales quedaron cerradas por mutación cruzada en `CLD-302`: backfill sin `as_of`
+y pérdida de estructura no volátil producen un fallo independiente cada una. Este archivo es
+runtime del protocolo: se
 reescribe con doble firma y queda fuera del grafo Obsidian. La navegación durable parte de la
 [base de conocimiento](../README.md), no de este heartbeat.
 
@@ -17,14 +19,14 @@ actualización de su ficha por el dueño.
 | Estado verificable | Total | Lectura operativa |
 |---|---:|---|
 | DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **10** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-34 |
-| PARTIAL | **35** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
-| PLANNED | **2** | BL-23, BL-28 |
+| PARTIAL | **36** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
+| PLANNED | **1** | BL-23 |
 | APPROVED_PENDING_CLOSE | **0** | No hay cierres esperando sólo trámite |
 
 La suma es **47**. `test_backlog_status_is_honest` = **105 passed, 47 skipped, VERDE**
-(estuvo rojo esta mañana; ver abajo). `test_knowledge_frontmatter` = **994 passed**.
+(estuvo rojo esta mañana; ver abajo). `test_knowledge_frontmatter` = **997 passed**.
 
-### Los dos movimientos de este corte
+### Historial del corte anterior
 
 - **BL-12** (CLAUDE) `PARTIAL→IMPLEMENTED`, sellado en `ecbb67bb`. Aprobado por CODEX en
   `CXD-191` tras mutar el **código** (neutralizar `check_provenance_wall` ⇒ 4F/30P, restauración
@@ -56,17 +58,18 @@ marcador verde. Es una narración.
 
 ## Infraestructura: qué hay y qué no
 
-- **PostgreSQL 16.4 portable VIVO** en `127.0.0.1:5432`, base `usdcop_trading`, sin admin y sin
-  servicio de Windows. `--plan legacy-init` = **10 succeeded / 4 failed** (uno es de orden:
-  `20-signalbridge-schema` pide `users` que crea el `21-`).
+- **PostgreSQL 16.4 portable PARADO** para no competir por `127.0.0.1:5432` con el compose.
+  Su datadir permanece intacto y reproducible; no debe levantarse mientras el contenedor use
+  ese puerto, porque produciría un verde falso contra otro major/cluster.
 - **`fabric-v1` NO aplicada, deliberadamente.** Es `REVIEW_GATED_PLANS` y su digest es, en
   palabras del propio código, *"a second factor, not a way for modified on-disk SQL to authorize
   itself"*. El error imprime el digest esperado; copiárselo de vuelta sería anular el candado
   desde dentro. **Requiere autorización del operador.** Consecuencia: la migración 070 no está,
   y con ella BL-18 integration sigue sin poder correr.
-- **Docker NO está instalado** y no se puede instalar desde esta sesión: es no-admin y Docker
-  Desktop exige elevación más WSL2 (ausente). Airflow, Redis, MinIO, Grafana y todo E2E servido
-  siguen fuera de alcance. Cualquier cierre que los exija es **STACK_OR_CI**, no LOCAL_CLOSABLE.
+- **Docker Desktop + WSL2 están instalados y el daemon responde**, con su disk image alojado en
+  `E:` mediante junction administrada por CLAUDE. El compose continúa construyendo imágenes y
+  aún no hay `STACK_HEALTHY` ni contenedores activos; Airflow/BL-18/BL-35 siguen bloqueados hasta
+  ejecutar el cold boot verificable. No reiniciar Docker ni romper la junction durante el build.
 
 ## Rojo conocido que NO es baseline
 
