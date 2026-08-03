@@ -786,7 +786,7 @@ def test_execution_flip_is_opening_and_exit_all_never_submits_target() -> None:
 
 
 def test_metric_event_identity_is_deterministic_and_annualization_is_finite() -> None:
-    from src.metrics.engine import MetricCatalog, MetricEngine
+    from src.metrics.engine import MetricCatalog, MetricContractError, MetricEngine
 
     catalog = MetricCatalog.load("config/metrics/catalog.yaml")
     engine = MetricEngine.from_asset_registry(catalog, assets_dir="config/assets")
@@ -812,6 +812,16 @@ def test_metric_event_identity_is_deterministic_and_annualization_is_finite() ->
     second = engine.compute(**kwargs)
     assert first.metric_event_id == second.metric_event_id
     assert first.metric_value is not None and math.isfinite(first.metric_value)
+
+    class NonFiniteAnnualizationRegistry:
+        def periods_per_year(self, _asset_id: str, _interval: str) -> float:
+            return float("inf")
+
+    bad_engine = MetricEngine(
+        catalog, annualization_registry=NonFiniteAnnualizationRegistry()  # type: ignore[arg-type]
+    )
+    with pytest.raises(MetricContractError, match="annualization must be a positive number"):
+        bad_engine.compute(**kwargs)
 
 
 def test_canonical_artifact_refuses_divergent_overwrite(tmp_path) -> None:

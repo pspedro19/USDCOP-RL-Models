@@ -664,9 +664,9 @@ def test_portfolio_sql_uses_materialized_sleeves_and_aggregate_target_artifact()
 def _metric_engine():
     from src.metrics.engine import MetricCatalog, MetricEngine
 
-    return MetricEngine(
+    return MetricEngine.from_asset_registry(
         MetricCatalog.load("config/metrics/catalog.yaml"),
-        annualization_by_asset={"usdcop": 52},
+        assets_dir="config/assets",
     )
 
 
@@ -674,6 +674,7 @@ def _metric_context(n_trades=20, returns=None):
     end = datetime(2026, 1, 5, tzinfo=timezone.utc)
     return end, {
         "returns": returns or ([0.01, -0.005, 0.003, -0.001] * 5),
+        "return_interval": "P1W",
         "n_trades": n_trades,
         "window_start": end - timedelta(weeks=26),
         "window_end": end,
