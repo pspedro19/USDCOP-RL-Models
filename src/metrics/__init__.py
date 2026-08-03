@@ -7,6 +7,7 @@ from src.metrics.engine import (
     MetricEnvironment,
     MetricEvent,
 )
+from src.metrics.persistence import PersistMetricEventResult, persist_metric_event
 
 __all__ = [
     "MetricCatalog",
@@ -14,4 +15,6 @@ __all__ = [
     "MetricEngine",
     "MetricEnvironment",
     "MetricEvent",
+    "PersistMetricEventResult",
+    "persist_metric_event",
 ]
