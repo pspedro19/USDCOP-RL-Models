@@ -104,3 +104,65 @@ neutralizarla a lo bruto destruiría la legibilidad de una taxonomía que no es 
 **Descartados como legítimos** tras mirarlos: el badge verde de `ForecastingLegacy.tsx:44` (es
 *mercado abierto*, no una predicción) y el verde/rojo de `realized_return_pct` (es un **hecho
 pasado**, no una predicción). `expected_return_pct` ya está en tono neutro.
+
+## Re-medición 2026-08-03T22:05 — el entorno cambió y con él tres filas
+
+La cabecera de este documento dice *"Entorno: PostgreSQL 16.4 portable vivo, **sin Docker**"*.
+**Eso ya es falso.** El operador levantó Docker Desktop; 17 contenedores arriba y healthy,
+`usdcop-dashboard` responde **200** en `http://localhost:5000`. La clase `STACK_OR_CI` se creó
+precisamente para "esto no se puede medir sin stack", así que hay que volver a medirla en vez de
+heredarla. Lo hago aquí sin reescribir la tabla original: el histórico se conserva.
+
+### Lo que NO cambió, y ahora está verificado contra la DB viva en vez de inferido
+
+`BL-25`, `BL-32` y `BL-46` seguían clasificados `STACK_OR_CI` por depender de objetos de
+`fabric-v1`. **Siguen bloqueados, y ahora es un hecho medido:** en `usdcop_trading` (PostgreSQL
+**15.18** del contenedor) de los diez esquemas de fabric **sólo existe `demo`**; `control`,
+`forecast`, `reference`, `market`, `quality`, `exec`, `fact`, `lineage`, `portfolio` están
+**ausentes**. Levantar Docker no los trae: los trae el pin de `fabric-v1`, que es del operador.
+La clase era correcta; ahora tiene evidencia y no sólo razonamiento.
+
+### La fila que sí se mueve — y no adonde yo esperaba
+
+**BL-05** estaba en `STACK_OR_CI` con la brecha *"E2E 375px/landscape/teclado/consola no
+ejecutado"*. Fui a ejecutarlo, porque con el dashboard vivo parecía la fila desbloqueada del día.
+**No lo está, y la razón es otra:**
+
+- `usdcop-trading-dashboard/tests/e2e/paper-candidates-a11y.spec.ts` **existe** (10 KB, ya
+  estabilizado en su fase D2) y su `BASE_URL` por defecto es exactamente `http://localhost:5000`,
+  que es donde el contenedor publica. Nada de eso es el problema.
+- El spec exige **sesión admin** (`loginTo()` → `/login`, `PW_ADMIN_PASSWORD ?? 'Admin2026!'`),
+  porque el panel está oculto para `free`/`subscriber` por `isClientView`.
+- **`sb_users` tiene 0 filas.** No hay ningún usuario. El login no puede tener éxito.
+- Y no se arregla restaurando: **no existe dump de `sb_users`**. Revisé `data/backups/features/`
+  entero (20 artefactos) y `data/backups/*.csv.gz` — hay OHLCV, macro, news, análisis, H5,
+  `audit_log`... **y ningún usuario**. Es correcto que no lo haya: esa tabla guarda hashes bcrypt
+  y no debe estar en git.
+
+**Por eso NO ejecuté el spec.** Un login fallido no es gratis: cada intento cuenta para el lockout
+de SignalBridge (5 fallos ⇒ 15 min), y el propio spec documenta en su cabecera que ya se
+envenenó una vez por eso. Correrlo a ciegas habría dejado la cuenta bloqueada **y** un rojo que
+no habla del producto.
+
+**BL-05 se reclasifica: `STACK_OR_CI` → `NEEDS_ADMIN_USER`.** No es el stack: es que falta crear
+el usuario por la vía documentada (`.claude/specs/platform/authentication.md`).
+
+### El hueco general que esto destapa, que es más grande que BL-05
+
+`CLAUDE.md` fija como política que **"un clon fresco debe renderizar todas las páginas del
+dashboard"**, y por eso están trackeados `public/data/**`, los seeds y los backups. Pero
+`rbac.md` §1 es **deny-by-default**: toda página que no sea landing/pricing/login exige sesión.
+Juntando ambas: **un clon fresco restaura todos los datos y aun así no puede entrar a ninguna
+página**, porque el único artefacto que no se puede trackear —y no debe— es el usuario.
+
+No es contradicción de nadie: las dos reglas son correctas por separado. Pero el bootstrap
+declara datos y esquema y **no declara identidad**, así que hoy "restauré todo" y "puedo abrir el
+dashboard" son dos estados distintos que nadie distingue por escrito. Tres cosas dependen de
+esto: el E2E de BL-05, cualquier verificación de RBAC por rol, y el propio coldboot.
+
+**No lo arreglo por mi cuenta.** Crear usuarios toca credenciales y `sb_users`, y la decisión de
+qué usuario existe en un arranque limpio es del operador, no de un agente. Lo dejo escrito y
+propongo que el ciclo de coldboot incluya un paso explícito de identidad.
+
+— CLAUDE `claude-root-152c263e-r2` · 2026-08-03T22:05:00-05:00 · medido contra
+`usdcop-postgres-timescale` (PG 15.18, `usdcop_trading`) y `usdcop-dashboard` (:5000, HTTP 200).
