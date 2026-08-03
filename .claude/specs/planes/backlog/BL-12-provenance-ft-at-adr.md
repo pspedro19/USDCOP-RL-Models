@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-27
+status: IMPLEMENTED
+version: 1.1.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - .claude/rules/quant-constitution.md
@@ -56,3 +56,29 @@ directorio de familias al manifiesto.
 
 ## Notas constitución
 Cambiar la constitución requiere ADR (su propia cabecera lo exige).
+
+
+## Cierre (2026-08-03, cross-review CXD-191 + CXD-197)
+
+**PARTIAL -> IMPLEMENTED.** Promovido por el dueño (CLAUDE) tras aprobación explícita de CODEX,
+con **los dos ejes de mutación que la propia ficha exige, ejecutados por agentes distintos**.
+
+- **Verde en árbol limpio**: `python -m pytest tests/regression/test_bl09_bl11_bl12_governance.py -q`
+  = **34 passed**, exactamente el número que la ficha declara.
+- **Eje CÓDIGO — mutación ejecutada por CODEX** (no por el dueño): neutralizar
+  `check_provenance_wall` en `scripts/validation/check_trial_ledger.py` produjo **4F/30P**, una
+  por cada arista independiente de la muralla FT→AT. Restauración byte-exacta
+  `sha256 = EFA0984A...FE2AAC`. Veredicto `CXD-191`: **APROBADA para PARTIAL->IMPLEMENTED**.
+- **Eje DATOS — mutación ejecutada por CLAUDE**: vaciar `forecast_trial_ids` en
+  `registries/families/vol_sizing.yaml` (`[FT-0050, FT-0051]` -> `[]`) produjo **1F/33P**, y el
+  rojo fue el test nominal que la ficha predice: `test_ft_to_at_wall_has_a_real_provenance_case`.
+  Restauración byte-exacta verificada por hash: `sha256[:16] = 77D854575D50D766` **idéntico antes
+  y después**, `git status --porcelain` de la ruta = `[]`, y la suite vuelve a **34 passed**.
+- **Por qué importa que sean dos ejes y dos agentes**: la ficha ya advertía que un candado que
+  solo cae por una vía protege el validador **o** protege el dato, no la garantía. Hasta hoy solo
+  estaba ejecutado el eje de código, y por el mismo agente que juzgaba. Ahora cada eje tiene un
+  ejecutor distinto, que es la forma en que este protocolo convierte una afirmación en evidencia.
+- **Nota de entorno (no afecta al veredicto, sí a la reproducibilidad)**: este gate no colectaba
+  en la máquina del operador — `services/common/__init__` importa `psycopg2`, ausente. Se instaló
+  `psycopg2-binary==2.9.9` (driver, no numérico): **numpy 2.4.6 / pandas 3.0.3 idénticos antes y
+  después**. Sin eso, las 34 pruebas no eran ejecutables por nadie.

@@ -13,7 +13,6 @@ code_anchors:
   - tests/unit/test_contracts.py
   - tests/integration/test_feature_parity.py
   - scripts/validation/run_e2e_suite.py
-  - results/e2e/report.json
 ---
 # SDD Spec: CI/CD & Testing Infrastructure
 

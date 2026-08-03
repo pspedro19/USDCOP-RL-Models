@@ -129,11 +129,22 @@ describe('#1 — los artefactos NO viven en public/ (cierre del bypass estático
     expect(realFs.existsSync(path.join(process.cwd(), 'public', 'data', 'interpretability'))).toBe(false);
   });
 
+  // El invariante que este test protege es la UBICACION (privada, no public/), no una fecha
+  // concreta. Estuvo pinneado a `ridge/2026-07-27/summary.json` y se puso rojo cuando BL-20
+  // retiro ese artefacto por declarar "solo test-folds" mientras su scope reconocia fit global
+  // (retirada correcta, sellada en 2fc535e4). Restaurar el JSON falso para volver a verde
+  // habria sido mentir; se despinnea la fecha y se exige el invariante real.
   it('los artefactos reales viven en <repo>/data/interpretability', () => {
     const repoRoot = path.resolve(process.cwd(), '..');
-    expect(
-      realFs.existsSync(path.join(repoRoot, 'data', 'interpretability', 'zoo', 'usdcop', 'ridge', '2026-07-27', 'summary.json')),
-    ).toBe(true);
+    const ridgeDir = path.join(repoRoot, 'data', 'interpretability', 'zoo', 'usdcop', 'ridge');
+    expect(realFs.existsSync(ridgeDir)).toBe(true);
+
+    const withSummary = realFs
+      .readdirSync(ridgeDir, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .filter((entry) => realFs.existsSync(path.join(ridgeDir, entry.name, 'summary.json')));
+
+    expect(withSummary.length).toBeGreaterThan(0);
   });
 });
 
