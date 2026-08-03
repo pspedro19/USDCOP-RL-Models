@@ -77,6 +77,12 @@ def test_market_alias_registry_is_bijective_and_quality_is_fail_closed() -> None
     )
     good = {"open": 19, "high": 20, "low": 18, "close": 19.5}
     assert rules.evaluate_provider_bar("YAHOO", "mxn=x", good).accepted
+    historical = {"open": 2.72, "high": 2.75, "low": 2.7, "close": 2.712}
+    assert rules.evaluate_provider_bar("YAHOO", "mxn=x", historical).accepted
+    below_declared_range = {"open": 2.49, "high": 2.49, "low": 2.49, "close": 2.49}
+    assert not rules.evaluate_provider_bar(
+        "YAHOO", "mxn=x", below_declared_range
+    ).accepted
     assert not rules.evaluate_bar("unknown", good).accepted
     assert not rules.evaluate_bar(
         "usdmxn", {"open": -1, "high": 20, "low": -2, "close": 19}
