@@ -137,8 +137,8 @@ K-fold leaks across the fold boundary, inflating out-of-sample Sharpe.
 
 ## Emerging markets
 
-EM is where this differs most from the rest of the collection. See
-`references/em-fx.md`. Three things the engine does automatically:
+EM is where this differs most from the rest of the collection. See the
+[EM FX reference](references/em-fx.md). Three things the engine does automatically:
 
 1. **Nominal carry is marked suspect when real carry is negative.** A 45%/yr
    TRY carry against 60% inflation is compensation for expected depreciation,

@@ -360,7 +360,7 @@ más trials hasta abrir resultados forward.
 ## VEREDICTO FUSIONADO tras revisión adversarial de Codex (2026-07-21, 0 trials nuevos)
 
 Codex ejecutó R1-R5 (`codex exec -p audit`, informe en
-`.claude/codex/PNL-ADVERSARIAL-REVIEW-USDCOP-2026-07-21.md`); Claude verificó la
+`.claude/codex/audits/PNL-ADVERSARIAL-REVIEW-USDCOP-2026-07-21.md`); Claude verificó la
 hipergeométrica de forma independiente (coincide al 4º decimal). Ajustes aceptados:
 
 1. **R1 — El patrón HS se REBAJA de "confirmación" a "consistente/sugestivo"**:

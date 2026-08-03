@@ -2,11 +2,11 @@
   "results": [
     {
       "hypothesis": "H-COP-XLEAD-01",
-      "da_without": 0.5294,
-      "da_with": 0.5294,
-      "delta_da": 0.0,
+      "da_without": 0.5686,
+      "da_with": 0.549,
+      "delta_da": -0.0196,
       "n": 51,
-      "discordant_with_right": 1,
+      "discordant_with_right": 0,
       "discordant_without_right": 1,
       "p_mcnemar": 1.0,
       "h0_rejected": false,
@@ -15,11 +15,11 @@
       "detail": {
         "without": {
           "n_weeks": 51,
-          "da": 0.5294
+          "da": 0.5686
         },
         "with": {
           "n_weeks": 51,
-          "da": 0.5294
+          "da": 0.549
         }
       }
     },

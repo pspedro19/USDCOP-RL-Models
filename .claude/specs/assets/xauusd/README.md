@@ -139,3 +139,18 @@ gold-rl/
 ---
 
 *Aviso: diseño metodológico, no asesoría financiera ni promesa de rentabilidad. El trading de oro implica riesgo sustancial. El backtest espectacular es la señal de alarma, no el premio.*
+
+## Documentos de este directorio
+
+<!-- idx:auto -->
+
+| Documento | Estado |
+|---|---|
+| [HYPOTHESIS-REGISTRY — XAU/USD (reconstruido)](HYPOTHESIS-REGISTRY.md) | PARTIAL |
+| [Plan de rentabilidad XAU/USD](PLAN-RENTABILIDAD-2026-07.md) | PLANNED |
+| [Estrategia XAU/USD — Especificación Final v2 (Norte)](STRATEGY.md) | IMPLEMENTED |
+| [Protocolo de Retiro — gold_trend_simple (paper-shadow MT5) — PARA FIRMA DEL OPERADOR](WITHDRAWAL-PROTOCOL-XAU.md) | IMPLEMENTED |
+
+**Subdirectorios:** [`adr/`](adr/ADR-log.md) · [`specs/`](specs/README.md)
+
+<!-- /idx -->

@@ -1,346 +1,147 @@
-# USDCOP Trading System - Documentation Index
+# USDCOP Trading System — Índice de documentación
 
-**Version:** 2.0.0
-**Last Updated:** October 22, 2025
+> **Verificado contra disco el 2026-07-30.** La versión anterior de este índice databa de
+> 2025-10-22 y apuntaba a un layout plano (`ARCHITECTURE.md`, `RUNBOOK.md`, … en la raíz de
+> `docs/`) que dejó de existir cuando `docs/` se reorganizó en subdirectorios: **84 de sus
+> enlaces estaban muertos**. Nadie lo notó porque el link-checker solo miraba `.claude/`.
+> Ahora `docs/**` también entra en `specs-gate.yml`, así que este índice no puede volver a
+> pudrirse en silencio.
 
-Welcome to the USDCOP Trading System documentation. This index will help you find the right documentation for your needs.
+**Dos árboles de conocimiento, con responsabilidades distintas:**
 
----
+| Árbol | Qué contiene | Gobierno |
+|---|---|---|
+| [`.claude/`](../.claude/README.md) | Specs SDD, rules auto-cargadas, skills, agents | Front-matter tipado + `specs-gate.yml` |
+| `docs/` (aquí) | Documentación de proyecto: arquitectura, runbooks, guías, ADRs, legal | Enlaces verificados en CI |
 
-## 📖 Quick Navigation
-
-### 🚀 Getting Started
-- **[README.md](../README.md)** - System overview and quick start guide
-- **[QUICK_START.md](QUICK_START.md)** - Fast setup for development
-- **[CHANGELOG.md](../CHANGELOG.md)** - What's new in Version 2.0
-
-### 🏗️ Architecture & Design
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Complete system architecture (50 KB)
-- **[ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md)** - Visual diagrams with Mermaid (16 KB)
-- **[DATA_FLOW_END_TO_END.md](DATA_FLOW_END_TO_END.md)** - Data flow documentation
-
-### 🔧 Operations
-- **[RUNBOOK.md](RUNBOOK.md)** - Operational procedures and incident response (23 KB)
-- **[MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)** - Migration from V1 to V2 (16 KB)
-
-### 💻 Development
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development environment and coding standards (34 KB)
-- **[API_REFERENCE.md](API_REFERENCE.md)** - Original API documentation
-- **[API_REFERENCE_V2.md](API_REFERENCE_V2.md)** - RT Orchestrator & WebSocket protocol (24 KB)
-
-### 🎯 Specific Topics
-- **[DASHBOARD_VIEWS.md](DASHBOARD_VIEWS.md)** - Dashboard architecture and components
-- **[ENDPOINT_COVERAGE.md](ENDPOINT_COVERAGE.md)** - API endpoint coverage report
+Si buscas **cómo está construido el sistema hoy**, empieza por
+[`.claude/specs/architecture-overview.md`](../.claude/specs/architecture-overview.md).
+Este árbol es documentación de acompañamiento, más narrativa y de proceso.
 
 ---
 
-## 📚 Documentation by Audience
+## Arranque
 
-### For New Developers
-**Goal:** Get up and running quickly
+- [QUICK_START.md](guides/QUICK_START.md) — setup rápido de desarrollo
+- [ONBOARDING_NEW_TEAM_MEMBER.md](guides/ONBOARDING_NEW_TEAM_MEMBER.md) — incorporación
+- [DEVELOPMENT.md](guides/DEVELOPMENT.md) — entorno y estándares de código
+- [PROJECT_DEFINITION.md](PROJECT_DEFINITION.md) — definición del proyecto
+- [../README.md](../README.md) — overview del repositorio
+- [../AGENTS.md](../AGENTS.md) — reglamento de agentes (Codex lo lee automáticamente)
+- [../CLAUDE.md](../CLAUDE.md) — contexto de proyecto para Claude Code
 
-1. Start here: [README.md](../README.md)
-2. Setup: [DEVELOPMENT.md](DEVELOPMENT.md) → "Development Environment Setup"
-3. Understand: [ARCHITECTURE.md](ARCHITECTURE.md) → "System Overview"
-4. Build: [DEVELOPMENT.md](DEVELOPMENT.md) → "Adding New Features"
+## Arquitectura
 
-**Estimated Time:** 4-6 hours
+- [ARCHITECTURE.md](architecture/ARCHITECTURE.md) — arquitectura completa del sistema
+- [ARCHITECTURE_DIAGRAMS.md](architecture/ARCHITECTURE_DIAGRAMS.md) — diagramas Mermaid
+- [ARCHITECTURE_CONTRACTS.md](architecture/ARCHITECTURE_CONTRACTS.md) — contratos entre capas
+- [DATA_FLOW_ARCHITECTURE.md](architecture/DATA_FLOW_ARCHITECTURE.md) — flujo de datos
+- [DATABASE_ER_DIAGRAM.md](architecture/DATABASE_ER_DIAGRAM.md) — modelo entidad-relación
+- [INTEGRATION_MATRIX.md](architecture/INTEGRATION_MATRIX.md) — matriz de integraciones
+- [SIGNALBRIDGE_SPEC_v2.md](architecture/SIGNALBRIDGE_SPEC_v2.md) — spec de SignalBridge
+- [FORECASTING_PIPELINE_ANALYSIS.md](architecture/FORECASTING_PIPELINE_ANALYSIS.md) — pipeline de forecasting
+- [MODEL_GOVERNANCE_POLICY.md](architecture/MODEL_GOVERNANCE_POLICY.md) — gobernanza de modelos
+- [REPRODUCIBILITY.md](architecture/REPRODUCIBILITY.md) — reproducibilidad
+- [DATA_VERSIONING.md](architecture/DATA_VERSIONING.md) — versionado de datos
 
----
+### API
 
-### For Operations/SRE
-**Goal:** Deploy and operate the system
+- [API_REFERENCE_V2.md](architecture/API_REFERENCE_V2.md) — RT Orchestrator + protocolo WebSocket
+- [API_CONTRACTS_SHARED.md](architecture/API_CONTRACTS_SHARED.md) — contratos compartidos
+- [API_ENDPOINTS_MULTIMODEL.md](architecture/API_ENDPOINTS_MULTIMODEL.md) — endpoints multi-modelo
+- [API_VERSIONING.md](architecture/API_VERSIONING.md) — versionado de API
 
-1. Start here: [README.md](../README.md)
-2. Deploy: [RUNBOOK.md](RUNBOOK.md) → "Deployment Procedures"
-3. Monitor: [RUNBOOK.md](RUNBOOK.md) → "Monitoring & Alerting"
-4. Troubleshoot: [RUNBOOK.md](RUNBOOK.md) → "Common Issues & Solutions"
-5. Incident Response: [RUNBOOK.md](RUNBOOK.md) → "Incident Response"
+## Operaciones
 
-**Estimated Time:** 3-4 hours
+- [RUNBOOK.md](operations/RUNBOOK.md) — procedimientos operativos
+- [STARTUP_CHECKLIST.md](operations/STARTUP_CHECKLIST.md) — checklist de arranque
+- [TROUBLESHOOTING.md](operations/TROUBLESHOOTING.md) — diagnóstico de problemas
+- [INCIDENT_RESPONSE_PLAYBOOK.md](operations/INCIDENT_RESPONSE_PLAYBOOK.md) — respuesta a incidentes
+- [DISASTER_RECOVERY_PLAYBOOK.md](operations/DISASTER_RECOVERY_PLAYBOOK.md) — recuperación ante desastres
+- [DATABASE_ROLLBACK_RUNBOOK.md](operations/DATABASE_ROLLBACK_RUNBOOK.md) — rollback de base de datos
+- [SYNC_RECOVERY_RUNBOOK.md](operations/SYNC_RECOVERY_RUNBOOK.md) — recuperación de sincronización
+- [GAME_DAY_CHECKLIST.md](operations/GAME_DAY_CHECKLIST.md) — simulacro de fallos
+- [SLA.md](operations/SLA.md) — acuerdos de nivel de servicio
+- [PROMETHEUS_METRICS_REFERENCE.md](operations/PROMETHEUS_METRICS_REFERENCE.md) — referencia de métricas
+- [EXPERIMENT_LAUNCH_CHECKLIST.md](operations/EXPERIMENT_LAUNCH_CHECKLIST.md) — lanzamiento de experimentos
 
----
+### Calendario de trading y zona horaria
 
-### For System Architects
-**Goal:** Understand design decisions and architecture
+- [TIMEZONE_POLICY.md](operations/TIMEZONE_POLICY.md) — política de zona horaria
+- [TRADING_CALENDAR_README.md](operations/TRADING_CALENDAR_README.md) — calendario de trading
+- [TRADING_CALENDAR_INTEGRATION_EXAMPLES.md](operations/TRADING_CALENDAR_INTEGRATION_EXAMPLES.md) — ejemplos de integración
+- [TRADING_CALENDAR_MIGRATION_CHECKLIST.md](operations/TRADING_CALENDAR_MIGRATION_CHECKLIST.md) — checklist de migración
+- [TRADING_CALENDAR_VALIDATION.md](operations/TRADING_CALENDAR_VALIDATION.md) — validación
+- [TRADING_CALENDAR_VALIDATION_REPORT.md](operations/TRADING_CALENDAR_VALIDATION_REPORT.md) — informe de validación
 
-1. Start here: [ARCHITECTURE.md](ARCHITECTURE.md)
-2. Visual: [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md)
-3. Decisions: [ARCHITECTURE.md](ARCHITECTURE.md) → "Design Decisions (ADRs)"
-4. APIs: [API_REFERENCE_V2.md](API_REFERENCE_V2.md)
-5. Comparison: [ARCHITECTURE.md](ARCHITECTURE.md) → "Old vs New Architecture"
+## Guías
 
-**Estimated Time:** 6-8 hours
+- [DEPLOYMENT_GUIDE.md](guides/DEPLOYMENT_GUIDE.md) — despliegue
+- [MIGRATION_GUIDE.md](guides/MIGRATION_GUIDE.md) — migración V1 → V2
+- [MLOPS_PRODUCTION_GUIDE.md](guides/MLOPS_PRODUCTION_GUIDE.md) — MLOps en producción
+- [MLFLOW_INTEGRATION_GUIDE.md](guides/MLFLOW_INTEGRATION_GUIDE.md) — integración con MLflow
+- [DVC_INTEGRATION_GUIDE.md](guides/DVC_INTEGRATION_GUIDE.md) — integración con DVC
+- [GRAFANA_DASHBOARDS_SETUP.md](guides/GRAFANA_DASHBOARDS_SETUP.md) — dashboards de Grafana
+- [SSOT_USAGE_GUIDE.md](guides/SSOT_USAGE_GUIDE.md) — uso de los SSOT
+- [AB_TESTING_GUIDE.md](guides/AB_TESTING_GUIDE.md) — A/B testing
+- [AB_TESTING_END_TO_END_GUIDE.md](guides/AB_TESTING_END_TO_END_GUIDE.md) — A/B testing end-to-end
+- [COST_MANAGEMENT_GUIDE.md](guides/COST_MANAGEMENT_GUIDE.md) — gestión de costos
+- [PROJECT_REPLICATION_GUIDE.md](guides/PROJECT_REPLICATION_GUIDE.md) — replicación del proyecto
 
----
+## Decisiones de arquitectura (ADR)
 
-### For Product Managers
-**Goal:** Understand capabilities and roadmap
+- [Índice de ADRs](adr/README.md) · [Plantilla](adr/TEMPLATE.md)
+- [ADR-0001](adr/ADR-0001-wilder-ema-for-technical-indicators.md) — Wilder EMA para indicadores técnicos
+- [ADR-0002](adr/ADR-0002-feature-circuit-breaker.md) — Circuit breaker de features
+- [ADR-0003](adr/ADR-0003-redis-streams-for-realtime.md) — Redis Streams para tiempo real
+- [ADR-0004](adr/ADR-0004-timescaledb-for-ohlcv.md) — TimescaleDB para OHLCV
+- [ADR-0005](adr/ADR-0005-ppo-for-trading.md) — PPO para trading
 
-1. Start here: [README.md](../README.md)
-2. What's New: [CHANGELOG.md](../CHANGELOG.md)
-3. Features: [DASHBOARD_VIEWS.md](DASHBOARD_VIEWS.md)
-4. Roadmap: [CHANGELOG.md](../CHANGELOG.md) → "Roadmap"
-5. Visuals: [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md)
+> Los ADR más recientes del sistema SDD viven en
+> [`.claude/specs/adr/`](../.claude/specs/adr/). Este directorio conserva los cinco originales.
 
-**Estimated Time:** 1-2 hours
+## Seguridad y legal
 
----
+- [SECURITY-env-leak-remediation.md](SECURITY-env-leak-remediation.md) — remediación de fuga de `.env`
+- [rbac/](rbac/README.md) — documentación de control de acceso
+- [legal/SFC-GATE-CHECKLIST.md](legal/SFC-GATE-CHECKLIST.md) — gate legal SFC Colombia
 
-### For DevOps Engineers
-**Goal:** Manage infrastructure and deployments
+## Modelos y análisis
 
-1. Start here: [RUNBOOK.md](RUNBOOK.md)
-2. Deployment: [RUNBOOK.md](RUNBOOK.md) → "Deployment Procedures"
-3. Migration: [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
-4. Backup: [RUNBOOK.md](RUNBOOK.md) → "Backup & Recovery"
-5. Monitoring: [RUNBOOK.md](RUNBOOK.md) → "Monitoring & Alerting"
+- [model_cards/](model_cards/README.md) — fichas de modelo
+- [analysis/TRAINING_LINEAGE.md](analysis/TRAINING_LINEAGE.md) — linaje de entrenamiento
+- [runbooks/](runbooks/README.md) — runbooks adicionales
+- [templates/](templates/README.md) — plantillas
+- [utils/README_BACKUP_UTILITIES.md](utils/README_BACKUP_UTILITIES.md) — utilidades de backup
 
-**Estimated Time:** 4-5 hours
+## Material del curso
 
----
-
-## 🗂️ Documentation Structure
-
-```
-USDCOP-RL-Models/
-├── README.md                           # Main entry point (15 KB)
-├── CHANGELOG.md                        # Version history (15 KB)
-│
-├── docs/
-│   ├── INDEX.md                        # This file
-│   ├── ARCHITECTURE.md                 # System architecture (50 KB)
-│   ├── ARCHITECTURE_DIAGRAMS.md        # Visual diagrams (16 KB)
-│   ├── RUNBOOK.md                      # Operations guide (23 KB)
-│   ├── DEVELOPMENT.md                  # Development guide (34 KB)
-│   ├── API_REFERENCE_V2.md             # API v2 reference (24 KB)
-│   ├── MIGRATION_GUIDE.md              # Migration guide (16 KB)
-│   ├── QUICK_START.md                  # Quick setup
-│   ├── DASHBOARD_VIEWS.md              # Dashboard docs
-│   ├── ENDPOINT_COVERAGE.md            # API coverage
-│   └── DATA_FLOW_END_TO_END.md         # Data flow
-│
-└── FASE5_DOCUMENTATION_SUMMARY.md      # Phase 5 summary
-```
-
-**Total Documentation Size:** 193+ KB
-**Total Reading Time:** ~8-10 hours (all docs)
-
----
-
-## 📋 Common Tasks
-
-### I want to...
-
-#### Deploy the system for the first time
-1. Read [README.md](../README.md) → "Quick Start"
-2. Follow [DEVELOPMENT.md](DEVELOPMENT.md) → "Step 1-8"
-3. Consult [RUNBOOK.md](RUNBOOK.md) if issues arise
-
-#### Migrate from V1 to V2
-1. Read [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) → "Overview"
-2. Complete [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) → "Pre-Migration Checklist"
-3. Follow [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) → "Step-by-Step Migration"
-4. Validate with [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) → "Post-Migration Validation"
-
-#### Add a new feature
-1. Read [DEVELOPMENT.md](DEVELOPMENT.md) → "Adding New Features"
-2. Follow coding standards in [DEVELOPMENT.md](DEVELOPMENT.md) → "Coding Standards"
-3. Write tests per [DEVELOPMENT.md](DEVELOPMENT.md) → "Testing Guidelines"
-4. Submit PR per [DEVELOPMENT.md](DEVELOPMENT.md) → "Pull Request Checklist"
-
-#### Troubleshoot an issue
-1. Check [README.md](../README.md) → "Troubleshooting"
-2. Consult [RUNBOOK.md](RUNBOOK.md) → "Common Issues & Solutions"
-3. Review logs: `docker logs <container> -f`
-4. Check [RUNBOOK.md](RUNBOOK.md) → "Incident Response" if critical
-
-#### Understand the architecture
-1. Start with [ARCHITECTURE.md](ARCHITECTURE.md) → "System Overview"
-2. View diagrams in [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md)
-3. Read [ARCHITECTURE.md](ARCHITECTURE.md) → "Design Decisions"
-4. Explore specific components in [ARCHITECTURE.md](ARCHITECTURE.md)
-
-#### Integrate with the API
-1. Read [API_REFERENCE_V2.md](API_REFERENCE_V2.md) → "RT Orchestrator Service"
-2. Check [API_REFERENCE_V2.md](API_REFERENCE_V2.md) → "WebSocket Protocol"
-3. Use examples in [API_REFERENCE_V2.md](API_REFERENCE_V2.md) → "Code Examples"
-4. Test with [API_REFERENCE_V2.md](API_REFERENCE_V2.md) → "Testing"
-
-#### Set up monitoring
-1. Read [RUNBOOK.md](RUNBOOK.md) → "Monitoring & Alerting"
-2. Configure Prometheus per [RUNBOOK.md](RUNBOOK.md)
-3. Set up Grafana dashboards
-4. Configure alerts per [RUNBOOK.md](RUNBOOK.md) → "Alerting Rules"
+- [COURSE_PROJECT.md](COURSE_PROJECT.md) — proyecto de curso
+- [defense_qa.md](defense_qa.md) — preguntas de defensa
+- [slides/](slides/README.md) — presentaciones
 
 ---
 
-## 🔍 Finding Information
+## Cómo mantener este índice
 
-### Search by Topic
+1. Si añades un documento a `docs/`, **añádelo aquí**.
+2. Si mueves o renombras uno, `python scripts/validation/check_knowledge_links.py`
+   te dirá qué enlaces rompiste — córrelo antes de commitear.
+3. **No escribas conteos ni tamaños de fichero en prosa.** La versión anterior de este índice
+   anunciaba "ARCHITECTURE.md (50 KB)" para un fichero que ya no estaba ahí. Los números que
+   describen el sistema salen de [`.claude/generated/inventory.json`](../.claude/generated/inventory.json).
 
-**Architecture Topics:**
-- System overview → [ARCHITECTURE.md](ARCHITECTURE.md) → "System Overview"
-- Component details → [ARCHITECTURE.md](ARCHITECTURE.md) → "Component Architecture"
-- Data flow → [ARCHITECTURE.md](ARCHITECTURE.md) → "Data Flow"
-- Storage design → [ARCHITECTURE.md](ARCHITECTURE.md) → "Storage Layer"
-- Design decisions → [ARCHITECTURE.md](ARCHITECTURE.md) → "Design Decisions"
+## Documentos de este directorio
 
-**Operations Topics:**
-- Deployment → [RUNBOOK.md](RUNBOOK.md) → "Deployment Procedures"
-- Monitoring → [RUNBOOK.md](RUNBOOK.md) → "Monitoring & Alerting"
-- Backup → [RUNBOOK.md](RUNBOOK.md) → "Backup & Recovery"
-- Incidents → [RUNBOOK.md](RUNBOOK.md) → "Incident Response"
-- Maintenance → [RUNBOOK.md](RUNBOOK.md) → "Maintenance Procedures"
+<!-- idx:auto -->
 
-**Development Topics:**
-- Setup → [DEVELOPMENT.md](DEVELOPMENT.md) → "Development Environment Setup"
-- Features → [DEVELOPMENT.md](DEVELOPMENT.md) → "Adding New Features"
-- Testing → [DEVELOPMENT.md](DEVELOPMENT.md) → "Testing Guidelines"
-- Standards → [DEVELOPMENT.md](DEVELOPMENT.md) → "Coding Standards"
-- Database → [DEVELOPMENT.md](DEVELOPMENT.md) → "Database Development"
+| Documento | Estado |
+|---|---|
+| [USDCOP Trading System — Final MLOps Project](COURSE_PROJECT.md) | — |
+| [Preguntas de Defensa de Tesis --- Preparacion Completa](defense_qa.md) | — |
+| [PROJECT_DEFINITION.md — GlobalMinds](PROJECT_DEFINITION.md) | — |
+| [Remediación de fuga de .env — 2026-07-09](SECURITY-env-leak-remediation.md) | — |
 
-**API Topics:**
-- RT Orchestrator → [API_REFERENCE_V2.md](API_REFERENCE_V2.md) → "RT Orchestrator Service"
-- WebSocket → [API_REFERENCE_V2.md](API_REFERENCE_V2.md) → "WebSocket Protocol"
-- Security → [API_REFERENCE_V2.md](API_REFERENCE_V2.md) → "Authentication & Security"
-- Examples → [API_REFERENCE_V2.md](API_REFERENCE_V2.md) → "Code Examples"
+**Subdirectorios:** [`adr/`](adr/README.md) · [`analysis/`](analysis/TRAINING_LINEAGE.md) · [`architecture/`](architecture/README.md) · [`guides/`](guides/README.md) · [`legal/`](legal/SFC-GATE-CHECKLIST.md) · [`model_cards/`](model_cards/README.md) · [`operations/`](operations/README.md) · [`rbac/`](rbac/README.md) · [`runbooks/`](runbooks/README.md) · [`slides/`](slides/README.md) · [`templates/`](templates/README.md) · [`utils/`](utils/README_BACKUP_UTILITIES.md)
 
----
-
-## 📊 Documentation Statistics
-
-| Document | Size | Lines | Topics | Diagrams | Examples |
-|----------|------|-------|--------|----------|----------|
-| ARCHITECTURE.md | 50 KB | 1,800 | 9 | 0 | 10+ |
-| DEVELOPMENT.md | 34 KB | 1,200 | 11 | 0 | 50+ |
-| RUNBOOK.md | 23 KB | 800 | 7 | 0 | 20+ |
-| API_REFERENCE_V2.md | 24 KB | 850 | 7 | 0 | 15+ |
-| MIGRATION_GUIDE.md | 16 KB | 550 | 8 | 0 | 10+ |
-| ARCHITECTURE_DIAGRAMS.md | 16 KB | 450 | 12 | 12 | 0 |
-| README.md | 15 KB | 500 | 8 | 2 | 5+ |
-| CHANGELOG.md | 15 KB | 600 | 10 | 0 | 0 |
-| **TOTAL** | **193 KB** | **6,750** | **72** | **14** | **110+** |
-
----
-
-## 🏆 Documentation Quality Checklist
-
-### Completeness
-- [x] All system components documented
-- [x] All API endpoints documented
-- [x] All operational procedures documented
-- [x] All development workflows documented
-- [x] Migration path documented
-
-### Usability
-- [x] Clear table of contents in each doc
-- [x] Consistent formatting (Markdown)
-- [x] Examples for complex topics
-- [x] Troubleshooting sections
-- [x] Links between related docs
-
-### Accuracy
-- [x] Code examples tested and working
-- [x] Diagrams match actual architecture
-- [x] Commands verified
-- [x] Port numbers correct
-- [x] File paths accurate
-
-### Maintainability
-- [x] Version numbers included
-- [x] Last updated dates
-- [x] Contact information
-- [x] Feedback mechanism
-- [x] Review schedule noted
-
----
-
-## 🔄 Documentation Updates
-
-### When to Update
-
-**Always update when:**
-- Adding new features or services
-- Changing API endpoints
-- Modifying architecture
-- Updating deployment procedures
-- Fixing critical bugs
-
-**Review quarterly:**
-- Examples still work
-- Links not broken
-- Screenshots up to date
-- Dependencies current
-- Best practices evolving
-
-### How to Update
-
-1. Edit the relevant .md file
-2. Update "Last Updated" date
-3. Add entry to CHANGELOG.md
-4. Test examples if code changed
-5. Submit PR with docs label
-
----
-
-## 💡 Tips for Using Documentation
-
-1. **Start with README**: Always start with the main README for overview
-2. **Use Search**: Use Ctrl+F / Cmd+F to search within documents
-3. **Follow Links**: Internal links connect related topics
-4. **Run Examples**: All code examples are tested and should work
-5. **Check CHANGELOG**: See what's new before diving deep
-6. **Ask Questions**: Create GitHub issues for unclear documentation
-
----
-
-## 📞 Getting Help
-
-### Documentation Issues
-- **Unclear documentation**: Create issue with "docs" label
-- **Missing information**: Create issue with "enhancement" label
-- **Broken examples**: Create issue with "bug" label
-
-### Technical Support
-- **Slack**: #usdcop-trading
-- **Email**: dev@trading.com
-- **GitHub Issues**: Technical questions
-
-### Contributing
-- See [DEVELOPMENT.md](DEVELOPMENT.md) → "Git Workflow"
-- Follow [DEVELOPMENT.md](DEVELOPMENT.md) → "Pull Request Checklist"
-- Documentation PRs welcome!
-
----
-
-## 🎯 Next Steps
-
-After reading this index, we recommend:
-
-**New to the project?**
-→ Start with [README.md](../README.md), then [DEVELOPMENT.md](DEVELOPMENT.md)
-
-**Deploying to production?**
-→ Read [RUNBOOK.md](RUNBOOK.md) cover to cover
-
-**Need to migrate?**
-→ Follow [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md) step by step
-
-**Developing features?**
-→ Bookmark [DEVELOPMENT.md](DEVELOPMENT.md) and [API_REFERENCE_V2.md](API_REFERENCE_V2.md)
-
-**Understanding design?**
-→ Study [ARCHITECTURE.md](ARCHITECTURE.md) and [ARCHITECTURE_DIAGRAMS.md](ARCHITECTURE_DIAGRAMS.md)
-
----
-
-**Happy Reading! 📖**
-
-For questions about this documentation, please contact the development team.
-
----
-
-**Version:** 2.0.0
-**Last Updated:** October 22, 2025
-**Maintained by:** USDCOP Trading Team
+<!-- /idx -->

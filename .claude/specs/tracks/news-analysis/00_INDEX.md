@@ -102,3 +102,25 @@ real-data generator.
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+## Documentos de este directorio
+
+<!-- idx:auto -->
+
+| Documento | Estado |
+|---|---|
+| [SDD-00: Unified System Architecture](00_SYSTEM_ARCHITECTURE.md) | IMPLEMENTED |
+| [SDD-01: Data Sources Specification](01_DATA_SOURCES.md) | PARTIAL |
+| [SDD-02: Ingestion Layer](02_INGESTION_LAYER.md) | IMPLEMENTED |
+| [SDD-03: Unified Storage Schema](03_STORAGE_SCHEMA.md) | IMPLEMENTED |
+| [SDD-04: Enrichment Pipeline](04_ENRICHMENT_PIPELINE.md) | PARTIAL |
+| [SDD-05: Cross-Reference Engine](05_CROSS_REFERENCE_ENGINE.md) | IMPLEMENTED |
+| [SDD-06: Output Layer](06_OUTPUT_LAYER.md) | IMPLEMENTED |
+| [SDD-07: Analysis Engine](07_ANALYSIS_ENGINE.md) | PARTIAL |
+| [SDD-08: Dashboard & Frontend](08_DASHBOARD_FRONTEND.md) | PARTIAL |
+| [SDD-09: Chat Widget](09_CHAT_WIDGET.md) | PARTIAL |
+| [SDD-10: Unified Orchestration & Operations](10_ORCHESTRATION.md) | IMPLEMENTED |
+| [SDD-12: Design Decisions & ADRs](12_DESIGN_DECISIONS.md) | IMPLEMENTED |
+| [Rule: News Engine & Analysis Module](_summary.md) | PARTIAL |
+
+<!-- /idx -->

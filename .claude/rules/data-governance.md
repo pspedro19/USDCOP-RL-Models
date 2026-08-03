@@ -14,46 +14,29 @@ code_anchors:
 # Rule: Gobernanza L0 (datos)
 
 > **SSOT de las invariantes de datos L0.** Inventario de DAGs, schemas, extractores, comandos:
-> `../specs/pipelines/l0-data-reference.md`.
+> [`l0-data-reference.md`](../specs/pipelines/l0-data-reference.md).
 
 ## Regla de oro: todo timestamp COP = `America/Bogota`
 
-**Sin excepciones para USD/COP y los pares FX acotados por sesión.** Sesión = **8:00-12:55 COT,
-Lun-Vie**. Si recibes UTC, conviértelo antes de guardar:
+Para USD/COP y FX acotado por sesión: **8:00-12:55 COT, Lun-Vie**. Convertir UTC antes de
+guardar; usar `tz_convert`, no `tz_localize`, si el sello ya tiene timezone.
 
-```python
-ts.dt.tz_localize('UTC').dt.tz_convert('America/Bogota')
-```
-
-**Carve-out multi-activo (audit A1-01)**: los activos cuyo mercado no está acotado por la sesión
-COP (XAU/USD, BTC/USDT) guardan **TIMESTAMPTZ basado en instante**, no COT-localizado. La regla
-COT es autoritativa para COP; el detalle por activo está en
-`../specs/assets/_asbuilt-implementation.md`.
+XAU/USD y BTC/USDT guardan **TIMESTAMPTZ basado en instante**, no COT localizado. El detalle
+por activo está en
+[`_asbuilt-implementation.md`](../specs/assets/_asbuilt-implementation.md).
 
 ## Invariantes
 
-1. **Anclar la fecha de una barra diaria en UTC**, no en la tz de cierre:
-   `ts.dt.tz_convert("UTC").dt.normalize()` y *después* aplicar el offset de cierre.
-   `tz_convert(→ET).normalize()` sobre un sello 00:00-UTC corre **todas** las barras un día atrás
-   (bug "Sunday pile-up" de Gold, CTR-DQ-OHLCV-001).
-2. **Todo ingest pasa por `src/data_quality/ohlcv_validators.py`** antes de escribir un seed.
-   Barra en día no-sesión = ERROR duro.
-3. **UPSERT siempre** `ON CONFLICT (time, symbol) DO UPDATE` — nunca INSERT plano.
-4. **BRL desde TwelveData se pide en UTC.** Con `timezone=America/Bogota` devuelve datos
-   incompletos. Aplica a realtime, backfill y al constructor de seeds.
-5. **`usdcop_m5_ohlcv` no se renombra** — el multi-par se resuelve por la columna `symbol`.
-6. **El `FrequencyRoutedUpsertService` es obligatorio** para macro: enruta a la tabla correcta
-   según frecuencia.
-7. **`is_complete` se actualiza siempre** tras cada corrida: L2 filtra por esa bandera.
+1. La fecha diaria se ancla con `tz_convert("UTC").normalize()` antes del offset de cierre;
+   normalizar en ET desplaza la barra.
+2. Todo ingest usa `ohlcv_validators.py`; barra fuera de sesión es error.
+3. Siempre UPSERT por `(time, symbol)`, nunca INSERT plano.
+4. BRL/TwelveData se solicita en UTC en realtime, backfill y seeds.
+5. `usdcop_m5_ohlcv` conserva su nombre; el par vive en `symbol`.
+6. Macro usa `FrequencyRoutedUpsertService` y cada corrida actualiza `is_complete`.
 
 ## DO NOT
 
-- Do NOT guardar timestamps COP en UTC — convierte a `America/Bogota` antes del insert.
-- Do NOT pedir BRL a TwelveData con `timezone=America/Bogota`.
-- Do NOT usar `tz_localize` sobre un timestamp que ya tiene timezone — usa `tz_convert`.
-- Do NOT `tz_convert(→ET).normalize()` una barra diaria 00:00-UTC para tomar su fecha.
-- Do NOT editar seeds a mano — regenera con `scripts/data/build_unified_fx_seed.py`.
-- Do NOT asumir el mismo calendario para todos los pares (BRL tiene feriados propios).
-- Do NOT escribir un seed que falle el validador OHLCV.
-- Do NOT saltarte el `FrequencyRoutedUpsertService` ni la actualización de `is_complete`.
-- Do NOT borrar los 9 MASTER de `04_cleaning/output/` — son el backup de macro.
+- No editar seeds a mano ni aceptar uno que falle validación.
+- No asumir un calendario único entre pares.
+- No borrar los MASTER de `04_cleaning/output/`: son el backup macro.

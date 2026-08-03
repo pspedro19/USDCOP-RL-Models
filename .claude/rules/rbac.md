@@ -11,7 +11,7 @@ code_anchors:
 
 > Reglas duras de control de acceso y producto. SSOT de matrices/roles/planes:
 > `usdcop-trading-dashboard/lib/contracts/rbac.contract.ts`. Spec profunda:
-> `../specs/platform/rbac-monetization.md`. **El rol dice quién eres; el plan
+> [`rbac-monetization.md`](../specs/platform/rbac-monetization.md). **El rol dice quién eres; el plan
 > (entitlements) dice qué pagaste; ambos se validan server-side por request.**
 
 ## Reglas duras
@@ -37,10 +37,3 @@ code_anchors:
 8. **Subscribers ven OUTPUTS, no INTERNALS** (sin gates/configs/experimentos/registry crudo).
 9. **Gate legal antes de `auto` con dinero real de terceros** (SFC Colombia); hasta entonces
    paper-only. Disclaimer persistente en toda superficie con señales.
-
-## DO NOT
-- Do NOT añadir una ruta sin entrada en `rbac.contract.ts` (el CI la detecta).
-- Do NOT poner artefactos monetizables nuevos en `public/` sin gate.
-- Do NOT saltarte `PreTradeGate` en ningún path de orden nuevo.
-- Do NOT actualizar entitlements desde el cliente — solo el webhook o `/admin`.
-- Do NOT editar/borrar filas de `audit_log` (trigger lo impide; no lo quites).

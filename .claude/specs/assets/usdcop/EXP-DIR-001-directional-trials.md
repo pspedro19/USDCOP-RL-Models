@@ -3,7 +3,7 @@ kind: audit
 status: HISTORICAL
 contract: CTR-QUANT-CONSTITUTION-001
 version: 1.0.0
-last_verified: 2026-07-20
+last_verified: 2026-07-22
 supersedes: []
 code_anchors:
   - src/forecasting/enhance_v2.py
@@ -12,7 +12,7 @@ code_anchors:
 ---
 # EXP-DIR-001/002 — ¿existe edge direccional en USD/COP semanal?
 
-**Fecha**: 2026-07-20 · **Trials registrados**: 9 (7 direccionales + 2 de estrategia)
+**Fecha**: 2026-07-22 · **Trials acumulados**: 48
 **Motivo**: el operador pidió "un muy buen forecasting direccional". Antes de intentar
 mejorarlo había que medir si el edge existe.
 
@@ -228,3 +228,122 @@ Hasta entonces, cualquier intento de "mejorar la dirección" es re-tunear 25 fea
 - **Reportar Calmar como métrica principal en el dashboard**, no el retorno bruto: es lo
   que separa al modelo del baseline y es lo que la constitución manda.
 - Estos 9 trials entran al conteo de DSR de cualquier claim futuro sobre v11.
+
+## EXP-DIR-007/008 — nueva información: flujos forward oficiales de BanRep
+
+La búsqueda se reabrió porque llegó información que los 27 ensayos anteriores no
+contenían: el libro oficial diario de posiciones, saldos y devaluaciones forward de
+BanRep, con 80 series desde 2016. La primera descarga es un histórico consolidado que
+BanRep revisa en sitio; se marcó `research_reconstructed`, `pit_vintage=false` y
+`promotion_eligible=false`. Sólo las capturas futuras de primera vista podrán constituir
+evidencia PIT auténtica.
+
+Ambos ensayos comparan las mismas semanas, etiquetas maduras, regresión logística y
+umbral 0.50. El único cambio entre brazos es añadir 16 variables forward. Se evaluaron
+los siete horizontes `H1/H5/H10/H15/H20/H25/H30`, con McNemar pareado, bootstrap por
+bloques, sensibilidad no solapada y corrección de multiplicidad.
+
+### DIR-007: niveles y ratios económicos
+
+En 2023–2024, H1 mejoró +1.9 pp y H25 +7.7 pp sobre precio, pero los intervalos por
+bloques incluyeron cero y ningún contraste sobrevivió Holm. Además, el conjunto se
+sesgó fuertemente hacia DOWN: la recuperación UP cayó hasta 27.9% en H25. En 2026 H20
+alcanzó 60.0% DA, pero sólo 51.7% BDA y 22.2% de recall UP; esa DA refleja en gran parte
+la clase bajista dominante, no habilidad balanceada.
+
+Diagnóstico: la devaluación implícita 1M estaba aproximadamente 2.5 desviaciones por
+encima de 2016–2020 en 2023 y 2.3 en 2026. Su coeficiente negativo dominó el logit y
+desplazó casi todos los horizontes hacia DOWN. Más features no era la solución; el
+problema era una representación no estacionaria.
+
+### DIR-008: shocks estacionarios past-only
+
+Se registró una única corrección: medias de flujo a 5 días y z-scores de 252 sesiones,
+calculados con media/desviación desplazadas una sesión. Se contabilizaron 14 contrastes
+en la familia conjunta DIR-007/008.
+
+| Horizonte | DA precio 2023–24 | DA estacionaria | ΔDA | BDA | p familia | ΔDA 2025 |
+|---|---:|---:|---:|---:|---:|---:|
+| H1  | 57.7% | 59.6% | +1.9 pp | 58.9% | 1.000 | 0.0 pp |
+| H5  | 59.6% | 51.0% | −8.7 pp | 50.7% | 1.000 | +3.8 pp |
+| H10 | 68.3% | 52.9% | −15.4 pp | 53.0% | 0.052 | −7.7 pp |
+| H15 | 60.6% | 56.7% | −3.8 pp | 58.6% | 1.000 | −1.9 pp |
+| H20 | 55.8% | 63.5% | +7.7 pp | 64.6% | 1.000 | −1.9 pp |
+| H25 | 51.9% | 54.8% | +2.9 pp | 57.7% | 1.000 | −1.9 pp |
+| H30 | 56.7% | 48.1% | −8.7 pp | 49.0% | 0.492 | −1.9 pp |
+
+H20 es la mejor celda retrospectiva, pero su McNemar crudo fue 0.134, el intervalo por
+bloques fue [−1.9 pp, +17.3 pp] y no confirmó en 2025. Ningún horizonte pasó el gate;
+ninguno entra a shadow y ninguno autoriza capital.
+
+### Veredicto DIR-007/008
+
+Los flujos forward son datos útiles y ya quedaron instalados, pero estas dos
+representaciones no demuestran una mejora direccional generalizable. Se detiene la
+reformulación sobre 2023–2026. El siguiente juez válido es prospectivo: mantener el H1
+regime-gated ya prerregistrado desde 2026-W31 y acumular vintages forward verdaderos para
+una versión futura, sin tocar reglas tras observar resultados.
+
+## EXP-DIR-009 — liderazgo intradía LatAm predecisión
+
+Se congeló antes de abrir resultados una única familia distinta del `XLEAD` diario:
+velas 1h USD/MXN y USD/BRL ya cerradas a las 13:30 Bogotá. Se probaron exactamente seis
+variables (retornos pre-open y de sesión por par, dispersión y volatilidad realizada 24h)
+con el mismo logit, semanas, targets y siete horizontes del brazo precio-only. El backfill
+es reconstruido y 2025/2026 ya habían sido inspeccionados; todo el resultado es research.
+
+| H | DA precio 2023–24 | DA intradía | ΔDA | BDA | IC95 bloque Δ | p familia | DA 2025 | DA 2026 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1  | 60.6% | 63.5% | +2.9 pp | 64.4% | [−4.8,+10.6] pp | 1.000 | 50.0% | 27.6% |
+| 5  | 64.4% | 56.7% | −7.7 pp | 57.4% | [−14.4,−1.9] pp | 1.000 | 48.1% | 39.3% |
+| 10 | 64.4% | 55.8% | −8.7 pp | 56.5% | [−15.4,−1.9] pp | 1.000 | 50.0% | 40.7% |
+| 15 | 60.6% | 54.8% | −5.8 pp | 57.2% | [−11.5,0.0] pp | 1.000 | 46.2% | 42.3% |
+| 20 | 54.8% | 50.0% | −4.8 pp | 51.0% | [−11.5,+1.0] pp | 1.000 | 50.0% | 44.0% |
+| 25 | 51.9% | 50.0% | −1.9 pp | 52.9% | [−9.6,+5.8] pp | 1.000 | 44.2% | 45.8% |
+| 30 | 49.0% | 45.2% | −3.8 pp | 46.3% | [−9.6,+1.0] pp | 1.000 | 42.3% | 31.8% |
+
+H1 fue la única mejora retrospectiva, pero McNemar crudo fue 0.607, su intervalo incluyó
+cero, no confirmó en 2025 y se invirtió violentamente en 2026. Ningún horizonte pasó el
+gate primario; 0 candidatos shadow y `capital_authorized=false`. La familia queda cerrada
+sin tuning posterior. Artefacto: `reports/usdcop_intraday_latam_lead_v1/`.
+
+## EXP-DIR-FWD-H1-V2 — protocolo prospectivo corregido (0 trials nuevos)
+
+Antes de la primera semana elegible se retiró V1 con 0 registros por divergencia entre
+el modelo live y el modelo seleccionado, fuentes mutables y capacidad de retrocommit.
+V2 lo reemplaza desde 2026-W31: balanced logit exacto, baseline/runtime/código hasheados,
+sin override manual de fecha, commit únicamente viernes corriente, snapshots y dos
+cadenas SHA-256 append-only. El evaluador prospectivo exige 104 semanas comprometidas y
+100 señales maduras, reporta PT/Brier/block-bootstrap/risk-coverage y no puede autorizar
+capital. La corrección no mira un outcome nuevo y por tanto no incrementa la deuda de
+selección: **48 trials direccionales / 109 globales permanecen intactos**.
+
+## EXP-DIR-FWD-H1-DAILY-V1 — transporte prospectivo diario (+1 trial)
+
+Se congeló sin abrir accuracy diaria histórica: mismo balanced logit/features/threshold/
+gate que H1 v2, fit una vez por semana y predicción en cada cierre diario posterior al
+registro. Primario = dirección base all-origin; subset regime-gated = secundario. Primer
+origen 2026-07-27; 12 meses + 252 outcomes base + 100 señales selectivas antes de review;
+PT, Brier, lift block-bootstrap y e-process anytime-valid predefinidos. El trial se paga
+al registrarse: **48→49 direccionales; 109→110 globales**.
+
+## EXP-DIR-010 — transporte externo H1 a USD/MXN + USD/BRL (+1 trial)
+
+Se bloqueó antes de abrir resultados un único test combinado: misma regla H1 v2
+de USD/COP, sin cambiar balanced logit C=0.1, diez features de precio, half-life
+1260, umbral 0.50 ni estados de régimen. Orígenes semanales 2020–2025; USD/MXN y
+USD/BRL son constraints, no celdas de selección. Fuente, contrato, código y
+runtime quedaron hasheados; bootstrap circular b=4 sobre clusters ISO-semana.
+
+| Scope | N señales | DA | BDA | baseline causal | lift |
+|---|---:|---:|---:|---:|---:|
+| combinado | 240 | **45.42%** | **45.35%** | 45.83% | **−0.42 pp** |
+| USD/MXN | 126 | 45.24% | 45.98% | 46.83% | −1.59 pp |
+| USD/BRL | 114 | 45.61% | 44.07% | 44.74% | +0.88 pp |
+
+Lift combinado IC95 [−10.00,+9.45] pp, p=0.5295. Solo pasaron sample y
+coverage; fallaron los otros siete gates y la estabilidad anual (2022 DA/BDA
+28.13%). El 75.0% diagnóstico de 2026 tiene N=16, no es primario y no rescata el
+fracaso. Familia cerrada sin retuning; 0 señales/capital autorizados. Se paga el
+trial único al abrirlo: **49→50 direccionales; 110→111 globales**. Evidencia:
+`reports/usdcop_h1_latam_transport_v1/`.

@@ -260,4 +260,4 @@ models/ppo_primary/
 
 - [DVC Documentation](https://dvc.org/doc)
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
-- [SLA.md](./SLA.md) - Service level agreements
+- [SLA.md](../operations/SLA.md) - Service level agreements

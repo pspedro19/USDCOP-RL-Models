@@ -313,8 +313,8 @@ dvc repro --force
 ## Related Documentation
 
 - [DVC Official Docs](https://dvc.org/doc)
-- [Dataset Publishing Script](../scripts/ops/publish_dataset.sh)
-- [Dataset Rollback Script](../scripts/ops/rollback_dataset.sh)
+- [Dataset Publishing Script](../../scripts/ops/publish_dataset.sh)
+- [Dataset Rollback Script](../../scripts/ops/rollback_dataset.sh)
 - [MLflow Integration Guide](./MLFLOW_INTEGRATION_GUIDE.md)
 
 ---

@@ -728,6 +728,10 @@ Currently, no rate limits are enforced. Future versions may implement:
 
 ## Related Documentation
 
-- [Main Multi-Model Backend Documentation](./MULTI_MODEL_BACKEND.md)
-- [Database Schema V19](./DATABASE_SCHEMA_V19.md)
-- [Trading API (Real-time)](./API_TRADING_REALTIME.md)
+> Los tres documentos que esta sección enlazaba (`MULTI_MODEL_BACKEND.md`,
+> `DATABASE_SCHEMA_V19.md`, `API_TRADING_REALTIME.md`) **no existen en el repo** — eran
+> enlaces muertos. Sustituidos por los documentos vigentes equivalentes:
+
+- [Arquitectura del sistema](./ARCHITECTURE.md)
+- [Diagrama ER de la base de datos](./DATABASE_ER_DIAGRAM.md)
+- [API Reference V2 (RT Orchestrator + WebSocket)](./API_REFERENCE_V2.md)

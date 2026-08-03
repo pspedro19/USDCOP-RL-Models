@@ -201,3 +201,13 @@ docker inspect --format='{{.State.Health.Status}}' usdcop-<name>
 ```
 
 **Prevention**: Always check `docker compose up -d` output for errors. Use `docker compose logs -f <service>` to monitor startup.
+
+## Documentos de este directorio
+
+<!-- idx:auto -->
+
+| Documento | Estado |
+|---|---|
+| [Execution service runbook](execution-service.md) | — |
+
+<!-- /idx -->

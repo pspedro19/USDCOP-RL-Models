@@ -17,3 +17,14 @@ code_anchors: []
 | `experiment-config-template.md` | `config/experiments/<exp_id>.yaml` | Running a new experiment. Follow `../rules/experiment-protocol.md`. |
 
 > Do NOT put dense specs in `../rules/` (auto-loaded every session). Reference specs go in `../specs/`.
+
+## Documentos de este directorio
+
+<!-- idx:auto -->
+
+| Documento | Estado |
+|---|---|
+| [Experiment Config Template](experiment-config-template.md) | IMPLEMENTED |
+| [SDD Spec: <Title>](spec-template.md) | IMPLEMENTED |
+
+<!-- /idx -->

@@ -41,3 +41,15 @@ code_anchors: []
 
 > Underscore-prefixed files (`_onboarding-playbook.md`, `_asbuilt-implementation.md`, `_summary.md`)
 > are cross-asset/cross-track meta-docs; non-underscore = a specific asset/track.
+
+## Documentos de este directorio
+
+<!-- idx:auto -->
+
+| Documento | Estado |
+|---|---|
+| [SDD Spec: Architecture Overview & Implementation Map](architecture-overview.md) | IMPLEMENTED |
+
+**Subdirectorios:** [`adr/`](adr/README.md) · [`assets/`](assets/README.md) · [`audit/`](audit/README.md) · [`data/`](data/backup-recovery.md) · [`operations/`](operations/README.md) · [`pipelines/`](pipelines/README.md) · [`planes/`](planes/README.md) · [`platform/`](platform/README.md) · [`tracks/`](tracks/README.md)
+
+<!-- /idx -->

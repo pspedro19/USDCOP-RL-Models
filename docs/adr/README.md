@@ -35,3 +35,18 @@ An Architecture Decision Record (ADR) documents significant architectural decisi
 ## Template
 
 See [TEMPLATE.md](TEMPLATE.md) for the standard ADR format.
+
+## Documentos de este directorio
+
+<!-- idx:auto -->
+
+| Documento | Estado |
+|---|---|
+| [ADR-0001: Use Wilder's EMA for RSI, ATR, and ADX Calculations](ADR-0001-wilder-ema-for-technical-indicators.md) | — |
+| [ADR-0002: Feature Circuit Breaker for Data Quality Protection](ADR-0002-feature-circuit-breaker.md) | — |
+| [ADR-0003: Use Redis Streams for Real-time Signal Delivery](ADR-0003-redis-streams-for-realtime.md) | — |
+| [ADR-0004: Use TimescaleDB for OHLCV Time-Series Storage](ADR-0004-timescaledb-for-ohlcv.md) | — |
+| [ADR-0005: Use PPO Algorithm for Trading Signal Generation](ADR-0005-ppo-for-trading.md) | — |
+| [ADR-XXXX: [Title]](TEMPLATE.md) | — |
+
+<!-- /idx -->

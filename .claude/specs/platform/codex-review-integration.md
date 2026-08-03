@@ -2,8 +2,8 @@
 kind: as-built
 status: PARTIAL
 contract: CTR-CODEX-REVIEW-001
-version: 2.0.0
-last_verified: 2026-07-20
+version: 2.1.0
+last_verified: 2026-07-30
 supersedes: []
 code_anchors: []
 ---
@@ -15,9 +15,9 @@ code_anchors: []
 > dupliquen flags ni config.
 >
 > Contract: CTR-CODEX-REVIEW-001
-> Version: 2.0.0
-> Date: 2026-07-20
-> Status: IMPLEMENTED (CLI + auth + perfil de auditoría verificados end-to-end)
+> Version: 2.1.0
+> Date: 2026-07-30
+> Status: IMPLEMENTED (CLI + auth + perfiles `audit` **y** `dev` verificados end-to-end)
 > Cross-refs: `../../rules/quant-constitution.md`, `cicd-testing.md`, `../audit/`
 
 ---
@@ -52,12 +52,14 @@ gobierna por igual al plugin y a `codex exec`.
 
 | Pieza | Estado | Detalle |
 |---|---|---|
-| Codex CLI | ✅ | `0.144.6`, install npm, `codex doctor` = 17 ok · 0 fail |
+| Codex CLI | ✅ | `0.145.0` (2026-07-30; esta tabla decía `0.144.6`), install npm |
 | Auth | ✅ | `chatgpt` OAuth, `~/.codex/auth.json` |
-| `~/.codex/audit.config.toml` | ✅ **creado y validado** | perfil `repo-audit`, ver §4 |
-| Bloqueo de `.env` | ✅ **verificado empíricamente** | ver §5 |
-| `~/.codex/config.toml` (base) | ⚠️ **no creado — a propósito** | ver §6 (footgun) |
-| `.codex/config.toml` (proyecto) | ⚠️ no creado — a propósito | mayor precedencia que el perfil; se omite durante la 1ª auditoría |
+| `~/.codex/audit.config.toml` | ✅ **creado y validado** | perfil `repo-audit` read-only, ver §4 |
+| `~/.codex/dev.config.toml` | ✅ **creado y validado 2026-07-30** | perfil `repo-dev` workspace-write, ver §4.1 |
+| Bloqueo de `.env` | ✅ **verificado empíricamente en ambos perfiles** | ver §5 |
+| `~/.codex/config.toml` (base) | ⚠️ **existe** (contradice lo que decía esta tabla) | ver §6 |
+| `.codex/config.toml` (proyecto) | ⚠️ no creado — a propósito | mayor precedencia que el perfil |
+| `AGENTS.md` (raíz del repo) | ✅ **creado 2026-07-30** | Codex lo carga solo; índice + prohibiciones duras |
 | Plugin `codex@openai-codex` | ⚠️ no instalado | repo `openai/codex-plugin-cc` confirmado |
 
 ---
@@ -101,13 +103,20 @@ codex debug models
 | `gpt-5.4-mini` no vigente | ❌ **sí existe** | ver §3.1 |
 | `gpt-5.6-terra` / `luna` | ❌ no existen | usar `gpt-5.6-sol` |
 | `[profiles.x]` en `config.toml` | ❌ desactualizado | archivos `~/.codex/<name>.config.toml` + `-p` |
+| `extends = ":workspace-write"` | ❌ `unsupported built-in profile` | `extends = ":workspace"` ✅ (resuelve a `sandbox: workspace-write`) |
+| `":workspace_roots"."." = "read-write"` | ❌ `did not match any variant of FilesystemPermissionToml` | el valor de escritura es **`"write"`** |
+
+> Validado el 2026-07-30 contra `0.145.0`. Perfiles built-in **inexistentes**:
+> `:workspace-write`, `:write`, `:full-access`, `:danger-full-access`, `:all`, `:default`.
+> Los únicos comprobados válidos son `:read-only` y `:workspace`. Valores de filesystem
+> **inválidos**: `read-write`, `read_write`, `allow`, `full`.
 
 ---
 
 ## 4. El perfil de auditoría — `~/.codex/audit.config.toml`
 
-Read-only, sin red, con lectura de secretos denegada. **Es el único archivo de config creado**
-(sin base ni config de proyecto, para eliminar la variable de precedencia en la 1ª auditoría).
+Read-only, sin red, con lectura de secretos denegada. Fue el primer perfil creado; desde
+2026-07-30 convive con `dev.config.toml` (§4.1) y con un `config.toml` base que ya existe (§6).
 
 ```toml
 model = "gpt-5.6-sol"
@@ -155,6 +164,61 @@ codex exec -p audit -C "<repo>" "<prompt de auditoría>"
 
 ---
 
+## 4.1 El perfil de escritura — `~/.codex/dev.config.toml` (2026-07-30)
+
+Hasta esta fecha **solo existía el perfil de auditoría**. Cualquier trabajo de Codex que
+necesitara escribir caía al `config.toml` base, que no fija `approval_policy` ni
+`default_permissions` y declara este repo como `trust_level = "trusted"`. El perfil `repo-dev`
+cierra ese hueco: escritura acotada al workspace, sin red, con los mismos deny de secretos.
+
+```toml
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+approval_policy = "on-request"     # `never` solo es seguro sin escritura
+default_permissions = "repo-dev"
+
+[windows]
+sandbox = "elevated"               # sin esto los deny de filesystem NO se aplican
+
+[permissions.repo-dev]
+extends = ":workspace"             # NO `:workspace-write` — ese built-in no existe
+
+[permissions.repo-dev.filesystem]
+":root" = "deny"
+":minimal" = "read"
+glob_scan_max_depth = 6
+
+[permissions.repo-dev.filesystem.":workspace_roots"]
+"." = "write"                      # el valor es `write`, no `read-write`
+".env" = "deny"                    # … + profundidades explícitas, *.pem, *.key, secrets/
+".git/config" = "deny"             # un agente no reescribe remotes ni hooks
+".git/hooks" = "deny"
+
+[permissions.repo-dev.network]
+enabled = false
+```
+
+Uso:
+
+```powershell
+codex exec -p dev -C "<repo>" "<tarea con escritura>"
+```
+
+### Evidencia de validación (2026-07-30, CLI 0.145.0)
+
+Los dos controles, porque uno solo no prueba nada — un perfil que bloquea *todo* también
+respondería `BLOCKED`:
+
+| Control | Test | Resultado |
+|---|---|---|
+| Negativo | leer `.env.sandboxprobe` (señuelo con patrón `.env.*`, borrado tras el test) | `BLOCKED` ✅ |
+| Positivo | contar líneas de `AGENTS.md` y escribir el número en `.tmp/` | escribió `167` ✅ |
+
+Protocolo obligatorio: **nunca se testea con el secreto real** — si el bloqueo fallara, el
+propio test lo filtraría a la sesión.
+
+---
+
 ## 5. Aislamiento de secretos — RESUELTO y verificado
 
 Este repo tiene `.env` real en la raíz y antecedente de fuga pública (memoria
@@ -193,20 +257,28 @@ correr una consola elevada.
 
 ## 6. Footgun conocido: `codex` sin `-p audit`
 
-**No existe `~/.codex/config.toml` base**, por diseño. Consecuencia: una invocación de
-`codex` / `codex exec` **sin `-p audit`** corre con los defaults del binario —
-`reasoning: none` y **sin las reglas deny** — y en ese modo puede leer `.env`.
+> **Corrección factual (2026-07-30).** Esta sección afirmaba *"No existe `~/.codex/config.toml`
+> base, por diseño"*. **Sí existe** — alguien lo creó después de escribirse esta spec. Contiene
+> `personality`, `model = "gpt-5.6-sol"`, `model_reasoning_effort = "max"`, `[windows] sandbox
+> = "elevated"` y varios `[projects.*] trust_level = "trusted"` (este repo entre ellos).
+> **Lo que NO contiene es `approval_policy` ni `default_permissions`.**
 
-| Invocación | Protegido | Reasoning |
-|---|---|---|
-| `codex exec -p audit …` | ✅ sí | high |
-| `codex exec …` (sin perfil) | ❌ **no** | none |
+El footgun sigue abierto, y por la misma razón de fondo: una invocación de `codex` /
+`codex exec` **sin `-p`** no carga ningún bloque `[permissions.*]`, así que corre **sin las
+reglas deny** y en ese modo puede leer `.env`. Que el repo esté marcado `trusted` lo agrava.
 
-Opciones para cerrarlo (decisión del operador, no tomada aún):
+| Invocación | Deny de secretos | Escritura | Reasoning |
+|---|---|---|---|
+| `codex exec -p audit …` | ✅ sí | ninguna | high |
+| `codex exec -p dev …` | ✅ sí | workspace | high |
+| `codex exec …` (sin perfil) | ❌ **no** | según defaults | max (del base) |
+
+Opciones para cerrarlo (decisión del operador, **no tomada**):
 
 1. Replicar el bloque `[permissions.*]` en `~/.codex/config.toml` para que el default también
-   sea seguro. Cuesta: reintroduce una capa de precedencia.
-2. Mantener la disciplina de **siempre** pasar `-p audit`.
+   sea seguro. Cuesta: reintroduce la capa de precedencia que se quiso evitar.
+2. Mantener la disciplina de **siempre** pasar `-p audit` o `-p dev`. Es lo que documenta
+   [`../../../AGENTS.md`](../../../AGENTS.md) §6, pero la disciplina no es un control técnico.
 
 ---
 

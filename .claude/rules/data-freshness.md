@@ -12,8 +12,9 @@ code_anchors:
 # Rule: Frescura de datos (umbrales)
 
 > **SSOT de los umbrales de frescura.** Runbooks de recuperación, checklists y tracking de
-> migraciones: `../specs/operations/freshness-recovery.md`.
-> Schedule de DAGs: `../specs/operations/elite-operations.md` — **no lo re-tabules aquí**.
+> migraciones: [`freshness-recovery.md`](../specs/operations/freshness-recovery.md).
+> Schedule de DAGs: [`elite-operations.md`](../specs/operations/elite-operations.md) —
+> **no lo re-tabules aquí**.
 
 ## Umbrales
 
@@ -25,28 +26,19 @@ code_anchors:
 | Seed diario / MACRO_DAILY_CLEAN | 3 / 7 días | Features viejas |
 | News articles / features | 24 horas | Análisis sin contexto fresco |
 
-**Por qué**: el mercado cierra viernes 12:55 COT y el training corre domingo → el dato más
-reciente tiene 2 días; 3 días absorbe eso. Macro admite 7 porque varias variables son semanales.
-**Unidad OHLCV = días hábiles colombianos** (2026-07-21; umbral 3 intacto —
-`data_quality.py::_trading_days_since`).
-Modelos a 10 días = dos domingos fallidos seguidos; se avisa pero no se detiene el trading.
+OHLCV se mide en días hábiles colombianos mediante
+`data_quality.py::_trading_days_since`; la justificación de cada umbral vive en la spec.
 
 ## Invariantes
 
-1. **El gate pre-training es BLOQUEANTE** y es la primera tarea de H1-L3 y H5-L3
-   (`validate_training_data_freshness`). El pre-inferencia solo avisa.
-2. **Todo ingest de OHLCV pasa por `src/data_quality/ohlcv_validators.py`** antes de escribir un
-   seed (CTR-DQ-OHLCV-001). Barras en día no-sesión = ERROR duro, no warning.
-3. **El backup de seeds corre Lun-Vie** (`0 20 * * 1-5`, 15:00 COT). **No hay backup de fin de
-   semana** — no asumas datos frescos un lunes por la mañana sin verificar.
-4. El watchdog usa umbrales operativos propios y más estrictos (minutos, no días); son otra cosa
-   y no sustituyen a estos.
+1. El gate pre-training es la primera tarea de H1-L3/H5-L3 y bloquea; pre-inferencia avisa.
+2. Todo ingest OHLCV pasa por `ohlcv_validators.py`; barra fuera de sesión es error duro.
+3. El backup de seeds es Lun-Vie (`0 20 * * 1-5`, 15:00 COT); no existe backup de fin de semana.
+4. Los umbrales en minutos del watchdog no sustituyen estos umbrales de entrenamiento.
 
 ## DO NOT
 
-- Do NOT entrenar con datos stale (>3d OHLCV, >7d macro) — las predicciones salen desfasadas.
-- Do NOT ignorar warnings de frescura de modelos: señalan que L3 falló.
-- Do NOT borrar `MACRO_DAILY_CLEAN.parquet` ni los seeds — son el fallback de restore.
-- Do NOT correr L5 si L3 no completó esta semana — usa `ExternalTaskSensor`.
-- Do NOT escribir un seed que falle el validador; `--no-validate` es escape de emergencia logueado.
-- Do NOT modificar una migración ya aplicada — crea una nueva.
+- No entrenar stale ni correr L5 si L3 no completó; usar `ExternalTaskSensor`.
+- No borrar seeds ni `MACRO_DAILY_CLEAN.parquet`: son el fallback de restore.
+- `--no-validate` es sólo escape de emergencia auditado.
+- Una migración aplicada es inmutable; crear otra.

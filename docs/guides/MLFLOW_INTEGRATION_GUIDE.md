@@ -341,8 +341,8 @@ for mv in client.search_model_versions(f"name='ppo_usdcop'"):
 ## Related Documentation
 
 - [MLflow Official Docs](https://mlflow.org/docs/latest/)
-- [Model Promotion Script](../scripts/promote_model.py)
-- [Hash Reconciliation](../scripts/validate_hash_reconciliation.py)
+- [Model Promotion Script](../../scripts/pipeline/promote_model.py)
+- [Hash Reconciliation](../../scripts/validation/validate_hash_reconciliation.py)
 - [DVC Integration Guide](./DVC_INTEGRATION_GUIDE.md)
 
 ---

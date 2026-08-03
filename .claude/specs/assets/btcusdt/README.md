@@ -86,3 +86,16 @@ motor (Fases 3-6, 8-11 de `design/`).
 
 *Aviso: diseño metodológico, no asesoría financiera ni promesa de rentabilidad. El trading de BTC
 implica riesgo sustancial. Spot-only no elimina el riesgo de mercado, solo el de liquidación.*
+
+## Documentos de este directorio
+
+<!-- idx:auto -->
+
+| Documento | Estado |
+|---|---|
+| [Plan de rentabilidad BTC/USDT](PLAN-RENTABILIDAD-2026-07.md) | PLANNED |
+| [Protocolo de Retiro — btc_hodl_b1 (producción-paper) — PARA FIRMA DEL OPERADOR](WITHDRAWAL-PROTOCOL-BTC.md) | IMPLEMENTED |
+
+**Subdirectorios:** [`adr/`](adr/ADR-log.md) · [`design/`](design/README.md) · [`specs/`](specs/SPEC-13-scalable-integration.md)
+
+<!-- /idx -->

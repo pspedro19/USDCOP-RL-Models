@@ -1045,7 +1045,7 @@ Uptime promedio: 2+ días sin reinicio
 |-------|---------|
 | Backtest 2025 (+25.63%, etc.) | `usdcop-trading-dashboard/public/data/production/summary_2025.json` |
 | Trades individuales (34 trades) | `usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json` |
-| Aprobación state | `usdcop-trading-dashboard/public/data/production/approval_state.json` |
+| Aprobación state | `data/approvals/approval_state.json` (PRIVADO — fuera de `public/`, CXD-057) |
 | 2026 YTD | summary.json (live) |
 
 ### Apéndice B — Mapa de Documentación Especializada

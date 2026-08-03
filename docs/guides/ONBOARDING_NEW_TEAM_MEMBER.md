@@ -135,8 +135,8 @@ test: Add tests
 
 ### Internal
 
-- [Architecture Decisions](docs/adr/)
-- [Model Cards](docs/model_cards/)
+- [Architecture Decisions](../adr/)
+- [Model Cards](../model_cards/)
 - [API Documentation](http://localhost:8000/docs)
 
 ### External

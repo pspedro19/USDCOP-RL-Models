@@ -189,7 +189,7 @@ def test_latency_sla():
 
 ## Related Documentation
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - System architecture
-- [DATA_VERSIONING.md](./DATA_VERSIONING.md) - Data management
+- [ARCHITECTURE.md](../architecture/ARCHITECTURE.md) - System architecture
+- [DATA_VERSIONING.md](../architecture/DATA_VERSIONING.md) - Data management
 - `config/prometheus/alerts/` - Alert rule definitions
 - `config/grafana/dashboards/` - Dashboard configurations
