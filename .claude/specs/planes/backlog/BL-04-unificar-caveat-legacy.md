@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-28
+status: IMPLEMENTED
+version: 1.1.0
+last_verified: 2026-07-31
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/components/forecasting/ForecastingDashboard.tsx
@@ -57,3 +57,15 @@ no puede traer su propio mecanismo de ocultación (`return null`, `hidden`, `ari
 
 ## Notas constitución
 Regla 6 FABRIC: toda métrica/mensaje de gobierno con definición única.
+
+## Cierre (2026-07-31, cross-review CXD-189)
+
+**PARTIAL -> IMPLEMENTED.** Verificado por CRITERIO.
+
+- El caveat vive en **una sola constante compartida**, `usdcop-trading-dashboard/lib/ui/forecast-disclaimer.ts`
+  (`FORECAST_DISCLAIMER_TESTID`, `_HEADLINE`, `_ZOO_*`, `_DIRECTIONAL_*`), y **el legacy la importa**:
+  la duplicacion que motivaba el BL ya no existe.
+- **Verde en arbol limpio**: 47 passed (vitest), incluido *"BL-04: el BODY del banner viene del SSOT
+  y conserva la frase derivada de los datos"*.
+- **Mutacion ejecutada por CODEX**: romper el consumidor SSOT del legacy => rojo reproducible;
+  restauracion byte-exacta verificada por ambos con `sha256` coincidentes medidos por separado.

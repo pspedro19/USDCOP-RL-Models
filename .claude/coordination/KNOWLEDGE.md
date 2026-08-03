@@ -252,3 +252,52 @@ nunca por `printf`/heredoc interpolado; y **tras publicar se releen** los fragme
 Corolario general: si una capa de transporte comparte sintaxis con el contenido que transporta,
 **la corrupcion silenciosa es el caso normal, no el raro**; ahi se escapa el contenido o se
 cambia de transporte.
+
+
+**K-049 - Un candado que comprueba que la evidencia EXISTE no comprueba que la evidencia
+SOSTENGA la afirmacion.** Origen: 2026-07-31, tres candados independientes, el mismo defecto,
+descubierto en un solo dia y por los dos agentes.
+1. **BL-41** (gate estatico de cutover de credenciales, P0). Sus defaults son fail-closed de
+   verdad y su test muerde bajo mutacion. Pero `_has_evidence` acepta **cualquier cadena no
+   vacia**: forjando las seis precondiciones con `evidence: "ok"` y `cutover_allowed: true`, el
+   gate responde `OK: READY_FOR_CUTOVER`, exit 0. **La autorizacion del cutover se compra con
+   doce caracteres.**
+2. **BL-33** (matriz de readiness, 36 controles). Exige —y esto ya es un salto real— que cada
+   enlace de evidencia **resuelva a un fichero existente dentro del repo**, lo que mata la
+   evidencia-como-prosa. Pero no comprueba correspondencia: sustituir la evidencia de `INV-04`
+   por `[licencia](LICENSE)` deja el gate **VERDE**. Solo 2 de 36 filas estan ancladas con un
+   pin literal; **las otras 34 aceptan cualquier fichero que exista.**
+3. **Mi propio gate de skills**, el mismo dia: mordia correctamente ante un modulo sin trackear
+   pero el mensaje reportaba "ni tests ni --verify" — **afirmaba una causa que no era la suya**.
+Regla: **la evidencia se valida por FORMA VERIFICABLE, no por presencia.** Un campo de evidencia
+debe exigir algo que no se pueda teclear en dos segundos: ruta que existe **mas** hash del
+contenido, **mas** fecha, **mas** —cuando aplique— el comando que la produjo. Y el mensaje de
+fallo debe nombrar **la ofensa concreta**, no la generica de la familia.
+Corolario de metodo, pagado el mismo dia: al atacar la matriz, la primera mutacion cayo en la
+columna `State` creyendo que era la de evidencia y **produjo un rojo por la razon equivocada**.
+Es la variante peor de K-«una mutacion que no muerde puede estar mal puesta»: **una mutacion que
+SI muerde, pero no por lo que crees**. Antes de dar por buena una mutacion sobre datos tabulares
+se mapean las columnas por CABECERA, y se lee el mensaje de fallo para comprobar que acusa lo
+que se pretendia atacar.
+
+
+**K-050 - En un repo con dos escritores, el arbol puede ensuciarlo EL OTRO entre que decides
+medir y mides.** Origen: 2026-07-31T16:13. CODEX tomo lease a las 16:12 para mutar
+`ForecastingView.tsx` y demostrar que el candado de BL-02 muerde. CLAUDE, sin saberlo, lanzo a
+las 16:13 la verificacion de BL-02/BL-04 y obtuvo **5 failed / 42 passed**, con nombres de test
+que apuntaban exactamente a su propia afirmacion (*"el banner weekly es incondicional respecto
+al rol"*). **Estuvo a un mensaje de publicar una retractacion FALSA de algo que era cierto**: lo
+que habia medido era el mutante ajeno. Lo salvo comprobar `git status` de las rutas ANTES de
+escribir el veredicto, y ver el `{isModelZoo && …}` recien inyectado.
+La leccion no es K-032 ("no midas sobre tu arbol sucio"), que ya teniamos y presupone un solo
+escritor. Es su version dual: **la limpieza del arbol no es un estado que puedas asumir estable
+durante tu propia corrida.** Un lease ajeno vigente es un aviso de que alguien ESTA escribiendo,
+no solo de que no debes escribir tu.
+Regla: **toda medicion que sustente un veredicto publica, dentro de la misma corrida,
+`git status --porcelain` de las rutas medidas y su `sha256`, antes y despues.** Si el resultado
+va a un pack inmutable, se mide sobre snapshot sellado. Un numero sin ese contexto no es
+evidencia cuando hay dos escritores — es una foto de un momento que no puedes reconstruir.
+Corolario que salio bien el mismo dia: cuando CODEX restauro y publico los SHA
+(`848B220C…`, `509947EB…`) y CLAUDE los habia medido por su cuenta antes de leerlos, **la
+coincidencia independiente fue lo que convirtio la medicion en evidencia**. Dos partes midiendo
+el mismo hash sin copiarselo es mas fuerte que cualquier declaracion.

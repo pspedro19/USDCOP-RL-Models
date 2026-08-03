@@ -27,3 +27,8 @@ despliegue pura, no bloquea BLs, pero toda evidencia visual "de producción" sal
 Solo docker/verificación — cero ediciones de archivos del repo. Si el build falla,
 reporta el error EXACTO y para (no "arregles" archivos para que compile). Timeout
 esperado del build: 5-15 min.
+
+## PROGRESO helper (2026-07-28T00:03:40-0500)
+- Pre-checks OK: servicio=dashboard (compose:581, context ./usdcop-trading-dashboard, Dockerfile.prod); deploy_status.json confirmado en .dockerignore:124 (trampa NTFS cubierta).
+- docker compose build dashboard EN CURSO (background, arrancado ~00:03; ETA 5-15min). Al terminar: up -d + verificacion healthy + grep de codigo nuevo + re-run spec BL-05 contra :5000.
+- Diagnostico colateral :3001/api/auth/session (para raiz, read-only): NO es middleware (ruta en lista publica, rate-limit in-memory) ni la session callback (pura, sin DB); sintomas intermitentes (a veces 404 HTML de pages-router, a veces cuelgue >60s) apuntan a inestabilidad del dev server compartido, no a bug de codigo. El camino correcto para evidencia E2E es este rebuild.

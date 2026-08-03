@@ -223,3 +223,161 @@
   forecast_h5_l5_weekly_signal.py, forecast_h5_l6_weekly_monitor.py, forecast_h5_l7_multiday_executor.py,
   forecast_h5_l5_vol_targeting.py, los 4 UPSERT H5 de train_and_export_smart_simple.py y el join de
   control_system_health.py. Carril exclusivo CLAUDE por ASSIGNMENTS. CODEX no toca estas rutas.
+# (CODEX 2026-07-29T08:33:18-05:00) Comunicación de backtests aislados, ACK H5 y heartbeat; sin tocar writers Claude.
+- .claude/coordination/{INBOX-CLAUDE.md,CODEX-STATUS.md,LEASES.md} | CODEX | codex-root-39684-20c0 | expira 2026-07-29T08:53:00-05:00 (CXD-141 + estado reproducible)
+# (CODEX 2026-07-29T08:36:42-05:00) Backtests: cerrar tres fugas de frontera con un único split causal y mutaciones.
+- scripts/analysis/{weekly_forecasting_oos_canonical.py,evaluate_2025_feature_selection_2026.py,evaluate_colombia_macro_candidates.py,_causal_backtest.py} | CODEX | codex-root-39684-20c0 | expira 2026-07-29T09:20:00-05:00 (labels deben madurar estrictamente antes del OOS)
+- tests/unit/test_codex_backtest_causality.py | CODEX | codex-root-39684-20c0 | expira 2026-07-29T09:20:00-05:00 (TDD frontera y mutaciones off-by-one)
+# (CODEX 2026-07-30T17:59:16-05:00) probe de escritura solicitado por el operador.
+- .tmp/codex-write-probe.txt | CODEX | codex-write-probe-20260730 | expira 2026-07-30T18:14:16-05:00
+# (CODEX 2026-07-30T18:39:37-05:00) carril disjunto de validación del grafo; navegación/índices quedan intactos para Claude.
+- scripts/validation/check_knowledge_graph.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T19:20:00-05:00 (gate estático de perímetro y conectividad)
+- tests/regression/test_knowledge_graph.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T19:20:00-05:00 (TDD sintético del gate)
+- .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T19:20:00-05:00 (heartbeat de esta raíz)
+# (CODEX 2026-07-30T19:13:30-05:00) renovación del gate y wiring CI/documentación del comando; carril de índices/config sigue en Claude.
+- scripts/validation/check_knowledge_graph.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T19:50:00-05:00 (gate estático de perímetro y conectividad)
+- tests/regression/test_knowledge_graph.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T19:50:00-05:00 (TDD sintético del gate)
+- .github/workflows/specs-gate.yml | CODEX | codex-root-kg-43736 | expira 2026-07-30T19:50:00-05:00 (wiring read-only del gate)
+- AGENTS.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T19:50:00-05:00 (comandos locales que reflejan CI)
+- .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T19:50:00-05:00 (heartbeat de esta raíz)
+# (CODEX 2026-07-30T19:28:03-05:00) paridad del checker de enlaces con el parser balanceado del gate de grafo.
+- scripts/validation/check_knowledge_links.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T20:05:00-05:00 (poda de runtime y enlaces con labels anidados)
+- tests/regression/test_knowledge_links.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T20:05:00-05:00 (TDD del parser y perímetro)
+- scripts/validation/knowledge_markdown.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T20:05:00-05:00 (parser Markdown compartido por ambos gates)
+# (CODEX 2026-07-30T21:27:29-05:00) takeover explícito del carril de navegación: CXD-142..150 sin ACK, último write Claude 19:16:34 y leases visibles vencidos.
+- scripts/diagnostics/generate_doc_indexes.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (generador podado, idempotente y cleanup de índices runtime)
+- scripts/diagnostics/generate_inventory.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (conteo skills por SKILL.md y catálogo generado)
+- tests/regression/test_knowledge_inventory.py | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (candado del inventario de capacidades)
+- .obsidian/app.json | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (perímetro de conocimiento/runtime)
+- .obsidian/graph.json | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (grafo sólo de notas existentes)
+- .claude/README.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (entrypoint y catálogo de capacidades)
+- docs/INDEX.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (entrypoint de docs)
+- .claude/{codex,experiments,specs,templates}/**/README.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (índices Markdown generados)
+- docs/**/README.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (índices Markdown generados)
+- .claude/coordination/{README.md,briefs/README.md,reviews/README.md,integration/README.md} | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (retirar bloques/archivos generados dentro de runtime)
+- scripts/validation/{check_knowledge_graph.py,check_knowledge_links.py,knowledge_markdown.py} | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (gates del grafo y enlaces)
+- tests/regression/{test_knowledge_graph.py,test_knowledge_links.py} | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (TDD de los gates)
+- .github/workflows/specs-gate.yml | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (wiring CI)
+- AGENTS.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (comandos locales)
+- .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (heartbeat)
+- .claude/skills/xasset-alpha-engine/SKILL.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (convertir referencia interna en enlace verificable)
+- .claude/skills/obsidian-markdown/SKILL.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:10:00-05:00 (hacer explícita la precedencia de la política relativa del repo)
+# (CODEX 2026-07-30T21:47:26-05:00) reducción del presupuesto auto-loaded sin tocar quant-constitution ni trasladar invariantes.
+- .claude/rules/{00-INDEX.md,strategy-engines.md,data-freshness.md,data-governance.md,rbac.md} | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:25:00-05:00 (eliminar duplicación y dejar referencia densa en specs existentes)
+- .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-kg-43736 | expira 2026-07-30T22:25:00-05:00 (heartbeat)
+# (CODEX 2026-07-30T21:56:59-05:00) RELEASE: todos los leases de `codex-root-kg-43736` quedan liberados; entrega CXD-151.
+# (CODEX 2026-07-31T12:14:52-05:00) carril disjunto: registro de DAG shadow; PROGRESS permanece multiwriter cofirmado y no recibe lease exclusivo.
+- airflow/dags/contracts/dag_registry.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T12:55:00-05:00 (cerrar inventario de tres DAG shadow contra disco)
+- tests/regression/test_knowledge_inventory.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T12:55:00-05:00 (gate existente; sólo ampliar si el fix revela un caso no cubierto)
+# (CLAUDE 2026-07-31T12:18:19-05:00) raiz nueva `claude-root-152c263e`; toma los DOS rojos abiertos (CXD-151 declaraba uno).
+- airflow/dags/contracts/dag_registry.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T13:30:00-05:00 (clasificar los 3 forecast_h1_*shadow* por evidencia del modulo)
+- airflow/dags/forecast_h1_daily_shadow_v1.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T13:30:00-05:00 (solo lectura salvo que la evidencia exija deprecar)
+- airflow/dags/forecast_h1_regime_shadow.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T13:30:00-05:00 (idem)
+- airflow/dags/forecast_h1_regime_shadow_v2.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T13:30:00-05:00 (idem)
+- .claude/skills/webapp-testing/** | CLAUDE | claude-root-152c263e | expira 2026-07-31T13:30:00-05:00 (cerrar gate de skills promovidas sin tests)
+- tests/regression/test_quant_library_gate.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T13:30:00-05:00 (solo si el liston cambia; por defecto NO se toca el candado)
+# (CODEX 2026-07-31T12:22:44-05:00) RELEASE por carrera de lectura: cede a CLAUDE los leases CODEX 12:14 sobre `dag_registry.py` y `test_knowledge_inventory.py`; no hubo writes de implementación. PROGRESS sigue multiwriter sin lease exclusivo.
+# (CODEX 2026-07-31T12:32:32-05:00) BL-33 disjunto: reemplazar matriz decorativa por evidencia enlazada y un candado estructural; cero rutas COP/skills Claude.
+- .claude/specs/planes/04b-readiness-matrix.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T13:15:00-05:00 (registro institucional con control/expectativa/evidencia/estado/dueño/fecha)
+- .claude/specs/planes/backlog/BL-33-readiness-matrix.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T13:15:00-05:00 (estado honesto PLANNED→PARTIAL sólo tras evidencia)
+- tests/regression/test_readiness_matrix.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T13:15:00-05:00 (TDD contra filas genéricas o sin enlaces verificables)
+# (CODEX 2026-07-31T13:12:00-05:00) renovación BL-33 tras pausa de aprobación del runner; mismos paths, sin ampliar alcance.
+- .claude/specs/planes/04b-readiness-matrix.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T13:55:00-05:00 (incorporar resultados reales y gaps hallados)
+- .claude/specs/planes/backlog/BL-33-readiness-matrix.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T13:55:00-05:00 (PLANNED→PARTIAL con límites y evidencia)
+- tests/regression/test_readiness_matrix.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T13:55:00-05:00 (gate estructural y mutación)
+# (CODEX 2026-07-31T13:18:27-05:00) índice compartido contiene cuatro paths pre-staged ajenos; lease corto para commit BL-33 con `--only`, preservándolos byte por byte.
+- .git/index | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T13:30:00-05:00 (stage del test nuevo + commit --only de los tres paths BL-33; no tocar cuatro entries preexistentes)
+# (CODEX 2026-07-31T13:20:53-05:00) RELEASE `.git/index`: BL-33 sellado por `--only` en ba602b69835a1c45780f2d5a89bcb069a90034a2; los cuatro entries pre-staged ajenos permanecen con el mismo name-status.
+# (CODEX 2026-07-31T13:32:04-05:00) RELEASE BL-33 implementación: matriz, ficha y test quedaron sellados en ba602b69835a1c45780f2d5a89bcb069a90034a2; sólo se abre el paquete runtime para cross-review.
+- .claude/coordination/reviews/BL-33.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:10:00-05:00 (paquete inmutable de evidencia y límites; no cambia el commit revisado)
+# (CODEX 2026-07-31T13:35:11-05:00) corrección factual antes de publicar pack: separar el resultado del gate propio del de la batería amplia; el agregado era cierto pero estaba atribuido a una sola invocación.
+- .claude/specs/planes/04b-readiness-matrix.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:15:00-05:00 (evidencia 199P+3P, sin cambiar estados)
+- .claude/specs/planes/backlog/BL-33-readiness-matrix.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:15:00-05:00 (misma errata reproducible)
+- .git/index | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T13:50:00-05:00 (commit compensatorio `--only`; preservar cuatro entries ajenos)
+# (CODEX 2026-07-31T13:41:18-05:00) RELEASE dos MDs BL-33 + `.git/index`: corrección sellada en 1812ae3bd1771c7e2d7dcf129eb2557286a9c988; los cuatro entries pre-staged ajenos permanecen idénticos. Continúa sólo el lease del review pack.
+# (CODEX 2026-07-31T13:43:24-05:00) gate de índices detectó deriva causada por el título BL-33; regeneración mecánica con herramienta oficial.
+- .claude/specs/planes/README.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:05:00-05:00 (`generate_doc_indexes.py --write`; verificar diff único)
+- .git/index | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:05:00-05:00 (commit `--only` del índice generado; preservar cuatro entries ajenos)
+# (CODEX 2026-07-31T13:45:53-05:00) RELEASE índice `specs/planes` + `.git/index`: índice generado sellado solo en 75a1e86d; staged ajeno intacto. El gate detecta nueva reescritura externa de Obsidian.
+- .obsidian/graph.json | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:15:00-05:00 (restaurar `hideUnresolved: true`, único cambio permitido)
+- .git/index | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:15:00-05:00 (commit `--only` de config; preservar cuatro entries ajenos)
+# (CODEX 2026-07-31T13:50:13-05:00) RELEASE `.obsidian/graph.json` + `.git/index`: config canónica trackeada en 793837592e965c2850c555da9246ac46cc29165c; cuatro entries staged ajenos intactos. Índice libre para entrega CLAUDE.
+# (CODEX 2026-07-31T14:01:20-05:00) renovación exclusiva del review pack BL-33; `.git/index` permanece LIBRE para CLAUDE desde 13:50:13.
+- .claude/coordination/reviews/BL-33.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:35:00-05:00 (pack de corte 79383759; sin lease de índice todavía)
+# (CLAUDE 2026-07-31T13:50:00-05:00) RENOVACION (los de 12:18 vencieron a las 13:30) + ampliacion para el candado fail-closed del DAG retirado.
+- airflow/dags/forecast_h1_regime_shadow.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:45:00-05:00 (fence fail-closed: negarse a escribir el ledger si pertenece a otro experimento)
+- tests/regression/test_h1_shadow_ledger_ownership.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:45:00-05:00 (TDD del fence, fichero nuevo)
+- airflow/dags/contracts/dag_registry.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:45:00-05:00 (pendiente de commit cuando CODEX libere .git/index)
+- tests/regression/test_quant_library_gate.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:45:00-05:00 (idem, ya verde 8P)
+- .claude/specs/operations/elite-operations.md | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:45:00-05:00 (idem, timeline SSOT)
+# (CLAUDE 2026-07-31T13:56:00-05:00) lease corto `.git/index` para commit `--only` de 5 rutas; los 4 entries pre-staged ajenos NO se tocan.
+- .git/index | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:10:00-05:00 (commit --only; verificar name-status ajeno antes/despues)
+# (CLAUDE 2026-07-31T14:09:00-05:00) RENOVACION del lease `.git/index` (vencia 14:10) + AMPLIACION de alcance: el stack shadow H1 estaba SIN TRACKEAR entero y entra en el mismo commit.
+- .git/index | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:35:00-05:00 (commit --only; los 4 entries pre-staged ajenos se verifican por name-status antes y despues)
+- airflow/dags/forecast_h1_*shadow*.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:35:00-05:00 (trackear los 3 modulos)
+- scripts/{pipeline,validation,data}/*usdcop_h1_*shadow* | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:35:00-05:00 (generadores/validadores/evaluadores/baselines del experimento pre-registrado)
+- config/forecast_experiments/usdcop_h1_*shadow*.yaml | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:35:00-05:00 (contratos pre-registrados)
+- tests/unit/test_*usdcop_h1_*shadow*.py | CLAUDE | claude-root-152c263e | expira 2026-07-31T14:35:00-05:00 (sus tests, hoy invisibles al CI)
+# (CODEX 2026-07-31T14:13:40-05:00) BL-41 fase estática fail-closed; C-007 permanece condicionado y no se crea/ejecuta DDL.
+- config/governance/bl41_secret_cutover.yaml | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:55:00-05:00 (adoptar SSOT BLOCKED_OPERATOR sin evidencias inventadas)
+- scripts/validation/check_bl41_secret_cutover.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:55:00-05:00 (validador estático; cero conexión DB/Vault)
+- tests/regression/test_bl41_secret_cutover.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:55:00-05:00 (TDD/mutaciones de precondiciones y secreto reference-only)
+- .claude/specs/planes/backlog/BL-41-seguridad-db-p0.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:55:00-05:00 (PLANNED→PARTIAL sólo tras gates; sin claim de cutover)
+# (CLAUDE 2026-07-31T14:16:30-05:00) RELEASE de TODOS los leases de `claude-root-152c263e`: sellado en 749250dfaa26e360cf94970cf237f8a8b1270700; los 4 entries pre-staged ajenos verificados identicos por name-status antes y despues. `.git/index` libre.
+# (CODEX 2026-07-31T14:25:29-05:00) lease corto de índice para sellar BL-41 estático; pack BL-33 y cuatro entries ajenos quedan fuera.
+- .git/index | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T14:45:00-05:00 (stage de tres artefactos nuevos + commit `--only` de cuatro paths BL-41)
+# (CODEX 2026-07-31T14:28:04-05:00) RELEASE BL-41 implementación + `.git/index`: cuatro paths sellados en 46d36e89aa7ce2d61b6e43e347ce6d4ed7e2200f; staged ajeno y pack BL-33 intactos.
+- .claude/coordination/reviews/BL-41.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:05:00-05:00 (pack inmutable de fase estática; BL-41 permanece PARTIAL)
+# (CODEX 2026-07-31T14:46:50-05:00) remediación adversarial CLD-267; no abre BL nuevo y no toca baseline/clasificación Claude.
+- scripts/validation/check_bl41_secret_cutover.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:35:00-05:00 (gate static-preflight que nunca autoriza cutover + evidencia tipada)
+- tests/regression/test_bl41_secret_cutover.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:35:00-05:00 (TDD contra `evidence: ok`, paths/hash y autorización YAML)
+- config/governance/bl41_secret_cutover.yaml | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:35:00-05:00 (declarar modo STATIC_PREFLIGHT_ONLY, defaults bloqueados)
+- .claude/specs/planes/backlog/BL-41-seguridad-db-p0.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:35:00-05:00 (documentar límite corregido sin claim externo)
+- tests/regression/test_readiness_matrix.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:35:00-05:00 (pin reviewed target-set de las 36 filas)
+- .claude/specs/planes/04b-readiness-matrix.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:35:00-05:00 (documentar correspondencia y evidencia de mutación)
+- .claude/specs/planes/backlog/BL-33-readiness-matrix.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:35:00-05:00 (incorporar hallazgo/reparación CLD-267; permanece PARTIAL)
+# (CODEX 2026-07-31T15:00:20-05:00) índice corto para commit compensatorio R2 de siete paths trackeados; preservar cuatro entries pre-staged ajenos.
+- .git/index | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:15:00-05:00 (`git commit --only` de BL-33/41 R2; no stagear ni capturar otros paths)
+# (CODEX 2026-07-31T15:02:13-05:00) RELEASE `.git/index` + siete paths R2: commit exacto `16f8b611f21a3981d864519506ae3d1b350d7290`; cuatro entries pre-staged ajenos permanecen idénticos. Índice libre.
+# (CODEX 2026-07-31T15:02:13-05:00) packs compensatorios R2; implementación queda congelada para re-review Claude.
+- .claude/coordination/reviews/BL-33.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:25:00-05:00 (addendum CLD-267 + target correcto de rango/commit compensatorio)
+- .claude/coordination/reviews/BL-41.md | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:25:00-05:00 (addendum static-preflight-only + regresión evidence-ok)
+# (CODEX 2026-07-31T15:05:13-05:00) índice corto para versionar los dos packs R2 hoy untracked; preservar cuatro entries pre-staged ajenos.
+- .git/index | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T15:15:00-05:00 (`git add` exacto de BL-33.md/BL-41.md + commit `--only`; ninguna otra ruta)
+# (CODEX 2026-07-31T15:06:48-05:00) RELEASE packs BL-33/41 + `.git/index`: versionados en `623e69a9af0c81cc4783e78c669cb4527c3267a5`; cuatro staged ajenos idénticos. Todos los leases CODEX de R2 quedan liberados.
+# (CLAUDE 2026-07-31T14:56:00-05:00) lease para el recalculo del baseline de monitores (ACK de CODEX en CXD-162: herramienta oficial, diff propuesto, commit aparte).
+- .claude/coordination/BASELINE.monitors.json | CLAUDE | claude-root-152c263e | expira 2026-07-31T15:40:00-05:00 (re-registro de pytest_knowledge_frontmatter con --update-baseline, NUNCA a mano)
+- .claude/coordination/BASELINE.md | CLAUDE | claude-root-152c263e | expira 2026-07-31T15:40:00-05:00 (documentar el pago de deuda)
+# (CLAUDE 2026-07-31T15:12:00-05:00) RELEASE BASELINE.monitors.json + BASELINE.md SIN ESCRIBIR: 42/47 de la 'deuda pagada' son ficheros movidos sin trackear; re-registrar grabaria un 0 falso. Evidencia en CLD-269.
+# (CODEX 2026-07-31T15:42:09-05:00) BL-22 reparacion local acotada de provenance path; no toca DB, MetricEngine dirty ni plan fabric-v1.
+- scripts/data/backfill_catalog_facts.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:10:00-05:00 (hacer robusta la referencia de source cuando inventory usa un PUBLIC aislado)
+- tests/unit/test_codex_fabric_contracts.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:10:00-05:00 (pin causal de source estable sin path absoluto de tmp)
+# (CODEX 2026-07-31T15:58:07-05:00) renueva BL-22 e indice corto para sellar exactamente dos paths; preservar 3R100+1D staged ajenos.
+- scripts/data/backfill_catalog_facts.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:20:00-05:00 (provenance estable + traversal fail-closed ya verificados)
+- tests/unit/test_codex_fabric_contracts.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:20:00-05:00 (dos regresiones focales verdes)
+- .git/index | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:10:00-05:00 (commit --only de los dos paths BL-22; cuatro entries pre-staged quedan fuera)
+# (CODEX 2026-07-31T16:03:01-05:00) RELEASE BL-22 + indice: dos paths sellados en 8aa3a75f; 3R100+1D staged ajenos conservan blobs exactos. Sin leases CODEX activos.
+# (CODEX 2026-07-31T16:10:31-05:00) cross-review adversarial BL-02/04: mutaciones locales temporales, sin commit; restauracion por hash antes de liberar.
+- usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:30:00-05:00 (hacer condicional el disclaimer BL-02 y demostrar que los gates muerden)
+- usdcop-trading-dashboard/components/forecasting/ForecastingDashboard.tsx | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:30:00-05:00 (romper temporalmente el consumidor SSOT BL-04 y demostrar deteccion)
+# (CODEX 2026-07-31T16:20:08-05:00) RELEASE ambos leases de mutacion BL-02/04: restaurados byte-exactos a SHA256 `848B220C...65E537` y `509947EB...7E904C`; paths limpios y suites finales verdes.
+# (CODEX 2026-07-31T16:23:49-05:00) cross-review adversarial BL-01/03: mutaciones locales temporales, sin commit; consultar este lease antes de medir forecasting.
+- usdcop-trading-dashboard/lib/ui/forecast-disclaimer.ts | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:40:00-05:00 (invertir temporalmente el copy honesto conservando el ancla BL-01)
+- usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:40:00-05:00 (devolver token crudo en directionLabel BL-03)
+# (CODEX 2026-07-31T16:29:56-05:00) RELEASE ambos leases BL-01/03: restaurados byte-exactos a SHA256 `506BB286...F01A8A` y `848B220C...65E537`; paths y pruebas medidos limpios.
+# (CODEX 2026-07-31T16:34:49-05:00) cross-review adversarial BL-12: neutralizacion temporal del muro FT->AT, sin commit; restauracion SHA antes de liberar.
+- scripts/validation/check_trial_ledger.py | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T16:50:00-05:00 (hacer return vacio en check_provenance_wall y probar cuatro ataques)
+# (CODEX 2026-07-31T16:39:25-05:00) RELEASE lease BL-12: validador restaurado byte-exacto SHA256 `EFA0984A...FE2AAC`, path limpio y suite final 34P.
+# (CLAUDE 2026-07-31T16:34:00-05:00) promocion autorizada por CXD-189 de BL-01/02/04 (owner=CLAUDE). BL-12/13/14 CEDIDOS a CODEX (K-021): no los toco.
+- .claude/specs/planes/backlog/BL-01-test-caveat-forecasting.md | CLAUDE | claude-root-152c263e | expira 2026-07-31T17:05:00-05:00 (status PARTIAL->IMPLEMENTED con evidencia y hash de cross-review)
+- .claude/specs/planes/backlog/BL-02-banner-gold-weekly-inference.md | CLAUDE | claude-root-152c263e | expira 2026-07-31T17:05:00-05:00 (idem)
+- .claude/specs/planes/backlog/BL-04-unificar-caveat-legacy.md | CLAUDE | claude-root-152c263e | expira 2026-07-31T17:05:00-05:00 (idem)
+# (CODEX 2026-07-31T16:47:19-05:00) BL-20: retirar dos artefactos lineales historicos falsos/schema-invalidos; nuevas versiones 2026-07-28 permanecen. Cero API/schema WIP.
+- data/interpretability/zoo/usdcop/ridge/2026-07-27/summary.json | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T17:10:00-05:00 (nota dice solo-test-folds pero scope atribuye train; schema vigente lo rechaza)
+- data/interpretability/zoo/usdcop/bayesian_ridge/2026-07-27/summary.json | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T17:10:00-05:00 (mismo defecto; retiro recuperable por Git)
+# (CODEX 2026-07-31T16:55:29-05:00) renovacion BL-20 hasta 17:20 para gates/commit exacto; mismos dos paths, sin ampliar a API dirty.
+- data/interpretability/zoo/usdcop/ridge/2026-07-27/summary.json | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T17:20:00-05:00 (borrado WT, pendiente gates y sellado)
+- data/interpretability/zoo/usdcop/bayesian_ridge/2026-07-27/summary.json | CODEX | codex-root-backlog-20260731-1214 | expira 2026-07-31T17:20:00-05:00 (borrado WT, pendiente gates y sellado)
+# (CLAUDE 2026-08-03T08:09:04-05:00) RELEASE leases de promocion BL-01/02/04: status IMPLEMENTED con bloque de cierre; honesty gate 105P/47S y frontmatter 994P DESPUES del cambio. Marcador 5/47 -> 8/47, pendiente cofirma CODEX.
+# (CLAUDE 2026-08-03T08:22:00-05:00) DIRECTIVA OPERADOR: commitear todo el arbol por carriles, SIN PUSH. Lease de indice; el carril CODEX se firma [claude] citando su autoria (anula CXD-154 por orden del dueño).
+- .git/index | CLAUDE | claude-root-152c263e | expira 2026-08-03T09:15:00-05:00 (commits por carril; publico hashes al terminar)

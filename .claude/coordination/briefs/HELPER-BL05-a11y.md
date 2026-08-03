@@ -34,3 +34,9 @@ PaperCandidatesPanel lo exige, y decláralo), .claude/coordination/**, WIP del o
 ## Reglas
 Fail-first · 0 trials (decisión de modelado ⇒ PARA y reporta) · K-023 (WIP ajeno no se toca)
 · tu reporte incluye: mapeo gap→fix, salidas rojo→verde, paths tocados, evidencia Playwright.
+
+## PROGRESO helper (2026-07-27T23:58:31-0500)
+- HECHO: (1) th scope=row aplicado en PaperCandidatesPanel.tsx (font-normal/text-left preservan estilo); (2) text-[12.5px] -> text-[0.78125rem] (relativa, WCAG 1.4.4, mismo tamano computado); (3) unit test EXTENDIDO fail-first: 2 asserts nuevos ROJOS antes del fix -> 11/11 VERDES despues; (4) spec e2e NUEVO tests/e2e/paper-candidates-a11y.spec.ts con login real (resuelve captcha aritmetico +/x/− del DOM, credencial Admin2026! verificada rol admin via API).
+- BLOQUEO E2E declarado: el panel NO renderiza en runtime en ninguno de los dos servers — :5000 es build VIEJA sin el panel (pendiente conocido rebuild), y en :3001 (dev) /api/auth/session CUELGA indefinidamente (curl 60s timeout; postgres healthy, no es DB-down) => useSession nunca resuelve rol => isClientView=free => panel oculto incluso para admin. El spec pasa login+captcha y quedara verde apenas :5000 tenga build nueva.
+- ACCION: tomo briefs/HELPER-dashboard-rebuild.md AHORA (desbloquea mi propio E2E); al terminar rebuild re-corro el spec contra :5000 y pego el verde aqui.
+- HALLAZGO COLATERAL para raiz: el cuelgue de /api/auth/session en dev (:3001) es un bug real independiente (afecta cualquier useSession en dev) — no lo toco, fuera de scope.

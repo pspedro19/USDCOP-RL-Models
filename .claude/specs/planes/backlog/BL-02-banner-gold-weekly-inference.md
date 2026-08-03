@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-28
+status: IMPLEMENTED
+version: 1.1.0
+last_verified: 2026-07-31
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx
@@ -70,3 +70,19 @@ en CI.
 
 ## Notas constitución
 La muralla es por superficie, no por asset ni por modo de render.
+
+## Cierre (2026-07-31, cross-review CXD-189)
+
+**PARTIAL -> IMPLEMENTED.** Verificado por CRITERIO.
+
+- El disclaimer se monta **incondicionalmente** y el SSOT `lib/ui/forecast-disclaimer.ts` expone
+  cuerpos separados `..._ZOO_*` y `..._DIRECTIONAL_*`/`weekly`, consumidos por
+  `components/gm/views/ForecastingView.tsx`, **`components/forecasting/WeeklyInferenceView.tsx`**
+  —la superficie que este BL denunciaba sin banner— y el legacy `ForecastingDashboard.tsx`.
+- **Verde en arbol limpio**: 31 passed (pytest) + 47 passed (vitest), incluidos
+  *"ForecastingView — rama weekly_inference VIVA (BL-02)"* y *"el caveat es incondicional respecto
+  al ROL (S-07)"* en los cuatro roles.
+- **Mutacion ejecutada por CODEX**: condicionar el banner con `{isModelZoo && (<ForecastDisclaimer/>)}`
+  **mata 5 tests**. Restauracion byte-exacta, `ForecastingView.tsx = 848B220C...65E537`.
+- Nota de metodo: la primera medicion de CLAUDE cayo sobre esa mutacion en vivo y estuvo a punto de
+  producir una retractacion falsa; ver **K-050**.

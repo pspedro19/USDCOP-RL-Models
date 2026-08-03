@@ -93,8 +93,8 @@
       "owner": "pre-existing (Button React import, 2 orphan modules, interpretability route, replayApiClient)",
       "note": "Scope is `tests/unit`, the scope BASELINE.md measured. The CI step in fabric-contracts.yml currently runs a DIFFERENT scope (tests/unit/api tests/unit/contracts tests/unit/components tests/integration) whose count is NOT this one — align the step to this command or register a second, separately measured monitor. secondary_count = suites that failed to even collect (orphan modules OptimizedChart / technical-indicators).",
       "measurement_caveat": "Measured 2026-07-28T18:04 on a working tree that another agent was editing concurrently. Re-run at 18:20 the same tree gave 44 primary / 3 secondary: two interpretability-security tests were fixed AND tests/unit/components/InterpretabilitySection.test.tsx appeared as a suite that does not collect. Baseline intentionally NOT moved to that half-finished state. Whoever wires this in CI must re-measure once on a settled tree (`--update-baseline`) and commit.",
-      "count": 46,
-      "secondary_count": 2,
+      "count": 0,
+      "secondary_count": 0,
       "baseline_md": {
         "assertions": [
           "npx vitest run tests/unit` \\(dashboard\\): \\d+ tests failed",
@@ -170,7 +170,7 @@
       "owner": "pre-existing (ForecastingView DIRECTION_TONE removed; the rest in tests/ and untouched API routes)",
       "note": "The gate counts ERROR DIAGNOSTICS (336), while BASELINE.md's prose counts OUTPUT LINES (~639, measured 637 today) — a multi-line diagnostic prints several lines. Different units on purpose: lines are an artifact of formatting, diagnostics are the defect count. Hence number_authoritative=false for the prose. tsc is the ONLY text-parsed runner (TypeScript ships no structured diagnostic output); identity is (file, TScode, message) with line/col dropped.",
       "measurement_caveat": "Measured 2026-07-28T18:04. A re-run at 18:20 on the same (concurrently edited) tree gave 337: +1 TS2339 in tests/unit/api/interpretability-security.test.ts, introduced by another agent's edit at 18:07 — i.e. the gate caught a real regression the same afternoon it was built. Baseline left at the 18:04 measurement on purpose; re-measure on a settled tree before wiring.",
-      "count": 336,
+      "count": 323,
       "secondary_count": 0,
       "baseline_md": {
         "assertions": [

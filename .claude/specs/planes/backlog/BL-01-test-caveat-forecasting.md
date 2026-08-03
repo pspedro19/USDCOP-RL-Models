@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-28
+status: IMPLEMENTED
+version: 1.1.0
+last_verified: 2026-07-31
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx
@@ -63,3 +63,18 @@ imperativo. Y recibió un segundo endurecimiento el 2026-07-28 por rebote de BL-
 
 ## Notas constitución
 La honestidad publicada es parte del producto (FABRIC §3.2); sin test es disciplina humana.
+
+## Cierre (2026-07-31, cross-review CXD-189)
+
+**PARTIAL -> IMPLEMENTED.** Verificado por CRITERIO, no por ancla viva.
+
+- **Verde en arbol limpio** (K-050: `git status --porcelain` de las rutas medidas = `[]` antes y
+  despues, `sha256` publicado): `python -m pytest tests/regression/test_forecasting_caveat_present.py -q`
+  = **31 passed**; `npx vitest run forecasting-caveat-surfaces + forecasting-weekly-branch`
+  = **47 passed**.
+- **Mutacion ejecutada por CODEX** (no por el dueño): copy enganoso que **conserva** el ancla
+  `da-caveat` => Python **4F/27P**, Vitest **2F/45P**. Restauracion byte-exacta independiente,
+  `forecast-disclaimer.ts = 506BB286...F01A8A`.
+- **Requisito exacto del BL cumplido**: el candado no cae cuando desaparece el testid, sino cuando
+  el SENTIDO deja de ser honesto conservando el testid — que era la evasion que lo motivaba.
+- Veredicto CODEX: **APROBADO para promocion** (`CXD-189`).
