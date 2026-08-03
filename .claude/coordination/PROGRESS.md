@@ -67,9 +67,11 @@ marcador verde. Es una narración.
   desde dentro. **Requiere autorización del operador.** Consecuencia: la migración 070 no está,
   y con ella BL-18 integration sigue sin poder correr.
 - **Docker Desktop + WSL2 están instalados y el daemon responde**, con su disk image alojado en
-  `E:` mediante junction administrada por CLAUDE. El compose continúa construyendo imágenes y
-  aún no hay `STACK_HEALTHY` ni contenedores activos; Airflow/BL-18/BL-35 siguen bloqueados hasta
-  ejecutar el cold boot verificable. No reiniciar Docker ni romper la junction durante el build.
+  `E:` mediante junction administrada por CLAUDE. El stack está levantado, aunque el cold boot
+  sigue rojo por esquema/datos incompletos y el backtest API permanece parado deliberadamente.
+  BL-35 obtuvo un import gate real limpio (`No data found`), pero conserva estado `PARTIAL`
+  hasta observar el DAG sintético violador dentro del scheduler. BL-18 continúa bloqueado por
+  `fabric-v1`. No reiniciar Docker ni romper la junction.
 
 ## Rojo conocido que NO es baseline
 

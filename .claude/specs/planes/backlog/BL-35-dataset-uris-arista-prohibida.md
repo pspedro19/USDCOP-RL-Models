@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.1.0
-last_verified: 2026-07-29
+version: 1.2.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - airflow/dags/asset_pipeline_factory.py
@@ -48,9 +48,16 @@ feliz. Mutaciones:
 - quitar el `except DatasetContractError: raise` ⇒ **1 failed / 1 passed**;
 - retirar `dataset_edges` del YAML productivo ⇒ **1 failed / 1 passed**.
 
-Queda pendiente, por la prioridad explícita del operador de dejar CI al final,
-la comprobación dentro del scheduler con `airflow dags list-import-errors`.
-Hasta esa evidencia y la revisión bilateral, el BL permanece `PARTIAL`.
+El 2026-08-03 se ejecutó dentro del scheduler real
+`airflow dags list-import-errors`: terminó con exit 0 y salida `No data found`.
+Claude cofirmó el resultado y su alcance: demuestra que los DAGs actuales
+parsean, no que puedan ejecutarse con el esquema o los datos presentes.
+
+El BL permanece `PARTIAL`: la aceptación exige observar en ese mismo scheduler
+un DAG sintético con arista `forecast:// → exec://` convertido en import error.
+Ese negativo existe como test unitario, pero todavía no se ha inyectado en el
+contenedor real; el verde actual por sí solo no demuestra que la muralla esté
+cargada allí.
 
 ## Impacto frontend
 Ninguno.
