@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-21T03:16:10.067249+00:00",
+  "assets": [
+    "usdcop",
+    "xauusd",
+    "btcusdt",
+    "spx500"
+  ],
+  "gates": [
+    {
+      "name": "commerce-contracts",
+      "status": "PASS",
+      "evidence": [
+        "database/migrations/057_catalog_watchlist_cart.sql",
+        "database/migrations/058_billing_webhook_idempotency.sql",
+        "database/migrations/059_checkout_order_ledger.sql",
+        "usdcop-trading-dashboard/app/api/cart/checkout/route.ts",
+        "usdcop-trading-dashboard/app/api/billing/webhook/route.ts"
+      ],
+      "reasons": [],
+      "command": null
+    },
+    {
+      "name": "rbac-contracts",
+      "status": "PASS",
+      "evidence": [
+        "usdcop-trading-dashboard/lib/contracts/rbac.contract.ts",
+        "usdcop-trading-dashboard/lib/api/relay.ts",
+        ".claude/codex/RBAC-CART-AUDIT-2026-07-20.md"
+      ],
+      "reasons": [],
+      "command": null
+    },
+    {
+      "name": "news-safety",
+      "status": "PASS",
+      "evidence": [
+        "usdcop-trading-dashboard/lib/security/safe-url.ts",
+        ".claude/codex/FRONTEND-NEWS-CART-AUDIT.md"
+      ],
+      "reasons": [],
+      "command": null
+    },
+    {
+      "name": "quantitative-contracts",
+      "status": "PASS",
+      "evidence": [
+        "config/assets/spx500.yaml",
+        "src/validation/sp500_oos_gate.py",
+        "config/forecast_experiments/spx500_regime_gated_v1.yaml"
+      ],
+      "reasons": [],
+      "command": null
+    },
+    {
+      "name": "market-data-statistics",
+      "status": "BLOCKED",
+      "evidence": [
+        "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP-RL-Models\\.claude\\codex\\evidence\\market-data-statistics.json"
+      ],
+      "reasons": [
+        "audit decision=REVIEW_REQUIRED; PIT lineage and feature review remain open"
+      ],
+      "command": null
+    },
+    {
+      "name": "acquisition-assets",
+      "status": "BLOCKED",
+      "evidence": [
+        "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP-RL-Models\\.claude\\codex\\evidence\\acquisition-assets-audit.json"
+      ],
+      "reasons": [
+        "audit decision=REVIEW_REQUIRED; reconcile seeds/backups and prove provider runs"
+      ],
+      "command": null
+    },
+    {
+      "name": "acquisition-manifests",
+      "status": "BLOCKED",
+      "evidence": [
+        "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP-RL-Models\\.claude\\codex\\evidence\\acquisition-manifest-validation.json"
+      ],
+      "reasons": [
+        "provider run evidence incomplete"
+      ],
+      "command": null
+    },
+    {
+      "name": "real-data-oos",
+      "status": "BLOCKED",
+      "evidence": [],
+      "reasons": [
+        "requires real PIT datasets and OOS evidence for all four assets"
+      ],
+      "command": null
+    },
+    {
+      "name": "provider-e2e",
+      "status": "BLOCKED",
+      "evidence": [],
+      "reasons": [
+        "requires sandbox provider credentials and disposable test tenant"
+      ],
+      "command": null
+    }
+  ],
+  "passed": false,
+  "decision": "NO-GO"
+}

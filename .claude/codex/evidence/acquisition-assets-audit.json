@@ -1,0 +1,542 @@
+{
+  "generated_at": "2026-07-21T03:36:15.543494+00:00",
+  "sources": {
+    "twelvedata": true,
+    "mt5": true,
+    "bcrp": true,
+    "suameca": true,
+    "scraping": true,
+    "public_adapter": true
+  },
+  "artifacts": [
+    {
+      "rows": 3260,
+      "columns": 7,
+      "date_min": "2017-08-17",
+      "date_max": "2026-07-20",
+      "sha256": "577d354d8ade76681134d63c745a55ada4dde39e02243bc75918b76350182c2d",
+      "path": "seeds\\latest\\btcusdt_daily_ohlcv.parquet"
+    },
+    {
+      "rows": 2506,
+      "columns": 9,
+      "date_min": "2019-09-10",
+      "date_max": "2026-07-20",
+      "sha256": "485357438b65f34b6afd1bb9eef58b10a3a8aa589f4f3474a8a81ad11e28dff7",
+      "path": "seeds\\latest\\btcusdt_derivatives_daily.parquet"
+    },
+    {
+      "rows": 8640,
+      "columns": 7,
+      "date_min": "2026-06-20",
+      "date_max": "2026-07-20",
+      "sha256": "1d749f6ce164d5e717ba502899e3bad87fbd81f6e573553868e458f07d3a700d",
+      "path": "seeds\\latest\\btcusdt_m5_ohlcv.parquet"
+    },
+    {
+      "rows": 141994,
+      "columns": 7,
+      "date_min": "2020-01-02",
+      "date_max": "2026-07-20",
+      "sha256": "79b18e1ffc5bce8600093bb6f54cd7c3d6f48d8b338e9287d80496e0e6c16bd9",
+      "path": "seeds\\latest\\fx_multi_m5_ohlcv.parquet"
+    },
+    {
+      "rows": 10866,
+      "columns": 41,
+      "date_min": "1954-07-31",
+      "date_max": "2026-06-12",
+      "sha256": "38b866541bfc677b6b5c472245229cd49fa2f611cae48f067d85a32c5a2a1091",
+      "path": "seeds\\latest\\macro_indicators_daily.parquet"
+    },
+    {
+      "rows": 4650,
+      "columns": 7,
+      "date_min": "2026-03-16",
+      "date_max": "2026-07-17",
+      "sha256": "4916aa4dd371f7a53834782fb89372fa86e8c4f079f38d062c9f74c6d4295477",
+      "path": "seeds\\latest\\usdbrl_m5_ohlcv.parquet"
+    },
+    {
+      "rows": 6858,
+      "columns": 6,
+      "date_min": null,
+      "date_max": null,
+      "sha256": "d7c44aec7380b3fac4c2b1757e0bdeec8328a7017e97d430dc4fe52a1b70a953",
+      "path": "seeds\\latest\\usdcop_1h_ohlcv.parquet"
+    },
+    {
+      "rows": 1661,
+      "columns": 5,
+      "date_min": "2020-01-02",
+      "date_max": "2026-07-16",
+      "sha256": "e821ff4e3d53c2fa1398dce82b4c8c4bff51d159ba13dc29b4aca8e3c1dd07d3",
+      "path": "seeds\\latest\\usdcop_daily_ohlcv.parquet"
+    },
+    {
+      "rows": 1213,
+      "columns": 8,
+      "date_min": "2015-01-02",
+      "date_max": "2019-09-20",
+      "sha256": "94931ec83b3c5c4e7e186bc30937901de42a7a6c757fe4778a6298226d109e2b",
+      "path": "seeds\\latest\\usdcop_daily_ohlcv_full.parquet"
+    },
+    {
+      "rows": 98160,
+      "columns": 7,
+      "date_min": "2020-01-02",
+      "date_max": "2026-07-17",
+      "sha256": "96daa19186a18bd9353b7b1063d47453241fbc71cff4d58022c83d941cb71e21",
+      "path": "seeds\\latest\\usdcop_m5_ohlcv.parquet"
+    },
+    {
+      "rows": 4679,
+      "columns": 7,
+      "date_min": "2026-03-16",
+      "date_max": "2026-07-17",
+      "sha256": "bf73ce122e1f5ccee11c8d910d6a5165bba90aa4aec1449304c98c7b95193fa8",
+      "path": "seeds\\latest\\usdmxn_m5_ohlcv.parquet"
+    },
+    {
+      "rows": 5871,
+      "columns": 7,
+      "date_min": "2004-01-02",
+      "date_max": "2026-07-21",
+      "sha256": "57ae5023599159f7b892c5568023be3510abab8cc44083d58782263696c99556",
+      "path": "seeds\\latest\\xauusd_daily_ohlcv.parquet"
+    },
+    {
+      "rows": 21558,
+      "columns": 7,
+      "date_min": "2026-03-18",
+      "date_max": "2026-07-03",
+      "sha256": "cde293d02e5496cf92db4a5c07d59fc25d860d5f5d1bb31b57fcde07c02052b2",
+      "path": "seeds\\latest\\xauusd_m5_ohlcv.parquet"
+    },
+    {
+      "rows": 10358,
+      "columns": 9,
+      "date_min": "2004-01-01",
+      "date_max": "2026-07-21",
+      "sha256": "e23f3d3f574a9533796f8f5f0cbf7f0cf08848f3fee8622c50680ed735b05fae",
+      "path": "data\\backups\\features\\asset_daily_ohlcv.parquet"
+    },
+    {
+      "rows": 30,
+      "columns": 8,
+      "date_min": null,
+      "date_max": null,
+      "sha256": "f4ae737acc434a5966ef98f917db5d3fc73ce8d9b9adc3f7288f575af8677591",
+      "path": "data\\backups\\features\\audit_log.parquet"
+    },
+    {
+      "rows": 2506,
+      "columns": 11,
+      "date_min": "2019-09-10",
+      "date_max": "2026-07-20",
+      "sha256": "b7a5eced299e127421daba40b2b01c7aae96fb8b785217abe5e7d5e9b17a5508",
+      "path": "data\\backups\\features\\crypto_derivatives_daily.parquet"
+    },
+    {
+      "rows": 0,
+      "columns": 22,
+      "date_min": null,
+      "date_max": null,
+      "sha256": "fac021b745c3d3fdddc7820a40df1016f21b3d74db1b7ef1e990e83abed765a3",
+      "path": "data\\backups\\features\\daily_analysis.parquet"
+    },
+    {
+      "rows": 8,
+      "columns": 23,
+      "date_min": "2026-01-05",
+      "date_max": "2026-07-07",
+      "sha256": "df3421d2b4e9ec99493101cc4d4d07983fb92cc61aa41c41f4a6c16d173156db",
+      "path": "data\\backups\\features\\forecast_h5_executions.parquet"
+    },
+    {
+      "rows": 8,
+      "columns": 23,
+      "date_min": "2026-01-05",
+      "date_max": "2026-06-22",
+      "sha256": "cd9ed2c2702dd3830606382025c0b360e626c10bf2bf940d143e11ed8cee20ae",
+      "path": "data\\backups\\features\\forecast_h5_paper_trading.parquet"
+    },
+    {
+      "rows": 18,
+      "columns": 14,
+      "date_min": "2026-01-04",
+      "date_max": "2026-07-14",
+      "sha256": "392d00ffd3fa62ec067a68809f2dc932bb47de2e848efb85748a868248a56712",
+      "path": "data\\backups\\features\\forecast_h5_predictions.parquet"
+    },
+    {
+      "rows": 10,
+      "columns": 31,
+      "date_min": "2026-01-04",
+      "date_max": "2026-07-07",
+      "sha256": "c498c05515a756b69ca125a13e2a27a877b1258dd9876a77db4875b3c52a97c3",
+      "path": "data\\backups\\features\\forecast_h5_signals.parquet"
+    },
+    {
+      "rows": 8,
+      "columns": 17,
+      "date_min": "2026-01-05",
+      "date_max": "2026-07-07",
+      "sha256": "3ea540cb592a2b1e292afd8c3b953a44d117c6d2e4c1f8e5cba46a6d572e7a3f",
+      "path": "data\\backups\\features\\forecast_h5_subtrades.parquet"
+    },
+    {
+      "rows": 0,
+      "columns": 25,
+      "date_min": null,
+      "date_max": null,
+      "sha256": "310788bbf3723821074b29c343ae491d0bdbb76e60335bd3086d2a439769f813",
+      "path": "data\\backups\\features\\macro_indicators_monthly.parquet"
+    },
+    {
+      "rows": 0,
+      "columns": 11,
+      "date_min": null,
+      "date_max": null,
+      "sha256": "8848d2f18c8a312c9944a0e3571c9dd6d69bf4d51667736d7db57e1c5208322a",
+      "path": "data\\backups\\features\\macro_indicators_quarterly.parquet"
+    },
+    {
+      "rows": 28,
+      "columns": 26,
+      "date_min": "1970-01-01",
+      "date_max": "2026-07-07",
+      "sha256": "1d59197fe21a90be0a70505227fdde4d4e0d3877534aad223c326e81e84de6e8",
+      "path": "data\\backups\\features\\news_articles.parquet"
+    },
+    {
+      "rows": 2,
+      "columns": 7,
+      "date_min": "2026-07-05",
+      "date_max": "2026-07-07",
+      "sha256": "b79d66c370d7281a58a45e79b8242fb47d9cb354158d609c0a20382de342ab89",
+      "path": "data\\backups\\features\\news_feature_snapshots.parquet"
+    },
+    {
+      "rows": 0,
+      "columns": 19,
+      "date_min": null,
+      "date_max": null,
+      "sha256": "96264f51dc21d6820a27917ccf904cd50c7e3659bd49c364d4c05e47c97bdaa2",
+      "path": "data\\backups\\features\\weekly_analysis.parquet"
+    },
+    {
+      "rows": 10882,
+      "columns": 24,
+      "date_min": "1954-07-31",
+      "date_max": "2026-07-07",
+      "sha256": "3e503b284d4add4f7ee716aa669859a183dd928d6fcd04bcb4d9797ac8c748b5",
+      "path": "data\\backups\\seeds\\macro_indicators_daily_backup.parquet"
+    },
+    {
+      "rows": 138454,
+      "columns": 8,
+      "date_min": "2020-01-02",
+      "date_max": "2026-07-20",
+      "sha256": "a8e6c0fb45748646401887845a06d5cb934ec4d355f2b5d0f83d6b33b83e65f8",
+      "path": "data\\backups\\seeds\\usdcop_m5_ohlcv_backup.parquet"
+    },
+    {
+      "rows": 2392,
+      "columns": 9,
+      "date_min": "2020-01-01",
+      "date_max": "2026-07-19",
+      "sha256": "81b070d9d19d09c094cac91dbc28f742c893f51df20fb55321c1aa153a967b4b",
+      "path": "data\\snapshots\\public_daily\\btcusdt_daily.parquet"
+    },
+    {
+      "rows": 1643,
+      "columns": 9,
+      "date_min": "2020-01-02",
+      "date_max": "2026-07-17",
+      "sha256": "015679d00d0ae8e2ac111b01095b4d906a63415501d5d8f2a365efc02bb2cc7b",
+      "path": "data\\snapshots\\public_daily\\spx500_daily.parquet"
+    },
+    {
+      "rows": 1703,
+      "columns": 9,
+      "date_min": "2020-01-01",
+      "date_max": "2026-07-17",
+      "sha256": "37169a11d8f72108f331147b9767aa67394980229a9cdfc58397d2bd0f7df726",
+      "path": "data\\snapshots\\public_daily\\usdcop_daily.parquet"
+    },
+    {
+      "rows": 1645,
+      "columns": 9,
+      "date_min": "2020-01-02",
+      "date_max": "2026-07-17",
+      "sha256": "03c831733793e21c2d0230be2c7537796e1d3bfda8f271b86ce0f798ddfe9dc0",
+      "path": "data\\snapshots\\public_daily\\xauusd_daily.parquet"
+    }
+  ],
+  "decision": "REVIEW_REQUIRED",
+  "blockers": [
+    "public snapshots declare pit_vintage=false and promotion_eligible=false",
+    "provider credentials/connectivity and live backfill execution were not exercised in this offline audit",
+    "backup restore drill and remote/offsite durability are not evidenced locally"
+  ],
+  "manifests": [
+    {
+      "path": "seeds\\latest\\manifest.json",
+      "exists": true,
+      "declared": {
+        "version": "2026.01.23",
+        "created_at": "2026-01-23T00:51:57.978657+00:00",
+        "created_by": "complete_backup_script",
+        "description": "Complete database backup with corrected WTI data from Investing.com",
+        "wti_source": "investing.com (pair_id=8849)",
+        "tables": {
+          "macro_indicators_daily": {
+            "file": "macro_indicators_daily.parquet",
+            "rows": 10759,
+            "date_range": [
+              "1954-07-31",
+              "2026-01-22"
+            ],
+            "columns": 41,
+            "wti_records": 6691,
+            "size_bytes": 276644,
+            "sha256": "2de8aedb231525bf63d00cba25a124a76a5e31f1f3ced63446c882ce3dede649"
+          },
+          "usdcop_m5_ohlcv": {
+            "file": "usdcop_m5_ohlcv.parquet",
+            "rows": 91157,
+            "date_range": [
+              "2020-01-02",
+              "2026-01-15"
+            ],
+            "size_bytes": 2725690,
+            "sha256": "a3a4f1b5684f21258c1411bbee0ee1e298d1b32470a4b7c1e5dd3f413e324287"
+          }
+        }
+      }
+    },
+    {
+      "path": "data\\backups\\features\\feature_backup_manifest.json",
+      "exists": true,
+      "declared": {
+        "created_at": "2026-07-20T22:58:46.142193+00:00",
+        "tables": {
+          "news_articles": {
+            "status": "ok",
+            "rows": 28,
+            "sha256": "1d59197fe21a90be0a70505227fdde4d4e0d3877534aad223c326e81e84de6e8",
+            "latest": "2026-07-07 11:50:10+00:00",
+            "file": "news_articles.parquet"
+          },
+          "news_feature_snapshots": {
+            "status": "ok",
+            "rows": 2,
+            "sha256": "b79d66c370d7281a58a45e79b8242fb47d9cb354158d609c0a20382de342ab89",
+            "latest": "2026-07-07 00:00:00",
+            "file": "news_feature_snapshots.parquet"
+          },
+          "weekly_analysis": {
+            "status": "ok",
+            "rows": 0,
+            "sha256": "96264f51dc21d6820a27917ccf904cd50c7e3659bd49c364d4c05e47c97bdaa2",
+            "latest": null,
+            "file": "weekly_analysis.parquet"
+          },
+          "daily_analysis": {
+            "status": "ok",
+            "rows": 0,
+            "sha256": "fac021b745c3d3fdddc7820a40df1016f21b3d74db1b7ef1e990e83abed765a3",
+            "latest": null,
+            "file": "daily_analysis.parquet"
+          },
+          "forecast_h5_predictions": {
+            "status": "ok",
+            "rows": 18,
+            "sha256": "392d00ffd3fa62ec067a68809f2dc932bb47de2e848efb85748a868248a56712",
+            "latest": "2026-07-07 04:38:31.127306+00:00",
+            "file": "forecast_h5_predictions.parquet"
+          },
+          "forecast_h5_signals": {
+            "status": "ok",
+            "rows": 10,
+            "sha256": "c498c05515a756b69ca125a13e2a27a877b1258dd9876a77db4875b3c52a97c3",
+            "latest": "2026-07-07 00:00:00",
+            "file": "forecast_h5_signals.parquet"
+          },
+          "forecast_h5_executions": {
+            "status": "ok",
+            "rows": 8,
+            "sha256": "df3421d2b4e9ec99493101cc4d4d07983fb92cc61aa41c41f4a6c16d173156db",
+            "latest": "2026-07-05 22:54:54.605434+00:00",
+            "file": "forecast_h5_executions.parquet"
+          },
+          "forecast_h5_subtrades": {
+            "status": "ok",
+            "rows": 8,
+            "sha256": "3ea540cb592a2b1e292afd8c3b953a44d117c6d2e4c1f8e5cba46a6d572e7a3f",
+            "latest": "2026-07-05 22:54:54.605434+00:00",
+            "file": "forecast_h5_subtrades.parquet"
+          },
+          "forecast_h5_paper_trading": {
+            "status": "ok",
+            "rows": 8,
+            "sha256": "cd9ed2c2702dd3830606382025c0b360e626c10bf2bf940d143e11ed8cee20ae",
+            "latest": "2026-07-05 22:54:54.605434+00:00",
+            "file": "forecast_h5_paper_trading.parquet"
+          },
+          "asset_daily_ohlcv": {
+            "status": "ok",
+            "rows": 10358,
+            "sha256": "e23f3d3f574a9533796f8f5f0cbf7f0cf08848f3fee8622c50680ed735b05fae",
+            "latest": "2026-07-21 21:00:00+00:00",
+            "file": "asset_daily_ohlcv.parquet"
+          },
+          "crypto_derivatives_daily": {
+            "status": "ok",
+            "rows": 2506,
+            "sha256": "b7a5eced299e127421daba40b2b01c7aae96fb8b785217abe5e7d5e9b17a5508",
+            "latest": "2026-07-20 00:00:00",
+            "file": "crypto_derivatives_daily.parquet"
+          },
+          "macro_indicators_monthly": {
+            "status": "ok",
+            "rows": 0,
+            "sha256": "310788bbf3723821074b29c343ae491d0bdbb76e60335bd3086d2a439769f813",
+            "latest": null,
+            "file": "macro_indicators_monthly.parquet"
+          },
+          "macro_indicators_quarterly": {
+            "status": "ok",
+            "rows": 0,
+            "sha256": "8848d2f18c8a312c9944a0e3571c9dd6d69bf4d51667736d7db57e1c5208322a",
+            "latest": null,
+            "file": "macro_indicators_quarterly.parquet"
+          },
+          "audit_log": {
+            "status": "ok",
+            "rows": 30,
+            "sha256": "f4ae737acc434a5966ef98f917db5d3fc73ce8d9b9adc3f7288f575af8677591",
+            "latest": "2026-07-20 20:47:05.630970+00:00",
+            "file": "audit_log.parquet"
+          }
+        }
+      }
+    },
+    {
+      "path": "data\\backups\\seeds\\backup_manifest.json",
+      "exists": true,
+      "declared": {
+        "backup_timestamp": "2026-07-20T22:59:08Z",
+        "ohlcv": {
+          "file": "usdcop_m5_ohlcv_backup.parquet",
+          "rows": 138454,
+          "symbols": [
+            "BTC/USDT",
+            "USD/BRL",
+            "USD/COP",
+            "USD/MXN",
+            "XAU/USD"
+          ],
+          "date_range": [
+            "2020-01-02",
+            "2026-07-20"
+          ],
+          "size_bytes": 4435497,
+          "sha256": "a8e6c0fb45748646401887845a06d5cb934ec4d355f2b5d0f83d6b33b83e65f8"
+        },
+        "macro": {
+          "file": "macro_indicators_daily_backup.parquet",
+          "rows": 10882,
+          "date_range": [
+            "1954-07-31",
+            "2026-07-07"
+          ],
+          "size_bytes": 215641,
+          "sha256": "3e503b284d4add4f7ee716aa669859a183dd928d6fcd04bcb4d9797ac8c748b5",
+          "skipped": false
+        }
+      }
+    },
+    {
+      "path": "data\\snapshots\\public_daily\\btcusdt_manifest.json",
+      "exists": true,
+      "declared": {
+        "schema_version": 1,
+        "asset_id": "btcusdt",
+        "ticker": "BTC-USD",
+        "source": "yahoo_finance_public_adapter",
+        "retrieved_at": "2026-07-20T23:24:51.735776+00:00",
+        "start": "2020-01-01",
+        "end": "2026-07-20",
+        "rows": 2392,
+        "data_path": "data\\snapshots\\public_daily\\btcusdt_daily.parquet",
+        "sha256": "81b070d9d19d09c094cac91dbc28f742c893f51df20fb55321c1aa153a967b4b",
+        "availability_policy": "reconstructed_close_plus_conservative_lag",
+        "pit_vintage": false,
+        "promotion_eligible": false,
+        "reason": "Public adapter lacks historical provider revision vintages."
+      }
+    },
+    {
+      "path": "data\\snapshots\\public_daily\\spx500_manifest.json",
+      "exists": true,
+      "declared": {
+        "schema_version": 1,
+        "asset_id": "spx500",
+        "ticker": "SPY",
+        "source": "yahoo_finance_public_adapter",
+        "retrieved_at": "2026-07-20T23:24:52.384907+00:00",
+        "start": "2020-01-01",
+        "end": "2026-07-20",
+        "rows": 1643,
+        "data_path": "data\\snapshots\\public_daily\\spx500_daily.parquet",
+        "sha256": "015679d00d0ae8e2ac111b01095b4d906a63415501d5d8f2a365efc02bb2cc7b",
+        "availability_policy": "reconstructed_close_plus_conservative_lag",
+        "pit_vintage": false,
+        "promotion_eligible": false,
+        "reason": "Public adapter lacks historical provider revision vintages."
+      }
+    },
+    {
+      "path": "data\\snapshots\\public_daily\\usdcop_manifest.json",
+      "exists": true,
+      "declared": {
+        "schema_version": 1,
+        "asset_id": "usdcop",
+        "ticker": "COP=X",
+        "source": "yahoo_finance_public_adapter",
+        "retrieved_at": "2026-07-20T23:24:49.936591+00:00",
+        "start": "2020-01-01",
+        "end": "2026-07-20",
+        "rows": 1703,
+        "data_path": "data\\snapshots\\public_daily\\usdcop_daily.parquet",
+        "sha256": "37169a11d8f72108f331147b9767aa67394980229a9cdfc58397d2bd0f7df726",
+        "availability_policy": "reconstructed_close_plus_conservative_lag",
+        "pit_vintage": false,
+        "promotion_eligible": false,
+        "reason": "Public adapter lacks historical provider revision vintages."
+      }
+    },
+    {
+      "path": "data\\snapshots\\public_daily\\xauusd_manifest.json",
+      "exists": true,
+      "declared": {
+        "schema_version": 1,
+        "asset_id": "xauusd",
+        "ticker": "GC=F",
+        "source": "yahoo_finance_public_adapter",
+        "retrieved_at": "2026-07-20T23:24:51.196567+00:00",
+        "start": "2020-01-01",
+        "end": "2026-07-20",
+        "rows": 1645,
+        "data_path": "data\\snapshots\\public_daily\\xauusd_daily.parquet",
+        "sha256": "03c831733793e21c2d0230be2c7537796e1d3bfda8f271b86ce0f798ddfe9dc0",
+        "availability_policy": "reconstructed_close_plus_conservative_lag",
+        "pit_vintage": false,
+        "promotion_eligible": false,
+        "reason": "Public adapter lacks historical provider revision vintages."
+      }
+    }
+  ]
+}

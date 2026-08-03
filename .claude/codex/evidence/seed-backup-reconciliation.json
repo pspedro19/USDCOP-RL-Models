@@ -1,0 +1,81 @@
+{
+  "generated_at_utc": "2026-07-21T00:04:46.603492+00:00",
+  "read_only": true,
+  "pairs": [
+    {
+      "dataset": "usdcop_m5",
+      "seed": "seeds\\latest\\usdcop_m5_ohlcv.parquet",
+      "backup": "data\\backups\\seeds\\usdcop_m5_ohlcv_backup.parquet",
+      "seed_sha256": "0686b01d48198947ffb52b01b461b0ff1b59f34d302dbad7909f409426c46c44",
+      "backup_sha256": "a8e6c0fb45748646401887845a06d5cb934ec4d355f2b5d0f83d6b33b83e65f8",
+      "seed_rows": 96900,
+      "backup_rows": 138454,
+      "common_timestamps": 96900,
+      "seed_only_timestamps": 0,
+      "backup_only_timestamps": 25833,
+      "seed_start_utc": "2020-01-02T08:00:00+00:00",
+      "seed_end_utc": "2026-07-16T12:55:00+00:00",
+      "backup_start_utc": "2020-01-02T08:00:00+00:00",
+      "backup_end_utc": "2026-07-20T22:40:00+00:00",
+      "seed_duplicate_timestamps": 0,
+      "backup_duplicate_timestamps": 15721,
+      "invalid_timestamps": 0,
+      "columns_seed_only": [],
+      "columns_backup_only": [
+        "source"
+      ],
+      "timezone_normalized": true,
+      "status": "REVIEW_REQUIRED"
+    },
+    {
+      "dataset": "macro_daily",
+      "seed": "seeds\\latest\\macro_indicators_daily.parquet",
+      "backup": "data\\backups\\seeds\\macro_indicators_daily_backup.parquet",
+      "seed_sha256": "38b866541bfc677b6b5c472245229cd49fa2f611cae48f067d85a32c5a2a1091",
+      "backup_sha256": "3e503b284d4add4f7ee716aa669859a183dd928d6fcd04bcb4d9797ac8c748b5",
+      "seed_rows": 10866,
+      "backup_rows": 10882,
+      "common_timestamps": 10860,
+      "seed_only_timestamps": 6,
+      "backup_only_timestamps": 22,
+      "seed_start_utc": "1954-07-31T00:00:00+00:00",
+      "seed_end_utc": "2026-06-12T00:00:00+00:00",
+      "backup_start_utc": "1954-07-31T00:00:00+00:00",
+      "backup_end_utc": "2026-07-07T00:00:00+00:00",
+      "seed_duplicate_timestamps": 0,
+      "backup_duplicate_timestamps": 0,
+      "invalid_timestamps": 0,
+      "columns_seed_only": [
+        "crsk_sentiment_cci_col_m_cci",
+        "crsk_sentiment_ici_col_m_ici",
+        "ffilled_from_date",
+        "ftrd_exports_total_col_m_expusd",
+        "ftrd_imports_total_col_m_impusd",
+        "ftrd_terms_trade_col_m_tot",
+        "fxrt_reer_bilateral_col_m_itcr",
+        "gdpp_real_gdp_usa_q_gdp_q",
+        "infl_cpi_all_usa_m_cpiaucsl",
+        "infl_cpi_core_usa_m_cpilfesl",
+        "infl_cpi_total_col_m_ipccol",
+        "infl_pce_usa_m_pcepi",
+        "labr_unemployment_usa_m_unrate",
+        "mnys_m2_supply_usa_m_m2sl",
+        "polr_fed_funds_usa_m_fedfunds",
+        "prod_industrial_usa_m_indpro",
+        "release_date",
+        "rsbp_current_account_col_q_cacct",
+        "rsbp_fdi_outflow_col_a_idce",
+        "rsbp_reserves_international_col_m_resint",
+        "sent_consumer_usa_m_umcsent"
+      ],
+      "columns_backup_only": [
+        "ffill_count",
+        "fxrt_spot_usdcop_col_d_usdcop",
+        "is_complete",
+        "source_date"
+      ],
+      "timezone_normalized": true,
+      "status": "REVIEW_REQUIRED"
+    }
+  ]
+}

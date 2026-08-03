@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "cycle": "2026",
+  "checks": {
+    "statistics_audit": false,
+    "pit_vintages": false,
+    "oos_evidence": false,
+    "promotion_eligible": false
+  },
+  "ready": false,
+  "decision": "NO-GO",
+  "reason": "No se puede afirmar rentabilidad ni reentrenamiento listo sin PIT, OOS y promoción por activo."
+}

@@ -1,0 +1,377 @@
+{
+  "date": "2026-07-30",
+  "moves": [
+    {
+      "from": ".claude/codex/.pytest-manifests-2238",
+      "to": ".claude/codex/_runtime/.pytest-manifests-2238",
+      "how": "mv",
+      "frontmatter": "n/a (dir)"
+    },
+    {
+      "from": ".claude/codex/ACQUISITION-BACKUP-BACKFILL-AUDIT-2026-07-20.md",
+      "to": ".claude/codex/audits/ACQUISITION-BACKUP-BACKFILL-AUDIT-2026-07-20.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/ACQUISITION-BACKUPS-AUDIT-2026-07-20.md",
+      "to": ".claude/codex/audits/ACQUISITION-BACKUPS-AUDIT-2026-07-20.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/ADMIN-OPERATIONS-AUDIT.md",
+      "to": ".claude/codex/audits/ADMIN-OPERATIONS-AUDIT.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/ADR-PROHIBITIONS-VERIFICATION-2026-07-21.md",
+      "to": ".claude/codex/audits/ADR-PROHIBITIONS-VERIFICATION-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/AI-SECURITY-AUDIT.md",
+      "to": ".claude/codex/audits/AI-SECURITY-AUDIT.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/analyze_public_snapshots.py",
+      "to": ".claude/codex/_runtime/analyze_public_snapshots.py",
+      "how": "mv",
+      "frontmatter": "n/a"
+    },
+    {
+      "from": ".claude/codex/BACKLOG.md",
+      "to": ".claude/codex/plans/BACKLOG.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/BILLING-RBAC-VALIDATION-LOG.md",
+      "to": ".claude/codex/logs/BILLING-RBAC-VALIDATION-LOG.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/BLOCKER-RECONCILIATION-PLAN.md",
+      "to": ".claude/codex/plans/BLOCKER-RECONCILIATION-PLAN.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/BLOCKER-REMEDIATION-REGISTER-2026-07-21.md",
+      "to": ".claude/codex/plans/BLOCKER-REMEDIATION-REGISTER-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/CANONICAL-MARKET-DEEP-AUDIT-2026-07-21.md",
+      "to": ".claude/codex/audits/CANONICAL-MARKET-DEEP-AUDIT-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/CHECKPOINT-VALIDATION-LIFECYCLE.md",
+      "to": ".claude/codex/governance/CHECKPOINT-VALIDATION-LIFECYCLE.md",
+      "how": "mv",
+      "frontmatter": "kind specification->roadmap, status PROPOSED->PLANNED"
+    },
+    {
+      "from": ".claude/codex/COMMERCE-BLOCKERS-RESOLVED.md",
+      "to": ".claude/codex/audits/COMMERCE-BLOCKERS-RESOLVED.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/COMMERCE-IDENTITY-BILLING-AUDIT.md",
+      "to": ".claude/codex/audits/COMMERCE-IDENTITY-BILLING-AUDIT.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/COMMERCE-RBAC-HARNESS-LOG.md",
+      "to": ".claude/codex/logs/COMMERCE-RBAC-HARNESS-LOG.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/DATA-DESCRIPTIVE-MACRO-AUDIT.md",
+      "to": ".claude/codex/audits/DATA-DESCRIPTIVE-MACRO-AUDIT.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/DATA-FEATURE-STATISTICS-AUDIT.md",
+      "to": ".claude/codex/audits/DATA-FEATURE-STATISTICS-AUDIT.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/DATA-GRANULARITY-INVENTORY-2026-07-21.md",
+      "to": ".claude/codex/inventories/DATA-GRANULARITY-INVENTORY-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/DEFINITIVE-BLOCKER-RESOLUTION-PLAN.md",
+      "to": ".claude/codex/plans/DEFINITIVE-BLOCKER-RESOLUTION-PLAN.md",
+      "how": "mv",
+      "frontmatter": "kind strategy-plan->roadmap, status BLOCKED_EXTERNAL_INPUTS->PAUSED"
+    },
+    {
+      "from": ".claude/codex/EVIDENCE-QUANT-REPORT-2026-07-20.md",
+      "to": ".claude/codex/audits/EVIDENCE-QUANT-REPORT-2026-07-20.md",
+      "how": "mv",
+      "frontmatter": "kind evidence->audit, status FAILED->HISTORICAL"
+    },
+    {
+      "from": ".claude/codex/EVIDENCE-REPORT-2026-07-20.md",
+      "to": ".claude/codex/audits/EVIDENCE-REPORT-2026-07-20.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/FINAL-RELEASE-STATUS-2026-07-21.md",
+      "to": ".claude/codex/logs/FINAL-RELEASE-STATUS-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/FINAL-VERIFICATION-2026-07-20.md",
+      "to": ".claude/codex/audits/FINAL-VERIFICATION-2026-07-20.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/FRONTEND-DEPENDENCY-AUDIT-2026-07-21.md",
+      "to": ".claude/codex/audits/FRONTEND-DEPENDENCY-AUDIT-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/FRONTEND-NEWS-CART-AUDIT.md",
+      "to": ".claude/codex/audits/FRONTEND-NEWS-CART-AUDIT.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/frontmatter-20260728-2126.xml",
+      "to": ".claude/codex/_runtime/frontmatter-20260728-2126.xml",
+      "how": "mv",
+      "frontmatter": "n/a"
+    },
+    {
+      "from": ".claude/codex/frontmatter-20260728-2235.xml",
+      "to": ".claude/codex/_runtime/frontmatter-20260728-2235.xml",
+      "how": "mv",
+      "frontmatter": "n/a"
+    },
+    {
+      "from": ".claude/codex/FUNCTIONAL-COMMERCE-RBAC-LOG.md",
+      "to": ".claude/codex/logs/FUNCTIONAL-COMMERCE-RBAC-LOG.md",
+      "how": "mv",
+      "frontmatter": "kind implementation-log->audit, status IN_PROGRESS->PARTIAL"
+    },
+    {
+      "from": ".claude/codex/HARNESS-ENGINEERING-STATUS.md",
+      "to": ".claude/codex/logs/HARNESS-ENGINEERING-STATUS.md",
+      "how": "mv",
+      "frontmatter": "kind evidence->audit, status NO-GO->PAUSED"
+    },
+    {
+      "from": ".claude/codex/MARKET-DATA-AUDIT-STATUS-2026-07-20.md",
+      "to": ".claude/codex/logs/MARKET-DATA-AUDIT-STATUS-2026-07-20.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/MASTER-VALIDATION-GAP-MATRIX-2026-07-20.md",
+      "to": ".claude/codex/inventories/MASTER-VALIDATION-GAP-MATRIX-2026-07-20.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/MODEL-MARKETPLACE-SPEC.md",
+      "to": ".claude/codex/proposals/MODEL-MARKETPLACE-SPEC.md",
+      "how": "mv",
+      "frontmatter": "kind specification->roadmap, status PROPOSED->PLANNED"
+    },
+    {
+      "from": ".claude/codex/monitor-delta-20260728-2123",
+      "to": ".claude/codex/_runtime/monitor-delta-20260728-2123",
+      "how": "mv",
+      "frontmatter": "n/a (dir)"
+    },
+    {
+      "from": ".claude/codex/NEWS-SOURCE-INVENTORY-2026-07-21.md",
+      "to": ".claude/codex/inventories/NEWS-SOURCE-INVENTORY-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/NEWS-WEEKLY-CLOSE-EVIDENCE-2026-07-21.md",
+      "to": ".claude/codex/audits/NEWS-WEEKLY-CLOSE-EVIDENCE-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/PERFORMANCE-SLO-SPEC.md",
+      "to": ".claude/codex/proposals/PERFORMANCE-SLO-SPEC.md",
+      "how": "mv",
+      "frontmatter": "kind specification->roadmap, status PROPOSED->PLANNED"
+    },
+    {
+      "from": ".claude/codex/PNL-ADVERSARIAL-REVIEW-USDCOP-2026-07-21.md",
+      "to": ".claude/codex/audits/PNL-ADVERSARIAL-REVIEW-USDCOP-2026-07-21.md",
+      "how": "git mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/PRODUCTION-HARNESS.md",
+      "to": ".claude/codex/governance/PRODUCTION-HARNESS.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/PRODUCTION-UNBLOCK-PLAN.md",
+      "to": ".claude/codex/plans/PRODUCTION-UNBLOCK-PLAN.md",
+      "how": "mv",
+      "frontmatter": "kind release-plan->roadmap, status NO-GO->PAUSED"
+    },
+    {
+      "from": ".claude/codex/PUBLIC-SNAPSHOT-STATISTICAL-AUDIT.md",
+      "to": ".claude/codex/audits/PUBLIC-SNAPSHOT-STATISTICAL-AUDIT.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/public_snapshot_stats.json",
+      "to": ".claude/codex/_runtime/public_snapshot_stats.json",
+      "how": "mv",
+      "frontmatter": "n/a"
+    },
+    {
+      "from": ".claude/codex/pytest-bl34-monitor-20260728-2121",
+      "to": ".claude/codex/_runtime/pytest-bl34-monitor-20260728-2121",
+      "how": "mv",
+      "frontmatter": "n/a (dir)"
+    },
+    {
+      "from": ".claude/codex/QUALITY-HARNESS-SPEC.md",
+      "to": ".claude/codex/proposals/QUALITY-HARNESS-SPEC.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/QUANTITATIVE-UNBLOCK-LOG.md",
+      "to": ".claude/codex/logs/QUANTITATIVE-UNBLOCK-LOG.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/RBAC-CART-AUDIT-2026-07-20.md",
+      "to": ".claude/codex/audits/RBAC-CART-AUDIT-2026-07-20.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/RELEASE-REHEARSAL-LOG.md",
+      "to": ".claude/codex/logs/RELEASE-REHEARSAL-LOG.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/ROBUST-FORECASTING-STRATEGY-PLAN-2026-07-21.md",
+      "to": ".claude/codex/plans/ROBUST-FORECASTING-STRATEGY-PLAN-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/SECURITY-ASSURANCE-SPEC.md",
+      "to": ".claude/codex/proposals/SECURITY-ASSURANCE-SPEC.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/SECURITY-PENTEST-RESULT-2026-07-21.md",
+      "to": ".claude/codex/audits/SECURITY-PENTEST-RESULT-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/SEED-BACKUP-RECONCILIATION-2026-07-20.md",
+      "to": ".claude/codex/audits/SEED-BACKUP-RECONCILIATION-2026-07-20.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/SKILLS-CATALOG-AUDIT-2026-07-21.md",
+      "to": ".claude/codex/audits/SKILLS-CATALOG-AUDIT-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/SKILLS-EXPANSION-2026-07-21.md",
+      "to": ".claude/codex/inventories/SKILLS-EXPANSION-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/SKILLS-GOVERNANCE.md",
+      "to": ".claude/codex/governance/SKILLS-GOVERNANCE.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/SKILLS-INSTALLED-2026-07-21.md",
+      "to": ".claude/codex/inventories/SKILLS-INSTALLED-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/SP500-INTEGRATION-LOG.md",
+      "to": ".claude/codex/logs/SP500-INTEGRATION-LOG.md",
+      "how": "mv",
+      "frontmatter": "kind implementation-log->audit, status IN_PROGRESS->PARTIAL"
+    },
+    {
+      "from": ".claude/codex/SP500-OOS-GATE.md",
+      "to": ".claude/codex/audits/SP500-OOS-GATE.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/SPEC-FINDINGS-2026-07-20.md",
+      "to": ".claude/codex/audits/SPEC-FINDINGS-2026-07-20.md",
+      "how": "git mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/TRACEABILITY-MATRIX.md",
+      "to": ".claude/codex/governance/TRACEABILITY-MATRIX.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/UX-MOBILE-AUDIT.md",
+      "to": ".claude/codex/audits/UX-MOBILE-AUDIT.md",
+      "how": "mv",
+      "frontmatter": "ok"
+    },
+    {
+      "from": ".claude/codex/VOLATILITY-FIRST-DATA-UNLOCK-2026-07-21.md",
+      "to": ".claude/codex/audits/VOLATILITY-FIRST-DATA-UNLOCK-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    },
+    {
+      "from": ".claude/codex/WEEKLY-NEWS-AGENTS-STATUS-2026-07-21.md",
+      "to": ".claude/codex/logs/WEEKLY-NEWS-AGENTS-STATUS-2026-07-21.md",
+      "how": "mv",
+      "frontmatter": "added"
+    }
+  ]
+}

@@ -22,7 +22,7 @@ code_anchors:
   ✓ Redactar el informe con front matter kind: audit y verificar cifras/citas locales
   • Escribir el archivo solicitado y ejecutar controles finales
 codex
-No pude crear `.claude/codex/PNL-ADVERSARIAL-REVIEW-USDCOP-2026-07-21.md`: el sandbox es de solo lectura y rechazó `apply_patch` con `writing is blocked by read-only sandbox`. Confirmé que no quedó un archivo parcial.
+No pude crear `.claude/codex/audits/PNL-ADVERSARIAL-REVIEW-USDCOP-2026-07-21.md`: el sandbox es de solo lectura y rechazó `apply_patch` con `writing is blocked by read-only sandbox`. Confirmé que no quedó un archivo parcial.
 
 La revisión completa quedó calculada:
 
@@ -35,7 +35,7 @@ La revisión completa quedó calculada:
 No se ejecutó ninguna variante adicional: 2025 siguió tratado como contaminado, v11 permaneció FROZEN y N continúa en 59. Para persistir el informe hace falta reabrir la tarea con acceso de escritura al workspace.
 tokens used
 228,903
-No pude crear `.claude/codex/PNL-ADVERSARIAL-REVIEW-USDCOP-2026-07-21.md`: el sandbox es de solo lectura y rechazó `apply_patch` con `writing is blocked by read-only sandbox`. Confirmé que no quedó un archivo parcial.
+No pude crear `.claude/codex/audits/PNL-ADVERSARIAL-REVIEW-USDCOP-2026-07-21.md`: el sandbox es de solo lectura y rechazó `apply_patch` con `writing is blocked by read-only sandbox`. Confirmé que no quedó un archivo parcial.
 
 La revisión completa quedó calculada:
 

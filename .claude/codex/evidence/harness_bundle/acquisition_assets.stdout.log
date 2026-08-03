@@ -1,0 +1,13 @@
+{
+  "decision": "REVIEW_REQUIRED",
+  "methods": {
+    "twelvedata": true,
+    "mt5": true,
+    "bcrp": true,
+    "suameca": true,
+    "scraping": true,
+    "public_adapter": true
+  },
+  "artifacts": 33,
+  "blockers": 3
+}

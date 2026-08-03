@@ -1,0 +1,15 @@
+{
+  "decision": "NO-GO",
+  "output": "C:\\Users\\pedro\\OneDrive\\Documents\\ALGO TRADING\\USDCOP-RL-Models\\.claude\\codex\\evidence\\harness-latest.json",
+  "gates": {
+    "commerce-contracts": "PASS",
+    "rbac-contracts": "PASS",
+    "news-safety": "PASS",
+    "quantitative-contracts": "PASS",
+    "market-data-statistics": "BLOCKED",
+    "acquisition-assets": "BLOCKED",
+    "acquisition-manifests": "BLOCKED",
+    "real-data-oos": "BLOCKED",
+    "provider-e2e": "BLOCKED"
+  }
+}

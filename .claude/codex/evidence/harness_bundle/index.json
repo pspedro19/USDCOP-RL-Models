@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-21T00:04:48.649577+00:00",
+  "runs": [
+    {
+      "name": "market_statistics",
+      "command": "C:\\Users\\pedro\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\python.exe scripts/analysis/audit_market_data_statistics.py",
+      "returncode": 0,
+      "stdout": "market_statistics.stdout.log",
+      "stderr": "market_statistics.stderr.log"
+    },
+    {
+      "name": "acquisition_assets",
+      "command": "C:\\Users\\pedro\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\python.exe scripts/analysis/audit_acquisition_assets.py",
+      "returncode": 0,
+      "stdout": "acquisition_assets.stdout.log",
+      "stderr": "acquisition_assets.stderr.log"
+    },
+    {
+      "name": "reconciliation",
+      "command": "C:\\Users\\pedro\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\python.exe scripts/analysis/reconcile_seed_backups.py",
+      "returncode": 0,
+      "stdout": "reconciliation.stdout.log",
+      "stderr": "reconciliation.stderr.log"
+    },
+    {
+      "name": "manifest_validation",
+      "command": "C:\\Users\\pedro\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\python.exe scripts/validation/validate_acquisition_manifests.py",
+      "returncode": 0,
+      "stdout": "manifest_validation.stdout.log",
+      "stderr": "manifest_validation.stderr.log"
+    },
+    {
+      "name": "harness",
+      "command": "C:\\Users\\pedro\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\\python.exe .claude/codex/harness/harness_engine.py --no-tests",
+      "returncode": 1,
+      "stdout": "harness.stdout.log",
+      "stderr": "harness.stderr.log"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\acquisition_assets.stderr.log",
+      "sha256": "85975fde45e10f8bec2a2dc31306b4a2291ab5c205b05d33724cfdc24abf818e",
+      "bytes": 363
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\acquisition_assets.stdout.log",
+      "sha256": "3b9aeb90ab0c0c7244cd6dfa1cae510596caac965691e3a5d1e63bf139aa828f",
+      "bytes": 234
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\harness.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\harness.stdout.log",
+      "sha256": "859e47fab9cc27759385b43454b63ed4bf7823b69170126f981800c4c518e4f6",
+      "bytes": 500
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\index.json",
+      "sha256": "4fc4e6ede5a5852080962e3ead8fc7effd1fb99c133201199f290b867c91c899",
+      "bytes": 4349
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\manifest_validation.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\manifest_validation.stdout.log",
+      "sha256": "7cb3cf5588a78c9e7c24d589581d83814a043e71c4be2a38e477765d3194b9a0",
+      "bytes": 169
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\market_statistics.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\market_statistics.stdout.log",
+      "sha256": "be2dcd56b5ef0582877b5b0d625c182104dd75063cb499e596e494746dffa5dc",
+      "bytes": 196
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\README.md",
+      "sha256": "ecd0862e9e7e5668014c552947bf0ed8c6c431c3e765c4e79475bee39f7f354f",
+      "bytes": 1414
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\reconciliation.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": ".claude\\codex\\evidence\\harness_bundle\\reconciliation.stdout.log",
+      "sha256": "7ea32fd56201513a133cd750bef1a057cdeaabd3fb8d3b7cead090d3ffe19fb1",
+      "bytes": 248
+    }
+  ]
+}
