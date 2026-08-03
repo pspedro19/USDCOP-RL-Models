@@ -25,7 +25,7 @@ const SESSION_COOKIE = 'next-auth.session-token';
 
 // Defaults mirror the docker-compose GUEST_BOOTSTRAP_* fallbacks so host-dev
 // (npm run dev against the compose SignalBridge) works without a .env edit.
-const GUEST_EMAIL = process.env.GUEST_BOOTSTRAP_EMAIL || 'guest@demo.local';
+const GUEST_EMAIL = process.env.GUEST_BOOTSTRAP_EMAIL || 'guest@demo.usdcop.ai';
 const GUEST_PASSWORD = process.env.GUEST_BOOTSTRAP_PASSWORD || 'Guest2026!';
 
 /** Decode a JWT payload without verifying (SignalBridge just issued it — trusted). */

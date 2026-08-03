@@ -353,6 +353,11 @@ class NewsIntelligenceEngine:
         Delegates to SentimentAnalyzer (hybrid ensemble) when available.
         Falls back to legacy GDELT tone + VADER.
         """
+        # GDELT tone is authoritative when supplied, including exact zero.
+        # Hybrid sentiment must not override the provider's neutral score.
+        if gdelt_tone is not None:
+            return max(-1.0, min(1.0, gdelt_tone / 10.0))
+
         # Try hybrid SentimentAnalyzer
         analyzer = getattr(self, "_sentiment_analyzer", None)
         if analyzer is not None:
@@ -366,9 +371,6 @@ class NewsIntelligenceEngine:
                 pass
 
         # GDELT tone fallback (already -1 to +1 range approximately)
-        if gdelt_tone is not None and gdelt_tone != 0:
-            return max(-1.0, min(1.0, gdelt_tone / 10.0))
-
         # VADER / keyword fallback
         try:
             from src.news_engine.enrichment.sentiment import analyze_sentiment

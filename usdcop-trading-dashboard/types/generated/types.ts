@@ -10,6 +10,16 @@
 
 import { z } from 'zod';
 
+// Compatibility aliases emitted by the shared-schema generator.  The previous
+// generator leaked Python typing names into TypeScript; keep the wire contract
+// explicit and JSON-safe until the canonical generator is upgraded.
+type List = unknown[];
+type Optional = unknown;
+type SignalType = string;
+type TradeSide = 'buy' | 'sell' | string;
+type TradeStatus = string;
+type DataSource = string;
+
 // =============================================================================
 // FEATURE TYPES
 // =============================================================================
@@ -339,4 +349,3 @@ export interface ModelsResponseSchema {
   /** Total model count */
   total: number;
 }
-

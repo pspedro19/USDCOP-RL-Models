@@ -1,0 +1,26 @@
+{
+  "experiment_id": "usdcop_intraday_latam_lead_v1",
+  "registered_at_utc": "2026-07-22T20:20:14.033322+00:00",
+  "config_path": "config/forecast_experiments/usdcop_intraday_latam_lead_v1.yaml",
+  "config_sha256": "8891c47624100050d56285e5e18b1fb16a90d6c7a08d01773d28eaed9625ac46",
+  "data_sha256": {
+    "deep_price": "b569b416630e4f88a7b2696ca3a23e3d393b59632176790ef295c39fb3ff1171",
+    "current_price": "04c33106173b129ee3239a76854d21c2f6f6bcfec523b5679c7f7497340f831e",
+    "peer_hourly": "0741c7ba10bb53958e0a1fef1d4c172d7ecd5afc2653616331edf19111ef019e"
+  },
+  "code_sha256": {
+    "feature_builder": "ac310f40124857cca43e2e617fc86b30eba91ffaac8d78e568a9ce7f1ebba137",
+    "audit_script": "acfc0afe3067784a2e72161f1af3a84fbb742c4799213aa6e970b3a4a76667f1"
+  },
+  "primary_period": "robustness_2023_2024",
+  "primary_comparison": "price_plus_intraday_latam_minus_price_only",
+  "horizons_trading_days": [1, 5, 10, 15, 20, 25, 30],
+  "prior_directional_trials": 41,
+  "assigned_directional_trial_indices": [42, 43, 44, 45, 46, 47, 48],
+  "global_trials_before_opening_results": 102,
+  "confirmatory_family_size": 48,
+  "historical_2025_2026_outcomes_previously_inspected": true,
+  "no_outcome_dependent_tuning_after_this_registration": true,
+  "promotion_eligible": false,
+  "reason_not_promotion_eligible": "Hourly history is a reconstructed snapshot without first-seen vintages; 2025-2026 are not fresh OOS. Only a future immutable shadow can confirm the family."
+}

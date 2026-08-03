@@ -50,6 +50,34 @@ TD_KEYS = [os.environ.get(f"TWELVEDATA_API_KEY_{i}") for i in range(1, 9)]
 TD_KEYS = [k for k in TD_KEYS if k]
 _key_last: dict[str, list[float]] = {}
 
+# Twelve Data timestamps identify when a bar OPENS, not when it closes.  The
+# REST endpoint can return the still-forming bar, so ingestion must wait until
+# the full interval plus a conservative vendor-publication buffer has elapsed.
+BAR_DURATION = {
+    "5min": timedelta(minutes=5),
+    "1h": timedelta(hours=1),
+    "4h": timedelta(hours=4),
+    "1day": timedelta(days=1),
+}
+BAR_COMPLETION_BUFFER = timedelta(minutes=5)
+
+
+def bar_complete_after(ts: datetime, interval: str) -> datetime:
+    """Earliest admissible availability for a finalized Twelve Data candle."""
+    if interval == "1month":
+        if ts.month == 12:
+            end = ts.replace(year=ts.year + 1, month=1, day=1)
+        else:
+            end = ts.replace(month=ts.month + 1, day=1)
+        return end + BAR_COMPLETION_BUFFER
+    if interval not in BAR_DURATION:
+        raise ValueError(f"Unsupported Twelve Data interval: {interval}")
+    return ts + BAR_DURATION[interval] + BAR_COMPLETION_BUFFER
+
+
+def bar_is_complete(ts: datetime, interval: str, observed_at: datetime) -> bool:
+    return observed_at >= bar_complete_after(ts, interval)
+
 
 def _td_key() -> str:
     """Round-robin key whose 60s window has the fewest hits (8/min/key hard cap)."""
@@ -118,6 +146,101 @@ def _upsert(cur, table: str, rows: list[tuple], cols: str, conflict: str) -> int
     return cur.rowcount
 
 
+def _upsert_native_with_partial_repair(
+    cur, rows: list[tuple], interval: str,
+) -> int:
+    """Insert native bars and repair legacy rows captured before candle close.
+
+    Rows that were first captured after the completion boundary remain
+    immutable. Only objectively impossible early captures are replaceable.
+    """
+    from psycopg2.extras import execute_values
+    if not rows:
+        return 0
+    if interval == "1month":
+        invalid_existing = """
+            asset_native_ohlcv.available_at
+              < date_trunc('month', asset_native_ohlcv.time)
+                + INTERVAL '1 month 5 minutes'
+        """
+    else:
+        duration = BAR_DURATION[interval] + BAR_COMPLETION_BUFFER
+        minutes = int(duration.total_seconds() // 60)
+        invalid_existing = f"""
+            asset_native_ohlcv.available_at
+              < asset_native_ohlcv.time + INTERVAL '{minutes} minutes'
+        """
+    sql = f"""
+        INSERT INTO asset_native_ohlcv
+          (time, symbol, tf, open, high, low, close, volume, source, available_at)
+        VALUES %s
+        ON CONFLICT (time, symbol, tf) DO UPDATE SET
+          open = EXCLUDED.open,
+          high = EXCLUDED.high,
+          low = EXCLUDED.low,
+          close = EXCLUDED.close,
+          volume = EXCLUDED.volume,
+          source = EXCLUDED.source,
+          available_at = EXCLUDED.available_at
+        WHERE {invalid_existing}
+    """
+    execute_values(cur, sql, rows, page_size=2000)
+    return cur.rowcount
+
+
+def _upsert_m5_with_partial_repair(cur, rows: list[tuple]) -> int:
+    """Repair only Twelve Data M5 rows provably captured while still forming."""
+    from psycopg2.extras import execute_values
+    if not rows:
+        return 0
+    minutes = int(
+        (BAR_DURATION["5min"] + BAR_COMPLETION_BUFFER).total_seconds() // 60
+    )
+    sql = f"""
+        INSERT INTO usdcop_m5_ohlcv
+          (time, symbol, open, high, low, close, volume, source, available_at)
+        VALUES %s
+        ON CONFLICT (time, symbol) DO UPDATE SET
+          open = EXCLUDED.open,
+          high = EXCLUDED.high,
+          low = EXCLUDED.low,
+          close = EXCLUDED.close,
+          volume = EXCLUDED.volume,
+          source = EXCLUDED.source,
+          available_at = EXCLUDED.available_at
+        WHERE usdcop_m5_ohlcv.source LIKE 'twelvedata%%'
+          AND usdcop_m5_ohlcv.available_at
+              < usdcop_m5_ohlcv.time + INTERVAL '{minutes} minutes'
+    """
+    execute_values(cur, sql, rows, page_size=2000)
+    return cur.rowcount
+
+
+def _upsert_daily_with_partial_repair(cur, rows: list[tuple]) -> int:
+    """Repair exact-timestamp Twelve Data daily rows captured before day end."""
+    from psycopg2.extras import execute_values
+    if not rows:
+        return 0
+    sql = """
+        INSERT INTO asset_daily_ohlcv
+          (time, symbol, open, high, low, close, volume, source, available_at)
+        VALUES %s
+        ON CONFLICT (time, symbol) DO UPDATE SET
+          open = EXCLUDED.open,
+          high = EXCLUDED.high,
+          low = EXCLUDED.low,
+          close = EXCLUDED.close,
+          volume = EXCLUDED.volume,
+          source = EXCLUDED.source,
+          available_at = EXCLUDED.available_at
+        WHERE asset_daily_ohlcv.source LIKE 'twelvedata%%'
+          AND asset_daily_ohlcv.available_at
+              < asset_daily_ohlcv.time + INTERVAL '1 day 5 minutes'
+    """
+    execute_values(cur, sql, rows, page_size=2000)
+    return cur.rowcount
+
+
 def _cop_session_ok(ts: datetime) -> bool:
     lt = ts.astimezone(BOG)
     return lt.weekday() < 5 and dtime(8, 0) <= lt.time() <= dtime(12, 55)
@@ -129,15 +252,21 @@ def td_series(conn, symbol: str, interval: str, start: date, end: date,
     """Paginate [start, end) in windows, validate, upsert, manifest each window."""
     cur = conn.cursor()
     src = source or f"twelvedata_{interval}_backfill"
-    existing_dates: set = set()
+    existing_dates: dict[date, list[tuple[datetime, str, datetime]]] = {}
     if table == "asset_daily_ohlcv":
         # Daily bars are date-identified but hour-stamped inconsistently across feeds
         # (seed 21:00/22:00 UTC vs backfill 00:00): ON CONFLICT(time,symbol) cannot see a
         # same-date/different-hour twin, which duplicated XAU 2026-07-21 and broke the
         # wide-no-invention invariant. Dedupe by UTC DATE here, not by instant.
-        cur.execute("SELECT DISTINCT (time AT TIME ZONE 'UTC')::date "
-                    "FROM asset_daily_ohlcv WHERE symbol=%s", (symbol,))
-        existing_dates = {r[0] for r in cur.fetchall()}
+        cur.execute(
+            "SELECT (time AT TIME ZONE 'UTC')::date, time, source, available_at "
+            "FROM asset_daily_ohlcv WHERE symbol=%s",
+            (symbol,),
+        )
+        for bar_date, bar_time, bar_source, available_at in cur.fetchall():
+            existing_dates.setdefault(bar_date, []).append(
+                (bar_time, bar_source, available_at)
+            )
     total_new = 0
     w0 = start
     while w0 < end:
@@ -155,6 +284,7 @@ def td_series(conn, symbol: str, interval: str, start: date, end: date,
             continue
         vals = r.get("values") or []
         payload = json.dumps(vals, sort_keys=True).encode()
+        retrieved_at = datetime.now(UTC)
         rows = []
         for v in vals:
             dt = v["datetime"]
@@ -163,30 +293,38 @@ def td_series(conn, symbol: str, interval: str, start: date, end: date,
                           float(v["low"]), float(v["close"]))
             if not _coherent(o, h, l, c):
                 continue
+            if not bar_is_complete(ts, interval, retrieved_at):
+                continue
             if session_filter and not session_filter(ts):
                 continue
             vol = float(v.get("volume") or 0)
             if table == "asset_native_ohlcv":
                 rows.append((ts, symbol, tf_label, o, h, l, c, vol, src,
-                             datetime.now(UTC)))
+                             retrieved_at))
             elif table == "asset_daily_ohlcv":
-                if ts.astimezone(UTC).date() in existing_dates:
+                same_date = existing_dates.get(ts.astimezone(UTC).date(), [])
+                repairable_exact = any(
+                    old_time == ts
+                    and (old_source or "").startswith("twelvedata")
+                    and old_available < bar_complete_after(old_time, "1day")
+                    for old_time, old_source, old_available in same_date
+                )
+                if same_date and not repairable_exact:
                     continue
-                rows.append((ts, symbol, o, h, l, c, vol, src, datetime.now(UTC)))
+                rows.append((ts, symbol, o, h, l, c, vol, src, retrieved_at))
             else:  # usdcop_m5_ohlcv
-                rows.append((ts, symbol, o, h, l, c, int(vol), src, datetime.now(UTC)))
+                rows.append((ts, symbol, o, h, l, c, int(vol), src, retrieved_at))
         if table == "asset_native_ohlcv":
-            n = _upsert(cur, table, rows,
-                        "time, symbol, tf, open, high, low, close, volume, source, available_at",
-                        "time, symbol, tf")
+            if interval in ("1h", "4h", "1month"):
+                n = _upsert_native_with_partial_repair(cur, rows, interval)
+            else:
+                n = _upsert(cur, table, rows,
+                            "time, symbol, tf, open, high, low, close, volume, source, available_at",
+                            "time, symbol, tf")
         elif table == "asset_daily_ohlcv":
-            n = _upsert(cur, table, rows,
-                        "time, symbol, open, high, low, close, volume, source, available_at",
-                        "time, symbol")
+            n = _upsert_daily_with_partial_repair(cur, rows)
         else:
-            n = _upsert(cur, table, rows,
-                        "time, symbol, open, high, low, close, volume, source, available_at",
-                        "time, symbol")
+            n = _upsert_m5_with_partial_repair(cur, rows)
         _manifest(cur, "twelvedata", symbol, tf_label or interval, w0, w1,
                   len(vals), n, int((_time.time() - t0) * 1000), "UTC", payload)
         conn.commit()
@@ -290,7 +428,11 @@ def catchup(conn) -> None:
                           tf_label=tf, window_days=400)
         d0 = last("asset_daily_ohlcv", sym)
         if d0:
-            td_series(conn, sym, "1day", d0, today_plus, "asset_daily_ohlcv",
+            # Twelve Data's daily start_date can behave as an exclusive bound.
+            # Re-open one extra date; date-level dedupe keeps valid vintages
+            # immutable while allowing the immediately prior partial bar to heal.
+            td_series(conn, sym, "1day", d0 - timedelta(days=1), today_plus,
+                      "asset_daily_ohlcv",
                       window_days=400, source="twelvedata_daily_deep")
         d0 = last("asset_native_ohlcv", sym, "1month")
         if d0:

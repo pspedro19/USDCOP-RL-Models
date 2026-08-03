@@ -8,7 +8,7 @@ import { protectApiRoute } from '@/lib/auth/api-auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Validate authentication (SKIP_AUTH=true bypasses auth for development)
   const skipAuth = process.env.SKIP_AUTH === 'true';
@@ -19,7 +19,7 @@ export async function GET(
     }
   }
 
-  const proposalId = params.id;
+  const { id: proposalId } = await params;
 
   try {
     // Get experiment details

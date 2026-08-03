@@ -43,6 +43,7 @@ from airflow.operators.python import PythonOperator
 sys.path.insert(0, "/opt/airflow")
 
 from contracts.dag_registry import CONTROL_SYSTEM_HEALTH, get_dag_tags
+from src.contracts.h5_strategy_identity import H5_PRODUCTION_STRATEGY_ID
 
 logger = logging.getLogger(__name__)
 
@@ -288,14 +289,22 @@ def evaluate_pnl_clock(**context):
         conn = _get_db_connection()
         try:
             cur = conn.cursor()
+            # El JOIN va por (signal_date, strategy_id), NO solo por signal_date:
+            # migracion 064 hizo estas tablas multi-estrategia, asi que `USING
+            # (signal_date)` empareja el live de v11 con el paper de v12 en cuanto
+            # exista una segunda estrategia — un tracking error inventado.
             cur.execute(
                 """
                 SELECT e.week_pnl_pct, p.week_pnl_pct
                 FROM forecast_h5_executions e
-                JOIN forecast_h5_paper_trading p USING (signal_date)
+                JOIN forecast_h5_paper_trading p
+                  ON p.signal_date = e.signal_date
+                 AND p.strategy_id = e.strategy_id
                 WHERE e.week_pnl_pct IS NOT NULL AND e.status = 'closed'
+                  AND e.strategy_id = %s
                 ORDER BY e.signal_date
-                """
+                """,
+                (H5_PRODUCTION_STRATEGY_ID,),
             )
             rows = cur.fetchall()
             if rows:
@@ -303,7 +312,9 @@ def evaluate_pnl_clock(**context):
                 paper = np.array([r[1] for r in rows], dtype=float) / 100.0
             cur.execute(
                 "SELECT running_sharpe FROM forecast_h5_paper_trading "
-                "ORDER BY signal_date DESC LIMIT 1"
+                "WHERE strategy_id = %s "
+                "ORDER BY signal_date DESC LIMIT 1",
+                (H5_PRODUCTION_STRATEGY_ID,),
             )
             row = cur.fetchone()
             rolling_sharpe = float(row[0]) if row and row[0] is not None else None

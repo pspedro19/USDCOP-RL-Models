@@ -26,7 +26,11 @@ _meta:
   experiment_id: "xauusd_model_zoo_v1"
   description: "XAU/USD 9-model model zoo (17 features + DXY/VIX, weekday market)"
   created_at: "2026-07-12"
-  status: "production"
+  status: "research_only"
+  product_class: "diagnostic_forecast"
+  signal_authorized: false
+  target: "realized_volatility_and_magnitude"
+  direction_usage: "display_only"
 
 # =============================================================================
 # ASSET IDENTITY / DISPLAY (per-asset metadata consumed by the generator)

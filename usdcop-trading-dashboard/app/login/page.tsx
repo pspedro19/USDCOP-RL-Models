@@ -109,7 +109,7 @@ export default function LoginPage() {
     return params.get('callbackUrl') || params.get('next') || '/hub';
   };
 
-  // Sesión demo rol free (guest@demo.local, is_test) — el endpoint hace el login
+  // Sesión demo rol free (guest@demo.usdcop.ai, is_test) — el endpoint hace el login
   // SERVER-SIDE con las credenciales GUEST_BOOTSTRAP_* y mintea las mismas cookies
   // que el proxy de login (next-auth.session-token + sb-token). Sin captcha: no
   // viajan credenciales del usuario (ver app/api/auth/guest/route.ts).

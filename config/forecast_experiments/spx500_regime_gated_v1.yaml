@@ -1,0 +1,43 @@
+experiment_id: SPX500-REGIME-001
+asset_id: spx500
+strategy_id: spx500_regime_gated_v1
+pipeline_type: forecasting
+timeframe: daily
+data:
+  provider_symbol: SPY
+  seed_file: seeds/latest/spx500_daily_ohlcv.parquet
+  point_in_time: true
+  available_at_required: true
+features:
+  profile: spx500_v1
+  causal_lag_bars: 1
+  breadth: [breadth_ma200, breadth_ma8, distribution_days_25]
+  macro: [VIXCLS, NFCI, BAMLH0A0HYM2, T10Y2Y]
+validation:
+  train_start: '1995-01-01'
+  train_end: '2018-12-31'
+  validation_start: '2019-01-01'
+  validation_end: '2021-12-31'
+  test_start: '2022-01-01'
+  test_end: '2026-12-31'
+  purged_kfold: true
+  embargo_days: 5
+  cpcv: true
+  pbo: true
+  deflated_sharpe: true
+  benchmarks: [SPY_TOTAL_RETURN, MA200, VOL_TARGET_10, SIXTY_FORTY]
+costs:
+  commission_bps: 1.0
+  slippage_bps: 2.0
+  stress_multipliers: [1.0, 2.0, 3.0]
+promotion:
+  status: blocked_until_real_data
+  min_oos_sharpe: 0.5
+  min_oos_return_pct: 0.0
+  max_drawdown_pct: 25.0
+  required_gates: [data_pit, leakage, purged_cv, pbo, dsr, costs, benchmark, paper]
+retraining:
+  schedule: monthly
+  lookback_years: 10
+  champion_challenger: true
+  rollback_on_drift: true

@@ -7,6 +7,7 @@ import type { NewsClusterOutput, NewsArticleRef } from '@/lib/contracts/weekly-a
 import { useGmLang, useGmT } from '@/lib/i18n/gm-core';
 import { GM, GMT, type GmTone } from '@/lib/ui/gm-tokens';
 import { GmBadge } from '@/components/gm';
+import { safeExternalUrl } from '@/lib/security/safe-url';
 
 import { ANALYSIS_DICT } from './gm-analysis';
 
@@ -221,12 +222,13 @@ function ClusterItem({ cluster }: { cluster: NewsClusterOutput }) {
 }
 
 function ArticleRow({ article }: { article: NewsArticleRef }) {
+  const safeUrl = safeExternalUrl(article.url);
   return (
     <div className={`flex items-start gap-2 ${GMT.meta}`}>
       <div className="flex-1 min-w-0">
-        {article.url ? (
+        {safeUrl ? (
           <a
-            href={article.url}
+            href={safeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className={`${GM.text} hover:text-[var(--gm-accent)] transition-colors duration-[var(--gm-dur-fast)] inline-flex items-center gap-1 ${GM.focus} rounded`}

@@ -30,7 +30,7 @@ export interface AnalysisAsset {
   /** Label shown in the selector. */
   display_name: string;
   /** fx | commodity | crypto — used only for grouping/icons. */
-  asset_class: string;
+  asset_class: 'fx' | 'commodity' | 'crypto' | 'equity_index';
   /** /forecasting rendering mode (model-zoo vs weekly-inference). */
   forecast_mode: ForecastMode;
 }
@@ -43,6 +43,7 @@ export const ANALYSIS_ASSETS: AnalysisAsset[] = [
   { asset_id: 'usdcop', symbol: 'USD/COP', chart_symbol: 'USDCOP', display_name: 'USD/COP', asset_class: 'fx', forecast_mode: 'model_zoo' },
   { asset_id: 'xauusd', symbol: 'XAU/USD', chart_symbol: 'XAUUSD', display_name: 'Oro (Gold)', asset_class: 'commodity', forecast_mode: 'model_zoo' },
   { asset_id: 'btcusdt', symbol: 'BTC/USDT', chart_symbol: 'BTCUSDT', display_name: 'Bitcoin', asset_class: 'crypto', forecast_mode: 'model_zoo' },
+  { asset_id: 'spx500', symbol: 'SPX500', chart_symbol: 'SPX500', display_name: 'S&P 500', asset_class: 'equity_index', forecast_mode: 'model_zoo' },
 ];
 
 /** Default asset when none is specified (backward-compatible with legacy COP-only URLs). */

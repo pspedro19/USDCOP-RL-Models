@@ -39,6 +39,21 @@ EXECUTABLE_DIRS = ("skills", "agents")
 # own state tables from the data profile.
 OPERATIONAL_DIRS = ("coordination",)
 
+# Ephemeral, gitignored runtime state. `coordination/tmp/` holds throwaway git worktrees for
+# parallel review lanes — each with its own `node_modules/`, so collection was pulling in
+# vendored package READMEs (`napi-build-utils/index.md`, `smart-buffer/docs/ROADMAP.md`) and
+# failing on them. They are not this repo's documents, they never reach CI (which checks out
+# clean), and the gate must not depend on whether a local worktree happens to exist.
+EPHEMERAL_DIRS = {"tmp", "node_modules", ".next", "__pycache__", ".pytest_cache", "_runtime"}
+EPHEMERAL_PREFIXES = (".pytest-",)
+
+
+def _is_ephemeral(path: Path) -> bool:
+    return any(
+        part in EPHEMERAL_DIRS or part.startswith(EPHEMERAL_PREFIXES)
+        for part in path.relative_to(CLAUDE).parts
+    )
+
 
 def _is_executable_def(path: Path) -> bool:
     rel = path.relative_to(CLAUDE)
@@ -62,11 +77,13 @@ def _is_definition_file(path: Path) -> bool:
     return False
 
 
-DOCS = [p for p in sorted(CLAUDE.rglob("*.md")) if not _is_executable_def(p)]
-EXECUTABLES = [p for p in sorted(CLAUDE.rglob("*.md")) if _is_definition_file(p)]
+ALL_MD = [p for p in sorted(CLAUDE.rglob("*.md")) if not _is_ephemeral(p)]
+
+DOCS = [p for p in ALL_MD if not _is_executable_def(p)]
+EXECUTABLES = [p for p in ALL_MD if _is_definition_file(p)]
 # Supporting material inside a skill: checked lightly, not against the harness schema.
 SKILL_CONTENT = [
-    p for p in sorted(CLAUDE.rglob("*.md"))
+    p for p in ALL_MD
     if _is_executable_def(p) and not _is_definition_file(p)
 ]
 FM_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.S)

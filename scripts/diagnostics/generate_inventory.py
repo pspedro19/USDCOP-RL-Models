@@ -24,8 +24,8 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import os
 import re
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -203,23 +203,100 @@ def collect_migrations() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------- knowledge
-def collect_knowledge() -> dict[str, Any]:
-    c = ROOT / ".claude"
+KNOWLEDGE_INDEX_NAMES = {"readme.md", "index.md", "00-index.md", "00_index.md"}
+DEFINITION_FM_RE = re.compile(r"^---\s*\r?\n(.*?)\r?\n---\s*\r?\n", re.S)
+
+
+def _frontmatter_value(path: Path, key: str) -> str:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    match = DEFINITION_FM_RE.match(text)
+    if not match:
+        return ""
+    value_match = re.search(
+        rf"^{re.escape(key)}:\s*(.*?)\s*$",
+        match.group(1),
+        re.M,
+    )
+    if not value_match:
+        return ""
+    raw = value_match.group(1).strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] == '"':
+        try:
+            return str(json.loads(raw))
+        except json.JSONDecodeError:
+            return raw[1:-1]
+    if len(raw) >= 2 and raw[0] == raw[-1] == "'":
+        return raw[1:-1].replace("''", "'")
+    return raw
+
+
+def _live_spec_files(specs: Path) -> list[Path]:
+    if not specs.is_dir():
+        return []
+    files: list[Path] = []
+    for directory, dirnames, filenames in os.walk(specs, topdown=True):
+        parent = Path(directory)
+        rel = parent.relative_to(specs)
+        dirnames[:] = [
+            name
+            for name in dirnames
+            if not name.startswith(".")
+            and not (not rel.parts and name == "archive")
+        ]
+        files.extend(
+            parent / name
+            for name in filenames
+            if name.lower().endswith(".md")
+            and name.lower() not in KNOWLEDGE_INDEX_NAMES
+        )
+    return sorted(files)
+
+
+def collect_knowledge(root: Path = ROOT) -> dict[str, Any]:
+    c = root / ".claude"
+
     def _md(sub: str) -> list[str]:
         p = c / sub
         return sorted(f.relative_to(c).as_posix() for f in p.rglob("*.md")) if p.is_dir() else []
 
     rules = _md("rules")
-    specs = _md("specs")
-    skills = sorted(p.name for p in (c / "skills").iterdir()) if (c / "skills").is_dir() else []
-    agents = sorted(f.stem for f in (c / "agents").glob("*.md")) if (c / "agents").is_dir() else []
+    specs = _live_spec_files(c / "specs")
+    skill_files = (
+        sorted((c / "skills").glob("*/SKILL.md"))
+        if (c / "skills").is_dir()
+        else []
+    )
+    agent_files = (
+        sorted((c / "agents").glob("*.md"))
+        if (c / "agents").is_dir()
+        else []
+    )
+    skill_definitions = [
+        {
+            "name": _frontmatter_value(path, "name") or path.parent.name,
+            "path": path.relative_to(c).as_posix(),
+            "description": _frontmatter_value(path, "description"),
+        }
+        for path in skill_files
+    ]
+    agent_definitions = [
+        {
+            "name": _frontmatter_value(path, "name") or path.stem,
+            "path": path.relative_to(c).as_posix(),
+            "description": _frontmatter_value(path, "description"),
+        }
+        for path in agent_files
+    ]
     rules_bytes = sum((c / r).stat().st_size for r in rules)
     rules_words = sum(len((c / r).read_text(encoding="utf-8", errors="replace").split()) for r in rules)
     return {
         "rules": len(rules), "specs": len(specs),
-        "skills": len(skills), "agents": len(agents),
+        "skills": len(skill_definitions), "agents": len(agent_definitions),
         "rules_bytes": rules_bytes, "rules_words": rules_words,
-        "skill_names": skills, "agent_names": agents,
+        "skill_names": [item["name"] for item in skill_definitions],
+        "agent_names": [item["name"] for item in agent_definitions],
+        "skill_definitions": skill_definitions,
+        "agent_definitions": agent_definitions,
     }
 
 
@@ -229,26 +306,24 @@ def collect_workflows() -> dict[str, Any]:
     return {"count": len(files), "files": files}
 
 
-def collect_specs_tree() -> list[str]:
-    """One line per spec directory, with its file count — the navigation block."""
-    specs = ROOT / ".claude" / "specs"
+def collect_specs_tree(root: Path = ROOT) -> list[str]:
+    """One line per live spec directory, excluding indexes and archive."""
+    specs = root / ".claude" / "specs"
     if not specs.is_dir():
         return []
-    rows = []
-    for d in sorted(p for p in specs.rglob("*") if p.is_dir()):
-        rel_path = d.relative_to(specs)
-        rel = rel_path.as_posix()
-        # Filter on the RELATIVE parts: the absolute path contains `.claude`, so
-        # testing `d.parts` here silently excluded every directory in the tree.
-        if any(part.startswith(".") for part in rel_path.parts):
-            continue
-        n = len(list(d.glob("*.md")))
-        if n:
-            rows.append(f"{rel}/ ({n})")
-    top = len(list(specs.glob("*.md")))
-    if top:
-        rows.insert(0, f". ({top})")
-    return rows
+    counts: dict[Path, int] = {}
+    for path in _live_spec_files(specs):
+        counts[path.parent] = counts.get(path.parent, 0) + 1
+    return [
+        (
+            f"{'.' if directory == specs else directory.relative_to(specs).as_posix() + '/'} "
+            f"({count})"
+        )
+        for directory, count in sorted(
+            counts.items(),
+            key=lambda item: item[0].relative_to(specs).as_posix(),
+        )
+    ]
 
 
 # ------------------------------------------------------------------------ render
@@ -263,6 +338,49 @@ def build() -> dict[str, Any]:
         "workflows": collect_workflows(),
         "specs_tree": collect_specs_tree(),
     }
+
+
+def _brief_description(value: str, limit: int = 180) -> str:
+    value = " ".join(value.split())
+    if len(value) <= limit:
+        return value
+    shortened = value[: limit - 1].rsplit(" ", 1)[0]
+    return shortened.rstrip(".,;:") + "…"
+
+
+def _table_cell(value: str) -> str:
+    return value.replace("|", r"\|")
+
+
+def _render_capabilities(knowledge: dict[str, Any]) -> str:
+    lines = [
+        "### Agentes especializados (solo lectura)",
+        "",
+        "| Agente | Responsabilidad |",
+        "|---|---|",
+    ]
+    for item in knowledge["agent_definitions"]:
+        lines.append(
+            f"| [{_table_cell(item['name'])}]({item['path']}) | "
+            f"{_table_cell(_brief_description(item['description']))} |"
+        )
+    lines.extend(
+        [
+            "",
+            "<details>",
+            "<summary><strong>Skills operativas y de dominio</strong></summary>",
+            "",
+            "| Skill | Cuándo usarla |",
+            "|---|---|",
+        ]
+    )
+    for item in knowledge["skill_definitions"]:
+        lines.append(
+            f"| [{_table_cell(item['name'])}]({item['path']}) | "
+            f"{_table_cell(_brief_description(item['description']))} |"
+        )
+    lines.extend(["", "</details>"])
+    return "\n".join(lines)
 
 
 def render(key: str, inv: dict[str, Any]) -> str:
@@ -283,6 +401,8 @@ def render(key: str, inv: dict[str, Any]) -> str:
     if key == "knowledge":
         return (f"**{k['rules']} rules** (~{k['rules_words']:,} palabras auto-cargadas) · "
                 f"**{k['specs']} specs** · **{k['skills']} skills** · **{k['agents']} agents**")
+    if key == "capabilities":
+        return _render_capabilities(k)
     if key == "specs_tree":
         return "```\n" + "\n".join(inv["specs_tree"]) + "\n```"
     raise KeyError(f"unknown inventory key: {key}")
@@ -320,10 +440,52 @@ def apply_markers(text: str, inv: dict[str, Any]) -> tuple[str, list[str]]:
     return MARKER_RE.sub(_sub, text), keys
 
 
+# Estado runtime gitignorado: `coordination/tmp/` guarda worktrees desechables de los
+# carriles de review en paralelo, cada uno con su propia COPIA de `CLAUDE.md` y
+# `.claude/README.md`. Reescribir los bloques generados dentro de esos clones no arregla
+# nada — se borran — pero sí hacía fallar `--check` en local con "stale inventory block"
+# de ficheros que ni siquiera son de este árbol. CI nunca los ve porque hace checkout limpio.
+EPHEMERAL_PARTS = {"tmp", "node_modules", ".next", "__pycache__", ".pytest_cache", "_runtime"}
+EPHEMERAL_PREFIXES = (".pytest-",)
+MARKER_EXCLUDED_PREFIXES = (
+    ".claude/archive",
+    ".claude/codex/_runtime",
+    ".claude/coordination",
+    ".claude/evidence",
+    ".claude/specs/archive",
+)
+
+
+def _is_ephemeral(path: Path) -> bool:
+    rel = path.relative_to(ROOT).as_posix()
+    if any(
+        rel == prefix or rel.startswith(prefix + "/")
+        for prefix in MARKER_EXCLUDED_PREFIXES
+    ):
+        return True
+    return any(
+        part in EPHEMERAL_PARTS or part.startswith(EPHEMERAL_PREFIXES)
+        for part in path.relative_to(ROOT).parts
+    )
+
+
 def target_files() -> list[Path]:
     out = [ROOT / "CLAUDE.md"]
     c = ROOT / ".claude"
-    out += sorted(c.rglob("*.md"))
+    if c.is_dir():
+        for directory, dirnames, filenames in os.walk(c, topdown=True):
+            parent = Path(directory)
+            dirnames[:] = [
+                name
+                for name in dirnames
+                if not _is_ephemeral(parent / name)
+            ]
+            out.extend(
+                parent / name
+                for name in filenames
+                if name.lower().endswith(".md")
+                and not _is_ephemeral(parent / name)
+            )
     return [p for p in out if p.is_file()]
 
 

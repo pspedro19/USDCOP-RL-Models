@@ -1,22 +1,5 @@
-"""Data-quality validators (CTR-DQ-OHLCV-001).
+"""Versioned data-quality decisions and quarantine contracts."""
 
-Asset-parameterized OHLCV seed validation (weekday coverage, bars/period, calendar gaps, tz-of-close,
-OHLC integrity) driven by the ``AssetProfile.session`` SSOT. See ``ohlcv_validators`` for details.
-"""
-from .ohlcv_validators import (
-    ERROR,
-    WARN,
-    OHLCVValidationError,
-    OHLCVValidationReport,
-    ValidationIssue,
-    validate_ohlcv_seed,
-)
+from src.data_quality.rules import QualityDecision, QualityRuleSet
 
-__all__ = [
-    "validate_ohlcv_seed",
-    "OHLCVValidationReport",
-    "OHLCVValidationError",
-    "ValidationIssue",
-    "ERROR",
-    "WARN",
-]
+__all__ = ["QualityDecision", "QualityRuleSet"]

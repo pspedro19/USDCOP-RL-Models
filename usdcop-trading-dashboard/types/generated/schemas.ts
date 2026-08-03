@@ -30,19 +30,19 @@ export const NamedFeaturesV20Schema = z.object({
   usdmxn_change_1d: z.number(),
   position: z.number().min(-1).max(1),
   time_normalized: z.number().min(0).max(1),
-}});
+});
 
 export const ObservationSchemaSchema = z.object({
   values: z.unknown(),
   contract_version: z.string(),
-}});
+});
 
 export const NormalizationStatsSchemaSchema = z.object({
   mean: z.number(),
   std: z.number().gt(0),
   clip_min: z.number(),
   clip_max: z.number(),
-}});
+});
 
 // =============================================================================
 // TRADING SCHEMAS
@@ -55,7 +55,7 @@ export const CandlestickSchemaSchema = z.object({
   low: z.number().min(0),
   close: z.number().min(0),
   volume: z.unknown(),
-}});
+});
 
 export const TradeMetadataSchemaSchema = z.object({
   confidence: z.number().min(0).max(1),
@@ -66,7 +66,7 @@ export const TradeMetadataSchemaSchema = z.object({
   model_version: z.string(),
   norm_stats_version: z.string(),
   model_hash: z.unknown(),
-}});
+});
 
 export const TradeSchemaSchema = z.object({
   created_at: z.unknown(),
@@ -97,7 +97,7 @@ export const TradeSchemaSchema = z.object({
   max_favorable_excursion: z.unknown(),
   features_snapshot: z.unknown(),
   model_metadata: z.unknown(),
-}});
+});
 
 export const TradeSummarySchemaSchema = z.object({
   total_trades: z.number().int().min(0),
@@ -116,7 +116,7 @@ export const TradeSummarySchemaSchema = z.object({
   largest_win: z.unknown(),
   largest_loss: z.unknown(),
   avg_trade_duration_minutes: z.unknown(),
-}});
+});
 
 // =============================================================================
 // API SCHEMAS
@@ -127,12 +127,12 @@ export const BacktestRequestSchemaSchema = z.object({
   end_date: z.string(),
   model_id: z.string(),
   force_regenerate: z.boolean(),
-}});
+});
 
 export const InferenceRequestSchemaSchema = z.object({
   observation: z.unknown(),
   model_id: z.string(),
-}});
+});
 
 export const BacktestResponseSchemaSchema = z.object({
   success: z.boolean(),
@@ -142,7 +142,7 @@ export const BacktestResponseSchemaSchema = z.object({
   summary: z.unknown(),
   processing_time_ms: z.unknown(),
   date_range: z.unknown(),
-}});
+});
 
 export const HealthResponseSchemaSchema = z.object({
   status: z.string(),
@@ -150,12 +150,11 @@ export const HealthResponseSchemaSchema = z.object({
   model_loaded: z.boolean(),
   database_connected: z.boolean(),
   timestamp: z.string(),
-}});
+});
 
 export const ErrorResponseSchemaSchema = z.object({
   success: z.boolean(),
   error: z.string(),
   error_code: z.unknown(),
   details: z.unknown(),
-}});
-
+});

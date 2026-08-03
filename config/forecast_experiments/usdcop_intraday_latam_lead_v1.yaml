@@ -1,0 +1,147 @@
+_meta:
+  experiment_id: "usdcop_intraday_latam_lead_v1"
+  version: "1.0.0"
+  preregistered_at_utc: "2026-07-22T20:16:14Z"
+  status: "preregistered_research_only"
+  evidence_class: "retrospective_reconstructed_hourly_availability"
+  promotion_eligible: false
+  signal_authorized: false
+  prior_directional_trials: 41
+  directional_program_trial_indices: [42, 43, 44, 45, 46, 47, 48]
+
+hypothesis:
+  primary: >-
+    Price plus predecision intraday USD/MXN and USD/BRL information improves
+    paired weekly USD/COP directional hits over price-only without collapsing
+    either directional class.
+  treatment_variable: "include_intraday_latam_peer_features"
+  no_tuning_after_registration: true
+  primary_period: "robustness_2023_2024"
+  primary_metric: "paired_directional_accuracy_delta"
+  distinction_from_prior_daily_xlead: >-
+    This family uses completed hourly candles known by 13:30 Bogota, not prior
+    daily closes. It therefore tests a previously unavailable timing channel.
+
+data:
+  asset: "USD/COP"
+  decision_timezone: "America/Bogota"
+  preopen_time: "07:30"
+  decision_time: "13:30"
+  price_start: "2020-02-03"
+  evaluation_asof: "2026-07-21"
+  exclude_incomplete_current_iso_week: true
+  price_sources:
+    deep_path: "data/experiments/usdcop_intraday_latam_lead_v1/asset_daily_ohlcv.parquet"
+    deep_sha256: "b569b416630e4f88a7b2696ca3a23e3d393b59632176790ef295c39fb3ff1171"
+    current_path: "data/experiments/usdcop_intraday_latam_lead_v1/usdcop_daily_ohlcv.parquet"
+    current_sha256: "04c33106173b129ee3239a76854d21c2f6f6bcfec523b5679c7f7497340f831e"
+  peer_hourly_path: "data/experiments/usdcop_intraday_latam_lead_v1/asset_native_ohlcv.parquet"
+  peer_hourly_sha256: "0741c7ba10bb53958e0a1fef1d4c172d7ecd5afc2653616331edf19111ef019e"
+  peer_symbols: ["USD/MXN", "USD/BRL"]
+  source_timestamp_semantics: "bar_open"
+  reconstructed_availability: "bar_open_plus_1h_plus_5m"
+  maximum_snapshot_staleness_hours: 2
+  reject_recorded_partial_captures: true
+  initial_backfill_is_true_vintage: false
+
+protocol:
+  horizons_trading_days: [1, 5, 10, 15, 20, 25, 30]
+  origin_frequency: "last_available_session_per_completed_iso_week"
+  target: "close_t_plus_h_gt_close_t"
+  label_maturity_rule: "target_session_index_lte_origin_session_index"
+  threshold: 0.5
+  coverage: 1.0
+  periods:
+    robustness_2023_2024:
+      start: "2023-01-01"
+      end: "2024-12-31"
+      training_mode: "weekly_expanding_matured_labels"
+      role: "retrospective_primary_not_fresh_oos"
+    frozen_replay_2025:
+      start: "2025-01-01"
+      end: "2025-12-31"
+      training_mode: "frozen_pre_2025"
+      role: "pseudo_oos_not_fresh_after_program_discovery"
+    weekly_retrain_2026:
+      start: "2026-01-01"
+      end: "2026-12-31"
+      training_mode: "weekly_expanding_matured_labels"
+      role: "retrospective_forward_replay_through_asof"
+
+model:
+  family: "logistic_regression"
+  penalty: "l2"
+  c: 0.1
+  class_weight: "balanced"
+  max_iter: 2000
+  random_state: 23
+  imputer: "training_median"
+  scaler: "training_standard"
+
+features:
+  price:
+    - return_1d
+    - return_5d
+    - return_10d
+    - return_20d
+    - volatility_5d
+    - volatility_10d
+    - volatility_20d
+    - rsi_14d
+    - ma_ratio_20d
+    - ma_ratio_50d
+  intraday_latam:
+    - pit_intraday_mxn_preopen_log_return
+    - pit_intraday_brl_preopen_log_return
+    - pit_intraday_mxn_session_log_return
+    - pit_intraday_brl_session_log_return
+    - pit_intraday_latam_session_dispersion
+    - pit_intraday_latam_realized_vol_24h
+
+inference:
+  paired_models: ["price_only", "price_plus_intraday_latam"]
+  refit_schedule_2023_2024: "every_week"
+  refit_schedule_2025: "never_within_year"
+  refit_schedule_2026: "every_week"
+  minimum_mature_training_labels: 500
+
+statistics:
+  paired_test: "exact_two_sided_mcnemar"
+  overlap_robustness: "moving_block_bootstrap_on_paired_hit_delta"
+  bootstrap_samples: 5000
+  bootstrap_seed: 2311
+  block_length_weeks: "ceil(horizon_trading_days/5)"
+  sensitivity: "take_every_block_length_week"
+  multiple_testing: "holm_within_v1_and_bonferroni_across_all_directional_trials"
+  current_family_horizons: 7
+  confirmatory_family_size: 48
+  alpha: 0.05
+
+gates:
+  incremental_primary_per_horizon:
+    paired_da_delta_gt: 0.0
+    family_adjusted_mcnemar_p_lt: 0.05
+    block_bootstrap_ci_low_gt: 0.0
+    treatment_balanced_accuracy_gte: 0.52
+    treatment_minimum_class_recall_gte: 0.35
+    nonoverlap_da_delta_gte: 0.0
+  temporal_confirmation:
+    frozen_replay_2025_da_delta_gte: 0.0
+    frozen_replay_2025_directional_accuracy_gte: 0.52
+    frozen_replay_2025_balanced_accuracy_gte: 0.50
+    frozen_replay_2025_lift_vs_causal_majority_gte: 0.0
+    weekly_retrain_2026_is_diagnostic_until_matured_weeks: 26
+  consequence_if_gate_passes: >-
+    Enter a new immutable prospective shadow from the next unobserved ISO week.
+    Retrospective reconstruction never authorizes capital.
+  consequence_if_gate_fails: >-
+    Reject this intraday LatAm family and do not reformulate it after viewing
+    2023-2026 outcomes.
+
+outputs:
+  directory: "reports/usdcop_intraday_latam_lead_v1"
+  workbook: "usdcop_intraday_latam_lead_v1.xlsx"
+  predictions: "predictions.csv"
+  summary: "summary.csv"
+  paired_tests: "paired_tests.csv"
+  manifest: "manifest.json"

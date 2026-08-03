@@ -17,7 +17,7 @@ import path from 'path';
 import { getEntitlements } from '@/lib/auth/entitlements';
 
 const FC_DIR = path.join(process.cwd(), 'public', 'forecasting');
-const KNOWN_ASSET = /^(usdcop|xauusd|btcusdt)$/;
+const KNOWN_ASSET = /^(usdcop|xauusd|btcusdt|spx500)$/;
 
 /** Drop CSV rows whose `inference_date` is newer than (now - delayHours). Header preserved. */
 function applyCsvDelay(raw: string, delayHours: number): string {
@@ -54,11 +54,29 @@ function applyDelay(json: unknown, delayHours: number): unknown {
   return doc;
 }
 
+/** Apply the same entitlement delay to the USD/COP directional replay ledger. */
+function applyDirectionalReplayDelay(json: unknown, delayHours: number): unknown {
+  if (!delayHours || typeof json !== 'object' || json === null) return json;
+  const cutoff = Date.now() - delayHours * 3_600_000;
+  const doc = json as {
+    latest_week?: string;
+    weeks?: Array<{ iso_week?: string; origin_date?: string }>;
+  };
+  if (!Array.isArray(doc.weeks)) return json;
+  doc.weeks = doc.weeks.filter((week) => {
+    const timestamp = week.origin_date ? Date.parse(week.origin_date) : NaN;
+    return Number.isNaN(timestamp) || timestamp <= cutoff;
+  });
+  doc.latest_week = doc.weeks.length ? doc.weeks[doc.weeks.length - 1]?.iso_week : undefined;
+  return doc;
+}
+
 export async function GET(
   req: Request,
-  { params }: { params: { path: string[] } },
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  const segments = params.path ?? [];
+  const { path: routePath } = await params;
+  const segments = routePath ?? [];
   const leaf = segments.length ? segments[segments.length - 1] : '';
   const isCsv = leaf.endsWith('.csv');
   const isPng = leaf.endsWith('.png');
@@ -118,6 +136,8 @@ export async function GET(
     let doc = JSON.parse(raw);
     if (/weekly_inference_\d+\.json$/.test(leaf)) {
       doc = applyDelay(doc, ent.forecast_delay_hours);
+    } else if (leaf === 'directional_replay_index.json') {
+      doc = applyDirectionalReplayDelay(doc, ent.forecast_delay_hours);
     }
     return NextResponse.json(doc, { headers: { 'Cache-Control': 'private, max-age=60' } });
   } catch (err) {

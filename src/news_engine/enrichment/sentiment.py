@@ -43,6 +43,13 @@ def analyze_sentiment(
     Returns:
         (score, label) where score is [-1, 1] and label is pos/neg/neutral
     """
+    # GDELT tone is the authoritative provider score when present.  Do not let
+    # the hybrid keyword/LLM layer override it (especially zero, which must stay
+    # neutral); this also keeps ingestion deterministic and leakage-free.
+    if gdelt_tone is not None:
+        score = _normalize_gdelt_tone(gdelt_tone)
+        return score, _score_to_label(score)
+
     try:
         from src.analysis.sentiment_analyzer import get_analyzer
         analyzer = get_analyzer()

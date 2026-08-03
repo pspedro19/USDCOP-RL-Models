@@ -25,6 +25,7 @@ import logging
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 # Add paths for imports
@@ -38,9 +39,14 @@ from src.core.factories.macro_extractor_factory import (
 )
 from src.core.interfaces.macro_extractor import ExtractionResult
 
-# CRITICAL: Import strategies module to trigger decorator registration
-# This must happen BEFORE any factory.create_all_extractors() calls
-import services.macro_extraction_strategies  # noqa: F401 - imported for side effects
+# CRITICAL: Import the sibling strategies module to trigger decorator
+# registration.  ``services`` is also a top-level application package mounted
+# at /opt/airflow/services, so importing ``services.macro_*`` is ambiguous once
+# that package is cached.  Bind the DAG-local directory explicitly.
+_LOCAL_SERVICES = str(Path(__file__).resolve().parent)
+if _LOCAL_SERVICES not in sys.path:
+    sys.path.insert(0, _LOCAL_SERVICES)
+import macro_extraction_strategies  # noqa: F401,E402 - side-effect registration
 
 # Import contracts
 from contracts.l0_data_contracts import (

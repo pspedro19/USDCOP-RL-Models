@@ -81,7 +81,7 @@ class Settings(BaseSettings):
 
     # Bootstrap guest — shared demo account for "Explorar como invitado" (rol free,
     # is_test). Ensured at startup like the admin; password empty ⇒ disabled.
-    guest_bootstrap_email: str = Field(default="guest@demo.local")
+    guest_bootstrap_email: str = Field(default="guest@demo.usdcop.ai")
     guest_bootstrap_password: str | None = Field(default=None)
     guest_bootstrap_name: str = Field(default="Invitado")
 

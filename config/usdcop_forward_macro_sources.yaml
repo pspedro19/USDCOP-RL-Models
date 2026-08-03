@@ -1,0 +1,98 @@
+# Point-in-time forward-looking inputs for the USD/COP weekly forecasting track.
+# Companion SSOT to l0_macro_sources.yaml.  These series are intentionally kept
+# out of the legacy wide macro tables because their publication vintages must be
+# preserved row by row.
+version: "1.0.0"
+table: macro_indicators_pit
+output: data/pipeline/04_cleaning/output/USDCOP_FORWARD_MACRO_PIT.parquet
+
+global:
+  request_timeout_seconds: 90
+  retry_attempts: 4
+  retry_backoff_seconds: 1.0
+  rate_limit_delay_seconds: 0.10
+  user_agent: "USDCOP-Research-PIT/1.0 (official public data ingestion)"
+  timezone: America/Bogota
+  decision_hour: 16
+
+sources:
+  banrep_bulletins:
+    provider: suameca
+    base_url: "https://suameca.banrep.gov.co/estadisticas-economicas-back/rest/estadisticaEconomicaRestService"
+    endpoint: consultaBoletines
+
+  banrep_daily_forward:
+    provider: banrep
+    bulletin_type: DIARIO_MERCADO_FORWARD
+    native_frequency: daily
+    availability: official_pdf_creation_timestamp
+    fallback_availability: official_publication_date_end_of_day
+    first_observation: "2020-01-02"
+
+  # BanRep replaced the individual daily PDF series with a consolidated Excel
+  # workbook.  The workbook is revised in place, so the initial historical
+  # backfill is research-only.  Once the first local snapshot exists, every new
+  # observation or changed value is stored as a genuine first-seen vintage.
+  banrep_forward_history:
+    provider: banrep
+    url: "https://suameca.banrep.gov.co/archivos/sector_externo_tasas_cambio_derivados/mercado_derivados/series-historico-forward-desde-2016.xlsx"
+    native_frequency: daily
+    first_observation: "2016-01-01"
+    official_update_lag_business_days: 2
+    reconstructed_availability_lag_calendar_days: 5
+    initial_backfill_promotion_eligible: false
+    snapshot_policy: daily_immutable_first_seen
+
+  banrep_monthly_derivatives:
+    provider: banrep
+    bulletin_type: INFORME_OPERACIONES_DERIVADOS
+    native_frequency: monthly
+    availability: official_pdf_creation_timestamp
+    fallback_availability: observation_plus_45_calendar_days
+    first_observation: "2003-01-31"
+
+  banrep_eme:
+    provider: banrep
+    month_index_bulletin_type: RANKING_HISTORICO_ENCUESTA_MENSUAL_EXPECTATIVAS
+    native_frequency: monthly
+    candidate_base_urls:
+      - "https://www.banrep.gov.co/sites/default/files"
+      - "https://suameca.banrep.gov.co/archivos/encuestas/encuesta_mensual_expectativas_economicas_eme"
+    availability: official_workbook_modified_timestamp
+    fallback_availability: observation_month_end
+    first_observation: "2003-01-31"
+
+  sfc_socrata_468:
+    provider: sfc_open_data
+    dataset_id: qsvk-i22y
+    endpoint: "https://www.datos.gov.co/resource/qsvk-i22y.json"
+    native_frequency: monthly
+    first_observation: "2010-01-31"
+    last_observation: "2022-11-30"
+    conservative_release_lag_days: 45
+    promotion_eligible: false
+
+  sfc_formato_415:
+    provider: sfc
+    native_frequency: monthly
+    start_year: 2023
+    conservative_release_lag_days: 45
+    year_pages:
+      2023: "https://www.superfinanciera.gov.co/publicaciones/10114986/portafolio-de-inversion-detallado-2023/"
+      2024: "https://www.superfinanciera.gov.co/publicaciones/10115497/portafolio-de-inversion-detallado-2024/"
+      2025: "https://www.superfinanciera.gov.co/publicaciones/10116017/portafolio-de-inversion-detallado-2025/"
+      2026: "https://www.superfinanciera.gov.co/publicaciones/10097246/informes-y-cifrascifraspensiones-cesantias-y-fiduciariasinformacion-por-sector-pensiones-y-cesantiasregimen-de-ahorro-individual-con-solidaridad-fondos-de-pensiones-obligatoriasportafolio-de-inversionportafolio-de-inversion-detallado-10097246/"
+
+feature_contract:
+  join_key: available_at
+  join_direction: backward
+  decision_timezone: America/Bogota
+  decision_hour: 16
+  raw_levels_selectable: false
+  max_age_days:
+    daily: 10
+    monthly: 75
+  feature_selection_cutoff: "2024-01-01"
+  locked_oos_year: 2025
+  forward_validation_year: 2026
+  horizons_business_days: [1, 5, 10, 15, 20, 25, 30]

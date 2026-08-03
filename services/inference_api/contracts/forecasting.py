@@ -12,7 +12,7 @@ Frontend Zod schemas must match these definitions.
 
 from datetime import date
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -172,6 +172,115 @@ class DashboardResponse(BaseModel):
     consensus: list[dict[str, Any]]
     metrics: list[dict[str, Any]]
     last_update: str
+
+
+# ============================================================================
+# USD/COP CAUSAL DIRECTIONAL REPLAY
+# ============================================================================
+
+class DirectionalEvidence(BaseModel):
+    n: int = Field(..., ge=0)
+    directional_accuracy: float | None = Field(None, ge=0, le=1)
+    balanced_accuracy: float | None = Field(None, ge=0, le=1)
+    up_recall: float | None = Field(None, ge=0, le=1)
+    down_recall: float | None = Field(None, ge=0, le=1)
+    minimum_class_recall: float | None = Field(None, ge=0, le=1)
+    brier: float | None = Field(None, ge=0, le=1)
+    prediction_up_rate: float | None = Field(None, ge=0, le=1)
+    actual_up_rate: float | None = Field(None, ge=0, le=1)
+    up_count: int = Field(..., ge=0)
+    down_count: int = Field(..., ge=0)
+    raw_score: float | None = Field(None, ge=0, le=1)
+    shrunk_score: float | None = Field(None, ge=0, le=1)
+    eligible: bool
+
+
+class DirectionalHorizonForecast(BaseModel):
+    horizon_days: int = Field(..., gt=0)
+    role: str
+    target_date: date
+    target_date_estimated: bool
+    probability_up: float = Field(..., ge=0, le=1)
+    threshold: float = Field(..., ge=0, le=1)
+    prediction: Literal["UP", "DOWN"]
+    forecast_log_return: float
+    forecast_return_pct: float
+    forecast_price: float = Field(..., gt=0)
+    forecast_price_change: float
+    forecast_interval_lower: float = Field(..., gt=0)
+    forecast_interval_upper: float = Field(..., gt=0)
+    forecast_interval_level: float = Field(..., ge=0, le=1)
+    point_forecast_direction: Literal["UP", "DOWN"]
+    direction_price_agree: bool
+    point_forecast_clipped: bool
+    point_forecast_validation_eligible: bool
+    actual: Literal[0, 1] | None
+    actual_log_return: float | None
+    actual_price: float | None = Field(None, gt=0)
+    point_abs_error_price: float | None = Field(None, ge=0)
+    point_abs_error_pct: float | None = Field(None, ge=0)
+    hit: bool | None
+    train_count: int = Field(..., ge=0)
+    train_label_end: date | None
+    point_train_label_end: date | None
+    training_mode: str
+    model_family: str
+    feature_hash: str
+    validation_eligible: bool
+    evidence: DirectionalEvidence
+    eligible_for_direction: bool
+    selected: bool
+    selection_rank: int = Field(..., gt=0)
+
+
+class DirectionalReplayDecision(BaseModel):
+    direction: Literal["UP", "DOWN", "FLAT"]
+    action: Literal["LONG_USD_SHORT_COP", "SHORT_USD_LONG_COP", "FLAT"]
+    status: Literal["SHADOW", "ABSTAIN"]
+    signal_authorized: Literal[False]
+    promotion_gate_passed: bool
+    primary_horizon: int | None
+    confirmation_horizons: list[int]
+    selected_horizons: list[int]
+    confidence_proxy: float = Field(..., ge=0, le=1)
+    target_date: date | None
+    forecast_price: float | None = Field(None, gt=0)
+    forecast_return_pct: float | None
+    forecast_interval_lower: float | None = Field(None, gt=0)
+    forecast_interval_upper: float | None = Field(None, gt=0)
+    actual: Literal[0, 1] | None
+    hit: bool | None
+    rationale: str
+
+
+class DirectionalReplayWeek(BaseModel):
+    iso_week: str
+    year: int
+    origin_date: date
+    origin_is_partial_week: bool
+    base_price: float = Field(..., gt=0)
+    training_mode: str
+    regime: dict[str, Any]
+    decision: DirectionalReplayDecision
+    horizons: list[DirectionalHorizonForecast]
+    image_path: str
+
+
+class DirectionalReplayIndex(BaseModel):
+    schema_version: str
+    contract_hash: str
+    asset_id: Literal["usdcop"]
+    symbol: Literal["USD/COP"]
+    chart_symbol: Literal["USDCOP"]
+    generated_at: str
+    data_cutoff: date
+    latest_week: str
+    years: list[int]
+    methodology: dict[str, Any]
+    lineage: dict[str, dict[str, Any]]
+    models: dict[str, dict[str, Any]]
+    summaries: list[dict[str, Any]]
+    weeks: list[DirectionalReplayWeek]
 
 
 class WeekForecastResponse(BaseModel):

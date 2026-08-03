@@ -1,0 +1,120 @@
+_meta:
+  version: "1.0.0"
+  created_on: "2026-07-22"
+  purpose: "Predeclare what evidence is required before making an institutional USD/COP directional-model claim."
+  internal_standard_not_legal_advice: true
+
+claim_levels:
+  research_candidate:
+    permitted_language: "Exploratory historical candidate"
+    capital_authorized: false
+    requirements:
+      - reproducible_walk_forward_artifacts
+      - full_trial_count_disclosed
+      - leakage_and_point_in_time_limitations_disclosed
+
+  prospective_review_eligible:
+    permitted_language: "Prospectively monitored candidate eligible for independent review"
+    capital_authorized: false
+    minimum_elapsed_calendar_months: 12
+    minimum_all_origin_predictions: 252
+    minimum_selective_signals: 100
+    requirements:
+      - frozen_rule_before_first_observation
+      - append_only_prediction_and_outcome_ledgers
+      - exact_code_data_runtime_registration
+      - no_retroactive_commits
+      - no_model_selection_on_prospective_outcomes
+      - all_statistical_gates_pass
+      - all_limitations_and_failed_variants_disclosed
+
+  strong_directional_evidence:
+    permitted_language: "Prospective directional evidence with time-uniform or power-calibrated uncertainty"
+    capital_authorized: false
+    requirements:
+      - prospective_review_eligible
+      - independent_validation_signoff
+      - pesaran_timmermann_one_sided_p_le_0_05
+      - paired_lift_block_bootstrap_ci95_lower_gt_0
+      - paired_lift_one_sided_p_le_0_05
+      - time_uniform_lower_confidence_bound_da_gt_0_50_or_fixed_sample_power_ge_0_80
+      - minimum_balanced_accuracy_0_55
+      - minimum_up_recall_0_40
+      - minimum_down_recall_0_40
+      - brier_better_than_preregistered_causal_baseline
+      - no_single_prediction_class_rate_above_0_85
+      - stability_across_predeclared_market_regimes
+
+  execution_validated:
+    permitted_language: "Execution-tested paper strategy; not live track record"
+    capital_authorized: false
+    requirements:
+      - strong_directional_evidence
+      - timestamped_executable_bid_ask_at_decision
+      - immutable_fill_policy
+      - net_performance_after_spread_slippage_fees_and_financing
+      - positive_net_value_confidence_interval
+      - turnover_capacity_and_tail_stress
+      - gross_and_net_results_same_period_same_methodology
+
+  institutional_capital_candidate:
+    permitted_language: "Candidate for a separately governed capital-allocation decision"
+    automatic_capital_authorization: false
+    requirements:
+      - execution_validated
+      - independent_model_validation
+      - operational_resilience_and_recovery_test
+      - model_inventory_owner_and_challenger
+      - approved_limits_kill_switch_and_deterioration_policy
+      - compliance_review_of_all_performance_materials
+
+statistical_design:
+  primary_directional_null: "Directional independence / no positive paired lift over the causal majority baseline"
+  fixed_sample_alpha_one_sided: 0.05
+  target_power: 0.80
+  exact_binomial_reference_vs_50pct:
+    true_da_0_55_required_n: 620
+    true_da_0_56_required_n: 438
+    true_da_0_575_required_n: 281
+    true_da_0_60_required_n: 158
+    note: "Reference only; class imbalance requires PT and paired-baseline tests, not a standalone 50% binomial claim."
+  sequential_monitoring:
+    fixed_sample_p_values_are_descriptive_between_formal_reviews: true
+    require_time_uniform_confidence_sequence_for_continuous_monitoring: true
+  dependence:
+    daily_h1_block_length_sessions: 5
+    weekly_h1_block_length_signals: 4
+  multiplicity:
+    disclose_directional_trials_before_daily_shadow: 48
+    disclose_global_trials_before_daily_shadow: 109
+    any_rule_change_starts_new_experiment: true
+
+reporting_controls:
+  always_show:
+    - all_calendar_periods
+    - all_predeclared_regimes
+    - sample_sizes_and_coverage
+    - da_bda_up_recall_down_recall
+    - baseline_and_paired_lift
+    - confidence_intervals_and_test_definition
+    - gross_and_net_performance_when_economic_results_are_shown
+    - failed_variants_and_selection_count
+    - reconstructed_vs_true_point_in_time_classification
+  prohibited:
+    - call_historical_replay_live_track_record
+    - cherry_pick_horizons_years_or_regimes
+    - imply_regulatory_approval
+    - authorize_capital_from_a_generator_or_dashboard
+    - overwrite_or_backfill_a_missed_prediction
+
+governance_references:
+  - title: "Federal Reserve SR 26-2 Revised Guidance on Model Risk Management"
+    url: "https://www.federalreserve.gov/supervisionreg/srletters/SR2602.htm"
+  - title: "Federal Reserve Supervisory Guidance on Model Risk Management"
+    url: "https://www.federalreserve.gov/frrs/guidance/supervisory-guidance-on-model-risk-management.htm"
+  - title: "SEC Investment Adviser Marketing compliance guide"
+    url: "https://www.sec.gov/resources-small-businesses/small-business-compliance-guides/investment-adviser-marketing"
+  - title: "Howard et al. Time-uniform nonparametric confidence sequences"
+    url: "https://arxiv.org/abs/1810.08240"
+  - title: "Bailey et al. The Probability of Backtest Overfitting"
+    url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2326253"

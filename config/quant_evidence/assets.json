@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "purpose": "Quantitative evidence contract; values remain blocked until PIT OOS artifacts are attached.",
+  "assets": {
+    "usdcop": {"experiment_id":"USDCOP-BASELINE-001","data_pit":false,"oos_manifest":null,"trial_count":0,"dsr":null,"pbo":null,"benchmark":"DXY+carry","costs_bps":8.0,"status":"blocked_external_real_data"},
+    "xauusd": {"experiment_id":"XAUUSD-BASELINE-001","data_pit":false,"oos_manifest":null,"trial_count":0,"dsr":null,"pbo":null,"benchmark":"MA200","costs_bps":6.0,"status":"blocked_external_real_data"},
+    "btcusdt": {"experiment_id":"BTCUSDT-BASELINE-001","data_pit":false,"oos_manifest":null,"trial_count":0,"dsr":null,"pbo":null,"benchmark":"buy_and_hold","costs_bps":20.0,"status":"blocked_external_real_data"},
+    "spx500": {"experiment_id":"SPX500-REGIME-001","data_pit":false,"oos_manifest":null,"trial_count":0,"dsr":null,"pbo":null,"benchmark":"SPY_TOTAL_RETURN","costs_bps":3.0,"status":"blocked_external_real_data"}
+  },
+  "required_fields": ["data_pit","oos_manifest","trial_count","dsr","pbo","benchmark","costs_bps"],
+  "promotion_rule": "all required fields present, data_pit=true, dsr>0.95, pbo<0.5 and net OOS beats benchmark"
+}

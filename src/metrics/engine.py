@@ -14,7 +14,8 @@ from typing import Any, Callable, Mapping
 import numpy as np
 import yaml
 
-from src.identity.canonical import canonical_json_bytes
+from src.identity.canonical import CanonicalizationError, canonical_json_bytes
+from src.metrics.annualization import AnnualizationRegistry
 
 from src.metrics.formulas import (
     calmar_ratio,
@@ -53,6 +54,8 @@ class MetricDefinition:
     required_inputs: tuple[str, ...] = ()
     higher_is_better: bool = True
     min_trades: int | None = None
+    min_obs: int | None = None
+    trials_sharpe_std_min: float | None = None
     plausible_min: float | None = None
     plausible_max: float | None = None
 
@@ -139,6 +142,23 @@ class MetricCatalog:
                 raise MetricContractError(
                     f"{metric_id}: min_trades must be a positive integer or null"
                 )
+            min_obs = body.get("min_obs")
+            if min_obs is not None and (
+                type(min_obs) is not int or min_obs <= 0
+            ):
+                raise MetricContractError(
+                    f"{metric_id}: min_obs must be a positive integer or null"
+                )
+            std_floor = body.get("trials_sharpe_std_min")
+            if std_floor is not None and (
+                isinstance(std_floor, bool)
+                or not isinstance(std_floor, (int, float))
+                or not math.isfinite(float(std_floor))
+                or float(std_floor) <= 0
+            ):
+                raise MetricContractError(
+                    f"{metric_id}: trials_sharpe_std_min must be positive finite"
+                )
             definition = MetricDefinition(
                 namespace=namespace,
                 name=name,
@@ -152,6 +172,10 @@ class MetricCatalog:
                 required_inputs=tuple(body.get("required_inputs") or ()),
                 higher_is_better=higher_is_better,
                 min_trades=min_trades,
+                min_obs=min_obs,
+                trials_sharpe_std_min=(
+                    None if std_floor is None else float(std_floor)
+                ),
                 plausible_min=body.get("plausible_min"),
                 plausible_max=body.get("plausible_max"),
             )
@@ -229,9 +253,9 @@ def _dsr(context: Mapping[str, Any], annualization: float) -> float | None:
         isinstance(trials_sharpe_std, bool)
         or not isinstance(trials_sharpe_std, (int, float))
         or not math.isfinite(float(trials_sharpe_std))
-        or float(trials_sharpe_std) < 0
+        or float(trials_sharpe_std) <= 0
     ):
-        raise MetricContractError("trials_sharpe_std must be a finite non-negative number")
+        raise MetricContractError("trials_sharpe_std must be a finite positive number")
     centered = returns - float(np.mean(returns))
     population_std = float(np.std(returns, ddof=0))
     if population_std <= np.finfo(float).eps:
@@ -285,16 +309,31 @@ class MetricEngine:
         catalog: MetricCatalog,
         *,
         formulas: Mapping[str, MetricFormula] | None = None,
-        annualization_by_asset: Mapping[str, int | float] | None = None,
+        annualization_registry: AnnualizationRegistry | None = None,
     ) -> None:
         self.catalog = catalog
         self.formulas = dict(FORMULAS if formulas is None else formulas)
-        self.annualization_by_asset = dict(annualization_by_asset or {})
+        self.annualization_registry = annualization_registry
         missing_formulas = sorted(catalog.metric_ids - set(self.formulas))
         if missing_formulas:
             raise MetricContractError(
                 f"catalogued metrics have no registered formula: {missing_formulas}"
             )
+
+    @classmethod
+    def from_asset_registry(
+        cls,
+        catalog: MetricCatalog,
+        *,
+        assets_dir: str | Path,
+        formulas: Mapping[str, MetricFormula] | None = None,
+    ) -> "MetricEngine":
+        """Build the application engine from the AssetProfile SSOT."""
+        return cls(
+            catalog,
+            formulas=formulas,
+            annualization_registry=AnnualizationRegistry.load(assets_dir),
+        )
 
     def compute(
         self,
@@ -330,7 +369,8 @@ class MetricEngine:
         except KeyError as exc:
             raise MetricContractError(f"{metric}: no registered formula") from exc
         self._validate_window(window=window, as_of=as_of, context=context)
-        annualization = self._annualization(definition, asset_id)
+        annualization = self._annualization(definition, asset_id, context)
+        observation_count = self._observation_count(context)
         n_trades = context.get("n_trades")
         insufficient_sample = False
         if definition.min_trades is not None:
@@ -339,6 +379,27 @@ class MetricEngine:
                     f"{metric}: n_trades must be a non-negative integer"
                 )
             insufficient_sample = n_trades < definition.min_trades
+        if definition.min_obs is not None:
+            if observation_count is None:
+                raise MetricContractError(
+                    f"{metric}: no observation series available for min_obs"
+                )
+            insufficient_sample = (
+                insufficient_sample
+                or observation_count < definition.min_obs
+            )
+        if definition.trials_sharpe_std_min is not None:
+            trial_std = context.get("trials_sharpe_std")
+            if (
+                isinstance(trial_std, bool)
+                or not isinstance(trial_std, (int, float))
+                or not math.isfinite(float(trial_std))
+                or float(trial_std) < definition.trials_sharpe_std_min
+            ):
+                raise MetricContractError(
+                    f"{metric}: trials_sharpe_std must be >= "
+                    f"{definition.trials_sharpe_std_min:g}"
+                )
         value = None if insufficient_sample else formula(context, annualization)
         if value is not None and not math.isfinite(value):
             raise MetricContractError(f"{metric}: formula returned a non-finite value")
@@ -376,9 +437,13 @@ class MetricEngine:
                 "environment": canonical_environment,
                 "as_of": as_of,
                 "run_id": run_id,
+                "strategy_id": strategy_id,
+                "asset_id": asset_id,
+                "annualization_periods": annualization,
                 "context_hash": context_hash,
             }
         ).decode("utf-8")
+        safe_lineage = self._validated_metadata("lineage", lineage or {})
         return MetricEvent(
             metric_event_id=str(uuid.uuid5(uuid.NAMESPACE_URL, event_identity)),
             event_time=as_of.astimezone(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -392,7 +457,7 @@ class MetricEngine:
             environment=canonical_environment,
             metric_namespace=definition.namespace,
             metric_name=definition.name,
-            metric_value=value,
+            metric_value=None if plausibility_violation else value,
             metric_unit=definition.unit,
             status=status,
             threshold_warning=definition.warning,
@@ -401,20 +466,46 @@ class MetricEngine:
                 "window": window,
                 "context_hash": context_hash,
                 "n_trades": n_trades,
+                "n_observations": observation_count,
                 "plausibility_violation": plausibility_violation,
+                "return_interval": context.get("return_interval"),
+                "annualization_periods": (
+                    int(annualization)
+                    if definition.annualization is not None
+                    else None
+                ),
+                "n_trials": context.get("n_trials"),
+                "trials_sharpe_std": context.get("trials_sharpe_std"),
             },
-            lineage=dict(lineage or {}),
+            lineage=safe_lineage,
         )
 
     def _annualization(
-        self, definition: MetricDefinition, asset_id: str | None
+        self,
+        definition: MetricDefinition,
+        asset_id: str | None,
+        context: Mapping[str, Any],
     ) -> float:
         if definition.annualization == "from_asset_registry":
             if not asset_id:
                 raise MetricContractError(
                     "asset_id is required for registry-backed annualization"
                 )
-            value = self.annualization_by_asset.get(asset_id)
+            interval = context.get("return_interval")
+            if not isinstance(interval, str) or not interval:
+                raise MetricContractError(
+                    "return_interval is required for registry-backed annualization"
+                )
+            if self.annualization_registry is None:
+                raise MetricContractError(
+                    "AssetProfile annualization registry is not configured"
+                )
+            try:
+                value = self.annualization_registry.periods_per_year(
+                    asset_id, interval
+                )
+            except ValueError as exc:
+                raise MetricContractError(str(exc)) from exc
         elif definition.annualization is None:
             value = 1.0
         else:
@@ -461,15 +552,41 @@ class MetricEngine:
 
     @staticmethod
     def _identity_context(context: Mapping[str, Any]) -> dict[str, Any]:
-        normalized: dict[str, Any] = {}
-        for name, value in context.items():
+        def normalize(value: Any) -> Any:
             if isinstance(value, np.ndarray):
-                normalized[name] = value.tolist()
-            elif isinstance(value, np.generic):
-                normalized[name] = value.item()
-            else:
-                normalized[name] = value
-        return normalized
+                return [normalize(item) for item in value.tolist()]
+            if isinstance(value, np.generic):
+                return normalize(value.item())
+            if isinstance(value, Mapping):
+                return {key: normalize(item) for key, item in value.items()}
+            if isinstance(value, (list, tuple)):
+                return [normalize(item) for item in value]
+            return value
+
+        return {name: normalize(value) for name, value in context.items()}
+
+    @staticmethod
+    def _observation_count(context: Mapping[str, Any]) -> int | None:
+        for name in ("returns", "equity", "weights", "asset_returns"):
+            value = context.get(name)
+            if isinstance(value, np.ndarray) and value.ndim == 1:
+                return int(value.size)
+            if isinstance(value, (list, tuple)):
+                return len(value)
+        return None
+
+    @staticmethod
+    def _validated_metadata(
+        name: str, value: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        if not isinstance(value, Mapping):
+            raise MetricContractError(f"{name} must be a mapping")
+        copied = dict(value)
+        try:
+            canonical_json_bytes(copied)
+        except CanonicalizationError as exc:
+            raise MetricContractError(f"{name} is not canonical JSON: {exc}") from exc
+        return copied
 
     @staticmethod
     def _status(value: float | None, definition: MetricDefinition) -> str:

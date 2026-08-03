@@ -1,0 +1,32 @@
+schema_version: "1.0.0"
+backlog_id: BL-08
+status: BLOCKED_OPERATOR
+repository: pspedro19/USDCOP-RL-Models
+observed_visibility: public
+contains_secret_values: false
+affected_history:
+  - label: original_public_revision
+    revision: ee91273
+    path: .env
+  - label: second_public_revision
+    revision: 1d41812
+    path: .env
+local_repository_evidence:
+  env_tracked_now: false
+  env_in_local_rewritten_history: false
+operator_actions:
+  rotate_every_exposed_credential:
+    complete: false
+    evidence: null
+  make_repository_private_or_record_public_exception:
+    complete: false
+    evidence: null
+  purge_remote_history_and_caches:
+    complete: false
+    evidence: null
+  verify_old_credentials_revoked_with_each_provider:
+    complete: false
+    evidence: null
+release_policy:
+  push_allowed: false
+  reason: remote exposure and credential revocation remain unverified

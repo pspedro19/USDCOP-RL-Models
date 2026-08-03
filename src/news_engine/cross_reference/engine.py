@@ -142,6 +142,8 @@ class CrossReferenceEngine:
         return CrossReference(
             topic=topic,
             cluster_date=cluster_date,
+            articles=[getattr(a.raw, "id", None) for a in articles
+                      if getattr(a.raw, "id", None) is not None],
             avg_sentiment=avg_sentiment,
             dominant_category=dominant_cat,
             sources_involved=sources,

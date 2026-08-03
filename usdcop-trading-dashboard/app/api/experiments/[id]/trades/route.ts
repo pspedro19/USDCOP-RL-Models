@@ -63,7 +63,7 @@ interface TradesResponse {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Validate authentication
   const skipAuth = process.env.SKIP_AUTH === 'true';
@@ -74,7 +74,7 @@ export async function GET(
     }
   }
 
-  const proposalId = params.id;
+  const { id: proposalId } = await params;
 
   try {
     // First, verify the proposal exists

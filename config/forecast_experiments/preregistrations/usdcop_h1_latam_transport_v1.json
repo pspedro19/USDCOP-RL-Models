@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0.0",
+  "experiment_id": "usdcop_h1_latam_transport_v1",
+  "registered_at_utc": "2026-07-22T23:17:37.164860+00:00",
+  "contract_sha256": "388f7cf3f1b3790b668faaac14538eb1c6f2c6dd0d86e820abf44a7434e2dab3",
+  "source_sha256": "b569b416630e4f88a7b2696ca3a23e3d393b59632176790ef295c39fb3ff1171",
+  "code_sha256": {
+    "scripts/analysis/usdcop_h1_latam_transport_v1.py": "59a34f043e3c4ce6b9400581beb93f29367a4171efe66fb073a0d016ee013e8e",
+    "scripts/analysis/usdcop_directional_edge_tournament.py": "c56f52b53774c5e78940fed919870ca7692fa36beef01c269cbbedcffbcf632a",
+    "scripts/analysis/usdcop_long_history_directional_tournament.py": "6a90d6bc312d9488f491f9f12c033b245ddd6f1ee6078c7bc1df71ab4101aacc",
+    "scripts/analysis/usdcop_causal_regime_gate.py": "730b0b077e453cd309a6b4091efc2bbe1c2eb987dffd7afcbdc3b35f57dc67c4",
+    "scripts/validation/evaluate_usdcop_h1_shadow_v2.py": "48de22fb99449840f75df856936eacdd8efdcc5b0de0922e49dd1b25073bea2c"
+  },
+  "runtime_versions": {
+    "python": "3.11.8",
+    "numpy": "1.26.4",
+    "pandas": "2.2.1",
+    "scikit-learn": "1.5.2",
+    "scipy": "1.12.0",
+    "PyYAML": "6.0.3",
+    "pyarrow": "14.0.2"
+  },
+  "primary_period": [
+    "2020-01-01",
+    "2025-12-31"
+  ],
+  "assets": [
+    "USD/MXN",
+    "USD/BRL"
+  ],
+  "historical_transport_metrics_opened_at_registration": false,
+  "new_primary_trials": 1,
+  "directional_trials_after": 50,
+  "global_trials_after": 111,
+  "signal_authorized": false,
+  "capital_authorized": false,
+  "registration_valid": true
+}

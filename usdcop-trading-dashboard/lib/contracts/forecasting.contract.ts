@@ -167,6 +167,124 @@ export const DashboardResponseSchema = z.object({
 export type DashboardResponse = z.infer<typeof DashboardResponseSchema>;
 
 // ============================================================================
+// USD/COP CAUSAL DIRECTIONAL REPLAY
+// ============================================================================
+
+export const DirectionalEvidenceSchema = z.object({
+  n: z.number().int().nonnegative(),
+  directional_accuracy: z.number().min(0).max(1).nullable(),
+  balanced_accuracy: z.number().min(0).max(1).nullable(),
+  up_recall: z.number().min(0).max(1).nullable(),
+  down_recall: z.number().min(0).max(1).nullable(),
+  minimum_class_recall: z.number().min(0).max(1).nullable(),
+  brier: z.number().min(0).max(1).nullable(),
+  prediction_up_rate: z.number().min(0).max(1).nullable(),
+  actual_up_rate: z.number().min(0).max(1).nullable(),
+  up_count: z.number().int().nonnegative(),
+  down_count: z.number().int().nonnegative(),
+  raw_score: z.number().min(0).max(1).nullable(),
+  shrunk_score: z.number().min(0).max(1).nullable(),
+  eligible: z.boolean(),
+});
+
+export const DirectionalHorizonForecastSchema = z.object({
+  horizon_days: z.number().int().positive(),
+  role: z.string(),
+  target_date: z.string(),
+  target_date_estimated: z.boolean(),
+  probability_up: z.number().min(0).max(1),
+  threshold: z.number().min(0).max(1),
+  prediction: z.enum(['UP', 'DOWN']),
+  forecast_log_return: z.number(),
+  forecast_return_pct: z.number(),
+  forecast_price: z.number().positive(),
+  forecast_price_change: z.number(),
+  forecast_interval_lower: z.number().positive(),
+  forecast_interval_upper: z.number().positive(),
+  forecast_interval_level: z.number().min(0).max(1),
+  point_forecast_direction: z.enum(['UP', 'DOWN']),
+  direction_price_agree: z.boolean(),
+  point_forecast_clipped: z.boolean(),
+  point_forecast_validation_eligible: z.boolean(),
+  actual: z.union([z.literal(0), z.literal(1)]).nullable(),
+  actual_log_return: z.number().nullable(),
+  actual_price: z.number().positive().nullable(),
+  point_abs_error_price: z.number().nonnegative().nullable(),
+  point_abs_error_pct: z.number().nonnegative().nullable(),
+  hit: z.boolean().nullable(),
+  train_count: z.number().int().nonnegative(),
+  train_label_end: z.string().nullable(),
+  point_train_label_end: z.string().nullable(),
+  training_mode: z.string(),
+  model_family: z.string(),
+  feature_hash: z.string(),
+  validation_eligible: z.boolean(),
+  evidence: DirectionalEvidenceSchema,
+  eligible_for_direction: z.boolean(),
+  selected: z.boolean(),
+  selection_rank: z.number().int().positive(),
+});
+
+export const DirectionalReplayWeekSchema = z.object({
+  iso_week: z.string().regex(/^\d{4}-W\d{2}$/),
+  year: z.number().int(),
+  origin_date: z.string(),
+  origin_is_partial_week: z.boolean(),
+  base_price: z.number().positive(),
+  training_mode: z.string(),
+  regime: z.object({ state: z.string(), direction_shift_z: z.number() }),
+  decision: z.object({
+    direction: z.enum(['UP', 'DOWN', 'FLAT']),
+    action: z.enum(['LONG_USD_SHORT_COP', 'SHORT_USD_LONG_COP', 'FLAT']),
+    status: z.enum(['SHADOW', 'ABSTAIN']),
+    signal_authorized: z.literal(false),
+    promotion_gate_passed: z.boolean(),
+    primary_horizon: z.number().int().positive().nullable(),
+    confirmation_horizons: z.array(z.number().int().positive()),
+    selected_horizons: z.array(z.number().int().positive()),
+    confidence_proxy: z.number().min(0).max(1),
+    target_date: z.string().nullable(),
+    forecast_price: z.number().positive().nullable(),
+    forecast_return_pct: z.number().nullable(),
+    forecast_interval_lower: z.number().positive().nullable(),
+    forecast_interval_upper: z.number().positive().nullable(),
+    actual: z.union([z.literal(0), z.literal(1)]).nullable(),
+    hit: z.boolean().nullable(),
+    rationale: z.string(),
+  }),
+  horizons: z.array(DirectionalHorizonForecastSchema).length(7),
+  image_path: z.string(),
+});
+
+export const DirectionalReplayIndexSchema = z.object({
+  schema_version: z.string(),
+  contract_hash: z.string(),
+  asset_id: z.literal('usdcop'),
+  symbol: z.literal('USD/COP'),
+  chart_symbol: z.literal('USDCOP'),
+  generated_at: z.string(),
+  data_cutoff: z.string(),
+  latest_week: z.string(),
+  years: z.array(z.number().int()),
+  methodology: z.object({
+    experiment_id: z.string(),
+    status: z.string(),
+    signal_authorized: z.literal(false),
+    feature_selection_cutoff: z.string(),
+    validation_years: z.array(z.number().int()),
+    frozen_replay_year: z.number().int(),
+    expanding_retrain_year: z.number().int(),
+    label_maturity_rule: z.string(),
+    horizon_selection: z.string(),
+  }),
+  lineage: z.record(z.string(), z.object({ path: z.string(), sha256: z.string().nullable() })),
+  models: z.record(z.string(), z.record(z.string(), z.any())),
+  summaries: z.array(z.record(z.string(), z.any())),
+  weeks: z.array(DirectionalReplayWeekSchema),
+});
+export type DirectionalReplayIndex = z.infer<typeof DirectionalReplayIndexSchema>;
+
+// ============================================================================
 // IMAGE SCHEMAS
 // ============================================================================
 

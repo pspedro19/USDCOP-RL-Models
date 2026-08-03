@@ -25,9 +25,9 @@ function isSafeId(id: string): boolean {
 
 export async function GET(
   _req: Request,
-  { params }: { params: { strategyId: string } },
+  { params }: { params: Promise<{ strategyId: string }> },
 ) {
-  const { strategyId } = params;
+  const { strategyId } = await params;
   if (!isSafeId(strategyId)) {
     return NextResponse.json({ error: 'invalid strategy id' }, { status: 400 });
   }

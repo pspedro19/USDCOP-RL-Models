@@ -23,7 +23,12 @@ _meta:
   experiment_id: "btcusdt_model_zoo_v1"
   description: "BTC/USDT 9-model model zoo (17 features + DXY/VIX, 24/7)"
   created_at: "2026-07-12"
-  status: "production"
+  status: "research_only"
+  product_class: "diagnostic_forecast"
+  signal_authorized: false
+  target: "realized_volatility_and_magnitude"
+  direction_usage: "display_only"
+  data_unlock: "funding_open_interest_basis"
 
 # =============================================================================
 # ASSET IDENTITY / DISPLAY (per-asset metadata consumed by the generator)

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib.util
+import re
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -183,8 +184,19 @@ def test_synthetic_model_is_fail_closed_outside_demo_domain() -> None:
     with pytest.raises(SyntheticIsolationError):
         validate_model_boundary(good, relation="config.models")
 
+    production_markers = good | {
+        "environment": "production",
+        "surface": "action",
+        "execution_eligible": True,
+    }
+    with pytest.raises(
+        SyntheticIsolationError,
+        match="synthetic model cannot be stored in real relation",
+    ):
+        validate_model_boundary(production_markers, relation="config.models")
 
-def test_physical_and_synthetic_migrations_are_explicit_and_fail_closed() -> None:
+
+def test_physical_and_synthetic_migrations_have_executable_static_smoke() -> None:
     physical = (
         REPO_ROOT / "database" / "migrations" / "080_market_physical_profile.sql"
     ).read_text(encoding="utf-8").lower()
@@ -192,16 +204,18 @@ def test_physical_and_synthetic_migrations_are_explicit_and_fail_closed() -> Non
         REPO_ROOT / "database" / "migrations" / "081_synthetic_demo_isolation.sql"
     ).read_text(encoding="utf-8").lower()
 
-    assert "create_hypertable" in physical
-    assert "chunk_time_interval" in physical
-    assert "compress_segmentby" in physical
-    assert "add_retention_policy" not in physical
+    physical_sql = re.sub(r"--[^\n]*", "", physical)
+    synthetic_sql = re.sub(r"--[^\n]*", "", synthetic)
+    assert "create_hypertable" in physical_sql
+    assert "chunk_time_interval" in physical_sql
+    assert "compress_segmentby" in physical_sql
+    assert "add_retention_policy" not in physical_sql
     assert "cold archive restore evidence" in physical
-    assert "demo.synthetic_model" in synthetic
-    assert "execution_eligible = false" in synthetic
-    assert "algorithm <> 'synthetic'" in synthetic
-    assert "metrics.model_performance" in synthetic
-    assert "raise exception" in synthetic
+    assert "create table if not exists demo.synthetic_model" in synthetic_sql
+    assert "constraint synthetic_demo_only check" in synthetic_sql
+    assert "execution_eligible = false" in synthetic_sql
+    assert "create or replace function demo.reject_synthetic_performance" in synthetic_sql
+    assert "raise exception" in synthetic_sql
 
 
 def test_ci_and_readiness_matrix_are_executable_honest_contracts() -> None:

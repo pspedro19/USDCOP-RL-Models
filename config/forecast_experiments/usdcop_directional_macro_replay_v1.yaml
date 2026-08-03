@@ -1,0 +1,78 @@
+_meta:
+  version: "1.0.0"
+  experiment_id: "usdcop_directional_macro_replay_v1"
+  description: "Causal weekly USD/COP directional replay with PIT Colombia macro features"
+  status: "research_shadow"
+  signal_authorized: false
+
+asset:
+  id: "usdcop"
+  symbol: "USD/COP"
+  chart_symbol: "USDCOP"
+  timezone: "America/Bogota"
+  decision_hour: 16
+
+protocol:
+  feature_selection_cutoff: "2022-01-01"
+  validation_years: [2022, 2023, 2024]
+  frozen_replay_year: 2025
+  expanding_retrain_year: 2026
+  replay_years: [2025, 2026]
+  origin_frequency: "last_available_session_per_iso_week"
+  label_maturity_rule: "target_date_lte_origin_date"
+  feature_count: 12
+  model:
+    family: "logistic_regression"
+    c: 0.1
+    max_iter: 2000
+    imputer: "median"
+    scaler: "standard"
+  point_forecast:
+    family: "ridge_log_return"
+    alphas: [10.0, 100.0, 1000.0]
+    target: "forward_log_return"
+    selection_metric: "mae_skill_vs_spot"
+    prediction_clip_quantiles: [0.025, 0.975]
+    interval_level: 0.80
+    minimum_validation_mae_skill: 0.0
+  half_lives_days: [null, 252, 504]
+  probability_thresholds: [0.40, 0.45, 0.50, 0.55, 0.60]
+
+horizons:
+  values: [1, 5, 10, 15, 20, 25, 30]
+  roles:
+    execution: [1]
+    tactical: [5, 10, 15]
+    swing: [20, 25, 30]
+
+selection:
+  # Horizon evidence is computed only from forecasts whose target was already
+  # observable at the weekly origin. 2025 uses the frozen 2022-2024 evidence;
+  # 2026 may add matured 2025 outcomes and then matured 2026 outcomes.
+  evidence_lookback_weeks: 104
+  shrinkage_weeks: 26
+  minimum_matured_weeks: 26
+  minimum_class_observations: 5
+  minimum_balanced_accuracy: 0.50
+  minimum_class_recall: 0.30
+  minimum_prediction_class_rate: 0.10
+  maximum_prediction_class_rate: 0.90
+  required_confirming_sleeves: 2
+  shadow_select_best_per_sleeve: true
+  promotion_requires_eligible_horizons: true
+  validation_minimum_class_recall: 0.20
+  validation_minimum_prediction_class_rate: 0.10
+  validation_maximum_prediction_class_rate: 0.90
+  score_weights:
+    directional_accuracy: 0.25
+    balanced_accuracy: 0.50
+    minimum_class_recall: 0.25
+
+outputs:
+  dashboard_dir: "usdcop-trading-dashboard/public/forecasting/usdcop"
+  index_file: "directional_replay_index.json"
+  ledger_file: "directional_replay_ledger.csv"
+  image_template: "directional_replay_{week}.png"
+  report_ledger: "reports/usdcop_directional_replay_2025_2026.csv"
+  report_summary: "reports/usdcop_directional_replay_summary.csv"
+  report_workbook: "reports/usdcop_directional_replay_2025_2026.xlsx"

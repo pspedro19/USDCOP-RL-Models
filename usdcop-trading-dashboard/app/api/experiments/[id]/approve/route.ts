@@ -20,7 +20,7 @@ interface ApproveRequest {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Validate authentication (SKIP_AUTH=true uses mock user)
   const skipAuth = process.env.SKIP_AUTH === 'true';
@@ -38,7 +38,7 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const proposalId = params.id;
+  const { id: proposalId } = await params;
   const body: ApproveRequest = await request.json();
   const reviewer = authResult.user.email || authResult.user.name || 'unknown';
 

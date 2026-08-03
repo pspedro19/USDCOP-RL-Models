@@ -103,8 +103,11 @@ def check_data_contracts() -> ValidationResult:
         checks.append(("DAILY_OHLCV_TABLE", DAILY_OHLCV_TABLE == "bi.dim_daily_usdcop"))
         checks.append(("FEATURES_VIEW", FEATURES_VIEW == "bi.v_forecasting_features"))
 
-        # Check feature count
-        checks.append(("FEATURE_COLUMNS count", len(FEATURE_COLUMNS) == 19))
+        # The YAML-backed contract is the SSOT; a hard-coded historical count
+        # becomes stale whenever a reviewed feature is added.
+        from src.forecasting.ssot_config import ForecastingSSOTConfig
+        configured_features = ForecastingSSOTConfig.load().get_feature_columns()
+        checks.append(("FEATURE_COLUMNS match SSOT", FEATURE_COLUMNS == configured_features))
 
         # Check horizons
         checks.append(("TARGET_HORIZONS", TARGET_HORIZONS == (1, 5, 10, 15, 20, 25, 30)))
@@ -447,13 +450,17 @@ def check_dags_exist() -> ValidationResult:
 
     dags_dir = PROJECT_ROOT / "airflow" / "dags"
 
+    # Current deployed forecasting DAG contracts. Historical l0/l1/l5b names
+    # were retired; validating those filenames made a healthy deployment fail.
     required_dags = [
-        ("forecast_l0_daily_data.py", ["task_fetch_daily_data", "bi.dim_daily_usdcop"]),
-        ("forecast_l1_daily_features.py", ["v_forecasting_features", "CREATE VIEW"]),
-        ("l3b_forecasting_training.py", ["ForecastingEngine", "train"]),
-        ("l5b_forecasting_inference.py", ["predict", "bi.fact_forecasts"]),
-        ("forecast_l4_backtest_validation.py", ["direction_accuracy", "walk-forward"]),  # Note: hyphenated
-        ("forecast_l6_drift_monitor.py", ["psi", "drift"]),
+        ("l3b_forecasting_training.py", ["ForecastingEngine", "walk-forward"]),
+        ("forecast_h1_l3_weekly_training.py", ["walk-forward", "bi.fact_forecasts"]),
+        ("forecast_h1_l5_daily_inference.py", ["predict", "bi.fact_forecasts"]),
+        ("forecast_h1_l6_paper_monitor.py", ["STOP_CRITERIA", "forecast_paper_trading"]),
+        (
+            "forecast_weekly_generation.py",
+            ["generate_usdcop_directional_replay", "directional_replay_index"],
+        ),
     ]
 
     results = {}
@@ -506,6 +513,7 @@ def check_frontend_contracts() -> ValidationResult:
         "ConsensusSchema",
         "DashboardResponseSchema",
         "ModelDetailResponseSchema",  # Not ModelDetailSchema
+        "DirectionalReplayIndexSchema",
     ]
 
     missing = [s for s in required_schemas if s not in content]
@@ -564,6 +572,71 @@ def check_frontend_service() -> ValidationResult:
         },
         duration_ms=duration
     )
+
+
+def check_directional_replay_contract() -> ValidationResult:
+    """Validate the published USD/COP replay, causality invariants and Pydantic shape."""
+    import json
+    import time
+    start = time.time()
+    path = (
+        PROJECT_ROOT
+        / "usdcop-trading-dashboard/public/forecasting/usdcop/directional_replay_index.json"
+    )
+    if not path.exists():
+        return ValidationResult(
+            name="Directional Replay Contract",
+            passed=False,
+            message="directional_replay_index.json not found",
+            duration_ms=(time.time() - start) * 1000,
+        )
+    try:
+        # Load this leaf contract directly. Importing the package __init__ also
+        # initializes the model registry (and SQLAlchemy), which is unrelated to
+        # validation of this static forecasting artifact.
+        import importlib.util
+        contract_path = PROJECT_ROOT / "services/inference_api/contracts/forecasting.py"
+        spec = importlib.util.spec_from_file_location("forecasting_api_contract", contract_path)
+        contract_module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(contract_module)
+        DirectionalReplayIndex = contract_module.DirectionalReplayIndex
+        from src.forecasting.directional_replay import validate_replay_document
+
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if hasattr(DirectionalReplayIndex, "model_validate"):
+            DirectionalReplayIndex.model_validate(document)
+        else:
+            DirectionalReplayIndex.parse_obj(document)
+        errors = validate_replay_document(document, PROJECT_ROOT, require_images=True)
+        latest_year, latest_week = map(
+            int, document["latest_week"].replace("W", "").split("-")
+        )
+        # Complete ISO weeks from 2025 plus the available weeks in the latest
+        # replay year. This remains valid when the weekly DAG appends W31+.
+        expected = sum(
+            __import__("datetime").date(year, 12, 28).isocalendar().week
+            for year in range(2025, latest_year)
+        ) + latest_week
+        if len(document.get("weeks", [])) != expected:
+            errors.append(f"expected {expected} weeks, got {len(document.get('weeks', []))}")
+        return ValidationResult(
+            name="Directional Replay Contract",
+            passed=not errors,
+            message=(
+                f"{len(document['weeks'])} weeks / 7 horizons / images valid"
+                if not errors else "; ".join(errors[:5])
+            ),
+            details={"contract_hash": document.get("contract_hash"), "errors": errors},
+            duration_ms=(time.time() - start) * 1000,
+        )
+    except Exception as exc:
+        return ValidationResult(
+            name="Directional Replay Contract",
+            passed=False,
+            message=f"Error: {exc}",
+            duration_ms=(time.time() - start) * 1000,
+        )
 
 
 def check_engine_complete() -> ValidationResult:
@@ -628,6 +701,7 @@ def run_validation(quick: bool = False, verbose: bool = False) -> ValidationRepo
         ("DAG Files", check_dags_exist),
         ("Frontend Contracts", check_frontend_contracts),
         ("Frontend Service", check_frontend_service),
+        ("Directional Replay Contract", check_directional_replay_contract),
         ("Forecasting Engine", check_engine_complete),
     ]
 

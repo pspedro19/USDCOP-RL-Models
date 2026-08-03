@@ -32,20 +32,6 @@ function sign(role: Role, expEpoch: number): string {
   return `${payload}|${sig}`;
 }
 
-/** `role|exp|sig` → role si la firma es válida y no venció, si no null. */
-export function verifyViewAs(token: string | null | undefined): Role | null {
-  if (!token) return null;
-  const parts = token.split('|');
-  if (parts.length !== 3) return null;
-  const [role, expStr, sig] = parts;
-  const expected = crypto.createHmac('sha256', secret()).update(`${role}|${expStr}`).digest('hex');
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
-  if (Number(expStr) * 1000 < Date.now()) return null;
-  return (ROLES as readonly string[]).includes(role) ? (role as Role) : null;
-}
-
 function cookieHeader(name: string, value: string, maxAge: number, httpOnly: boolean): string {
   const attrs = [
     `${name}=${value}`, 'Path=/', `Max-Age=${maxAge}`, 'SameSite=Lax',
@@ -66,7 +52,7 @@ export async function POST(req: Request) {
 
   // Rol simulado: explícito, o resuelto desde el usuario objetivo.
   let role: Role | null = null;
-  let targetUserId: string | null = payload.user_id ?? null;
+  const targetUserId: string | null = payload.user_id ?? null;
   if (payload.role && (ROLES as readonly string[]).includes(payload.role)) {
     role = payload.role;
   } else if (payload.user_id) {

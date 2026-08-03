@@ -72,26 +72,34 @@ def clean_database(conn):
             except Exception as e:
                 print(f"  Warning: Could not clean {table_name}: {e}")
 
-        # Ensure Investor Demo exists in config.models
+        # Ensure Investor Demo exists only in the isolated demo schema.
         try:
             cur.execute("""
-                INSERT INTO config.models (model_id, name, algorithm, version, status, color, description, backtest_metrics)
+                INSERT INTO demo.synthetic_model (
+                    model_id, name, algorithm, version, environment, surface,
+                    execution_eligible, color, description, display_metadata
+                )
                 VALUES (
-                    'investor_demo_v1',
-                    'Investor Demo',
+                    'investor_demo',
+                    '[DEMO - SYNTHETIC] Investor Demo',
                     'SYNTHETIC',
                     'V1',
-                    'active',
+                    'demo',
+                    'synthetic',
+                    FALSE,
                     '#F59E0B',
-                    'Modo demostración para visualizar el sistema sin modelo real',
-                    '{"sharpe_ratio": 1.5, "max_drawdown": 0.05, "win_rate": 0.65}'::jsonb
+                    'Ilustración sintética; no es performance ni ejecución real',
+                    '{"badge": "DEMO - SYNTHETIC"}'::jsonb
                 )
                 ON CONFLICT (model_id) DO UPDATE SET
-                    status = 'active',
-                    name = 'Investor Demo',
-                    algorithm = 'SYNTHETIC'
+                    name = EXCLUDED.name,
+                    environment = EXCLUDED.environment,
+                    surface = EXCLUDED.surface,
+                    execution_eligible = EXCLUDED.execution_eligible,
+                    display_metadata = EXCLUDED.display_metadata,
+                    updated_at = NOW()
             """)
-            print("  Ensured Investor Demo exists in config.models")
+            print("  Ensured Investor Demo exists in demo.synthetic_model")
         except Exception as e:
             print(f"  Warning: Could not ensure Investor Demo: {e}")
 
@@ -223,6 +231,7 @@ def show_current_state(conn):
         # Count records in each table
         tables_to_check = [
             ('config.models', 'SELECT COUNT(*) as count FROM config.models'),
+            ('demo.synthetic_model', 'SELECT COUNT(*) as count FROM demo.synthetic_model'),
             ('model_registry', 'SELECT COUNT(*) as count FROM model_registry'),
             ('promotion_proposals', 'SELECT COUNT(*) as count FROM promotion_proposals'),
             ('approval_audit_log', 'SELECT COUNT(*) as count FROM approval_audit_log'),
@@ -256,8 +265,8 @@ def show_current_state(conn):
         except Exception as e:
             print(f"  ERROR: {e}")
 
-        # Show models in config.models
-        print("\nModels in config.models:")
+        # Show only real models from config.models.
+        print("\nReal models in config.models:")
         try:
             cur.execute("""
                 SELECT model_id, name, algorithm, status
@@ -267,8 +276,24 @@ def show_current_state(conn):
             """)
             models = cur.fetchall()
             for m in models:
-                algo_badge = "DEMO" if m['algorithm'] == 'SYNTHETIC' else m['algorithm']
-                print(f"  - {m['model_id']}: {m['name']} [{algo_badge}]")
+                print(f"  - {m['model_id']}: {m['name']} [{m['algorithm']}]")
+        except Exception as e:
+            print(f"  ERROR: {e}")
+
+        print("\nSynthetic models in demo.synthetic_model:")
+        try:
+            cur.execute("""
+                SELECT model_id, name, algorithm, environment, surface,
+                       execution_eligible
+                FROM demo.synthetic_model
+                ORDER BY model_id
+            """)
+            for model in cur.fetchall():
+                print(
+                    f"  - {model['model_id']}: {model['name']} "
+                    f"[{model['algorithm']}/{model['environment']}/"
+                    f"{model['surface']}; execution={model['execution_eligible']}]"
+                )
         except Exception as e:
             print(f"  ERROR: {e}")
 

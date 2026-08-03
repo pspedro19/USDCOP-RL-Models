@@ -31,9 +31,6 @@ export const dynamic = 'force-dynamic';
 
 const CATEGORY_ORDER: readonly CatalogCategoryId[] = ['fx', 'crypto', 'equity_index', 'commodity'];
 
-/** FX symbols the public market-price endpoint serves a live quote for. */
-const LIVE_FX_SYMBOLS = new Set(['USD/COP', 'USD/MXN', 'USD/BRL']);
-
 interface LivePrice { price: number | null; change_pct: number | null }
 const NO_PRICE: LivePrice = { price: null, change_pct: null };
 
@@ -65,7 +62,9 @@ async function fetchCatalogPrices(
   origin: string, symbols: Iterable<string>,
 ): Promise<Map<string, LivePrice>> {
   try {
-    const unique = [...new Set(symbols)].filter((s) => LIVE_FX_SYMBOLS.has(s));
+    // The registry is the allowlist SSOT. Probe every published symbol; the
+    // market-price endpoint degrades unsupported instruments to NO_PRICE.
+    const unique = [...new Set(symbols)];
     const entries = await Promise.all(
       unique.map(async (s) => [s, await fetchLivePrice(origin, s)] as const),
     );

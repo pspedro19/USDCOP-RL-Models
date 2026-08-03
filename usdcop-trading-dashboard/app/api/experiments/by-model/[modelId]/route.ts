@@ -10,7 +10,7 @@ import { protectApiRoute } from '@/lib/auth/api-auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { modelId: string } }
+  { params }: { params: Promise<{ modelId: string }> }
 ) {
   // Validate authentication (SKIP_AUTH=true bypasses auth for development)
   const skipAuth = process.env.SKIP_AUTH === 'true';
@@ -21,7 +21,7 @@ export async function GET(
     }
   }
 
-  const modelId = params.modelId;
+  const { modelId } = await params;
 
   try {
     // Get the most recent pending proposal for this model

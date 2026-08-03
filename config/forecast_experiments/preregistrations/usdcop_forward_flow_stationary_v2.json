@@ -1,0 +1,20 @@
+{
+  "experiment_id": "usdcop_forward_flow_stationary_v2",
+  "registered_at_utc": "2026-07-22T19:16:43Z",
+  "config_path": "config/forecast_experiments/usdcop_forward_flow_stationary_v2.yaml",
+  "config_sha256": "612d6a52aff27072ffc4d8717aa5c618da12c975508a0654b538f77a31fd24c9",
+  "data_sha256": {
+    "deep_price": "9eebf58708a79c2c83b4bad6460013187923bd28b1fb085a1cddfcee399d5977",
+    "current_price": "f1e5cf1b1f8434c4bd3f11fe89a100f9803d2e0626ae6200d00ac2ba9ce91e58",
+    "forward_macro_pit": "801b584f02965b83bf5cfa98aad208965f94354855bc401cdd0828f0417b98e4"
+  },
+  "primary_period": "robustness_2023_2024",
+  "primary_comparison": "price_plus_stationary_forward_flow_minus_price_only",
+  "horizons_trading_days": [1, 5, 10, 15, 20, 25, 30],
+  "prior_related_trial_outcomes_known": true,
+  "prior_related_trial": "usdcop_forward_flow_direction_v1",
+  "confirmatory_family_size": 14,
+  "no_outcome_dependent_tuning_after_this_registration": true,
+  "promotion_eligible": false,
+  "reason_not_promotion_eligible": "Post-diagnostic reformulation on a mutable reconstructed historical workbook; only a future first-seen vintage stream can confirm it."
+}

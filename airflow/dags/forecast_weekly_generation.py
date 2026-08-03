@@ -23,6 +23,7 @@ Date: 2026-04-16
 
 from __future__ import annotations
 
+import json
 import logging
 import subprocess
 import sys
@@ -37,6 +38,9 @@ logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path("/opt/airflow")
 SCRIPT_PATH = PROJECT_ROOT / "scripts" / "pipeline" / "generate_weekly_forecasts.py"
+DIRECTIONAL_SCRIPT_PATH = (
+    PROJECT_ROOT / "scripts" / "pipeline" / "generate_usdcop_directional_replay.py"
+)
 OUTPUT_DIR = PROJECT_ROOT / "usdcop-trading-dashboard" / "public" / "forecasting"
 
 # Whole-year coverage: regenerate the last N ISO weeks each run so /forecasting shows the
@@ -110,8 +114,29 @@ def _run_generate_weekly_forecasts(**context):
     logger.info(f"[forecast-gen] Forecasting DONE for {current_week}")
 
 
+def _run_generate_directional_replay(**context):
+    """Publish the complete frozen-2025 / expanding-2026 causal replay."""
+    if not DIRECTIONAL_SCRIPT_PATH.exists():
+        raise FileNotFoundError(f"Script not found: {DIRECTIONAL_SCRIPT_PATH}")
+    result = subprocess.run(
+        [sys.executable, str(DIRECTIONAL_SCRIPT_PATH)],
+        cwd=str(PROJECT_ROOT),
+        capture_output=True,
+        text=True,
+        timeout=15 * 60,
+    )
+    if result.stdout:
+        for line in result.stdout.splitlines()[-40:]:
+            logger.info(f"[directional-replay] {line}")
+    if result.stderr:
+        for line in result.stderr.splitlines()[-20:]:
+            logger.warning(f"[directional-replay:err] {line}")
+    if result.returncode != 0:
+        raise RuntimeError(f"directional replay exited {result.returncode}")
+
+
 def _verify_outputs(**context):
-    """Validate that CSV + PNGs were written for this week."""
+    """Validate that the legacy model-zoo CSV + PNGs were written."""
     ti = context["ti"]
     week = ti.xcom_pull(task_ids="generate_forecasts", key="week") or _current_iso_week()
     year, wk = week.split("-W")
@@ -143,6 +168,43 @@ def _verify_outputs(**context):
     logger.info(f"[forecast-gen] Total forward PNGs for {week_suffix}: {len(w_pngs)}")
 
 
+
+def _verify_directional_outputs(**context):
+    """Validate complete contiguous coverage and all directional images."""
+    directional_index = OUTPUT_DIR / "usdcop" / "directional_replay_index.json"
+    if not directional_index.exists():
+        raise FileNotFoundError(f"Directional replay missing: {directional_index}")
+    document = json.loads(directional_index.read_text(encoding="utf-8"))
+    latest = document.get("latest_week")
+    weeks = document.get("weeks", [])
+    if not latest or not weeks:
+        raise RuntimeError("Directional replay has no latest_week/weeks")
+    if weeks[0].get("iso_week") != "2025-W01" or weeks[-1].get("iso_week") != latest:
+        raise RuntimeError("Directional replay coverage is not contiguous from 2025-W01")
+    latest_year, latest_number = map(int, latest.replace("W", "").split("-"))
+    expected_weeks = sum(
+        date(year, 12, 28).isocalendar().week
+        for year in range(2025, latest_year)
+    ) + latest_number
+    if len(weeks) != expected_weeks:
+        raise RuntimeError(
+            f"Directional replay expected {expected_weeks} weeks, got {len(weeks)}"
+        )
+    if any(len(item.get("horizons", [])) != 7 for item in weeks):
+        raise RuntimeError("Directional replay has a week without all seven horizons")
+    missing_images = [
+        item["image_path"]
+        for item in weeks
+        if not (OUTPUT_DIR / item["image_path"]).exists()
+    ]
+    if missing_images:
+        raise FileNotFoundError(f"Directional charts missing: {missing_images[:5]}")
+    logger.info(
+        "[directional-replay] Contract %s: %s weeks through %s",
+        document.get("contract_hash"), len(weeks), latest,
+    )
+
+
 with DAG(
     dag_id="forecast_weekly_generation",
     default_args=DEFAULT_ARGS,
@@ -159,9 +221,20 @@ with DAG(
         python_callable=_run_generate_weekly_forecasts,
     )
 
+    directional = PythonOperator(
+        task_id="generate_usdcop_directional_replay",
+        python_callable=_run_generate_directional_replay,
+    )
+
     verify = PythonOperator(
-        task_id="verify_outputs",
+        task_id="verify_model_zoo_outputs",
         python_callable=_verify_outputs,
     )
 
+    verify_directional = PythonOperator(
+        task_id="verify_usdcop_directional_replay",
+        python_callable=_verify_directional_outputs,
+    )
+
     generate >> verify
+    directional >> verify_directional

@@ -5,6 +5,7 @@ import { ExternalLink, Database, Newspaper, BarChart3, BookOpen } from 'lucide-r
 import type { WeeklyViewData } from '@/lib/contracts/weekly-analysis.contract';
 import { useGmT } from '@/lib/i18n/gm-core';
 import { GM, GMT, GM_VIOLET } from '@/lib/ui/gm-tokens';
+import { safeExternalUrl } from '@/lib/security/safe-url';
 
 import { ANALYSIS_DICT } from './gm-analysis';
 
@@ -228,9 +229,9 @@ export function ReferencesSection({ weekData }: ReferencesSectionProps) {
           </h3>
           <div className="space-y-1.5 max-h-64 overflow-y-auto pr-2">
             {articleLinks.map((link, i) => (
-              <a
+              safeExternalUrl(link.url) ? <a
                 key={i}
-                href={link.url}
+                href={safeExternalUrl(link.url)!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`flex items-start gap-2 text-xs group ${GM.rowHover} rounded px-2 py-1.5 transition-colors ${GM.focus}`}
@@ -243,7 +244,7 @@ export function ReferencesSection({ weekData }: ReferencesSectionProps) {
                   <span className={`${GM.textFaint} text-[10px] block`}>{link.source}</span>
                 </div>
                 <ExternalLink className={`w-3 h-3 ${GM.textFaint} group-hover:text-[var(--gm-accent)] shrink-0 mt-0.5`} />
-              </a>
+              </a> : <div key={i} className={`flex items-start gap-2 text-xs px-2 py-1.5 ${GM.textFaint}`}><span>{i + 1}.</span><span className="truncate">{link.title}</span></div>
             ))}
           </div>
         </div>

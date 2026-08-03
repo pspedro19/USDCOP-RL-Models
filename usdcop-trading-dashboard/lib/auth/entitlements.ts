@@ -38,7 +38,7 @@ export async function getEntitlements(userId: string | null | undefined): Promis
       ? {
           ...effectiveEntitlements(row?.entitlements),
           plan: row.role === 'admin' ? 'auto' : effectiveEntitlements(row?.entitlements).plan,
-          assets: ['usdcop', 'xauusd', 'btcusdt'],
+          assets: ['usdcop', 'xauusd', 'btcusdt', 'spx500'],
           forecast_delay_hours: 0,
           analysis_delay_days: 0,
           signals_realtime: true,

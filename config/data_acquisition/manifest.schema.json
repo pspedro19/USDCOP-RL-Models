@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["run_id", "provider", "asset", "requested_at", "completed_at", "rows_received", "rows_accepted", "rows_rejected", "sha256", "frequency", "timezone", "available_at_policy", "status"],
+  "properties": {
+    "run_id": {"type": "string", "minLength": 1},
+    "provider": {"type": "string", "enum": ["twelvedata", "mt5", "bcrp", "suameca", "scraping", "public"]},
+    "asset": {"type": "string", "minLength": 1},
+    "requested_at": {"type": "string"},
+    "completed_at": {"type": "string"},
+    "rows_received": {"type": "integer", "minimum": 0},
+    "rows_accepted": {"type": "integer", "minimum": 0},
+    "rows_rejected": {"type": "integer", "minimum": 0},
+    "sha256": {"type": "string", "pattern": "^[a-fA-F0-9]{64}$"},
+    "frequency": {"type": "string"},
+    "timezone": {"type": "string"},
+    "available_at_policy": {"type": "string"},
+    "status": {"type": "string", "enum": ["success", "partial", "failed"]},
+    "error_count": {"type": "integer", "minimum": 0},
+    "retry_count": {"type": "integer", "minimum": 0}
+  }
+}

@@ -60,6 +60,32 @@ def test_generator_is_deterministic():
     assert json.dumps(mod.build(), sort_keys=True) == json.dumps(mod.build(), sort_keys=True)
 
 
+def test_knowledge_inventory_counts_definitions_not_local_folders(tmp_path):
+    mod = _load_generator()
+    skill = tmp_path / ".claude" / "skills" / "real-skill" / "SKILL.md"
+    skill.parent.mkdir(parents=True)
+    skill.write_text(
+        "---\nname: real-skill\ndescription: A real executable skill.\n---\n",
+        encoding="utf-8",
+    )
+    local_config = tmp_path / ".claude" / "skills" / ".claude" / "settings.local.json"
+    local_config.parent.mkdir(parents=True)
+    local_config.write_text("{}", encoding="utf-8")
+    live_spec = tmp_path / ".claude" / "specs" / "live.md"
+    live_spec.parent.mkdir(parents=True)
+    live_spec.write_text("# Live\n", encoding="utf-8")
+    (live_spec.parent / "README.md").write_text("# Index\n", encoding="utf-8")
+    archived = tmp_path / ".claude" / "specs" / "archive" / "old.md"
+    archived.parent.mkdir(parents=True)
+    archived.write_text("# Old\n", encoding="utf-8")
+
+    knowledge = mod.collect_knowledge(tmp_path)
+
+    assert knowledge["skills"] == 1
+    assert knowledge["skill_names"] == ["real-skill"]
+    assert knowledge["specs"] == 1
+
+
 def test_dag_registry_matches_disk(inventory):
     """The registry is the executable SSOT; the AST inventory is the observed truth.
 

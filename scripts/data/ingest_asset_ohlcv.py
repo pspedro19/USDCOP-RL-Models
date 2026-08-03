@@ -26,7 +26,9 @@ Contract: CTR-L0-ASSET-INGEST-001
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
+import json
 import logging
 import os
 import sys
@@ -201,19 +203,15 @@ def _paginate_back(rot: _KeyRotator, symbol: str, interval: str, floor: date,
     return out.reset_index(drop=True)
 
 
-# ------------------------------------------------------------------ Investing.com daily (best-effort)
+# ------------------------------------------------------------------ Investing.com daily
 def _investing_daily(instrument_id: int, symbol: str, start: date, end: date,
                      referer: str = "https://www.investing.com/commodities/gold-historical-data",
-                     max_chunks: int = 6) -> pd.DataFrame:
-    """Cross-check daily from Investing.com. Mirrors the proven extractor recipe
-    (cloudscraper browser session + domain-id header + annual chunks). Returns empty on any
-    failure (graceful degradation — TwelveData daily is the reliable primary)."""
-    try:
-        import cloudscraper
-    except Exception:
-        log.info("  [investing] cloudscraper not available -> skip")
-        return pd.DataFrame()
+                     max_chunks: int | None = 6, *, fail_closed: bool = False) -> pd.DataFrame:
+    """Fetch Investing.com daily OHLC in API-safe chunks.
 
+    Authoritative profiles set ``fail_closed`` so a blocked or incomplete chunk aborts the run;
+    a different vendor can never be silently promoted as fallback data.
+    """
     def _num(x):
         if x in (None, "", "-"):
             return None
@@ -223,34 +221,40 @@ def _investing_daily(instrument_id: int, symbol: str, start: date, end: date,
             return None
 
     try:
-        s = cloudscraper.create_scraper(browser={"browser": "chrome", "platform": "windows", "desktop": True})
+        s = requests.Session()
         s.headers.update({
-            "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                           "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
+            "User-Agent": "USDCOPResearchBot/1.0 (+local-research)",
             "Accept": "application/json",
             "Accept-Language": "en-US,en;q=0.9,es;q=0.8",
         })
         url = f"https://api.investing.com/api/financialdata/historical/{instrument_id}"
-        # annual chunks (API caps range), most-recent first for a quick liveness check
+        # Eighteen calendar years remain below the endpoint's ~5,000 daily-row ceiling.
         chunks, cs = [], start
         while cs <= end:
-            ce = min(cs + timedelta(days=364), end)
+            ce = min(cs + timedelta(days=6570), end)
             chunks.append((cs, ce))
             cs = ce + timedelta(days=1)
-        chunks = chunks[-max_chunks:]  # cap effort; recent years are the priority for cross-check
+        if max_chunks is not None:
+            chunks = chunks[-max_chunks:]
         all_rows = []
         for cstart, cend in chunks:
             r = s.get(url, params={"start-date": cstart.isoformat(), "end-date": cend.isoformat(),
                                    "time-frame": "Daily", "add-missing-rows": "false"},
                       headers={"Accept": "application/json", "Referer": referer, "domain-id": "www"},
-                      timeout=30)
+                      timeout=90)
             if r.status_code != 200:
-                log.info("  [investing] HTTP %s on %s..%s -> skip (TwelveData daily is primary)",
-                         r.status_code, cstart, cend)
-                if r.status_code in (403, 429):  # CF block / rate — stop, don't hammer
+                message = f"Investing HTTP {r.status_code} on {cstart}..{cend}"
+                if fail_closed:
+                    raise RuntimeError(message)
+                log.info("  [investing] %s -> cross-check chunk skipped", message)
+                if r.status_code in (403, 429):
                     break
                 continue
-            for it in r.json().get("data", []):
+            payload = r.json()
+            rows = payload.get("data", []) if isinstance(payload, dict) else []
+            if not rows and fail_closed:
+                raise RuntimeError(f"Investing returned no daily rows on {cstart}..{cend}")
+            for it in rows:
                 dpart = str(it.get("rowDateTimestamp", it.get("rowDate", "")))
                 dpart = dpart.split("T")[0] if "T" in dpart else dpart[:10]
                 try:
@@ -263,18 +267,25 @@ def _investing_daily(instrument_id: int, symbol: str, start: date, end: date,
                 c = _num(it.get("last_closeRaw", it.get("last_close")))
                 if None in (o, h, lo, c):
                     continue
-                all_rows.append({"time": t, "open": o, "high": h, "low": lo, "close": c, "volume": 0.0})
-            _time.sleep(2.0)
+                volume = _num(it.get("volumeRaw", it.get("volume"))) or 0.0
+                all_rows.append({"time": t, "open": o, "high": h, "low": lo,
+                                 "close": c, "volume": volume})
+            _time.sleep(RATE_DELAY)
         if not all_rows:
+            if fail_closed:
+                raise RuntimeError(f"Investing returned no daily data for {symbol}")
             return pd.DataFrame()
         df = pd.DataFrame(all_rows)
         df["time"] = df["time"].dt.tz_localize("America/New_York", nonexistent="shift_forward",
                                                ambiguous="NaT").dt.tz_convert("UTC")
         df = df.dropna(subset=["time"]).drop_duplicates("time")
-        log.info("  [investing] fetched %d daily bars (cross-check, id=%d)", len(df), instrument_id)
+        mode = "authoritative" if fail_closed else "cross-check"
+        log.info("  [investing] fetched %d daily bars (%s, id=%d)", len(df), mode, instrument_id)
         return df
     except Exception as e:
-        log.info("  [investing] failed (%s) -> skip", type(e).__name__)
+        if fail_closed:
+            raise RuntimeError(f"Authoritative Investing daily fetch failed for {symbol}: {e}") from e
+        log.info("  [investing] failed (%s) -> cross-check skipped", type(e).__name__)
         return pd.DataFrame()
 
 
@@ -327,6 +338,26 @@ def _daily_to_nyclose(df: pd.DataFrame) -> pd.DataFrame:
     return d.drop_duplicates("time").sort_values("time").reset_index(drop=True)
 
 
+def _daily_to_session_close(df: pd.DataFrame, profile) -> pd.DataFrame:
+    """Normalize daily labels to the profile's local market-close instant."""
+    if df.empty:
+        return df
+    raw_session = profile.raw.get("session", {})
+    close_tz = raw_session.get("daily_close_tz") or profile.session.timezone
+    if raw_session.get("daily_close_tz"):
+        close_text = raw_session.get("daily_close", "17:00")
+    else:
+        close_text = profile.session.close or "17:00"
+    hour, minute = map(int, close_text.split(":"))
+    d = df.copy()
+    naive_date = d["time"].dt.tz_convert("UTC").dt.normalize().dt.tz_localize(None)
+    naive_close = naive_date + pd.Timedelta(hours=hour, minutes=minute)
+    d["time"] = (naive_close
+                 .dt.tz_localize(close_tz, nonexistent="shift_forward", ambiguous=True)
+                 .dt.tz_convert("UTC"))
+    return d.drop_duplicates("time").sort_values("time").reset_index(drop=True)
+
+
 # ------------------------------------------------------------------ quality audit
 def _audit(df: pd.DataFrame, profile, kind: str) -> dict:
     rep = {"kind": kind, "rows": len(df), "problems": []}
@@ -361,6 +392,11 @@ def _clean(df: pd.DataFrame) -> pd.DataFrame:
         return df
     df = df.dropna(subset=["open", "high", "low", "close"]).drop_duplicates("time")
     df = df[df["high"] >= df["low"]]
+    bad_integrity = ((df["high"] < df[["open", "close"]].max(axis=1)) |
+                     (df["low"] > df[["open", "close"]].min(axis=1)))
+    if int(bad_integrity.sum()):
+        log.warning("  clean: dropped %d OHLC-integrity row(s)", int(bad_integrity.sum()))
+        df = df[~bad_integrity]
     return df.sort_values("time").reset_index(drop=True)
 
 
@@ -378,6 +414,29 @@ def _write_seed(df: pd.DataFrame, rel_path: str) -> None:
     log.info("  seed -> %s (%d rows)", rel_path, len(df))
 
 
+def _write_seed_manifest(df: pd.DataFrame, rel_path: str, *, provider: str,
+                         instrument_id: int, source_url: str) -> None:
+    """Write lineage next to an authoritative daily seed."""
+    path = REPO / rel_path
+    manifest_path = path.with_suffix(".manifest.json")
+    payload = {
+        "schema_version": 1,
+        "provider": provider,
+        "authoritative": True,
+        "fallback_policy": "fail_closed_no_fallback",
+        "instrument_id": instrument_id,
+        "source_url": source_url,
+        "retrieved_at": datetime.now(UTC).isoformat(),
+        "rows": len(df),
+        "earliest": str(df["time"].min()),
+        "latest": str(df["time"].max()),
+        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "data_path": rel_path.replace("\\", "/"),
+    }
+    manifest_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    log.info("  lineage -> %s", manifest_path.relative_to(REPO))
+
+
 def _db_conn():
     import psycopg2
     return psycopg2.connect(
@@ -390,10 +449,11 @@ def _db_conn():
     )
 
 
-def _upsert(conn, table: str, df: pd.DataFrame, symbol: str, source: str) -> int:
+def _upsert(conn, table: str, df: pd.DataFrame, symbol: str, source: str,
+            *, replace_symbols: list[str] | None = None) -> tuple[int, int]:
     from psycopg2.extras import execute_values
     if df.empty:
-        return 0
+        return 0, 0
     vals = [
         (r["time"].to_pydatetime(), symbol, float(r["open"]), float(r["high"]),
          float(r["low"]), float(r["close"]), float(r["volume"]), source)
@@ -401,6 +461,10 @@ def _upsert(conn, table: str, df: pd.DataFrame, symbol: str, source: str) -> int
     ]
     cur = conn.cursor()
     try:
+        deleted = 0
+        if replace_symbols:
+            cur.execute(f"DELETE FROM {table} WHERE symbol = ANY(%s)", (replace_symbols,))
+            deleted = cur.rowcount
         execute_values(cur, f"""
             INSERT INTO {table} (time, symbol, open, high, low, close, volume, source)
             VALUES %s
@@ -410,7 +474,7 @@ def _upsert(conn, table: str, df: pd.DataFrame, symbol: str, source: str) -> int
                 source=EXCLUDED.source, updated_at=NOW()
         """, vals, page_size=1000)
         conn.commit()
-        return len(vals)
+        return len(vals), deleted
     except Exception as e:
         conn.rollback()
         log.error("  UPSERT %s failed: %s", table, e)
@@ -433,6 +497,11 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
     log.info("=" * 70)
 
     summary: dict = {"asset_id": asset_id, "symbol": symbol}
+    raw_source = profile.raw.get("data_source", {})
+    if not skip_intraday and raw_source.get("intraday_enabled") is False:
+        log.info("[1] Intraday disabled by AssetProfile; daily-only source is enforced")
+        skip_intraday = True
+        summary["intraday"] = {"status": "disabled_by_profile"}
 
     # ---- 5-min intraday (TwelveData) ----
     if not skip_intraday:
@@ -454,38 +523,57 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
         summary["m5"] = rep
         summary["m5_frame"] = m5
 
-    # ---- daily deep history (TwelveData primary + Investing cross-check) ----
+    # ---- daily deep history ----
     if not skip_daily:
-        log.info("[2] Daily TwelveData (deep history from %s)", daily_start)
         floor = datetime.strptime(daily_start, "%Y-%m-%d").date()
-        dly = _paginate_back(rot, symbol, "1day", floor, daily_calls, "daily")
-        dly = _daily_to_nyclose(_clean(dly))
+        daily_provider = str(raw_source.get("daily_provider") or
+                             profile.data_source.daily_provider or
+                             profile.data_source.provider).lower()
+        authoritative = daily_provider == "investing"
+        inv_id = raw_source.get("investing_pair_id")
+        daily_source = "twelvedata_daily"
+
+        if authoritative:
+            if not inv_id:
+                raise RuntimeError("Investing authoritative profile requires investing_pair_id")
+            referer = raw_source.get(
+                "investing_referer",
+                "https://www.investing.com/indices/us-spx-500-historical-data",
+            )
+            log.info("[2] Daily Investing.com AUTHORITATIVE (id=%s, from %s)", inv_id, floor)
+            dly = _investing_daily(int(inv_id), symbol, floor, date.today(),
+                                   referer=referer, max_chunks=None, fail_closed=True)
+            dly = _daily_to_session_close(_clean(dly), profile)
+            daily_source = "investing_daily"
+            summary["daily_authoritative"] = True
+        else:
+            log.info("[2] Daily TwelveData (deep history from %s)", daily_start)
+            dly = _paginate_back(rot, symbol, "1day", floor, daily_calls, "daily")
+            dly = _daily_to_nyclose(_clean(dly))
+
+            # Legacy profiles may retain Investing as a best-effort cross-check.
+            if inv_id:
+                inv = _investing_daily(int(inv_id), symbol, floor, date.today())
+                if not inv.empty:
+                    inv = _daily_to_nyclose(_clean(inv))
+                    ov = pd.merge(dly[["time", "close"]].rename(columns={"close": "td"}),
+                                  inv[["time", "close"]].rename(columns={"close": "inv"}), on="time")
+                    if not ov.empty:
+                        d = ((ov["inv"] / ov["td"] - 1.0).abs() * 100)
+                        xrep = {"overlap": len(ov), "median_abs_diff_pct": round(float(d.median()), 3),
+                                "max_abs_diff_pct": round(float(d.max()), 3),
+                                "flag": "OK" if d.median() < 2.0 else "REVIEW (>2% median divergence)"}
+                        log.info("  cross-source (TD vs Investing): %s", xrep)
+                        summary["cross_source_agreement"] = xrep
+                    merged = pd.concat([dly, inv], ignore_index=True).drop_duplicates("time", keep="first")
+                    added = len(merged) - len(dly)
+                    if added > 0:
+                        log.info("  investing filled %d daily bars TD lacked", added)
+                    dly = merged.sort_values("time").reset_index(drop=True)
+                    summary["investing_crosscheck_rows"] = len(inv)
+
         rep = _audit(dly, profile, "daily")
         log.info("  audit daily: %s", rep)
-
-        # Investing.com cross-check (best-effort; validates TwelveData, fills TD-missing dates)
-        inv_id = profile.raw.get("data_source", {}).get("investing_pair_id")
-        if inv_id:
-            inv = _investing_daily(int(inv_id), symbol, floor, date.today())
-            if not inv.empty:
-                inv = _daily_to_nyclose(_clean(inv))
-                # cross-source agreement on overlapping timestamps (data-integrity audit)
-                ov = pd.merge(dly[["time", "close"]].rename(columns={"close": "td"}),
-                              inv[["time", "close"]].rename(columns={"close": "inv"}), on="time")
-                if not ov.empty:
-                    d = ((ov["inv"] / ov["td"] - 1.0).abs() * 100)
-                    xrep = {"overlap": len(ov), "median_abs_diff_pct": round(float(d.median()), 3),
-                            "max_abs_diff_pct": round(float(d.max()), 3),
-                            "flag": "OK" if d.median() < 2.0 else "REVIEW (>2% median divergence)"}
-                    log.info("  cross-source (TD vs Investing): %s", xrep)
-                    summary["cross_source_agreement"] = xrep
-                # union: TwelveData authoritative, Investing only fills dates TD lacks
-                merged = pd.concat([dly, inv], ignore_index=True).drop_duplicates("time", keep="first")
-                added = len(merged) - len(dly)
-                if added > 0:
-                    log.info("  investing filled %d daily bars TD lacked", added)
-                dly = merged.sort_values("time").reset_index(drop=True)
-                summary["investing_crosscheck_rows"] = len(inv)
 
         # post-condition: drop any off-session (weekend) daily bars the sources may still carry.
         # The daily path previously skipped session filtering entirely, so a mis-dated bar could
@@ -494,8 +582,20 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
         if not dly.empty:
             _gate_seed(dly, profile, "daily", validate)
             _write_seed(_to_seed_schema(dly, symbol), profile.data_source.daily_seed_file)
+            if authoritative:
+                _write_seed_manifest(
+                    dly,
+                    profile.data_source.daily_seed_file,
+                    provider="investing.com",
+                    instrument_id=int(inv_id),
+                    source_url=raw_source.get(
+                        "investing_referer",
+                        "https://www.investing.com/indices/us-spx-500-historical-data",
+                    ),
+                )
         summary["daily"] = _audit(dly, profile, "daily_final")
         summary["daily_frame"] = dly
+        summary["daily_source"] = daily_source
 
     # ---- persist to DB (idempotent UPSERT) ----
     if use_db:
@@ -504,14 +604,20 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
             conn = _db_conn()
             if not skip_intraday and isinstance(summary.get("m5_frame"), pd.DataFrame) and not summary["m5_frame"].empty:
                 tbl = GRANULARITY_TABLE["5min"]
-                n = _upsert(conn, tbl, summary["m5_frame"], symbol, "twelvedata_" + profile.safe_name)
+                n, _ = _upsert(conn, tbl, summary["m5_frame"], symbol,
+                               "twelvedata_" + profile.safe_name)
                 log.info("  %s: upserted %d rows (symbol=%s)", tbl, n, symbol)
                 summary["db_m5_upserted"] = n
             if not skip_daily and isinstance(summary.get("daily_frame"), pd.DataFrame) and not summary["daily_frame"].empty:
                 tbl = GRANULARITY_TABLE["daily"]
-                n = _upsert(conn, tbl, summary["daily_frame"], symbol, "twelvedata_daily")
+                replace_symbols = (raw_source.get("replace_db_symbols")
+                                   if summary.get("daily_authoritative") else None)
+                n, deleted = _upsert(conn, tbl, summary["daily_frame"], symbol,
+                                     summary.get("daily_source", "twelvedata_daily"),
+                                     replace_symbols=replace_symbols)
                 log.info("  %s: upserted %d rows (symbol=%s)", tbl, n, symbol)
                 summary["db_daily_upserted"] = n
+                summary["db_daily_replaced"] = deleted
             conn.close()
         except Exception as e:
             log.warning("  DB step skipped/failed: %s", e)

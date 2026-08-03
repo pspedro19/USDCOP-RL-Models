@@ -30,6 +30,9 @@ export interface ForecastRecord {
   image_backtest: string;
   generated_at: string;
   image_forecast: string;
+  regime_shift_score?: number;
+  regime_action?: 'NORMAL' | 'RETRAIN_REQUIRED' | string;
+  eligible_for_signal?: boolean;
 }
 
 export interface ModelMetrics {
@@ -50,6 +53,185 @@ export interface EnsembleVariant {
 export type ViewType = 'forward_forecast' | 'backtest';
 export type HorizonFilter = 'ALL' | string;
 export type ModelFilter = 'ALL' | string;
+
+// ============================================================================
+// USD/COP causal directional replay
+// ----------------------------------------------------------------------------
+// Produced by scripts/pipeline/generate_usdcop_directional_replay.py. Features
+// and model policy are frozen before the replay period; every evidence metric
+// is computed only from targets mature at the weekly origin.
+// ============================================================================
+
+export type DirectionalPrediction = 'UP' | 'DOWN';
+export type DirectionalDecision = DirectionalPrediction | 'FLAT';
+
+export interface DirectionalEvidence {
+  n: number;
+  directional_accuracy: number | null;
+  balanced_accuracy: number | null;
+  up_recall: number | null;
+  down_recall: number | null;
+  minimum_class_recall: number | null;
+  brier: number | null;
+  prediction_up_rate: number | null;
+  actual_up_rate: number | null;
+  up_count: number;
+  down_count: number;
+  raw_score: number | null;
+  shrunk_score: number | null;
+  eligible: boolean;
+}
+
+export interface DirectionalHorizonForecast {
+  horizon_days: number;
+  role: 'execution' | 'tactical' | 'swing' | string;
+  target_date: string;
+  target_date_estimated: boolean;
+  probability_up: number;
+  threshold: number;
+  prediction: DirectionalPrediction;
+  forecast_log_return: number;
+  forecast_return_pct: number;
+  forecast_price: number;
+  forecast_price_change: number;
+  forecast_interval_lower: number;
+  forecast_interval_upper: number;
+  forecast_interval_level: number;
+  point_forecast_direction: DirectionalPrediction;
+  direction_price_agree: boolean;
+  point_forecast_clipped: boolean;
+  point_forecast_validation_eligible: boolean;
+  actual: 0 | 1 | null;
+  actual_log_return: number | null;
+  actual_price: number | null;
+  point_abs_error_price: number | null;
+  point_abs_error_pct: number | null;
+  hit: boolean | null;
+  train_count: number;
+  train_label_end: string | null;
+  point_train_label_end: string | null;
+  training_mode: string;
+  model_family: string;
+  feature_hash: string;
+  validation_eligible: boolean;
+  evidence: DirectionalEvidence;
+  eligible_for_direction: boolean;
+  selected: boolean;
+  selection_rank: number;
+}
+
+export interface DirectionalReplayDecision {
+  direction: DirectionalDecision;
+  action: 'LONG_USD_SHORT_COP' | 'SHORT_USD_LONG_COP' | 'FLAT';
+  status: 'SHADOW' | 'ABSTAIN';
+  signal_authorized: false;
+  promotion_gate_passed: boolean;
+  primary_horizon: number | null;
+  confirmation_horizons: number[];
+  selected_horizons: number[];
+  confidence_proxy: number;
+  target_date: string | null;
+  forecast_price: number | null;
+  forecast_return_pct: number | null;
+  forecast_interval_lower: number | null;
+  forecast_interval_upper: number | null;
+  actual: 0 | 1 | null;
+  hit: boolean | null;
+  rationale: string;
+}
+
+export interface DirectionalReplayWeek {
+  iso_week: string;
+  year: number;
+  origin_date: string;
+  origin_is_partial_week: boolean;
+  base_price: number;
+  training_mode: string;
+  regime: { state: string; direction_shift_z: number };
+  decision: DirectionalReplayDecision;
+  horizons: DirectionalHorizonForecast[];
+  image_path: string;
+}
+
+export interface DirectionalPointMetrics {
+  n: number;
+  mae_log_return: number | null;
+  rmse_log_return: number | null;
+  naive_mae_log_return: number | null;
+  naive_rmse_log_return: number | null;
+  mae_skill_vs_spot: number | null;
+  rmse_skill_vs_spot: number | null;
+  mae_price: number | null;
+  mape_price: number | null;
+  directional_accuracy: number | null;
+  balanced_accuracy: number | null;
+  up_recall: number | null;
+  down_recall: number | null;
+  minimum_class_recall: number | null;
+  bias_log_return: number | null;
+}
+
+export interface DirectionalHorizonMetrics {
+  horizon_days: number;
+  n: number;
+  directional_accuracy: number | null;
+  balanced_accuracy: number | null;
+  up_recall: number | null;
+  down_recall: number | null;
+  minimum_class_recall: number | null;
+  brier: number | null;
+  prediction_up_rate: number | null;
+  actual_up_rate: number | null;
+  up_count: number;
+  down_count: number;
+  point_forecast: DirectionalPointMetrics;
+}
+
+export interface DirectionalYearSummary {
+  year: number;
+  weeks_total: number;
+  shadow_decisions: number;
+  abstentions: number;
+  coverage: number;
+  matured_decisions: number;
+  pending_decisions: number;
+  decision_metrics: Omit<DirectionalHorizonMetrics, 'horizon_days' | 'point_forecast'>;
+  horizon_metrics: DirectionalHorizonMetrics[];
+}
+
+export interface DirectionalReplayIndex {
+  schema_version: string;
+  contract_hash: string;
+  asset_id: 'usdcop';
+  symbol: 'USD/COP';
+  chart_symbol: 'USDCOP';
+  generated_at: string;
+  data_cutoff: string;
+  latest_week: string;
+  years: number[];
+  methodology: {
+    experiment_id: string;
+    status: string;
+    signal_authorized: false;
+    feature_selection_cutoff: string;
+    validation_years: number[];
+    frozen_replay_year: number;
+    expanding_retrain_year: number;
+    label_maturity_rule: string;
+    horizon_selection: string;
+  };
+  models: Record<string, {
+    horizon_days: number;
+    half_life: string;
+    threshold: number;
+    validation_score: number;
+    validation_eligible: boolean;
+    feature_hash: string;
+    selected_features: string[];
+  }>;
+  summaries: DirectionalYearSummary[];
+  weeks: DirectionalReplayWeek[];
+}
 
 // ============================================================================
 // Per-asset Weekly Inference (Gold / BTC rule-based science stacks)

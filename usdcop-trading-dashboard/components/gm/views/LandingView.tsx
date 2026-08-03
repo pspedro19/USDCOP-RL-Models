@@ -36,7 +36,7 @@ const LANDING_GUEST_DICT = defineGmDict({
   },
 });
 
-/** Sesión demo rol free (guest@demo.local, is_test) vía POST /api/auth/guest → /hub. */
+/** Sesión demo rol free (guest@demo.usdcop.ai, is_test) vía POST /api/auth/guest → /hub. */
 function GuestButton({ testid, onError }: { testid: string; onError: (msg: string) => void }) {
   const t = useGmT(LANDING_GUEST_DICT);
   const [busy, setBusy] = useState(false);

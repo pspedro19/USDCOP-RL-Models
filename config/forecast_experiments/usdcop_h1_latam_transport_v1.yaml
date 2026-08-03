@@ -1,0 +1,138 @@
+_meta:
+  version: "1.0.0"
+  experiment_id: "usdcop_h1_latam_transport_v1"
+  registered_on: "2026-07-22"
+  status: "locked_external_transport_test"
+  signal_authorized: false
+  capital_authorized: false
+
+hypothesis: >-
+  The exact frozen USD/COP H1 v2 price model and regime gate exhibit
+  directional skill when transported without retuning to USD/MXN and USD/BRL.
+
+scope:
+  assets: ["USD/MXN", "USD/BRL"]
+  quote_direction: "local-currency units per USD; UP means USD strengthens"
+  history_start: "2000-01-01"
+  primary_start: "2020-01-01"
+  primary_end: "2025-12-31"
+  diagnostic_start: "2026-01-01"
+  diagnostic_end: "2026-07-22"
+  origin_frequency: "last available session of each ISO week"
+  horizon_sessions: 1
+
+data:
+  source_file: "data/experiments/usdcop_intraday_latam_lead_v1/asset_daily_ohlcv.parquet"
+  source_sha256: "b569b416630e4f88a7b2696ca3a23e3d393b59632176790ef295c39fb3ff1171"
+  required_source: "twelvedata_daily_deep"
+  availability_class: "reconstructed_not_true_pit"
+  prohibit_source_revision_after_registration: true
+
+model:
+  family: "balanced_logistic_regression"
+  feature_group: "long_price"
+  c: 0.1
+  class_weight: "balanced"
+  max_iter: 2000
+  random_state: 23
+  half_life_sessions: 1260
+  imputer: "training_median"
+  scaler: "training_standard"
+  probability_threshold: 0.50
+  training_mode: "weekly_expanding_matured_labels"
+  features:
+    - "return_1d"
+    - "return_5d"
+    - "return_10d"
+    - "return_20d"
+    - "volatility_5d"
+    - "volatility_10d"
+    - "volatility_20d"
+    - "rsi_14d"
+    - "ma_ratio_20d"
+    - "ma_ratio_50d"
+
+regime_gate:
+  trend_z_formula: "return_20d / (volatility_20d * sqrt(20))"
+  trend_z_threshold: 0.50
+  volatility_reference: "rolling_252_session_median_shifted_1_session"
+  allowed_states: ["range__low_vol", "trend_up__high_vol"]
+  disallowed_action: "FLAT"
+  fallback_direction: null
+
+primary_estimand:
+  unit: "asset-week"
+  aggregation: "equal weight per asset-week; paired inference clusters the two assets by ISO week"
+  direction_rule: "probability_up >= 0.50 when regime is allowed"
+  paired_baseline: "asset-specific causal expanding-window majority direction"
+  dependence_control: >-
+    circular moving-block bootstrap over the complete ordered ISO-week
+    clusters, preserving each cluster's signal count and the equal
+    asset-week estimand
+  block_length_weeks: 4
+  bootstrap_samples: 10000
+  bootstrap_seed: 41
+  alpha_one_sided: 0.05
+
+pass_gates:
+  minimum_combined_signals: 180
+  minimum_combined_coverage: 0.25
+  minimum_combined_directional_accuracy: 0.55
+  minimum_combined_balanced_accuracy: 0.55
+  minimum_each_asset_directional_accuracy: 0.50
+  minimum_each_asset_balanced_accuracy: 0.50
+  minimum_each_asset_class_recall: 0.30
+  minimum_prediction_class_rate: 0.15
+  maximum_prediction_class_rate: 0.85
+  minimum_combined_lift_vs_causal_majority: 0.0
+  lift_block_bootstrap_ci95_lower_strictly_gt: 0.0
+  lift_block_bootstrap_one_sided_p_max: 0.05
+  annual_stability_years: [2020, 2021, 2022, 2023, 2024, 2025]
+  minimum_annual_combined_signals: 20
+  minimum_annual_combined_balanced_accuracy: 0.48
+  all_gates_required: true
+
+diagnostics:
+  pesaran_timmermann_reported_pooled_and_by_asset: true
+  pesaran_timmermann_is_inferential_gate: false
+  reason: >-
+    The two currencies share week-level shocks, so the pooled asymptotic
+    Pesaran-Timmermann p-value is descriptive. Primary inference is the
+    preregistered week-cluster block bootstrap of paired lift.
+
+multiplicity:
+  one_combined_primary_test: true
+  individual_assets_are_constraints_not_selectable_winners: true
+  diagnostic_2026_can_never_rescue_primary_failure: true
+  no_threshold_feature_regime_or_asset_selection_after_results: true
+
+implementation_integrity:
+  audit_script: "scripts/analysis/usdcop_h1_latam_transport_v1.py"
+  registration_file: "config/forecast_experiments/preregistrations/usdcop_h1_latam_transport_v1.json"
+  immutable_one_shot_registration_and_result: true
+  runtime_lock_at_registration: true
+  hashed_dependencies:
+    - "scripts/analysis/usdcop_directional_edge_tournament.py"
+    - "scripts/analysis/usdcop_long_history_directional_tournament.py"
+    - "scripts/analysis/usdcop_causal_regime_gate.py"
+    - "scripts/validation/evaluate_usdcop_h1_shadow_v2.py"
+
+outputs:
+  directory: "reports/usdcop_h1_latam_transport_v1"
+  predictions: "predictions.parquet"
+  metrics: "metrics.csv"
+  annual_metrics: "annual_metrics.csv"
+  result: "result.json"
+
+trial_accounting:
+  new_primary_trials: 1
+  directional_trials_before: 49
+  directional_trials_after: 50
+  global_trials_before: 110
+  global_trials_after: 111
+
+governance:
+  research_only: true
+  successful_result_can_authorize_capital: false
+  interpretation_if_pass: "external historical transport support, still not prospective USD/COP proof"
+  interpretation_if_fail: "no cross-LatAm generalization; close transport family without reformulation"

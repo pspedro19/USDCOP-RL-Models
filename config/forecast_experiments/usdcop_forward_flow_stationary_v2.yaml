@@ -1,0 +1,155 @@
+_meta:
+  experiment_id: "usdcop_forward_flow_stationary_v2"
+  version: "2.0.0"
+  preregistered_at_utc: "2026-07-22T19:16:43Z"
+  status: "preregistered_exploratory_followup"
+  evidence_class: "post_diagnostic_retrospective_reconstructed_backfill"
+  promotion_eligible: false
+  signal_authorized: false
+  related_prior_trial: "usdcop_forward_flow_direction_v1"
+  directional_program_trial_index: 29
+  rationale: >-
+    V1 showed that nonstationary forward-devaluation levels dominated the
+    joint logit and collapsed UP recall. Test exactly one representation fix:
+    past-only rolling z-scores and smoothed flow shocks. No model, threshold,
+    origin, period or gate changes are permitted.
+
+hypothesis:
+  primary: >-
+    Price plus stationary forward-flow shocks improves paired weekly
+    directional hits over price-only without collapsing either class recall.
+  treatment_variable: "include_stationary_forward_flow_shocks"
+  no_tuning_after_registration: true
+  primary_period: "robustness_2023_2024"
+  primary_metric: "paired_directional_accuracy_delta"
+
+data:
+  asset: "USD/COP"
+  decision_timezone: "America/Bogota"
+  decision_hour: 16
+  price_start: "2016-04-01"
+  evaluation_asof: "2026-07-21"
+  exclude_incomplete_current_iso_week: true
+  price_sources:
+    deep_path: "data/backups/features/asset_daily_ohlcv.parquet"
+    deep_sha256: "9eebf58708a79c2c83b4bad6460013187923bd28b1fb085a1cddfcee399d5977"
+    current_path: "seeds/latest/usdcop_daily_ohlcv.parquet"
+    current_sha256: "f1e5cf1b1f8434c4bd3f11fe89a100f9803d2e0626ae6200d00ac2ba9ce91e58"
+  flow_path: "data/pipeline/04_cleaning/output/USDCOP_FORWARD_MACRO_PIT.parquet"
+  flow_sha256: "801b584f02965b83bf5cfa98aad208965f94354855bc401cdd0828f0417b98e4"
+  availability_policy: "observation_plus_5d_reconstructed_research_only"
+  initial_backfill_is_true_vintage: false
+
+protocol:
+  horizons_trading_days: [1, 5, 10, 15, 20, 25, 30]
+  origin_frequency: "last_available_session_per_completed_iso_week"
+  target: "close_t_plus_h_gt_close_t"
+  label_maturity_rule: "target_session_index_lte_origin_session_index"
+  threshold: 0.5
+  coverage: 1.0
+  periods:
+    development_2021_2022:
+      start: "2021-01-01"
+      end: "2022-12-31"
+      training_mode: "weekly_expanding_matured_labels"
+      role: "diagnostic_no_selection"
+    robustness_2023_2024:
+      start: "2023-01-01"
+      end: "2024-12-31"
+      training_mode: "weekly_expanding_matured_labels"
+      role: "post_diagnostic_retrospective_robustness"
+    frozen_replay_2025:
+      start: "2025-01-01"
+      end: "2025-12-31"
+      training_mode: "frozen_pre_2025"
+      role: "pseudo_oos_not_fresh_after_feature_discovery"
+    weekly_retrain_2026:
+      start: "2026-01-01"
+      end: "2026-12-31"
+      training_mode: "weekly_expanding_matured_labels"
+      role: "retrospective_forward_replay_through_asof"
+
+model:
+  family: "logistic_regression"
+  penalty: "l2"
+  c: 0.1
+  class_weight: "balanced"
+  max_iter: 2000
+  random_state: 23
+  imputer: "training_median"
+  scaler: "training_standard"
+
+features:
+  price:
+    - return_1d
+    - return_5d
+    - return_10d
+    - return_20d
+    - volatility_5d
+    - volatility_10d
+    - volatility_20d
+    - rsi_14d
+    - ma_ratio_20d
+    - ma_ratio_50d
+  forward_flow:
+    - pit_forward_history_foreign_net_ratio_mean5_z252
+    - pit_forward_history_foreign_ndf_net_ratio_mean5_z252
+    - pit_forward_history_foreign_balance_change_5_z252
+    - pit_forward_history_pension_net_ratio_mean5_z252
+    - pit_forward_history_pension_ndf_net_ratio_mean5_z252
+    - pit_forward_history_pension_balance_change_5_z252
+    - pit_forward_history_real_sector_net_ratio_mean5_z252
+    - pit_forward_history_real_sector_ndf_net_ratio_mean5_z252
+    - pit_forward_history_real_sector_balance_change_5_z252
+    - pit_forward_history_market_devaluation_1m_z252
+    - pit_forward_history_market_devaluation_1m_change_5_z252
+    - pit_forward_history_curve_3m_1m_z252
+    - pit_forward_history_curve_6m_1m_z252
+    - pit_forward_history_foreign_devaluation_1m_spread_z252
+    - pit_forward_history_pension_devaluation_1m_spread_z252
+    - pit_forward_history_real_sector_devaluation_1m_spread_z252
+
+inference:
+  paired_models: ["price_only", "price_plus_forward_flow"]
+  refit_schedule_2021_2024: "every_week"
+  refit_schedule_2025: "never_within_year"
+  refit_schedule_2026: "every_week"
+  minimum_mature_training_labels: 500
+
+statistics:
+  paired_test: "exact_two_sided_mcnemar"
+  overlap_robustness: "moving_block_bootstrap_on_paired_hit_delta"
+  bootstrap_samples: 5000
+  bootstrap_seed: 2307
+  block_length_weeks: "ceil(horizon_trading_days/5)"
+  sensitivity: "take_every_block_length_week"
+  multiple_testing: "holm_within_v2_and_bonferroni_across_v1_plus_v2"
+  confirmatory_family_size: 14
+  alpha: 0.05
+
+gates:
+  incremental_primary_per_horizon:
+    paired_da_delta_gt: 0.0
+    holm_mcnemar_p_lt: 0.05
+    block_bootstrap_ci_low_gt: 0.0
+    treatment_balanced_accuracy_gte: 0.52
+    treatment_minimum_class_recall_gte: 0.35
+    nonoverlap_da_delta_gte: 0.0
+  temporal_confirmation:
+    frozen_replay_2025_da_delta_gte: 0.0
+    frozen_replay_2025_balanced_accuracy_gte: 0.50
+    weekly_retrain_2026_is_diagnostic_until_matured_weeks: 26
+  consequence_if_gate_passes: >-
+    Enter prospective shadow tracking from the next unobserved ISO week;
+    historical reconstruction alone never authorizes capital.
+  consequence_if_gate_fails: >-
+    Reject this stationary flow family and stop reformulating this information
+    on already observed 2023-2026 outcomes.
+
+outputs:
+  directory: "reports/usdcop_forward_flow_stationary_v2"
+  workbook: "usdcop_forward_flow_stationary_v2.xlsx"
+  predictions: "predictions.csv"
+  summary: "summary.csv"
+  paired_tests: "paired_tests.csv"
+  manifest: "manifest.json"

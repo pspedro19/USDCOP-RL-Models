@@ -21,7 +21,7 @@ import { query } from '@/lib/db/postgres-client';
 
 const STAFF_SQL = STAFF_ROLES.map((r) => `'${r}'`).join(',');
 const CUSTOMER_WHERE = `status='approved' AND NOT COALESCE(is_test,FALSE) AND role NOT IN (${STAFF_SQL})`;
-const ASSET_SYMBOLS: Record<string, string> = { usdcop: 'USD/COP', xauusd: 'XAU/USD', btcusdt: 'BTC/USDT' };
+const ASSET_SYMBOLS: Record<string, string> = { usdcop: 'USD/COP', xauusd: 'XAU/USD', btcusdt: 'BTC/USDT', spx500: 'SPX500' };
 
 export interface RevenueAggregate {
   revenue: AdminRevenueResponse;
@@ -88,7 +88,7 @@ export async function computeRevenue(): Promise<RevenueAggregate> {
   porPlan.push({ plan: 'Add-ons por activo', amount: 0, pct: 0 }); // add-ons not sold yet (real 0)
 
   // Per-asset attribution: each plan's MRR split across the assets it entitles.
-  const perAsset: Record<string, number> = { usdcop: 0, xauusd: 0, btcusdt: 0 };
+  const perAsset: Record<string, number> = { usdcop: 0, xauusd: 0, btcusdt: 0, spx500: 0 };
   for (const [plan, n] of Object.entries(paidCounts)) {
     const assets = PLAN_DEFAULTS[plan as PlanId]?.assets ?? [];
     if (!assets.length) continue;

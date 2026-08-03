@@ -155,7 +155,7 @@ const ROLE_LABEL: Record<Role, string> = {
 
 /** Cuenta demo compartida (bootstrap_guest en SignalBridge). El email por defecto
  *  se puede sobreescribir en build con NEXT_PUBLIC_GUEST_EMAIL. */
-const GUEST_EMAIL = process.env.NEXT_PUBLIC_GUEST_EMAIL || 'guest@demo.local';
+const GUEST_EMAIL = process.env.NEXT_PUBLIC_GUEST_EMAIL || 'guest@demo.usdcop.ai';
 
 // ────────────────────────────────────────────────────────── liveStats (bundle)
 

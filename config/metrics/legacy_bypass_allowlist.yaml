@@ -1,0 +1,6 @@
+schema_version: "1.0.0"
+policy: no_new_bypasses
+description: >-
+  Explicit inventory of temporary metric-engine bypasses. New entries require
+  owner, reason, expiry and a removal issue; an empty list is the target state.
+entries: []
