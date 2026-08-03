@@ -43,9 +43,16 @@ def _event(**changes: object) -> _Event:
 
 
 class _Connection:
-    def __init__(self, *, inserted: bool = True, mutation: dict[str, object] | None = None):
+    def __init__(
+        self,
+        *,
+        inserted: bool = True,
+        mutation: dict[str, object] | None = None,
+        json_as_text: bool = False,
+    ):
         self.inserted = inserted
         self.mutation = mutation or {}
+        self.json_as_text = json_as_text
         self.query = ""
         self.args: tuple[object, ...] = ()
 
@@ -55,6 +62,9 @@ class _Connection:
         event = _event().to_record()
         event["metric_event_id"] = event["metric_event_id"]
         event["event_time"] = datetime(2026, 8, 3, 16, tzinfo=timezone.utc)
+        if self.json_as_text:
+            event["dimensions"] = '{"n_observations":26,"window":"26w"}'
+            event["lineage"] = '{"source":"paper-ledger"}'
         event.update(self.mutation)
         return event | {"inserted": self.inserted}
 
@@ -86,3 +96,19 @@ async def test_metric_event_sink_rejects_non_finite_json_before_sql() -> None:
     with pytest.raises(MetricContractError, match="finite canonical JSON"):
         await persist_metric_event(connection, _event(dimensions={"bad": float("nan")}))
     assert connection.query == ""
+
+
+@pytest.mark.asyncio
+async def test_metric_event_sink_accepts_asyncpg_default_jsonb_text() -> None:
+    result = await persist_metric_event(
+        _Connection(inserted=False, json_as_text=True), _event()
+    )
+    assert result.inserted is False
+
+
+@pytest.mark.asyncio
+async def test_metric_event_sink_rejects_invalid_stored_jsonb() -> None:
+    with pytest.raises(MetricContractError, match="stored dimensions is invalid JSON"):
+        await persist_metric_event(
+            _Connection(mutation={"dimensions": "not-json"}), _event()
+        )

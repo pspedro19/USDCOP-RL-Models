@@ -118,9 +118,20 @@ def _normalize_stored(row: Mapping[str, Any]) -> dict[str, Any]:
     result["event_time"] = (
         event_time.isoformat() if hasattr(event_time, "isoformat") else str(event_time)
     )
-    result["dimensions"] = dict(result["dimensions"])
-    result["lineage"] = dict(result["lineage"])
+    result["dimensions"] = _stored_json("dimensions", result["dimensions"])
+    result["lineage"] = _stored_json("lineage", result["lineage"])
     return result
+
+
+def _stored_json(name: str, value: Any) -> dict[str, Any]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise MetricContractError(f"stored {name} is invalid JSON") from exc
+    if not isinstance(value, Mapping):
+        raise MetricContractError(f"stored {name} must be a JSON object")
+    return dict(value)
 
 
 async def persist_metric_event(
