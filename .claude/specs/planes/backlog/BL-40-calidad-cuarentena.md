@@ -1,11 +1,13 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-29
+version: 1.1.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - src/data_quality/ohlcv_validators.py
+  - src/data_quality/rules.py
+  - config/quality/market_price_ranges.yaml
   - airflow/dags/l0_macro_update.py
 ---
 
@@ -13,11 +15,28 @@ code_anchors:
 
 **Fuente**: Plan Consolidado §5 / DATA-STRATEGY §50 · **Ola**: 1-2 · **Esfuerzo**: M · **Trials**: 0
 
-## Estado actual (as-built/perfil 2026-07-27)
-Entrega parcial: `src/data_quality/rules.py`, su configuración y la migración 073 definen decisiones fail-closed y `quality.quarantine_event`. No hay consumidor productivo que escriba la cuarentena. Sobre el parquet real, el rango USD/MXN `[5,100]` rechaza 59 barras legítimas entre 1990-02 y 1995-01 (mínimo 2.712); la serie está retroajustada y no presenta salto de redenominación. Además 233.784 de 286.428 barras corresponden a instrumentos sin rango declarado y caerían como `bar.unknown_instrument`.
+## Estado actual (as-built/perfil 2026-08-03)
+
+Entrega parcial: `src/data_quality/rules.py`, su configuración y la migración 073 definen
+decisiones fail-closed y `quality.quarantine_event`. El rango USD/MXN dejó de ser universal:
+la regla está limitada al productor `twelvedata` y a observaciones desde
+`1993-01-01T00:00:00Z`, corte de unidad monetaria documentado por Banxico SIE CF373. Falta
+todavía un consumidor productivo que invoque la regla y escriba la cuarentena.
+
+El evaluador exige alias canónico, proveedor y timestamp timezone-aware. Proveedor distinto,
+instante anterior al corte, contexto ausente o llamada directa sin contexto quedan en
+`QUARANTINED`; no se recortan ni corrigen precios silenciosamente. Los rangos legacy no scoped
+siguen admitidos para no inventar proveedor/fecha de instrumentos aún no migrados.
 
 ## Qué falta exactamente
-Ampliar de forma factual USD/MXN a `[2.5,100]` (cero de las 52.644 filas USD/MXN quedarían fuera), declarar rangos para los instrumentos canónicos reales y resolver aliases antes de evaluar. Después cablear raw→quality→quarantine→correction→canonical y declarar `UNAVAILABLE` para columnas fantasma/sentimiento no medido.
+
+- Cablear `evaluate_provider_bar` en los productores realtime/backfill USD/MXN antes del upsert;
+  esos DAGs COP son ownership de CLAUDE y requieren incremento coordinado.
+- Persistir cada rechazo como evento de cuarentena y evitar que llegue a canonical.
+- Declarar reglas scoped para los demás instrumentos sólo con proveedor, ventana y fuente
+  verificables; un rango legacy no basta para cierre.
+- Cablear raw→quality→quarantine→correction→canonical y declarar `UNAVAILABLE` para columnas
+  fantasma/sentimiento no medido.
 
 ## Impacto frontend
 /analysis deja de mostrar sentiment neutro falso (UNAVAILABLE explícito).

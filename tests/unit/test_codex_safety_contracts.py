@@ -68,6 +68,7 @@ def test_market_alias_registry_is_bijective_and_quality_is_fail_closed() -> None
         )
     registry = ProviderSymbolRegistry(
         [
+            ProviderSymbol("twelvedata", "USD/MXN", "usdmxn"),
             ProviderSymbol("yahoo", "MXN=X", "usdmxn"),
             ProviderSymbol("internal", "USD_MXN", "usdmxn"),
         ]
@@ -76,13 +77,32 @@ def test_market_alias_registry_is_bijective_and_quality_is_fail_closed() -> None
         "config/quality/market_price_ranges.yaml", identity_registry=registry
     )
     good = {"open": 19, "high": 20, "low": 18, "close": 19.5}
-    assert rules.evaluate_provider_bar("YAHOO", "mxn=x", good).accepted
+    modern_start = datetime(1993, 1, 1, tzinfo=timezone.utc)
+    assert rules.evaluate_provider_bar(
+        "TWELVEDATA", "usd/mxn", good, observed_at=modern_start
+    ).accepted
     historical = {"open": 2.72, "high": 2.75, "low": 2.7, "close": 2.712}
-    assert rules.evaluate_provider_bar("YAHOO", "mxn=x", historical).accepted
+    assert rules.evaluate_provider_bar(
+        "twelvedata", "USD/MXN", historical, observed_at=modern_start
+    ).accepted
     below_declared_range = {"open": 2.49, "high": 2.49, "low": 2.49, "close": 2.49}
     assert not rules.evaluate_provider_bar(
-        "YAHOO", "mxn=x", below_declared_range
+        "twelvedata", "USD/MXN", below_declared_range, observed_at=modern_start
     ).accepted
+    assert not rules.evaluate_provider_bar(
+        "yahoo", "MXN=X", good, observed_at=modern_start
+    ).accepted
+    assert not rules.evaluate_provider_bar("twelvedata", "USD/MXN", good).accepted
+    assert not rules.evaluate_provider_bar(
+        "twelvedata", "USD/MXN", good, observed_at=datetime(1993, 1, 1)
+    ).accepted
+    assert not rules.evaluate_provider_bar(
+        "twelvedata",
+        "USD/MXN",
+        good,
+        observed_at=modern_start - timedelta(microseconds=1),
+    ).accepted
+    assert not rules.evaluate_bar("usdmxn", good).accepted
     assert not rules.evaluate_bar("unknown", good).accepted
     assert not rules.evaluate_bar(
         "usdmxn", {"open": -1, "high": 20, "low": -2, "close": 19}
@@ -91,6 +111,18 @@ def test_market_alias_registry_is_bijective_and_quality_is_fail_closed() -> None
         "usdmxn",
         {"open": "Infinity", "high": "Infinity", "low": 18, "close": 19},
     ).accepted
+
+
+def test_scoped_quality_range_config_is_closed_world(tmp_path: Path) -> None:
+    from src.data_quality.rules import QualityRuleSet
+
+    config = tmp_path / "ranges.yaml"
+    config.write_text(
+        """version: '1'\nprice_ranges:\n  usdmxn:\n    - provider_id: twelvedata\n      valid_from: '1993-01-01T00:00:00Z'\n      bounds: [2.5, 100]\n      invented: true\n""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="unknown fields"):
+        QualityRuleSet.from_yaml(config)
 
 
 def _target(environment: str = "paper", currency: str = "USD"):

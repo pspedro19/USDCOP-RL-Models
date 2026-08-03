@@ -1,4 +1,9 @@
-version: "1.0.0"
+version: "1.1.0"
 price_ranges:
-  usdmxn: [2.5, 100]
+  usdmxn:
+    # Banxico CF373: the current-peso unit starts on 1993-01-01 (1:1000 redenomination).
+    # The production realtime/backfill producer identifies USD/MXN as TwelveData.
+    - provider_id: twelvedata
+      valid_from: "1993-01-01T00:00:00Z"
+      bounds: [2.5, 100]
   usdclp: [100, 5000]
