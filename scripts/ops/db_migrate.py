@@ -87,6 +87,13 @@ MIGRATION_PLANS = {
 REVIEW_GATED_PLANS = frozenset(
     {"commerce-v1", "platform-bootstrap-v1", "fabric-v1"}
 )
+PLAN_PREREQUISITE_TABLES = {
+    "platform-bootstrap-v1": (
+        "public.sb_users",
+        "public.usdcop_m5_ohlcv",
+        "public.macro_indicators_daily",
+    ),
+}
 # These values are changed only in the same reviewed commit that changes a
 # gated migration plan.  A digest supplied by the operator is a second factor,
 # not a way for modified on-disk SQL to authorize itself.
@@ -444,6 +451,23 @@ async def table_exists(conn, full_table_name: str) -> bool:
     return result
 
 
+async def validate_plan_prerequisites(conn, plan: str) -> bool:
+    """Fail closed before plan DDL when an upstream schema is absent."""
+    missing = [
+        table
+        for table in PLAN_PREREQUISITE_TABLES.get(plan, ())
+        if not await table_exists(conn, table)
+    ]
+    if missing:
+        logger.error(
+            "Plan %s prerequisites are missing: %s",
+            plan,
+            ", ".join(missing),
+        )
+        return False
+    return True
+
+
 async def run_migrations(
     plan: str = "legacy-init", reviewed_digest: str | None = None
 ) -> bool:
@@ -462,6 +486,8 @@ async def run_migrations(
 
     plan_lock_acquired = False
     try:
+        if not await validate_plan_prerequisites(conn, plan):
+            return False
         # Ensure migrations table exists
         await ensure_migrations_table(conn)
         await conn.fetchval(

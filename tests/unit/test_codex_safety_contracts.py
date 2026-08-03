@@ -873,6 +873,14 @@ def test_platform_bootstrap_plan_is_explicit_minimal_and_unpinned() -> None:
         "054_h5_subtrades_unique.sql",
         "055_rbac_monetization.sql",
     ]
+    assert names.index("053_sb_user_approval.sql") < names.index(
+        "055_rbac_monetization.sql"
+    )
+    assert module.PLAN_PREREQUISITE_TABLES["platform-bootstrap-v1"] == (
+        "public.sb_users",
+        "public.usdcop_m5_ohlcv",
+        "public.macro_indicators_daily",
+    )
     assert not {"043_forecast_h5_tables.sql", "044_smart_simple_columns.sql", "047_pgvector_embeddings.sql", "048_reconciliation_tables.sql", "049_regime_gate_columns.sql"} & set(names)
     assert "platform-bootstrap-v1" in module.REVIEW_GATED_PLANS
     assert "platform-bootstrap-v1" not in module.PINNED_PLAN_DIGESTS
@@ -911,3 +919,40 @@ def test_migrator_prefers_database_url_and_requires_explicit_fallback_password(
     with pytest.raises(RuntimeError, match="DATABASE_URL or POSTGRES_PASSWORD"):
         asyncio.run(module.get_connection())
     assert calls == []
+
+
+def test_platform_bootstrap_prerequisites_fail_closed() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_prerequisites", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class Connection:
+        def __init__(self, existing: set[tuple[str, str]]) -> None:
+            self.existing = existing
+
+        async def fetchval(
+            self, _query: str, schema: str, table: str
+        ) -> bool:
+            return (schema, table) in self.existing
+
+    incomplete = Connection(
+        {("public", "sb_users"), ("public", "usdcop_m5_ohlcv")}
+    )
+    assert not asyncio.run(
+        module.validate_plan_prerequisites(incomplete, "platform-bootstrap-v1")
+    )
+
+    complete = Connection(
+        {
+            ("public", "sb_users"),
+            ("public", "usdcop_m5_ohlcv"),
+            ("public", "macro_indicators_daily"),
+        }
+    )
+    assert asyncio.run(
+        module.validate_plan_prerequisites(complete, "platform-bootstrap-v1")
+    )
