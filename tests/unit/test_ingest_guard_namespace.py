@@ -1,18 +1,18 @@
-"""BL-40 — el choque de namespaces que impide cablear la cuarentena.
+"""BL-40 — la cuarentena habla identidad canónica sin que nadie invente la traducción.
 
-`QualityRuleSet.evaluate_provider_bar` no tenía llamador productivo porque exigía un
+`QualityRuleSet.evaluate_provider_bar` no tenía llamador porque exigía un
 `ProviderSymbolRegistry` y `reference.provider_symbol` estaba vacía. Poblada la espina
-(BL-37), el guard ya es construible... y al probarlo contra datos reales aparece un
-choque que lo bloquea:
+(BL-37), el guard es construible — y aparece un choque: el evaluador indexa
+`price_ranges` por el `instrument_id` del registry, que es un **UUID**, mientras el YAML
+de rangos los indexa por **asset_id**.
 
-* la migración 072 define `reference.instrument.instrument_id` como **UUID**, y
-  `quality.quarantine_event.instrument_id` tiene FK a esa columna;
-* pero `QualityRuleSet` usa ese mismo valor como **clave de `price_ranges`**, y ese YAML
-  está indexado por *slugs* (`usdmxn`, `usdclp`).
+Parecía una decisión de contrato. No lo era: la traducción ya está **declarada** en dos
+sitios (la espina mapea `instrument → asset`; cada activo declara su `price_range`), así
+que re-clavar los rangos es derivación, no heurística — y no hace falta tocar `rules.py`.
 
-Estos candados existen para que ese desacuerdo no se olvide ni se parchee a escondidas.
-Van a ponerse **rojos** cuando alguien lo resuelva — y eso es lo que se busca: obligan a
-revisitar este módulo en vez de dejar un guard muerto que aparenta cubrir la ingesta.
+Estos candados fijan justo eso: que la traducción salga de lo declarado, que el fallo
+siga siendo cerrado, y que el límite conocido (`usdmxn`/`usdclp` sin perfil) quede
+escrito en vez de descubrirse otra vez dentro de seis semanas.
 """
 
 from __future__ import annotations
@@ -20,16 +20,20 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.data_quality.ingest_guard import QUALITY_RANGES  # noqa: E402
+from src.data_quality.ingest_guard import ASSETS_DIR, QUALITY_RANGES  # noqa: E402
 
 MIGRACION_072 = ROOT / "database" / "migrations" / "072_reference_identity.sql"
 MIGRACION_073 = ROOT / "database" / "migrations" / "073_market_quality.sql"
+
+#: Activos de la espina, es decir los que tienen `AssetProfile`.
+ACTIVOS_ESPINA = ("usdcop", "btcusdt", "xauusd", "spx500")
 
 
 def test_the_canonical_instrument_id_is_a_uuid() -> None:
@@ -38,45 +42,112 @@ def test_the_canonical_instrument_id_is_a_uuid() -> None:
     assert "instrument_id UUID PRIMARY KEY DEFAULT gen_random_uuid()" in ddl
 
 
-def test_the_price_ranges_are_keyed_by_slugs_not_uuids() -> None:
-    """El YAML de rangos usa slugs: ninguna clave puede ser un UUID."""
-    config = yaml.safe_load(QUALITY_RANGES.read_text(encoding="utf-8")) or {}
-    claves = list(config.get("price_ranges", {}))
-
-    assert claves, "sin rangos declarados no hay nada que comparar"
-    for clave in claves:
-        assert "-" not in clave and len(clave) < 32, (
-            f"'{clave}' parece un UUID: si los rangos ya se indexan por identidad "
-            "canónica, este candado sobra y el guard de ingesta puede cablearse"
-        )
-
-
-def test_the_two_namespaces_still_disagree() -> None:
-    """El candado que se pone rojo el día que esto se arregle. **Ese es su trabajo.**
-
-    Mientras las claves de `price_ranges` y los `instrument_id` canónicos vivan en
-    espacios distintos, cablear el guard pondría en cuarentena barras válidas. Cuando
-    alguien alinee ambos, este test fallará y obligará a revisitar
-    `src/data_quality/ingest_guard.py` para conectarlo de verdad.
-    """
-    config = yaml.safe_load(QUALITY_RANGES.read_text(encoding="utf-8")) or {}
-    claves = set(config.get("price_ranges", {}))
-
-    # Los activos de la espina, por su `asset_id`, tampoco aparecen como claves: los dos
-    # únicos rangos declarados son de instrumentos que ni siquiera están en la espina.
-    activos_espina = {"usdcop", "btcusdt", "xauusd", "spx500"}
-    assert not (claves & activos_espina), (
-        "ya hay rangos declarados para activos de la espina: revisa si el guard de "
-        "ingesta puede cablearse (ver el docstring de ingest_guard.py)"
-    )
-
-
 def test_quarantine_event_points_at_the_canonical_instrument() -> None:
-    """La cuarentena referencia la identidad canónica: el guard debe hablar ese idioma.
+    """La cuarentena referencia el UUID: por eso el registry NO puede devolver slugs.
 
-    Es lo que descarta la salida fácil de traducir UUID a slug dentro del guard: el
-    evento que se escribe lleva FK al UUID, así que la traducción tendría que existir
-    en las dos direcciones y ninguna capa la declara.
+    Es lo que descarta la salida fácil —hacer que el registry resuelva a `asset_id` para
+    que encajen los rangos—: el evento que se escribe lleva FK al UUID.
     """
     ddl = MIGRACION_073.read_text(encoding="utf-8")
     assert "instrument_id UUID REFERENCES reference.instrument(instrument_id)" in ddl
+
+
+def test_every_spine_asset_declares_its_own_price_range() -> None:
+    """La fuente de los rangos es el SSOT del activo, no una tabla aparte.
+
+    Sin esta declaración la traducción no existiría y habría que inventar un rango, que
+    es exactamente lo que la espina prohíbe.
+    """
+    for asset_id in ACTIVOS_ESPINA:
+        declarado = yaml.safe_load(
+            (ASSETS_DIR / f"{asset_id}.yaml").read_text(encoding="utf-8")
+        )
+        rango = declarado.get("price_range")
+        assert isinstance(rango, list) and len(rango) == 2, (
+            f"{asset_id} no declara price_range: sus barras no podrían evaluarse sin "
+            "inventarle un rango"
+        )
+        bajo, alto = float(rango[0]), float(rango[1])
+        assert 0 < bajo < alto, f"{asset_id}: price_range {rango} no ordena"
+
+
+def test_the_translation_is_declared_not_invented() -> None:
+    """`asset_id → instrument_id` la declara la espina; el guard sólo la lee.
+
+    Se comprueba contra la base cuando la hay: cada activo con perfil tiene exactamente
+    un instrumento canónico, así que la traducción es una función, no una elección.
+    """
+    try:
+        from scripts.data.ingest_asset_ohlcv import _db_conn
+
+        conn = _db_conn()
+    except Exception:  # pragma: no cover - CI sin base de datos
+        pytest.skip("sin base de datos: la traducción se verifica en entorno con DB")
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT asset_id, COUNT(*) FROM reference.instrument GROUP BY 1")
+            por_activo = dict(cur.fetchall())
+    finally:
+        conn.close()
+
+    for asset_id in ACTIVOS_ESPINA:
+        assert por_activo.get(asset_id) == 1, (
+            f"{asset_id} tiene {por_activo.get(asset_id)} instrumentos canónicos: la "
+            "traducción dejaría de ser una función y habría que elegir, es decir inventar"
+        )
+
+
+def test_a_bar_outside_the_declared_range_is_quarantined_and_a_good_one_is_not() -> None:
+    """La propiedad que BL-40 pide: el evaluador ya discrimina de verdad.
+
+    Antes de re-clavar los rangos, esta misma llamada devolvía `bar.unknown_instrument`
+    para una barra perfectamente válida — el guard habría puesto en cuarentena el 100%
+    de la ingesta.
+    """
+    from datetime import datetime, timezone
+
+    try:
+        from scripts.data.ingest_asset_ohlcv import _db_conn
+
+        from src.data_quality.ingest_guard import ruleset_from_spine
+
+        conn = _db_conn()
+    except Exception:  # pragma: no cover - CI sin base de datos
+        pytest.skip("sin base de datos: el guard se verifica en entorno con DB")
+
+    try:
+        reglas = ruleset_from_spine(conn)
+    finally:
+        conn.close()
+
+    momento = datetime(2026, 1, 5, tzinfo=timezone.utc)
+    buena = {"time": momento, "open": 4000, "high": 4010, "low": 3990, "close": 4005, "volume": 10}
+    fuera = {"time": momento, "open": 99999, "high": 99999, "low": 99999, "close": 99999, "volume": 10}
+
+    assert reglas.evaluate_provider_bar("twelvedata", "USD/COP", buena, observed_at=momento).accepted
+    decision = reglas.evaluate_provider_bar("twelvedata", "USD/COP", fuera, observed_at=momento)
+    assert not decision.accepted and decision.rule_id.startswith("bar.range.")
+
+    # Y el alias no registrado sigue muriendo: fail-closed intacto.
+    desconocida = reglas.evaluate_provider_bar("nadie", "XXX/YYY", buena, observed_at=momento)
+    assert not desconocida.accepted and desconocida.rule_id == "bar.unknown_alias"
+
+
+def test_the_scoped_ranges_still_cannot_be_used_and_that_is_written_down() -> None:
+    """`usdmxn`/`usdclp` tienen la regla más cuidada y NO están en la espina.
+
+    Es el límite honesto de esta entrega: el único instrumento con rango escalonado por
+    proveedor y fecha (corte Banxico CF373, 1993) no tiene `AssetProfile`, así que no
+    puede identificarse canónicamente. Este candado se pondrá **rojo** el día que
+    alguien le dé perfil — y entonces habrá que traer también su rango escalonado, en
+    vez de dejarlo caer al `price_range` plano del activo.
+    """
+    config = yaml.safe_load(QUALITY_RANGES.read_text(encoding="utf-8")) or {}
+    escalonados = set(config.get("price_ranges", {}))
+
+    perfilados = {p.stem for p in ASSETS_DIR.glob("*.yaml")}
+    assert not (escalonados & perfilados), (
+        f"{sorted(escalonados & perfilados)} ya tiene AssetProfile: trae su rango "
+        "escalonado (proveedor + valid_from) al guard en vez del price_range plano"
+    )

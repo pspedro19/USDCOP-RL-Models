@@ -23,28 +23,31 @@ Diseño:
   guard que bloquea sin dejar rastro convierte un dato malo en un dato ausente, que es
   indistinguible de "el proveedor no publicó".
 
-**BLOQUEADO — no cablear todavía.** Al probar el guard contra la espina viva apareció
-un choque de namespaces que hace que hoy rechazaría *todas* las barras, incluidas las
-buenas:
-
-* `reference.instrument.instrument_id` es un **UUID** (migración 072:
-  `instrument_id UUID PRIMARY KEY DEFAULT gen_random_uuid()`), y
-  `quality.quarantine_event.instrument_id` es UUID con FK a esa tabla.
-* pero `QualityRuleSet` usa el `instrument_id` devuelto por el registry como **clave de
-  `price_ranges`**, y ese YAML está indexado por *slugs* (`usdmxn`, `usdclp`).
-
-Medido con una barra USD/COP perfectamente válida:
+**El choque de namespaces, y cómo se resolvió sin tocar `rules.py`.** La primera versión
+de este guard rechazaba *todas* las barras, incluidas las buenas:
 
     evaluate_provider_bar('twelvedata', 'USD/COP', barra_buena)
     -> accepted=False  rule='bar.unknown_instrument'
-       "no versioned price range declared for canonical instrument"
 
-Es decir: la migración y el evaluador **no están de acuerdo sobre qué es un
-`instrument_id`**. Conectar el guard ahora convertiría la cuarentena en un apagón de
-ingesta, y traducir el UUID a slug dentro de este módulo sería fabricar una equivalencia
-que ninguna de las dos capas declara. La decisión —clavar `price_ranges` al símbolo
-canónico, o hacer determinista el `instrument_id`— toca `rules.py` y el esquema, así que
-es bilateral y no la tomo por mi cuenta.
+Causa: `QualityRuleSet` indexa `price_ranges` por el `instrument_id` que devuelve el
+registry —desde la espina, un **UUID** (072)—, mientras que
+`config/quality/market_price_ranges.yaml` los indexa por **asset_id** (`usdmxn`,
+`usdclp`), el vocabulario anterior a que existiera identidad canónica.
+
+Parecía una decisión de contrato, y no lo era: **la traducción ya estaba declarada**. La
+espina mapea `instrument → asset`, y cada activo declara su propio `price_range` en
+`config/assets/<id>.yaml`. Así que `canonical_price_ranges()` re-clava los rangos al UUID
+leyendo esas dos declaraciones, sin heurística y sin cambiar el evaluador. Medido:
+
+    USD/COP dentro de rango   -> accepted=True
+    USD/COP a 99999           -> QUARANTINED  rule='bar.range.<uuid>'
+    alias no registrado       -> QUARANTINED  rule='bar.unknown_alias'
+
+Queda un límite real y declarado: **`usdmxn` y `usdclp` —los dos únicos instrumentos con
+rango escalonado por proveedor y fecha— no tienen `AssetProfile`**, así que no están en la
+espina y no pueden identificarse canónicamente. El instrumento con la regla de calidad
+más cuidada del repositorio (corte Banxico CF373 de 1993) es precisamente el que la
+identidad no alcanza. Darles perfil es la vía; inventarles instrumento, no.
 
 Contract: CTR-QLAB-FABRIC-004 (BL-40) · Date: 2026-08-04
 """
@@ -53,7 +56,10 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from decimal import Decimal
 from datetime import datetime
+
+import yaml
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -62,6 +68,7 @@ from src.market.identity import ProviderSymbol, ProviderSymbolRegistry
 
 REPO = Path(__file__).resolve().parents[2]
 QUALITY_RANGES = REPO / "config" / "quality" / "market_price_ranges.yaml"
+ASSETS_DIR = REPO / "config" / "assets"
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,9 +113,65 @@ def registry_from_spine(conn) -> ProviderSymbolRegistry:
     )
 
 
-def ruleset_from_spine(conn, ranges_path: Path = QUALITY_RANGES) -> QualityRuleSet:
-    """`QualityRuleSet` con su registry ya enganchado a la identidad canónica."""
-    return QualityRuleSet.from_yaml(ranges_path, identity_registry=registry_from_spine(conn))
+def canonical_price_ranges(conn, assets_dir: Path = ASSETS_DIR) -> dict[str, tuple[Decimal, Decimal]]:
+    """Rangos de precio **re-clavados a la identidad canónica** (el `instrument_id` UUID).
+
+    Aquí se resuelve el choque de namespaces sin inventar nada y sin tocar `rules.py`:
+
+    * `QualityRuleSet` indexa sus rangos por el `instrument_id` que devuelve el registry,
+      que desde la espina es un **UUID**.
+    * `config/quality/market_price_ranges.yaml` los indexa por **asset_id** (`usdmxn`,
+      `usdclp`) — el vocabulario que existía antes de que hubiera identidad canónica.
+    * Y cada activo declara su propio `price_range` en `config/assets/<id>.yaml`.
+
+    La traducción `asset_id → instrument_id` **no se fabrica**: la declara
+    `reference.instrument`, que es justamente lo que la espina pobló. Por eso este mapeo
+    es derivación y no heurística.
+
+    Un activo sin `price_range` declarado **no recibe rango**, y sin rango sus barras se
+    van a cuarentena. Es coherente con el resto de la espina: lo no declarado no se
+    rellena.
+    """
+    with conn.cursor() as cur:
+        cur.execute("SELECT asset_id, instrument_id::text FROM reference.instrument")
+        instrumento_por_asset = dict(cur.fetchall())
+
+    rangos: dict[str, tuple[Decimal, Decimal]] = {}
+    for asset_id, instrument_id in sorted(instrumento_por_asset.items()):
+        ruta = assets_dir / f"{asset_id}.yaml"
+        if not ruta.is_file():
+            continue
+        declarado = (yaml.safe_load(ruta.read_text(encoding="utf-8")) or {}).get("price_range")
+        if not (isinstance(declarado, (list, tuple)) and len(declarado) == 2):
+            continue
+        bajo, alto = Decimal(str(declarado[0])), Decimal(str(declarado[1]))
+        if bajo <= 0 or bajo >= alto:
+            raise IngestGuardError(
+                f"{asset_id}: price_range declarado inválido {declarado!r}; un rango que "
+                "no ordena no puede gobernar una cuarentena"
+            )
+        rangos[instrument_id] = (bajo, alto)
+    return rangos
+
+
+def ruleset_from_spine(
+    conn, assets_dir: Path = ASSETS_DIR, ranges_path: Path = QUALITY_RANGES
+) -> QualityRuleSet:
+    """`QualityRuleSet` con registry canónico y rangos ya traducidos a UUID."""
+    rangos = canonical_price_ranges(conn, assets_dir)
+    if not rangos:
+        raise IngestGuardError(
+            "ningún activo de la espina declara price_range: el guard rechazaría toda "
+            "barra por falta de rango, que no es una cuarentena sino un apagón"
+        )
+    version = (yaml.safe_load(ranges_path.read_text(encoding="utf-8")) or {}).get(
+        "version", "unversioned"
+    )
+    return QualityRuleSet(
+        price_ranges=rangos,
+        identity_registry=registry_from_spine(conn),
+        version=f"asset-ssot@{version}",
+    )
 
 
 def _instrument_id_of(decision: QualityDecision) -> str | None:
