@@ -80,6 +80,7 @@ async def test_metric_event_sink_is_parameterized_and_idempotent() -> None:
     assert "$18::jsonb" in connection.query and "$19::jsonb" in connection.query
     assert _event().metric_event_id not in connection.query
     assert connection.args[0] == _event().metric_event_id
+    assert connection.args[1] == datetime(2026, 8, 3, 16, tzinfo=timezone.utc)
 
 
 @pytest.mark.asyncio
@@ -95,6 +96,17 @@ async def test_metric_event_sink_rejects_non_finite_json_before_sql() -> None:
     connection = _Connection()
     with pytest.raises(MetricContractError, match="finite canonical JSON"):
         await persist_metric_event(connection, _event(dimensions={"bad": float("nan")}))
+    assert connection.query == ""
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("event_time", ["not-a-timestamp", "2026-08-03T16:00:00"])
+async def test_metric_event_sink_rejects_invalid_or_naive_event_time(
+    event_time: str,
+) -> None:
+    connection = _Connection()
+    with pytest.raises(MetricContractError, match="event_time"):
+        await persist_metric_event(connection, _event(event_time=event_time))
     assert connection.query == ""
 
 

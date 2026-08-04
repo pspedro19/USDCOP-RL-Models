@@ -6,6 +6,7 @@ import json
 import math
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Mapping, Protocol
 
 from src.identity.canonical import CanonicalizationError, canonical_json_bytes
@@ -73,6 +74,18 @@ def _json_payload(name: str, value: Mapping[str, Any]) -> str:
         raise MetricContractError(f"{name} is not finite canonical JSON: {exc}") from exc
 
 
+def _event_timestamp(value: object) -> datetime:
+    if not isinstance(value, str):
+        raise MetricContractError("event_time must be an ISO-8601 string")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise MetricContractError("event_time must be valid ISO-8601") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise MetricContractError("event_time must include a timezone")
+    return parsed.astimezone(timezone.utc)
+
+
 def _event_values(event: MetricEvent) -> tuple[object, ...]:
     try:
         uuid.UUID(event.metric_event_id)
@@ -83,7 +96,7 @@ def _event_values(event: MetricEvent) -> tuple[object, ...]:
     _finite_optional("threshold_critical", event.threshold_critical)
     return (
         event.metric_event_id,
-        event.event_time,
+        _event_timestamp(event.event_time),
         event.catalog_version,
         event.formula_version,
         event.entity_type,
@@ -106,7 +119,7 @@ def _event_values(event: MetricEvent) -> tuple[object, ...]:
 
 def _comparable_record(event: MetricEvent) -> dict[str, Any]:
     record = event.to_record()
-    record["event_time"] = event.event_time.replace("Z", "+00:00")
+    record["event_time"] = _event_timestamp(event.event_time).isoformat()
     return record
 
 
