@@ -19,6 +19,7 @@ gobierno (`PAPER` admite `ZERO` y `SHADOW`) y el gate la reclama, no la suple.
 
 from __future__ import annotations
 
+import ast
 import sys
 from pathlib import Path
 
@@ -131,16 +132,109 @@ def test_production_strategy_declares_governance() -> None:
     assert decl.dag_declared is True
 
 
-def test_production_dag_gates_on_the_declaration_before_producing_signals() -> None:
-    """El DAG H5 debe invocar el gate — es la propiedad end-to-end de BL-16.
+#: DAG productivo de señal H5 — el consumidor real del gate.
+DAG_H5 = ROOT / "airflow" / "dags" / "forecast_h5_l5_weekly_signal.py"
 
-    Sin este candado, el motor de gobernanza vuelve a ser correcto y no invocado,
-    que es exactamente el estado del que este BL sale.
+
+def _rshift_leaves(node: ast.AST, lado: str) -> set[str]:
+    """Nombres en el extremo `lado` de una expresión `a >> b >> [c, d]`."""
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.RShift):
+        return _rshift_leaves(node.right if lado == "right" else node.left, lado)
+    if isinstance(node, (ast.List, ast.Tuple)):
+        return {e.id for e in node.elts if isinstance(e, ast.Name)}
+    if isinstance(node, ast.Name):
+        return {node.id}
+    return set()
+
+
+def _dependency_edges(tree: ast.AST) -> set[tuple[str, str]]:
+    """Aristas upstream→downstream declaradas con el operador `>>` de Airflow."""
+    aristas: set[tuple[str, str]] = set()
+    for nodo in ast.walk(tree):
+        if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, ast.RShift):
+            for arriba in _rshift_leaves(nodo.left, "right"):
+                for abajo in _rshift_leaves(nodo.right, "left"):
+                    aristas.add((arriba, abajo))
+    return aristas
+
+
+def _task_var_by(tree: ast.AST, predicado) -> str | None:
+    """Variable del operador cuyo `Call(...)` satisface `predicado(kwargs)`.
+
+    Se identifica por lo que la tarea HACE (su `python_callable` / `task_id`), nunca
+    por cómo se llama la variable: renombrar `t_governance` no debe burlar el candado.
     """
-    dag = (ROOT / "airflow" / "dags" / "forecast_h5_l5_weekly_signal.py").read_text(
-        encoding="utf-8"
+    for nodo in ast.walk(tree):
+        if (
+            isinstance(nodo, ast.Assign)
+            and len(nodo.targets) == 1
+            and isinstance(nodo.targets[0], ast.Name)
+            and isinstance(nodo.value, ast.Call)
+        ):
+            kwargs = {k.arg: k.value for k in nodo.value.keywords if k.arg}
+            if predicado(kwargs):
+                return nodo.targets[0].id
+    return None
+
+
+def _gate_precede_a_la_senal(source: str) -> bool:
+    """¿La tarea del gate es upstream real de la que produce la señal?
+
+    Causal a propósito: no busca texto, resuelve alcanzabilidad sobre el grafo de
+    dependencias. Una tarea definida pero **huérfana** (no enlazada con `>>`) devuelve
+    `False`, que es exactamente el agujero que CXD-442 encontró en la versión textual.
+    """
+    tree = ast.parse(source)
+
+    gate = _task_var_by(
+        tree,
+        lambda kw: isinstance(kw.get("python_callable"), ast.Name)
+        and kw["python_callable"].id == "assert_governance_declaration",
     )
-    assert "assert_strategy_may_run_dag" in dag, (
-        "el DAG de señal H5 no invoca el gate de gobernanza: validate_declaration "
-        "seguiría sin llamador productivo"
+    senal = _task_var_by(
+        tree,
+        lambda kw: isinstance(kw.get("task_id"), ast.Constant)
+        and kw["task_id"].value == "generate_signal",
+    )
+    if gate is None or senal is None:
+        return False
+
+    aristas = _dependency_edges(tree)
+    alcanzados, frontera = {gate}, [gate]
+    while frontera:
+        actual = frontera.pop()
+        for arriba, abajo in aristas:
+            if arriba == actual and abajo not in alcanzados:
+                alcanzados.add(abajo)
+                frontera.append(abajo)
+    return senal in alcanzados
+
+
+def test_production_dag_gates_on_the_declaration_before_producing_signals() -> None:
+    """El gate debe ser upstream REAL de la señal, no una tarea presente y suelta.
+
+    Sin este candado el motor de gobernanza vuelve a ser correcto y no invocado, que
+    es el estado del que este BL sale. La versión textual anterior de este test daba
+    verde con la tarea huérfana (CXD-442): comprobaba presencia, que no es causalidad.
+    """
+    assert _gate_precede_a_la_senal(DAG_H5.read_text(encoding="utf-8")), (
+        "el gate de gobernanza no es upstream de 'generate_signal': el DAG podría "
+        "producir señal sin haber validado la declaración"
+    )
+
+
+def test_the_order_lock_fails_when_the_gate_is_unlinked() -> None:
+    """Fail-first permanente: desenlazar el gate debe poner el candado en rojo.
+
+    Este es el par del candado anterior y la razón de que exista. Un test de orden que
+    nunca se demuestra capaz de fallar no prueba nada; aquí la demostración queda
+    versionada, y se ejecuta en cada corrida en vez de haber ocurrido una sola vez.
+    """
+    huerfano = DAG_H5.read_text(encoding="utf-8").replace(
+        "t_wait_l3 >> t_governance >> t_check", "t_wait_l3 >> t_check"
+    )
+    assert "t_wait_l3 >> t_check" in huerfano, "la mutación de prueba no se aplicó"
+    assert not _gate_precede_a_la_senal(huerfano), (
+        "con el gate desenlazado el candado sigue verde: vuelve a medir presencia, "
+        "no orden de ejecución"
     )
