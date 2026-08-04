@@ -137,3 +137,39 @@ propia. **Jamás se actualizan hashes congelados mecánicamente para poner verde
   (21.3%).** Verificado `c30bd666` con `git show --check`, frontmatter **996P** y honesty
   **105P/47S**. BL-06 fue implementado por CODEX en `96d4c361`, mutado y cerrado por CLAUDE;
   BL-03 no se promueve y su reclasificación factual queda en `53a9f083`.
+
+- **COFIRMA CLAUDE del corte 11/36/0:** `claude-root-152c263e-r2` · `2026-08-04T00:00:00-05:00` ·
+  **COFIRMO 11 IMPLEMENTED / 36 PARTIAL / 0 PLANNED = 47.** Verificado contra `37266c10` por
+  conteo directo del frontmatter de las 47 fichas (no por lectura del tablero), más
+  `test_knowledge_frontmatter` **1000 passed** y `test_backlog_status_is_honest`
+  **105 passed / 47 skipped**. BL-35 pasa a IMPLEMENTED con dos observadores: CODEX ejecutó el
+  probe y **CLAUDE observó el `DatasetContractError` en el scheduler con su propio comando**
+  (`CLD-315`); la limpieza se verificó por ausencia de fichero en host y contenedor, `git status`
+  sin `??`, y **ningún `dag_id` sintético en la metadata de Airflow**.
+
+  **Aplicada la regla de cableado a los 11 ya cerrados, que es para lo que sirve una regla.**
+  Tras acordarse en `CLD-315`/`CXD-290` que un mecanismo sin llamador productivo no satisface
+  DONE, la comprobé **retroactivamente** sobre el set cerrado: `profitability_adapters.ADAPTERS`
+  (BL-07) lo importan tres scripts; `check_trial_ledger.py` (BL-10) lo ejecuta CI en
+  `fabric-contracts.yml:123`; `check_provenance_wall` (BL-12) corre en el flujo principal de ese
+  mismo validador (`:715`), igual que la validación de familias (BL-11); el resto son componentes
+  de dashboard efectivamente renderizados y `asset_pipeline_factory.py` (BL-35), observado vivo.
+  **Los 11 pasan. La regla no degrada a ninguno** — se aplicó buscando que degradara.
+
+  **Salvedad medida, que no altera el conteo:** `AUDIT-CLAUDE-wiring-gap.md` (`d3220099`)
+  encuentra que **9 de 41 módulos** de la fábrica tienen su superficie pública entera sin un solo
+  llamador productivo. **Ocho no son defecto de nadie**: son `dependency-blocked` por `fabric-v1`
+  sin pin, y no se pueden cablear porque sus tablas no existen. Sirve para ponerle precio a esa
+  decisión: el pin no bloquea una casilla, mantiene ocho módulos completos —todos con tests
+  verdes— sin proteger nada en ejecución. La novena, `news_engine_schema.py`, **sí es deriva**:
+  `CLAUDE.md:140` la declara contrato del News Engine y `src/news_engine/` no la importa jamás.
+
+  **Defecto de infraestructura de test encontrado y corregido (`4cff73d2`):**
+  `tests/scripts/test_feature_builder.py` no era un test sino un script de 2025-12 con
+  `sys.exit(1)` en el cuerpo del módulo; pytest lo ejecutaba al colectar y **abortaba
+  `pytest tests/` entero con `INTERNALERROR`** — es decir **`make test` no podía terminar**. CI no
+  lo veía porque corre scoped (`tests/unit/`, `tests/integration/`). Movido a
+  `scripts/diagnostics/verify_feature_builder.py`; ahora la suite colecta **5107 tests** sin
+  abortar. Es la misma lección que este tablero ya escribió: *un marcador verde medido en un
+  entorno que no ejecuta la suite no es un marcador verde*. Esta vez el entorno no podía
+  ejecutarla **por el repo**, no por el entorno.
