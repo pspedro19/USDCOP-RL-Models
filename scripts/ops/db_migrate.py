@@ -52,6 +52,9 @@ MIGRATION_PLANS = {
             "082_checkout_order_retry_transition.sql",
         )
     ),
+    "commerce-surface-v1": (
+        PROJECT_ROOT / "database" / "migrations" / "057_catalog_watchlist_cart.sql",
+    ),
     "identity-admin-v1": tuple(
         PROJECT_ROOT / "database" / "migrations" / name
         for name in (
@@ -102,6 +105,7 @@ MIGRATION_PLANS = {
 REVIEW_GATED_PLANS = frozenset(
     {
         "commerce-v1",
+        "commerce-surface-v1",
         "h5-identity-v1",
         "identity-admin-v1",
         "platform-bootstrap-v1",
@@ -109,6 +113,7 @@ REVIEW_GATED_PLANS = frozenset(
     }
 )
 PLAN_PREREQUISITE_TABLES = {
+    "commerce-surface-v1": ("public.sb_users",),
     "h5-identity-v1": (
         "public.forecast_h5_signals",
         "public.forecast_h5_executions",
@@ -227,6 +232,10 @@ REQUIRED_TABLES_BY_PLAN = {
         "public.checkout_orders": "Immutable sealed checkout quotes",
         "public.billing_events": "Provider-event idempotency ledger",
     },
+    "commerce-surface-v1": {
+        "public.user_watchlist": "Per-user catalog watchlist",
+        "public.user_cart": "Per-user add-on cart",
+    },
     "identity-admin-v1": {
         "public.rbac_role_permissions": "Dynamic role-permission assignments",
         "public.rbac_user_overrides": "Per-user RBAC overrides",
@@ -237,6 +246,18 @@ REQUIRED_TABLES_BY_PLAN = {
     "fabric-v1": FABRIC_REQUIRED_TABLES,
 }
 REQUIRED_COLUMNS_BY_PLAN = {
+    "commerce-surface-v1": {
+        "public.user_watchlist": {
+            "user_id": "User ownership",
+            "asset_id": "Catalog asset identity",
+            "created_at": "Insertion timestamp",
+        },
+        "public.user_cart": {
+            "user_id": "User ownership",
+            "asset_id": "Catalog asset identity",
+            "created_at": "Insertion timestamp",
+        },
+    },
     "h5-identity-v1": {
         "public.forecast_h5_signals": {"strategy_id": "H5 signal identity"},
         "public.forecast_h5_executions": {

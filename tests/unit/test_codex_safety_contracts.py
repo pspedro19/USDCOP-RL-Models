@@ -1067,6 +1067,42 @@ def test_h5_identity_plan_is_ordered_review_gated_and_unpinned() -> None:
     }
 
 
+def test_commerce_surface_plan_is_scoped_review_gated_and_unpinned() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_commerce_surface", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("commerce-surface-v1")]
+    assert names == ["057_catalog_watchlist_cart.sql"]
+    assert "058_billing_webhook_idempotency.sql" not in names
+    assert module.PLAN_PREREQUISITE_TABLES["commerce-surface-v1"] == (
+        "public.sb_users",
+    )
+    assert "commerce-surface-v1" in module.REVIEW_GATED_PLANS
+    assert "commerce-surface-v1" not in module.PINNED_PLAN_DIGESTS
+    assert not module.plan_is_authorized("commerce-surface-v1", None)
+    assert not module.plan_is_authorized(
+        "commerce-surface-v1", module.get_plan_digest("commerce-surface-v1")
+    )
+    assert set(module.REQUIRED_TABLES_BY_PLAN["commerce-surface-v1"]) == {
+        "public.user_watchlist",
+        "public.user_cart",
+    }
+    expected_columns = {
+        "user_id": "User ownership",
+        "asset_id": "Catalog asset identity",
+        "created_at": "Insertion timestamp",
+    }
+    assert module.REQUIRED_COLUMNS_BY_PLAN["commerce-surface-v1"] == {
+        "public.user_watchlist": expected_columns,
+        "public.user_cart": expected_columns,
+    }
+
+
 def test_migrator_prefers_database_url_and_requires_explicit_fallback_password(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
