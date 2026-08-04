@@ -31,8 +31,18 @@ if str(ROOT) not in sys.path:
 from tests.support.dag_graph import (  # noqa: E402
     by_callable,
     by_task_id,
+    dependency_edges,
     task_runs_before,
+    task_var_by,
 )
+
+# Compatibilidad: `test_bl18_metric_event_wiring.py` importa estos dos nombres desde aquí
+# porque en CLD-444 le dije a Codex que cogiera los helpers "tal cual" — y acto seguido los
+# extraje a `tests/support/dag_graph.py`, dejando su test en ImportError. El fallo es mío,
+# así que el puente vive en mi fichero y no en el suyo. Se retira cuando ese test importe
+# del soporte común, que es su sitio.
+_dependency_edges = dependency_edges
+_task_var_by = task_var_by
 
 #: SSOT real de la estrategia en producción H5.
 SSOT_V11 = ROOT / "config" / "execution" / "smart_simple_v1.yaml"
