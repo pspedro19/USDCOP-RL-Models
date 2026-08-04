@@ -133,3 +133,27 @@ sirve para localizar casos, y cada caso se sostiene por su evidencia, no por un 
 que encadene `resolve_feature_snapshot` antes de evaluar, porque **`evaluate_policy` tampoco se
 invoca desde produccion**. Encadenar el cutoff ahi uniria dos mecanismos que nadie llama. El
 cableado real de R3 empieza mas arriba: alguien tiene que invocar el motor de politicas.
+
+## Actualización (2026-08-04, tras `3078ce06`): `feature_snapshot` ya tiene llamador
+
+`src/orchestration/feature_snapshot.py` figuraba arriba entre los módulos sin un solo llamador
+productivo. **Ya no.** C-010 R3 (`3078ce06`) cabló `resolve_feature_snapshot` en
+`airflow/dags/asset_pipeline_factory.py::make_resolve_snapshot`, que es la primera tarea de la
+cadena gobernada. El candado causal existe: retirar esa llamada tumba dos tests
+(`tests/unit/test_c010_policy_runs.py`).
+
+**Pero el matiz importa más que el titular, y sin él esto sería una victoria falsa:** la cadena
+sólo se emite para `policy_runs` cuyo `migration.status` sea `PARITY_GREEN|CUTOVER`, y **hoy no
+hay ninguna entrada declarada ni ningún spec elegible**. Verificado contra Airflow vivo: la
+pipeline de BTC sigue listando sus 7 tareas y ninguna `policy_*`.
+
+O sea el estado correcto **no** es "cableado y protegiendo", sino:
+
+> **caller productivo presente, ruta inalcanzable hasta que el operador promueva un estado.**
+
+Es una categoría distinta de las dos que este documento usaba (*sin cablear* / *cableado*), y
+merece nombre propio porque es la única honesta aquí. La garantía del cutoff pasa de **no
+invocable** a **invocable y gated**; lo que la activa es una decisión del operador, no más código.
+
+El resto de módulos enumerados arriba no cambia: siguen esperando `fabric-v1` aplicado — el plan
+quedó **pinneado** en `98cefd2d` (revisado en `CLD-350`), pero **pinear no es aplicar**.
