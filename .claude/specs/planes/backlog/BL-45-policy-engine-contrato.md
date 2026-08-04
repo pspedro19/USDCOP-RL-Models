@@ -213,3 +213,43 @@ compilar cada policy. Lo dejo escrito porque el hallazgo falso llegó a estar re
 **R2 queda: campos exigidos completos en los 4 specs.** BL-45 sigue `PARTIAL` por **R3**, que no
 cambia: `asset_pipeline_factory.py` sigue ramificando por `strategy_ids` en vez de por
 `engine.type`, y verificarlo exige Airflow vivo.
+
+### Tercera errata: el factory NO ramifica por `strategy_id`
+
+Mi auditoría afirma:
+
+> **R3 NO existe**: `airflow/dags/asset_pipeline_factory.py` ramifica por **`strategy_ids`**
+> (`:107`, `:117`, `:176`), que es exactamente lo que `strategy-engines.md` prohíbe.
+
+**La segunda mitad es falsa.** Esas tres líneas viven en `_make_verify` y en su llamada: la tarea
+`l6_verify_registry` **itera** la lista de estrategias declaradas para comprobar que cada una está
+publicada en `registry.json` y tiene su `manifest.json` en disco. **Es una lista de verificación,
+no una selección de comportamiento.** La cabecera de `config/assets/pipelines.yaml` lo dice
+explícitamente: *"The `strategy_ids` under `verify` must match registry.json bundles so the verify
+task fails loudly if the science stage did not publish."*
+
+La invariante que cité prohíbe que el factory **ramifique comportamiento** por `strategy_id`
+(*"el factory ramifica por `engine.type`, capacidades y estado, nunca por `strategy_id`"*).
+Verificar contra una lista declarada no es eso. Confundí *iterar para comprobar* con *ramificar
+para decidir*.
+
+**Lo que sí es cierto sigue en pie:** las tareas genéricas
+`resolve_feature_snapshot → validate_policy_inputs → evaluate_policy → publish` **no existen**, y
+`resolve_feature_snapshot` conserva cero llamadores productivos.
+
+### Forma real de R3, re-derivada contra el código
+
+R3 **no es un punto de cableado pequeño**, y conviene que la ficha lo diga para que nadie lo
+planifique como tal:
+
+- `config/assets/pipelines.yaml` gobierna el factory y es un config **de etapas** (L0 → L4 → L6).
+  **No contiene ningún `engine.type`** del que ramificar.
+- `engine.type` sí existe, pero en **otro** config: `config/policies/*.yaml`
+  (`btc_hodl_b1`, `gold_trend_simple`, `spx500_daily_ma200_v1` = `rule_based`;
+  `smart_simple_v11` = `composite`).
+
+O sea R3 exige **conectar dos configs que hoy no se hablan**: que el factory deje de emitir sólo
+etapas declaradas y pueda emitir la cadena genérica de política leyendo `engine.type` desde los
+specs. Eso es diseño, no wiring, y toca el contrato del factory (`CTR-ASSET-PIPELINE-001`).
+
+**BL-45 sigue `PARTIAL`.** No se abre WIP de R3 sobre una premisa que resultó falsa.
