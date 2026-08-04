@@ -151,3 +151,48 @@ def test_the_scoped_ranges_still_cannot_be_used_and_that_is_written_down() -> No
         f"{sorted(escalonados & perfilados)} ya tiene AssetProfile: trae su rango "
         "escalonado (proveedor + valid_from) al guard en vez del price_range plano"
     )
+
+
+def test_a_known_range_rejection_keeps_its_canonical_fk() -> None:
+    """El evento de cuarentena NO puede perder el instrumento que sí se resolvió.
+
+    Defecto real que midió Codex (CXD-457): la primera versión sacaba el UUID de
+    `decision.observed_value`, que en un rechazo de rango es `{'open': '99999'}` — el
+    valor que ofendió, no la identidad. El evento quedaba con FK nula justo cuando el
+    alias se había resuelto perfectamente, dejando la cuarentena huérfana del catálogo.
+
+    Y hay una trampa que este candado también cierra: el `rule_id` **contiene** el UUID
+    (`bar.range.72f6f7e9-...`). Sacarlo de ahí sería recuperar identidad parseando una
+    cadena de diagnóstico que nadie prometió estable. Se pregunta al registry.
+    """
+    from datetime import datetime, timezone
+
+    try:
+        from scripts.data.ingest_asset_ohlcv import _db_conn
+
+        from src.data_quality.ingest_guard import resolved_instrument_id, ruleset_from_spine
+
+        conn = _db_conn()
+    except Exception:  # pragma: no cover - CI sin base de datos
+        pytest.skip("sin base de datos: la FK canónica se verifica en entorno con DB")
+
+    try:
+        reglas = ruleset_from_spine(conn)
+    finally:
+        conn.close()
+
+    momento = datetime(2026, 1, 5, tzinfo=timezone.utc)
+    fuera = {"time": momento, "open": 99999, "high": 99999, "low": 99999, "close": 99999, "volume": 1}
+
+    decision = reglas.evaluate_provider_bar("twelvedata", "USD/COP", fuera, observed_at=momento)
+    assert not decision.accepted and decision.rule_id.startswith("bar.range.")
+
+    uuid_resuelto = resolved_instrument_id(reglas, "twelvedata", "USD/COP")
+    assert uuid_resuelto, (
+        "rango conocido sin instrument_id: el evento se escribiría con FK nula y la "
+        "cuarentena quedaría huérfana del catálogo canónico"
+    )
+    # La identidad NO sale del diagnóstico...
+    assert not isinstance(decision.observed_value, dict) or "instrument_id" not in decision.observed_value
+    # ...y un alias no registrado sí puede quedar nulo: ahí el hecho ES la ausencia.
+    assert resolved_instrument_id(reglas, "nadie", "XXX/YYY") is None

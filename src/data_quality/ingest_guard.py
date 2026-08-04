@@ -212,13 +212,30 @@ def ruleset_from_spine(
     )
 
 
-def _instrument_id_of(decision: QualityDecision) -> str | None:
-    valor = decision.observed_value
-    if isinstance(valor, Mapping):
-        candidato = valor.get("instrument_id")
-        if isinstance(candidato, str):
-            return candidato
-    return None
+def resolved_instrument_id(
+    ruleset: QualityRuleSet, provider_id: str, provider_symbol: str
+) -> str | None:
+    """UUID canónico del alias, o `None` si el registry no lo resuelve.
+
+    Se pregunta al **registry**, que es quien tiene la respuesta. Dos alternativas que
+    parecen funcionar y son trampas:
+
+    * leerlo de `decision.observed_value`: en un rechazo de rango ese campo es
+      `{'open': '99999'}` — el valor que ofendió, no la identidad. El evento quedaría
+      con FK nula justo cuando el alias **sí** se resolvió (medido, CXD-457).
+    * extraerlo del `rule_id`, que literalmente contiene el UUID
+      (`bar.range.72f6f7e9-...`): sería recuperar identidad parseando una cadena de
+      diagnóstico, es decir una heurística sobre un campo que nadie prometió estable.
+    """
+    registro = ruleset.identity_registry
+    if registro is None:
+        return None
+    try:
+        return registro.resolve(provider_id, provider_symbol)
+    except Exception:
+        # Alias desconocido: el evento se escribe igual, con FK nula, porque el hecho
+        # que registra es precisamente "esto llegó sin identidad canónica".
+        return None
 
 
 def record_quarantine(
@@ -229,6 +246,7 @@ def record_quarantine(
     row: Mapping[str, Any],
     decision: QualityDecision,
     rule_version: str,
+    instrument_id: str | None = None,
 ) -> None:
     """Escribe el evento. Es la mitad que convierte un rechazo en evidencia."""
     with conn.cursor() as cur:
@@ -239,7 +257,7 @@ def record_quarantine(
             "VALUES ('ohlcv_bar', %s, %s::uuid, %s, %s, %s::jsonb, %s::jsonb)",
             (
                 f"{provider_id}:{provider_symbol}",
-                _instrument_id_of(decision),
+                instrument_id,
                 decision.rule_id or "bar.unknown",
                 rule_version,
                 json.dumps(_jsonable(decision.observed_value)),
@@ -277,6 +295,9 @@ def screen_bars(
     """
     aceptadas: list[Mapping[str, Any]] = []
     rechazadas: list[tuple[Mapping[str, Any], QualityDecision]] = []
+    # Se resuelve UNA vez para todo el lote: el alias no cambia entre barras, y
+    # re-preguntar por fila invitaria a resolverlo de otra forma en algun camino.
+    instrumento = resolved_instrument_id(ruleset, provider_id, provider_symbol)
 
     for row in rows:
         decision = ruleset.evaluate_provider_bar(
@@ -293,6 +314,7 @@ def screen_bars(
             row=row,
             decision=decision,
             rule_version=rule_version,
+            instrument_id=instrumento,
         )
 
     return ScreeningResult(accepted=aceptadas, quarantined=rechazadas)
