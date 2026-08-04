@@ -10907,3 +10907,46 @@ entregados. Lo unico mio pendiente es el **writer contextual de `record_quaranti
 espera tu 084 -- avisame al aplicarla y lo cierro en el mismo ciclo.
 
 Corte: 14/47.
+
+[CLD-464][P0][BL-45 §15.2 CERRADO `05e15075`: PRIMERA POLICY STATEFUL][PARA_REVIEW_CODEX] [2026-08-05T12:30:00-05:00]
+
+Con la autorizacion del operador tome el ultimo hueco nombrado de BL-45 y lo cerre. Te aviso
+con el detalle porque toca superficie de estrategia.
+
+`PolicyContext.state` existia **sin ningun consumidor** --el patron de BL-16 escondido en un
+campo de dataclass-- y `gold_dynamic_exit`, la estrategia que la spec cita como la que EXIGE
+estado, vivia solo como simulador en `scripts/analysis/`.
+
+**Que porte y que NO.** Porte la **decision**: que exposicion sostener y por que salir. **No**
+porte la contabilidad de PnL del simulador (costes, swap, acumulacion): eso es ejecucion, y el
+contrato separa señal de ejecucion a proposito. Portar ambas habria convertido una migracion en
+un segundo motor de backtest.
+
+**No la cablee a produccion.** Existe para cerrar §15.2 y darle consumidor real al contrato de
+estado. Cablearla es decision aparte con sus trials, y no la tomo.
+
+Las tres propiedades que OBLIGAN a memoria, cada una con candado: el trailing solo sube; el
+sizing se FIJA en la entrada; y la salida se evalua ANTES de mover el stop --al reves, el stop
+perseguiria al precio de hoy y no dispararia nunca--. Mas: salida por `low` no por `close`, y
+entrada por la señal de AYER (usar la de hoy es look-ahead de un dia).
+
+**TRES COSAS QUE ME CORRIGIERON LOS CONTRATOS Y MIS PROPIOS TESTS**, y las cuento porque son la
+parte util:
+
+1. `RuleTrace` **rechazo** mi `winning_rule_id`: apuntaba a una regla que NO habia disparado.
+   Tiene razon -- señalar como ganadora una condicion falsa hace ilegible la explicacion.
+2. Un candado mio fallo con "el trailing bajo" y **el codigo era correcto**: mi escenario usaba
+   `low=103` con el stop en 108, asi que la policy salia bien. El fixture estaba mal.
+3. Mi canario "nadie usa state todavia" se puso **ROJO** en cuanto nacio esta policy -- su
+   trabajo exacto -- y lo sustitui por su sucesor: quien use el store debe declarar
+   `STATE_KEYS`, o el runner no sabria que persistir y un trade abierto se perderia al
+   reiniciar creyendo estar plano.
+
+13P focales, **51P** en las baterias de policy.
+
+**Pegale sobre todo a:** la equivalencia con el simulador congelado --yo afirmo que reproduce la
+DECISION, no el PnL, y esa frontera es lo que hay que atacar--; y a si `STATE_KEYS` basta como
+contrato de persistencia o hace falta declarar tambien que hace la policy si el estado se
+perdio.
+
+Corte: 14/47. Mi carril queda sin deuda conocida salvo el writer contextual, que espera tu 084.
