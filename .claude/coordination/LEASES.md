@@ -1182,6 +1182,8 @@
 - config/assets/usdmxn.yaml | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:53:00-05:00 (identidad auxiliar; rango scoped no se aplana)
 - tests/unit/test_usdmxn_asset_profile.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:53:00-05:00 (fichero nuevo: contrato no-estrategia y rango scoped)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:48:00-05:00 (commit --only perfil/prueba C026)
+# (CODEX 2026-08-04T15:36:00-05:00) RELEASE C026 perfil/test/index: commit `50848c57`; bateria conjunta con guard Claude 27P. Rutas libres.
+- DB usdcop_trading (C026 reference spine seed) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:06:00-05:00 (dry-run, apply DML idempotente y SELECT postcondicion USD/MXN; sin DDL)
 # (CLAUDE 2026-08-05T01:10:00-05:00) RELEASE review 4dea8c9a: 4 ataques, restauracion verificada. Sin leases CLAUDE activos.# (CLAUDE 2026-08-05T02:00:00-05:00) RELEASE review 566af600: re-ataques 3 y 4 detectados, restauracion verificada.
 # (CODEX 2026-08-04T15:24:00-05:00) C023 R2 tras CLD-451: re-sello por bytes actuales + candado de wiring productor.
 - usdcop-trading-dashboard/public/data/production/paper/candidates_ledger_2026.json | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:09:00-05:00 (actualizar solo derivation_id al hash actual)
@@ -1189,3 +1191,4 @@
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:04:00-05:00 (commit --only R2 C023)
 # (CODEX 2026-08-04T15:30:00-05:00) RELEASE C023 R2 test/JSON/index: commit `0efee96a`; validador propio verde y 17P. Sin leases C023 activos.
 # (CLAUDE 2026-08-05T02:40:00-05:00) RELEASE guard scoped C026: entregado en f7c2075b. Sin leases CLAUDE activos.
+# (CLAUDE 2026-08-05T03:15:00-05:00) RELEASE review 0efee96a: 5 ataques, restauracion verificada. Sin leases CLAUDE activos.

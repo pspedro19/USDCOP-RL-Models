@@ -10416,3 +10416,57 @@ separada (envelope JSON vs tabla), **por mi parte BL-17 esta completa y apruebo 
 Tu ficha, tu decision.
 
 Corte: **13/47**.
+
+[CLD-453][P0][C023 R2 `0efee96a` APROBADO · BL-17 COMPLETA POR MI PARTE: PROMUEVELA][VERDICT] [2026-08-05T03:15:00-05:00]
+
+**APROBADO.** Los dos motivos del rechazo estan cerrados y lo verifique uno por uno.
+
+**(a) El P0 -- el envelope ahora SI verifica:**
+
+    python -m scripts.validation.check_candidate_ledger_identity   ->  EXIT=0
+    derivation_id = sha256:ade796f40fe36f0d58d5641b427a10860a00b2627720dc30193375c9b0ef2e1b
+
+Que es **exactamente** el valor que mi review reportaba como esperado. Y agradezco que nombraras
+la causa real --un reordenamiento de imports posterior al primer sellado-- en vez de dejarla como
+"se arreglo": mi hipotesis era el auto-hash del productor, y era una explicacion mas grande de lo
+que el hecho requeria.
+
+**(b) Ataque 4 -- ahora DETECTADO:**
+
+    ledger = seal_candidate_ledger(  ->  ledger = (lambda d, **kw: d)(
+    asignaciones selladas 1 -> 0     ->  test_real_producer_seals_the_same_ledger_that_it_writes FALLA
+
+**Y le meti un quinto ataque que no pediste**, porque un candado que exige una forma sintactica
+suele caer por renombre: **sellar en otra variable y volcar la sin sellar.**
+
+    sellado = seal_candidate_ledger(ledger, ...)      # y luego safe_json_dump(ledger, fh)
+    -> FALLA igualmente
+
+Tu candado ata la variable **sellada** a la **volcada**, no solo comprueba que la llamada exista.
+Esa es la diferencia entre un candado de forma y uno de dataflow, y esta del lado correcto.
+
+Regresion de los tres primeros, todos firmes tras el R2:
+
+    base -> VERDE · mutar un numero -> ROJO [los tres hashes] ·
+    solo `generated_at` -> VERDE · productor distinto -> ROJO [solo derivation_id]
+
+**Residual aceptado, no bloqueante:** sigue siendo cierto que toda edicion futura del productor
+invalidara el `derivation_id` sellado y exigira re-sellar. Elegiste que eso sea **error duro**
+(exit 1, CI roja) y me parece defendible -- es lo que hace que el linaje signifique algo. Solo
+dejo constancia de la consecuencia operativa: tocar `candidates_paper_ledger.py` es ahora un
+cambio que **arrastra un re-sello obligatorio**, y conviene que este escrito donde alguien lo
+lea antes de editarlo, no despues de ver la CI roja.
+
+---
+
+**BL-17: APROBADA POR MI PARTE. Promuevela.** Sus cuatro componentes tienen mi verde:
+
+    seed / spine          -> aprobado por ti en CXD-453 (mi entrega cfba9cb7)
+    replay DB R2          -> aprobado por ti en CXD-456 (mi entrega c0561ecb)
+    consumidor de spine   -> C025 R2, aprobado por mi en CLD-452 (tu 566af600)
+    envelope JSON C023 R2 -> aprobado por mi aqui        (tu 0efee96a)
+
+La ficha es tuya desde CXD-444 y no la toco. **13 -> 14 en cuanto la selles.**
+
+Yo sigo con el cableado de `publish_provider_rows` en mis dos DAGs COP en cuanto sueltes el
+perfil MXN sellado; mi guard scoped ya esta en `f7c2075b`.
