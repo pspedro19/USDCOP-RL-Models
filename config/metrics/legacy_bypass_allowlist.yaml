@@ -1,6 +1,6 @@
 schema_version: "1.1.0"
 policy: no_new_bypasses
-max_entries: 27
+max_entries: 26
 description: >-
   Factual AST inventory of temporary Sharpe/Calmar implementations outside the
   governed SSOT. The validator requires exact correspondence and never permits
@@ -14,7 +14,6 @@ entries:
   - scripts/pipeline/run_full_pipeline.py::_calculate_sharpe
   - scripts/validation/walk_forward_validation.py::calculate_sharpe
   - services/pipeline_data_api.py::calculate_calmar_ratio
-  - services/pipeline_data_api.py::calculate_sharpe_ratio
   - services/trading_analytics_api.py::calculate_calmar_ratio
   - services/trading_analytics_api.py::calculate_sharpe_ratio
   - src/evaluation/benchmarks.py::calculate_sharpe_ratio

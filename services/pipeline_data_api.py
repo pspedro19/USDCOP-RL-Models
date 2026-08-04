@@ -28,6 +28,7 @@ import psycopg2
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from src.metrics.formulas import sharpe_ratio as governed_sharpe_ratio
 
 # Import MinIO manifest reader
 from minio_manifest_reader import (
@@ -771,7 +772,7 @@ def process_backtest_dataframe(df: pd.DataFrame, split: str) -> dict:
         kpis = {
             "top_bar": {
                 "CAGR": float(calculate_cagr(df['cumulative_pnl'])) if 'cumulative_pnl' in df.columns else 0.0,
-                "Sharpe": float(calculate_sharpe_ratio(returns)) if len(returns) > 0 else 0.0,
+                "Sharpe": float(_governed_risk_adjusted_ratio(returns)) if len(returns) > 0 else 0.0,
                 "Sortino": float(calculate_sortino_ratio(returns)) if len(returns) > 0 else 0.0,
                 "Calmar": float(calculate_calmar_ratio(df)) if 'drawdown' in df.columns else 0.0,
                 "MaxDD": float(df['drawdown'].min()) if 'drawdown' in df.columns else 0.0,
@@ -818,12 +819,11 @@ def calculate_cagr(cumulative_pnl):
         return 0.0
 
 
-def calculate_sharpe_ratio(returns):
-    """Calculate Sharpe Ratio from returns"""
+def _governed_risk_adjusted_ratio(returns):
+    """Legacy API shape delegated to the governed BL-18 formula."""
     try:
-        if len(returns) == 0:
-            return 0.0
-        return returns.mean() / returns.std() * np.sqrt(252) if returns.std() > 0 else 0.0
+        value = governed_sharpe_ratio(np.asarray(returns, dtype=float), periods_per_year=252)
+        return 0.0 if value is None else value
     except Exception:
         return 0.0
 
