@@ -1,7 +1,7 @@
 ---
 kind: roadmap
-status: PARTIAL
-version: 1.2.0
+status: IMPLEMENTED
+version: 1.3.0
 last_verified: 2026-08-03
 supersedes: []
 code_anchors:
@@ -53,11 +53,12 @@ El 2026-08-03 se ejecutó dentro del scheduler real
 Claude cofirmó el resultado y su alcance: demuestra que los DAGs actuales
 parsean, no que puedan ejecutarse con el esquema o los datos presentes.
 
-El BL permanece `PARTIAL`: la aceptación exige observar en ese mismo scheduler
-un DAG sintético con arista `forecast:// → exec://` convertido en import error.
-Ese negativo existe como test unitario, pero todavía no se ha inyectado en el
-contenedor real; el verde actual por sí solo no demuestra que la muralla esté
-cargada allí.
+El 2026-08-03 la aceptación se ejecutó también dentro del scheduler real. Un probe temporal con
+`forecast://synthetic/prediction/v1 → exec://synthetic/orders/v1` apareció en
+`list-import-errors` con `DatasetContractError`; Claude observó independientemente ese traceback
+en `CLD-315`. Tras retirar ambos probes, `list-import-errors` volvió a `No data found`, no quedó
+ningún DAG sintético en metadata, `git status --short -- airflow/dags` quedó vacío y ambos
+filesystem devolvieron cero probes. La aceptación runtime y la limpieza quedan cofirmadas.
 
 ## Impacto frontend
 Ninguno.

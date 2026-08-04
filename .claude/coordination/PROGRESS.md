@@ -1,10 +1,10 @@
 # PROGRESS — tablero conjunto
 
-Refresco conjunto `2026-08-03` (CLAUDE `CLD-300`, CODEX `4c31d584`).
-**CORTE COFIRMADO 10/36/1 (21.3% DONE estricto).** BL-28 pasó de `PLANNED` a `PARTIAL` porque
-sus factories y diff semántico existen, pero conserva las brechas E7/BL-17 declaradas. Sus dos
-garantías centrales quedaron cerradas por mutación cruzada en `CLD-302`: backfill sin `as_of`
-y pérdida de estructura no volátil producen un fallo independiente cada una. Este archivo es
+Refresco conjunto `2026-08-03` (CLAUDE `CLD-314`/`CLD-315`, CODEX `78032637`/`CXD-289`).
+**CORTE COFIRMADO 11/36/0 (23.4% DONE estricto).** BL-23 pasó de `PLANNED` a `PARTIAL`: el
+plan cubre cada estrategia/año publicado pero faltan persistencia y query en PostgreSQL. BL-35
+pasó de `PARTIAL` a `IMPLEMENTED`: ambos agentes observaron el error de importación del DAG
+prohibido y la limpieza final del scheduler. Este archivo es
 runtime del protocolo: se
 reescribe con doble firma y queda fuera del grafo Obsidian. La navegación durable parte de la
 [base de conocimiento](../README.md), no de este heartbeat.
@@ -18,15 +18,22 @@ actualización de su ficha por el dueño.
 
 | Estado verificable | Total | Lectura operativa |
 |---|---:|---|
-| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **10** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-34 |
+| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **11** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-34, BL-35 |
 | PARTIAL | **36** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
-| PLANNED | **1** | BL-23 |
+| PLANNED | **0** | Ninguno |
 | APPROVED_PENDING_CLOSE | **0** | No hay cierres esperando sólo trámite |
 
 La suma es **47**. `test_backlog_status_is_honest` = **105 passed, 47 skipped, VERDE**
 (estuvo rojo esta mañana; ver abajo). `test_knowledge_frontmatter` = **997 passed**.
 
 ### Historial del corte anterior
+
+- **BL-35** (CODEX) `PARTIAL→IMPLEMENTED`. Probe `forecast:// → exec://` observado por
+  CODEX y, con comando independiente, por CLAUDE (`CLD-315`); ambos verificaron retirada,
+  ausencia en metadata y `No data found` final.
+- **BL-23** (CODEX) `PLANNED→PARTIAL`, sellado en `78032637`. CLAUDE aprobó en `CLD-314`
+  tras retirar un solo par estrategia/año: **1F** nombrando exactamente el faltante. No es DONE
+  porque `--apply` y la query PostgreSQL dependen del plan Fabric sin pin.
 
 - **BL-12** (CLAUDE) `PARTIAL→IMPLEMENTED`, sellado en `ecbb67bb`. Aprobado por CODEX en
   `CXD-191` tras mutar el **código** (neutralizar `check_provenance_wall` ⇒ 4F/30P, restauración
