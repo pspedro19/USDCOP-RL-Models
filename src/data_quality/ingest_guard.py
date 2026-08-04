@@ -66,7 +66,7 @@ import yaml
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
-from src.data_quality.rules import QualityDecision, QualityRuleSet
+from src.data_quality.rules import QualityDecision, QualityRuleSet, ScopedPriceRange
 from src.market.identity import ProviderSymbol, ProviderSymbolRegistry
 
 REPO = Path(__file__).resolve().parents[2]
@@ -148,6 +148,83 @@ def canonical_price_ranges(
     }
 
 
+def declared_scoped_ranges_by_canonical_symbol(
+    ranges_path: Path = QUALITY_RANGES,
+) -> dict[str, tuple[ScopedPriceRange, ...]]:
+    """Rangos **escalonados** por proveedor y fecha, indexados por símbolo canónico.
+
+    Son las entradas del YAML normativo con forma de lista de dicts
+    (`provider_id` + `valid_from` + `bounds`). El caso que las justifica es `usdmxn`:
+    el corte de unidad monetaria de Banxico (SIE CF373, 1993-01-01) hace que un mismo
+    símbolo tenga rangos económicos distintos antes y después, y que sólo valgan para
+    el proveedor que los publicó.
+
+    Aplanarlas a un `(low, high)` único —que es lo que hacía la versión anterior de
+    este módulo al no mirarlas— **borra el alcance**: el corte deja de significar nada
+    y una barra de 1990 se validaría contra el rango de hoy.
+    """
+    config = yaml.safe_load(ranges_path.read_text(encoding="utf-8")) or {}
+    escalonados: dict[str, tuple[ScopedPriceRange, ...]] = {}
+
+    for clave, valor in (config.get("price_ranges") or {}).items():
+        if not isinstance(valor, list) or not valor or not isinstance(valor[0], Mapping):
+            continue  # entrada plana: la maneja `declared_ranges_by_canonical_symbol`
+        reglas = []
+        for entrada in valor:
+            limites = entrada.get("bounds")
+            if not (isinstance(limites, (list, tuple)) and len(limites) == 2):
+                raise IngestGuardError(
+                    f"{clave}: rango escalonado sin 'bounds' [low, high] — un alcance "
+                    "sin límites no puede gobernar nada"
+                )
+            momento = entrada.get("valid_from")
+            if not momento:
+                raise IngestGuardError(
+                    f"{clave}: rango escalonado sin 'valid_from'. Es su razón de ser: "
+                    "sin fecha de corte el escalón no existe"
+                )
+            desde = datetime.fromisoformat(str(momento).replace("Z", "+00:00"))
+            if desde.tzinfo is None:
+                raise IngestGuardError(f"{clave}: 'valid_from' debe llevar zona horaria")
+            reglas.append(
+                ScopedPriceRange(
+                    provider_id=str(entrada["provider_id"]).strip().lower(),
+                    valid_from=desde,
+                    low=Decimal(str(limites[0])),
+                    high=Decimal(str(limites[1])),
+                )
+            )
+        escalonados[str(clave)] = tuple(reglas)
+
+    return escalonados
+
+
+def _symbol_of(asset_id: str, assets_dir: Path) -> str | None:
+    ruta = assets_dir / f"{asset_id}.yaml"
+    if not ruta.is_file():
+        return None
+    declarado = yaml.safe_load(ruta.read_text(encoding="utf-8")) or {}
+    simbolo = declarado.get("symbol")
+    return str(simbolo) if simbolo else None
+
+
+def scoped_symbols(assets_dir: Path = ASSETS_DIR, ranges_path: Path = QUALITY_RANGES) -> set[str]:
+    """Símbolos canónicos que tienen regla escalonada, bajo cualquiera de sus nombres.
+
+    El YAML normativo indexa por `asset_id` (`usdmxn`) y la espina por `canonical_symbol`
+    (`USD/MXN`); ambos apuntan al mismo instrumento. Resolver los dos evita el fallo
+    silencioso de que la regla escalonada exista y no se aplique por no reconocer la
+    clave.
+    """
+    escalonados = set(declared_scoped_ranges_by_canonical_symbol(ranges_path))
+    resueltos = set(escalonados)
+    for clave in escalonados:
+        simbolo = _symbol_of(clave, assets_dir)
+        if simbolo:
+            resueltos.add(simbolo)
+    return resueltos
+
+
 def declared_ranges_by_canonical_symbol(
     assets_dir: Path = ASSETS_DIR, ranges_path: Path = QUALITY_RANGES
 ) -> dict[str, tuple[Decimal, Decimal]]:
@@ -176,10 +253,20 @@ def declared_ranges_by_canonical_symbol(
         # aplanan aquí: perderían su alcance por proveedor y fecha, que es justo su
         # razón de ser. Entran cuando el instrumento tenga identidad canónica.
 
+    # Un símbolo con regla ESCALONADA nunca recibe además la plana (enmienda C026).
+    # `AssetProfile` exige `price_range`, así que el perfil auxiliar de USD/MXN declara
+    # uno — pero admitirlo aquí reintroduciría el aplanado por la puerta de atrás: el
+    # evaluador da precedencia al scoped, y el día que alguien retire el mapa escalonado
+    # el plano tomaría el relevo **en silencio**, validando barras de 1990 contra el
+    # rango de hoy. Excluirlo hace que esa retirada falle cerrado en vez de degradar.
+    con_escalon = scoped_symbols(assets_dir, ranges_path)
+
     for ruta in sorted(assets_dir.glob("*.yaml")):
         declarado = yaml.safe_load(ruta.read_text(encoding="utf-8")) or {}
         simbolo, rango = declarado.get("symbol"), declarado.get("price_range")
         if not simbolo or not (isinstance(rango, (list, tuple)) and len(rango) == 2):
+            continue
+        if str(simbolo) in con_escalon or ruta.stem in con_escalon:
             continue
         bajo, alto = Decimal(str(rango[0])), Decimal(str(rango[1]))
         if bajo <= 0 or bajo >= alto:
@@ -197,19 +284,52 @@ def ruleset_from_spine(
 ) -> QualityRuleSet:
     """`QualityRuleSet` con registry canónico y rangos ya traducidos a UUID."""
     rangos = canonical_price_ranges(conn, assets_dir, ranges_path)
-    if not rangos:
+    escalonados = canonical_scoped_ranges(conn, ranges_path)
+    if not rangos and not escalonados:
         raise IngestGuardError(
-            "ningún activo de la espina declara price_range: el guard rechazaría toda "
-            "barra por falta de rango, que no es una cuarentena sino un apagón"
+            "ningún instrumento de la espina tiene rango declarado (plano ni escalonado): "
+            "el guard rechazaría toda barra, que no es una cuarentena sino un apagón"
         )
     version = (yaml.safe_load(ranges_path.read_text(encoding="utf-8")) or {}).get(
         "version", "unversioned"
     )
     return QualityRuleSet(
         price_ranges=rangos,
+        scoped_price_ranges=escalonados,
         identity_registry=registry_from_spine(conn),
         version=f"asset-ssot@{version}",
     )
+
+
+def canonical_scoped_ranges(
+    conn, ranges_path: Path = QUALITY_RANGES
+) -> dict[str, tuple[ScopedPriceRange, ...]]:
+    """Reglas escalonadas traducidas al `instrument_id` canónico vía el registro.
+
+    Misma traducción que las planas (CXD-454): `canonical_symbol → instrument_id` sale
+    de `reference.instrument`. Se resuelve también por `asset_id`, porque el YAML
+    normativo indexa por ese nombre y la espina por el símbolo.
+    """
+    por_simbolo = declared_scoped_ranges_by_canonical_symbol(ranges_path)
+    if not por_simbolo:
+        return {}
+
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT canonical_symbol, asset_id, instrument_id::text FROM reference.instrument"
+        )
+        filas = cur.fetchall()
+
+    uuid_por_nombre: dict[str, str] = {}
+    for simbolo, asset_id, instrument_id in filas:
+        uuid_por_nombre[simbolo] = instrument_id
+        uuid_por_nombre[asset_id] = instrument_id
+
+    return {
+        uuid_por_nombre[nombre]: reglas
+        for nombre, reglas in sorted(por_simbolo.items())
+        if nombre in uuid_por_nombre
+    }
 
 
 def resolved_instrument_id(

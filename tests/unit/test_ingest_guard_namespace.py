@@ -134,22 +134,95 @@ def test_a_bar_outside_the_declared_range_is_quarantined_and_a_good_one_is_not()
     assert not desconocida.accepted and desconocida.rule_id == "bar.unknown_alias"
 
 
-def test_the_scoped_ranges_still_cannot_be_used_and_that_is_written_down() -> None:
-    """`usdmxn`/`usdclp` tienen la regla más cuidada y NO están en la espina.
+def test_a_symbol_with_a_scoped_rule_never_gets_the_flat_range_too() -> None:
+    """El escalón **excluye** al plano (enmienda C026), y no sólo lo precede.
 
-    Es el límite honesto de esta entrega: el único instrumento con rango escalonado por
-    proveedor y fecha (corte Banxico CF373, 1993) no tiene `AssetProfile`, así que no
-    puede identificarse canónicamente. Este candado se pondrá **rojo** el día que
-    alguien le dé perfil — y entonces habrá que traer también su rango escalonado, en
-    vez de dejarlo caer al `price_range` plano del activo.
+    Este candado sustituye al canario que avisaba de que `usdmxn` no tenía perfil: el
+    perfil ya existe, así que el riesgo cambió de "no se evalúa" a "se evalúa con la
+    regla equivocada".
+
+    `AssetProfile` **exige** `price_range`, de modo que el perfil auxiliar de USD/MXN
+    declara uno. Admitirlo en el mapa plano reintroduciría el aplanado por la puerta de
+    atrás: hoy el evaluador da precedencia al escalón, pero el día que alguien retirara
+    el mapa escalonado el plano tomaría el relevo **en silencio** y una barra de 1990 se
+    validaría contra el rango de hoy. Excluyéndolo, esa retirada falla cerrado.
     """
-    config = yaml.safe_load(QUALITY_RANGES.read_text(encoding="utf-8")) or {}
-    escalonados = set(config.get("price_ranges", {}))
+    from src.data_quality.ingest_guard import (
+        declared_ranges_by_canonical_symbol,
+        declared_scoped_ranges_by_canonical_symbol,
+        scoped_symbols,
+    )
 
-    perfilados = {p.stem for p in ASSETS_DIR.glob("*.yaml")}
-    assert not (escalonados & perfilados), (
-        f"{sorted(escalonados & perfilados)} ya tiene AssetProfile: trae su rango "
-        "escalonado (proveedor + valid_from) al guard en vez del price_range plano"
+    escalonados = declared_scoped_ranges_by_canonical_symbol()
+    assert escalonados, "el YAML normativo ya no declara ningún rango escalonado"
+
+    planos = set(declared_ranges_by_canonical_symbol())
+    for nombre in scoped_symbols():
+        assert nombre not in planos, (
+            f"{nombre} tiene regla escalonada Y entrada plana: si se retira el escalón, "
+            "el plano validaría en silencio fuera de su alcance"
+        )
+
+
+def test_the_scoped_rule_keeps_its_provider_and_cutoff() -> None:
+    """El escalón conserva proveedor y `valid_from`: es lo único que lo hace escalón.
+
+    El corte de Banxico (SIE CF373, 1993-01-01) marca un cambio de unidad monetaria.
+    Aplanarlo a un `(low, high)` sin fecha no es una simplificación: borra el hecho
+    económico que la regla codifica.
+    """
+    from src.data_quality.ingest_guard import declared_scoped_ranges_by_canonical_symbol
+
+    reglas = declared_scoped_ranges_by_canonical_symbol()["usdmxn"]
+    assert len(reglas) >= 1
+    for regla in reglas:
+        assert regla.provider_id, "un escalón sin proveedor aplica a cualquiera: no es un escalón"
+        assert regla.valid_from.tzinfo is not None, "'valid_from' sin zona horaria es ambiguo"
+        assert regla.low < regla.high
+
+
+def test_a_bar_outside_the_scope_is_quarantined_not_silently_accepted() -> None:
+    """Fuera del alcance —otro proveedor o antes del corte— la barra NO pasa.
+
+    Es la propiedad que el aplanado destruía. Se ejercita contra el evaluador real con
+    el mapa escalonado construido por el guard, sin base de datos: la traducción a UUID
+    se prueba aparte.
+    """
+    from datetime import datetime, timezone
+
+    from src.data_quality.ingest_guard import declared_scoped_ranges_by_canonical_symbol
+    from src.data_quality.rules import QualityRuleSet
+
+    reglas = QualityRuleSet(
+        price_ranges={},
+        scoped_price_ranges={"mxn": declared_scoped_ranges_by_canonical_symbol()["usdmxn"]},
+    )
+    barra = {
+        "time": datetime(2020, 1, 5, tzinfo=timezone.utc),
+        "open": 20, "high": 21, "low": 19, "close": 20, "volume": 1,
+    }
+
+    dentro = reglas._evaluate_bar(
+        "mxn", barra, provider_id="twelvedata",
+        observed_at=datetime(2020, 1, 5, tzinfo=timezone.utc),
+    )
+    assert dentro.accepted, "una barra dentro del alcance y del rango debería pasar"
+
+    antes = reglas._evaluate_bar(
+        "mxn", barra, provider_id="twelvedata",
+        observed_at=datetime(1990, 1, 5, tzinfo=timezone.utc),
+    )
+    assert not antes.accepted and antes.rule_id == "bar.range_scope"
+
+    otro = reglas._evaluate_bar(
+        "mxn", barra, provider_id="otro_proveedor",
+        observed_at=datetime(2020, 1, 5, tzinfo=timezone.utc),
+    )
+    assert not otro.accepted and otro.rule_id == "bar.range_scope"
+
+    sin_contexto = reglas._evaluate_bar("mxn", barra, provider_id=None, observed_at=None)
+    assert not sin_contexto.accepted and sin_contexto.rule_id == "bar.range_context", (
+        "sin proveedor ni instante no se puede saber qué escalón aplica: debe fallar cerrado"
     )
 
 
