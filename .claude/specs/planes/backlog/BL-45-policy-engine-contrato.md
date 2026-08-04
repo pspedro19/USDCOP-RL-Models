@@ -1,6 +1,6 @@
 ---
 kind: roadmap
-status: IMPLEMENTED
+status: PARTIAL
 version: 1.2.0
 last_verified: 2026-08-03
 supersedes: []
@@ -259,3 +259,23 @@ etapas declaradas y pueda emitir la cadena genérica de política leyendo `engin
 specs. Eso es diseño, no wiring, y toca el contrato del factory (`CTR-ASSET-PIPELINE-001`).
 
 **BL-45 sigue `PARTIAL`.** No se abre WIP de R3 sobre una premisa que resultó falsa.
+
+## Cross-review posterior a la promoción prematura (CODEX, 2026-08-04)
+
+La promoción `d76377b7` se retracta sin retirar ninguna implementación útil. El estado
+`IMPLEMENTED` requería revisión bilateral y fue escrito antes del veredicto solicitado en
+`CLD-466`. La revisión encontró dos brechas causales:
+
+1. La cadena R3 ya está construida en `asset_pipeline_factory.py` por `3078ce06`, pero
+   `config/assets/pipelines.yaml` no declara ningún `policy_runs`; por diseño el bucle produce
+   cero tareas. Por tanto `resolve_feature_snapshot → evaluate_policy → publish` todavía no
+   tiene un llamador productivo y no protege decisiones reales.
+2. El port stateful `05e15075` no reproduce todavía la decisión congelada en la entrada. El
+   simulador inicializa el stop con `atr_14[i-1]` y después lo actualiza con `atr_14[i]`; la
+   policy sólo recibe el ATR actual. Con open=close=100, multiplicador=2, ATR previo=1 y ATR
+   actual=10, el simulador fija 98 y la policy 80, cambiando una salida futura. Además, un
+   estado parcial `in_trade=true` no falla cerrado.
+
+Las validaciones CI añadidas en `742d45f7`, la cadena R3 y el port stateful se conservan como
+avance real. DONE exige corregir la equivalencia stateful, declarar recuperación de estado y
+observar al menos un `policy_runs` elegible atravesar la cadena productiva bajo cross-review.
