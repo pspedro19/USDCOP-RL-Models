@@ -130,3 +130,82 @@ def test_root_services_common_is_preserved():
     assert result["root_services_common"] is True, (
         f"se perdio el submodulo raiz: {result['root_services_common']}"
     )
+
+
+# Modulos que DEBEN resolver el namespace antes de sus imports de `services`.
+# La clave es la razon, no el fichero: cada uno importa `services.*` en un punto
+# donde el paquete raiz puede haber ganado el nombre.
+_MUST_WIRE_NAMESPACE = {
+    "utils/circuit_breaker.py": "carga services.metrics_exporter con `except ImportError: pass`",
+    "l2_dataset_builder.py": "importa services.l2_data_quality_report dentro de la tarea",
+    "l4_backtest_validation.py": "importa services.<submodulo> dentro de las tareas",
+}
+
+
+def test_modules_that_need_the_namespace_actually_call_the_helper():
+    """Que el helper funcione no prueba que alguien lo llame.
+
+    Este candado nace de un hueco propio: la bateria anterior seguia en 5P cuando
+    CODEX retiro `ensure_dags_namespace()` de `circuit_breaker.py` en su
+    cross-review adversarial de `835f836b`. Los tests ejercitaban el helper
+    llamandolo ELLOS, asi que un modulo que dejara de invocarlo era invisible --
+    exactamente el patron "mecanismo correcto sin llamador" que este repo ya
+    tiene medido en `integration/AUDIT-CLAUDE-wiring-gap.md`.
+    """
+    missing = []
+    for relative, reason in _MUST_WIRE_NAMESPACE.items():
+        source = (DAGS / relative).read_text(encoding="utf-8")
+        called = any(
+            line.strip().startswith("ensure_dags_namespace()")
+            for line in source.splitlines()
+        )
+        if not called:
+            missing.append(f"{relative} ({reason})")
+    assert not missing, (
+        "estos modulos importan `services.*` pero ya no resuelven el namespace, "
+        f"asi que bajo el compose enterprise fallarian en runtime: {missing}"
+    )
+
+
+def test_importing_circuit_breaker_alone_resolves_the_metrics_module():
+    """Candado RUNTIME del caller (R2 de CXD-311).
+
+    El candado de fuente de arriba mira el texto; este mira el efecto. Importa
+    `utils.circuit_breaker` bajo el layout enterprise **sin precargar ni llamar el
+    helper a mano**, y exige que despues `services.metrics_exporter` resuelva. Si
+    alguien retira la llamada del modulo, el import deja de resolverlo y esto cae,
+    aunque el helper siga siendo perfecto.
+    """
+    program = f"""
+import json, sys, importlib
+sys.path.insert(0, {str(DAGS)!r})
+sys.path.insert(0, {str(REPO)!r})   # la raiz gana, como en enterprise
+import services                      # el marker raiz se queda con el nombre
+out = {{"winner": services.__file__}}
+try:
+    importlib.import_module("utils.circuit_breaker")   # unico wiring permitido
+    out["imported_cb"] = True
+except Exception as exc:
+    out["imported_cb"] = f"{{type(exc).__name__}}: {{exc}}"
+try:
+    importlib.import_module("services.metrics_exporter")
+    out["metrics_after_cb_import"] = True
+except Exception as exc:
+    out["metrics_after_cb_import"] = f"{{type(exc).__name__}}: {{exc}}"
+print(json.dumps(out))
+"""
+    proc = subprocess.run(
+        [sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO),
+        env={**__import__("os").environ, "POSTGRES_PASSWORD": "test-only"},
+    )
+    assert proc.stdout.strip(), f"sin salida: {proc.stderr[-800:]}"
+    result = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert Path(result["winner"]).resolve() == (REPO / "services" / "__init__.py").resolve()
+    assert result["imported_cb"] is True, f"no se pudo importar circuit_breaker: {result['imported_cb']}"
+    assert result["metrics_after_cb_import"] is True, (
+        "importar `utils.circuit_breaker` ya no deja resuelto "
+        f"`services.metrics_exporter`: {result['metrics_after_cb_import']}"
+    )
