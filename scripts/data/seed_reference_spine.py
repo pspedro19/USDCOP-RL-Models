@@ -17,10 +17,23 @@ No hay defaults de relleno. Concretamente:
   de 250 (`asset_profile.py`: `d.get("trading_days_per_year", 250)`). Medido: USD/COP
   vale 261, así que ese default anualizaría un 4% mal sin avisar. Por eso este seed
   comprueba el **YAML crudo** y aborta si nadie la declaró.
-* `provider` / `provider_symbol` NO se declaran en ningún YAML: se **miden**. Un
-  proveedor existe si escribió filas OHLCV reales, y su `authoritative_for` es el
-  conjunto de activos para los que efectivamente escribió. Inventar aquí un proveedor
-  plausible sería exactamente el fallo que la espina existe para impedir.
+* **Autoridad y procedencia son cosas distintas** (corrección R2, CXD-448). La primera
+  versión de este script las confundió: daba `authoritative_for` a cualquiera que
+  hubiera escrito filas, con lo que `twelvedata_manual_test` acababa siendo autoridad
+  sobre USD/COP. Escribir filas prueba **procedencia**, no autoridad; la columna se
+  llama `authoritative_for`, no `observed_for`.
+
+  - **Autoridad**: se DECLARA en `data_source.provider` / `daily_provider` del SSOT.
+    Sólo esos proveedores llevan `authoritative_for` no vacío.
+  - **Procedencia**: se MIDE en la base (`source` de las tablas OHLCV). Un writer
+    observado y no declarado conserva su fila y su evidencia, pero con
+    `authoritative_for` **vacío** y `metadata.observed_writer = true`.
+  - La autoridad declarada se **verifica** contra los hechos: si un proveedor declarado
+    no aparece nunca escribiendo, se reporta. No se le retira la autoridad —el SSOT
+    manda— pero tampoco se finge que la ejerció.
+
+  No se hace *prefix matching* (`twelvedata_backfill` → `twelvedata`): sería una
+  heurística inventando autoridad, justo lo que esta corrección elimina.
 
 Consecuencia visible y deliberada: `USD/BRL`, `USD/MXN` y `SPY` tienen filas OHLCV
 reales pero **no tienen `AssetProfile`**, así que se quedan fuera y el script lo
@@ -200,6 +213,34 @@ def instrument_rows(perfiles: Mapping[str, AssetProfile]) -> list[dict[str, Any]
     ]
 
 
+#: Claves de `data_source` que confieren AUTORIDAD. `interim_provider` queda fuera a
+#: propósito: su propio nombre dice que es temporal, y conceder autoridad permanente
+#: desde una clave llamada "interim" sería inventarla.
+AUTHORITY_KEYS = ("provider", "daily_provider")
+
+
+def declared_authority(assets_dir: Path, perfiles: Mapping[str, AssetProfile]) -> dict[str, set[str]]:
+    """`provider_id -> activos sobre los que el SSOT lo declara autoridad`.
+
+    Se lee del YAML crudo porque la autoridad es una afirmación declarativa del SSOT,
+    no una consecuencia de lo que haya pasado en la base.
+    """
+    autoridad: dict[str, set[str]] = {}
+    for asset_id in perfiles:
+        raw = yaml.safe_load((assets_dir / f"{asset_id}.yaml").read_text(encoding="utf-8")) or {}
+        fuente = raw.get("data_source")
+        if not isinstance(fuente, Mapping):
+            raise SpineError(
+                f"{asset_id}: no declara 'data_source'. Sin proveedor declarado no hay "
+                "autoridad que registrar, y medirla de la base sería inventarla"
+            )
+        for clave in AUTHORITY_KEYS:
+            provider_id = fuente.get(clave)
+            if provider_id:
+                autoridad.setdefault(str(provider_id), set()).add(asset_id)
+    return autoridad
+
+
 # ------------------------------------------------------------------- evidencia real
 
 
@@ -282,28 +323,67 @@ def _upsert_spine(conn, perfiles, dentro: list[ProviderFact]) -> dict[str, int]:
             )
         escrito["instrument"] = len(instrument_rows(perfiles))
 
-        # `authoritative_for` se MIDE: los activos para los que el proveedor escribió.
-        autoridad: dict[str, set[str]] = {}
+        # AUTORIDAD (declarada en el SSOT) y PROCEDENCIA (observada en la base) se
+        # escriben por separado. Ver el docstring del módulo: confundirlas fue el
+        # defecto de la primera versión (CXD-448).
+        autoridad = declared_authority(ASSETS_DIR, perfiles)
+        observado: dict[str, set[str]] = {}
         for hecho in dentro:
-            autoridad.setdefault(hecho.provider_id, set()).add(por_simbolo[hecho.symbol])
-        for provider_id, activos in sorted(autoridad.items()):
+            observado.setdefault(hecho.provider_id, set()).add(por_simbolo[hecho.symbol])
+
+        for provider_id in sorted(set(autoridad) | set(observado)):
+            declarado_para = sorted(autoridad.get(provider_id, ()))
             cur.execute(
-                "INSERT INTO reference.provider (provider_id, display_name, authoritative_for) "
-                "VALUES (%s, %s, %s) ON CONFLICT (provider_id) DO UPDATE SET "
+                "INSERT INTO reference.provider "
+                "(provider_id, display_name, authoritative_for, active) "
+                "VALUES (%s, %s, %s, TRUE) ON CONFLICT (provider_id) DO UPDATE SET "
+                # El UPDATE es el saneamiento idempotente de las filas ya aplicadas por
+                # la versión anterior: un writer observado y no declarado pasa a '{}'.
                 "authoritative_for = EXCLUDED.authoritative_for",
-                (provider_id, provider_id, sorted(activos)),
+                (provider_id, provider_id, declarado_para),
             )
-        escrito["provider"] = len(autoridad)
+        escrito["provider"] = len(set(autoridad) | set(observado))
+        escrito["provider_con_autoridad"] = len([p for p in autoridad if autoridad[p]])
 
         cur.execute("SELECT canonical_symbol, instrument_id FROM reference.instrument")
         instrumento_por_simbolo = dict(cur.fetchall())
 
-        vistos: set[tuple[str, str]] = set()
+        # Cada par lleva en su metadata QUÉ lo justifica: declaración, observación o
+        # ambas. Es la distinción que CXD-448 exige y que la fila sola no expresa.
+        pares: dict[tuple[str, str], dict[str, Any]] = {}
         for hecho in dentro:
             clave = (hecho.provider_id, hecho.symbol)
-            if clave in vistos:
-                continue  # el mismo par puede aparecer en m5 y daily
-            vistos.add(clave)
+            entrada = pares.setdefault(
+                clave, {"declared": False, "observed": False, "evidence": []}
+            )
+            entrada["observed"] = True
+            entrada["evidence"].append({"table": hecho.table, "rows": hecho.rows})
+
+        # Un par declarado en el SSOT existe aunque todavía no haya escrito una fila:
+        # su justificación es la declaración, y así se marca.
+        por_asset = {aid: p for aid, p in perfiles.items()}
+        for asset_id, perfil in por_asset.items():
+            raw = yaml.safe_load(
+                (ASSETS_DIR / f"{asset_id}.yaml").read_text(encoding="utf-8")
+            )
+            fuente = raw["data_source"]
+            simbolo_declarado = fuente.get("provider_symbol") or perfil.symbol
+            for clave_prov in AUTHORITY_KEYS:
+                provider_id = fuente.get(clave_prov)
+                if not provider_id:
+                    continue
+                clave = (str(provider_id), str(simbolo_declarado))
+                if clave[1] not in instrumento_por_simbolo:
+                    # El símbolo del proveedor puede no ser el canónico (p.ej. 'SPX'):
+                    # se ancla al instrumento del activo que lo declara.
+                    instrumento_por_simbolo[clave[1]] = instrumento_por_simbolo[perfil.symbol]
+                entrada = pares.setdefault(
+                    clave, {"declared": False, "observed": False, "evidence": []}
+                )
+                entrada["declared"] = True
+                entrada.setdefault("declared_for", []).append(asset_id)
+
+        for (provider_id, simbolo), info in sorted(pares.items()):
             cur.execute(
                 "INSERT INTO reference.provider_symbol "
                 "(provider_id, provider_symbol, instrument_id, metadata) "
@@ -311,13 +391,21 @@ def _upsert_spine(conn, perfiles, dentro: list[ProviderFact]) -> dict[str, int]:
                 "ON CONFLICT (provider_id, provider_symbol) DO UPDATE SET "
                 "instrument_id = EXCLUDED.instrument_id, metadata = EXCLUDED.metadata",
                 (
-                    hecho.provider_id,
-                    hecho.symbol,
-                    instrumento_por_simbolo[hecho.symbol],
-                    json.dumps({"evidence_table": hecho.table, "evidence_rows": hecho.rows}),
+                    provider_id,
+                    simbolo,
+                    instrumento_por_simbolo[simbolo],
+                    json.dumps(
+                        {
+                            "declared_authority": info["declared"],
+                            "observed_writer": info["observed"],
+                            "declared_for": sorted(info.get("declared_for", [])),
+                            "evidence": info["evidence"],
+                        },
+                        sort_keys=True,
+                    ),
                 ),
             )
-        escrito["provider_symbol"] = len(vistos)
+        escrito["provider_symbol"] = len(pares)
 
     return escrito
 

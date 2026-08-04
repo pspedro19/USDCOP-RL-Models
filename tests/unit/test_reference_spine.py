@@ -1,12 +1,19 @@
-"""BL-40 + BL-17 — la espina de identidad se DERIVA de los SSOT, nunca se inventa.
+"""BL-37 — la espina de identidad se DERIVA de los SSOT, nunca se inventa.
 
-`reference.provider_symbol` (BL-40) no podía poblarse porque exigía `instrument`, que
-exigía `asset`, que exigía `calendar`, y las cuatro estaban vacías: BL-40 y BL-17 son
-el mismo trabajo. Poblarlas es fácil; poblarlas **sin inventar nada** es el punto.
+`reference.*` (migración 072) tenía siete tablas y seis vacías: `provider_symbol` exigía
+`instrument`, que exigía `asset`, que exigía `calendar`. Existía el esquema, no la
+identidad. Poblarlas es fácil; poblarlas **sin inventar nada** es el punto.
 
-Estos candados atacan el modo de fallo real de un seed de identidad: que alguien
-rellene un hueco con un valor plausible. Un `calendar_id` inventado o un `provider` que
-nunca escribió una fila son peores que la tabla vacía, porque la tabla vacía no miente.
+Estos candados atacan los dos modos de fallo reales de un seed de identidad:
+
+* rellenar un hueco con un valor plausible (un `calendar_id` fabricado, un `252` por
+  defecto). Una tabla vacía no miente; una tabla rellenada a ojo, sí.
+* **confundir procedencia con autoridad** — el defecto que Codex rechazó en R1
+  (CXD-448): haber escrito filas prueba que un proveedor *existió*, no que sea la
+  fuente autorizada. La autoridad se declara en `data_source`; escribir no la otorga.
+
+Corrección de alcance: esta espina es **BL-37**. No cierra BL-40 (cuarentena de
+calidad) ni BL-17 (replay del ledger); los desbloquea.
 """
 
 from __future__ import annotations
@@ -24,6 +31,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.data.seed_reference_spine import (  # noqa: E402
+    AUTHORITY_KEYS,
     INSTRUMENT_TYPE_BY_CLASS,
     ProviderFact,
     SpineError,
@@ -31,6 +39,7 @@ from scripts.data.seed_reference_spine import (  # noqa: E402
     calendar_id_for,
     calendar_rows,
     declared_assets,
+    declared_authority,
     instrument_rows,
     split_facts,
 )
@@ -177,26 +186,101 @@ def test_the_default_that_this_guard_exists_for_is_still_there(tmp_path: Path) -
 # --------------------------------------------------------------- evidencia, no fe
 
 
-def test_a_provider_only_exists_if_it_wrote_real_rows() -> None:
-    """Los proveedores se MIDEN de la base; no hay lista de proveedores en ningún YAML.
+def test_authority_is_declared_in_the_ssot_not_inferred_from_who_wrote() -> None:
+    """La autoridad sale de `data_source`, no de haber escrito filas.
 
-    Es deliberado: un proveedor declarado pero inactivo afirmaría una capacidad que el
-    sistema no tiene. La única prueba admisible de que un proveedor existe es que haya
-    escrito filas.
+    Este candado sustituye a uno mío que era **falso verde** (CXD-448): buscaba
+    `provider` sólo en la raíz del YAML, así que "ningún YAML declara proveedores"
+    pasaba, cuando cada activo lo declara dentro de `data_source`. Aquí se lee el sitio
+    exacto donde vive la declaración.
     """
-    for ruta in sorted(ASSETS_DIR.glob("*.yaml")):
-        declarado = yaml.safe_load(ruta.read_text(encoding="utf-8")) or {}
-        if "asset_id" not in declarado:
-            continue
-        assert not {"provider", "providers"} & set(declarado), (
-            f"{ruta.name} declara proveedores: habría dos fuentes de verdad. O el SSOT "
-            "los declara y el seed deja de medirlos, o los mide y el SSOT calla"
+    perfiles = declared_assets(ASSETS_DIR)
+    autoridad = declared_authority(ASSETS_DIR, perfiles)
+
+    for asset_id in perfiles:
+        declarado = yaml.safe_load(
+            (ASSETS_DIR / f"{asset_id}.yaml").read_text(encoding="utf-8")
+        )
+        proveedor = declarado["data_source"]["provider"]
+        assert asset_id in autoridad[proveedor], (
+            f"{asset_id} declara '{proveedor}' pero no aparece como su autoridad"
         )
 
-    # Y la evidencia sí tiene que venir de tablas de datos reales, no de una constante.
-    from scripts.data.seed_reference_spine import OHLCV_SOURCES
 
-    assert OHLCV_SOURCES, "sin tablas de evidencia no hay forma de medir un proveedor"
+def test_writing_rows_grants_provenance_but_never_authority(tmp_path: Path) -> None:
+    """Un writer observado y NO declarado se queda con `authoritative_for` vacío.
+
+    Es la distinción central de CXD-448: la columna se llama `authoritative_for`, no
+    `observed_for`. `twelvedata_manual_test` escribió 240 filas reales de USD/COP y aun
+    así no puede ser autoridad sobre nada, porque nadie lo declaró — y no hace falta
+    ninguna heurística de nombre para impedirlo.
+    """
+    perfiles = declared_assets(ASSETS_DIR)
+    autoridad = declared_authority(ASSETS_DIR, perfiles)
+
+    for observado in (
+        "twelvedata_manual_test",
+        "twelvedata_backfill",
+        "twelvedata_gap_fill",
+        "binance_daily",
+        "investing_daily",
+    ):
+        assert observado not in autoridad, (
+            f"{observado} escribió filas, pero escribir no confiere autoridad"
+        )
+
+
+def test_mutating_the_declared_provider_moves_the_authority(tmp_path: Path) -> None:
+    """Causal anidado: cambiar `data_source.provider` **retira** la autoridad anterior.
+
+    Si la autoridad se estuviera infiriendo de la base —como hacía la primera versión—
+    este test seguiría verde con el proveedor viejo, porque las filas no cambian al
+    editar el YAML. Por eso la mutación es la del SSOT, no la de los datos.
+    """
+
+    def cambiar_proveedor(d: dict) -> dict:
+        d["data_source"] = {**d["data_source"], "provider": "proveedor_ficticio"}
+        d["data_source"]["daily_provider"] = "proveedor_ficticio"
+        return d
+
+    directorio = _asset_dir_con(tmp_path, "usdcop", cambiar_proveedor)
+    perfiles = declared_assets(directorio)
+    autoridad = declared_authority(directorio, perfiles)
+
+    assert autoridad["proveedor_ficticio"] == {"usdcop"}
+    assert "twelvedata" not in autoridad, (
+        "el proveedor anterior conserva autoridad tras cambiar el SSOT: la autoridad no "
+        "se está derivando de la declaración"
+    )
+
+
+def test_an_asset_without_declared_data_source_fails_closed(tmp_path: Path) -> None:
+    """Sin `data_source` no hay autoridad que registrar — y medirla sería inventarla."""
+    directorio = _asset_dir_con(
+        tmp_path, "usdcop", lambda d: {k: v for k, v in d.items() if k != "data_source"}
+    )
+    perfiles = declared_assets(directorio)
+
+    with pytest.raises(SpineError, match="data_source"):
+        declared_authority(directorio, perfiles)
+
+
+def test_interim_provider_does_not_confer_permanent_authority() -> None:
+    """`interim_provider` queda fuera de las claves de autoridad, por su propio nombre.
+
+    BTC declara `interim_provider: twelvedata` mientras su fuente definitiva es
+    `binance`. Conceder autoridad permanente desde una clave llamada "interim" sería
+    exactamente el tipo de inferencia que esta corrección elimina.
+    """
+    perfiles = declared_assets(ASSETS_DIR)
+    autoridad = declared_authority(ASSETS_DIR, perfiles)
+
+    btc = yaml.safe_load((ASSETS_DIR / "btcusdt.yaml").read_text(encoding="utf-8"))
+    assert btc["data_source"]["interim_provider"] == "twelvedata"
+    assert "btcusdt" not in autoridad.get("twelvedata", set()), (
+        "un proveedor interino ganó autoridad permanente sobre BTC"
+    )
+    assert "interim_provider" not in AUTHORITY_KEYS
 
 
 def test_symbols_with_rows_but_no_profile_stay_out() -> None:
