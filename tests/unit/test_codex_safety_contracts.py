@@ -1009,6 +1009,64 @@ def test_identity_admin_required_column_validation_fails_closed() -> None:
     )
 
 
+def test_required_column_validation_exposes_missing_objects_for_honest_summary() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_missing_columns", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class Connection:
+        async def fetchval(
+            self, _query: str, schema: str, table: str, column: str
+        ) -> bool:
+            return False
+
+    missing = asyncio.run(
+        module.get_missing_required_columns(Connection(), "identity-admin-v1")
+    )
+    assert missing == ["public.sb_users.is_test"]
+
+
+def test_h5_identity_plan_is_ordered_review_gated_and_unpinned() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_h5_identity", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("h5-identity-v1")]
+    assert names == [
+        "064_h5_strategy_id.sql",
+        "083_h5_strategy_performance_view.sql",
+    ]
+    assert module.PLAN_PREREQUISITE_TABLES["h5-identity-v1"] == (
+        "public.forecast_h5_signals",
+        "public.forecast_h5_executions",
+        "public.forecast_h5_paper_trading",
+    )
+    assert "h5-identity-v1" in module.REVIEW_GATED_PLANS
+    assert "h5-identity-v1" not in module.PINNED_PLAN_DIGESTS
+    assert not module.plan_is_authorized("h5-identity-v1", None)
+    assert not module.plan_is_authorized(
+        "h5-identity-v1", module.get_plan_digest("h5-identity-v1")
+    )
+    assert module.REQUIRED_COLUMNS_BY_PLAN["h5-identity-v1"] == {
+        "public.forecast_h5_signals": {"strategy_id": "H5 signal identity"},
+        "public.forecast_h5_executions": {"strategy_id": "H5 execution identity"},
+        "public.forecast_h5_paper_trading": {
+            "strategy_id": "H5 paper-trading identity"
+        },
+        "public.v_h5_performance_summary": {
+            "strategy_id": "Strategy-safe H5 performance projection"
+        },
+    }
+
+
 def test_migrator_prefers_database_url_and_requires_explicit_fallback_password(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

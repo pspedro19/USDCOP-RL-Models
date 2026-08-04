@@ -59,6 +59,13 @@ MIGRATION_PLANS = {
             "056_rbac_dynamic_roles.sql",
         )
     ),
+    "h5-identity-v1": tuple(
+        PROJECT_ROOT / "database" / "migrations" / name
+        for name in (
+            "064_h5_strategy_id.sql",
+            "083_h5_strategy_performance_view.sql",
+        )
+    ),
     # Fresh-clone platform schema.  This deliberately uses the consolidated H5
     # migration (050) instead of replaying its superseded 043/044 path, and
     # keeps optional extensions such as pgvector (047) out of the baseline.
@@ -93,9 +100,20 @@ MIGRATION_PLANS = {
     ),
 }
 REVIEW_GATED_PLANS = frozenset(
-    {"commerce-v1", "identity-admin-v1", "platform-bootstrap-v1", "fabric-v1"}
+    {
+        "commerce-v1",
+        "h5-identity-v1",
+        "identity-admin-v1",
+        "platform-bootstrap-v1",
+        "fabric-v1",
+    }
 )
 PLAN_PREREQUISITE_TABLES = {
+    "h5-identity-v1": (
+        "public.forecast_h5_signals",
+        "public.forecast_h5_executions",
+        "public.forecast_h5_paper_trading",
+    ),
     "identity-admin-v1": ("public.sb_users",),
     "platform-bootstrap-v1": (
         "public.sb_users",
@@ -213,9 +231,24 @@ REQUIRED_TABLES_BY_PLAN = {
         "public.rbac_role_permissions": "Dynamic role-permission assignments",
         "public.rbac_user_overrides": "Per-user RBAC overrides",
     },
+    "h5-identity-v1": {
+        "public.v_h5_performance_summary": "Strategy-safe H5 performance view",
+    },
     "fabric-v1": FABRIC_REQUIRED_TABLES,
 }
 REQUIRED_COLUMNS_BY_PLAN = {
+    "h5-identity-v1": {
+        "public.forecast_h5_signals": {"strategy_id": "H5 signal identity"},
+        "public.forecast_h5_executions": {
+            "strategy_id": "H5 execution identity"
+        },
+        "public.forecast_h5_paper_trading": {
+            "strategy_id": "H5 paper-trading identity"
+        },
+        "public.v_h5_performance_summary": {
+            "strategy_id": "Strategy-safe H5 performance projection"
+        },
+    },
     "identity-admin-v1": {
         "public.sb_users": {
             "is_test": "Admin-console test-user classification",
@@ -512,8 +545,8 @@ async def column_exists(conn, full_table_name: str, column_name: str) -> bool:
     """, schema, table, column_name)
 
 
-async def validate_required_columns(conn, plan: str) -> bool:
-    """Fail closed when a plan's postcondition columns are absent."""
+async def get_missing_required_columns(conn, plan: str) -> list[str]:
+    """Return and report every absent postcondition column for a plan."""
     missing = []
     for table, columns in REQUIRED_COLUMNS_BY_PLAN.get(plan, {}).items():
         for column, description in columns.items():
@@ -522,7 +555,12 @@ async def validate_required_columns(conn, plan: str) -> bool:
                 logger.warning(
                     "  ✗ %s.%s - MISSING (%s)", table, column, description
                 )
-    return not missing
+    return missing
+
+
+async def validate_required_columns(conn, plan: str) -> bool:
+    """Fail closed when a plan's postcondition columns are absent."""
+    return not await get_missing_required_columns(conn, plan)
 
 
 async def validate_plan_prerequisites(conn, plan: str) -> bool:
@@ -705,12 +743,17 @@ async def validate_tables(plan: str = "legacy-init") -> bool:
                 missing.append(table_name)
                 logger.warning(f"  ✗ {table_name} - MISSING ({description})")
 
-        columns_valid = await validate_required_columns(conn, plan)
+        missing_columns = await get_missing_required_columns(conn, plan)
 
         logger.info("-" * 60)
-        logger.info(f"Present: {len(present)}, Missing: {len(missing)}")
+        logger.info(
+            "Present tables: %d, Missing tables: %d, Missing columns: %d",
+            len(present),
+            len(missing),
+            len(missing_columns),
+        )
 
-        if missing or not columns_valid:
+        if missing or missing_columns:
             logger.error(
                 "Run scripts/ops/db_migrate.py with --plan %s and its reviewed "
                 "digest to create missing tables",
