@@ -102,6 +102,9 @@ PINNED_PLAN_DIGESTS = {
     "commerce-v1": (
         "sha256:3fdb2d845fbe90e26b294bd09fb1d02b889b17ee71d4836ce47af9b60d49a261"
     ),
+    "platform-bootstrap-v1": (
+        "sha256:9d6e2d40fa974aca3474c70336b5e0912c04f5b75c7474e62ea172a01388c06d"
+    ),
     "fabric-v1": (
         "sha256:023ebffaa5afcb9af83942f3bc23ea74282eec120047d77407a23eccfe6ee1eb"
     ),

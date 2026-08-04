@@ -862,7 +862,9 @@ def test_fabric_migration_plan_is_explicit_and_review_gated() -> None:
     assert module.plan_is_authorized("fabric-v1", digest)
 
 
-def test_platform_bootstrap_plan_is_explicit_minimal_and_unpinned() -> None:
+def test_platform_bootstrap_plan_is_explicit_minimal_and_pinned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     import importlib.util
 
     path = Path("scripts/ops/db_migrate.py")
@@ -887,11 +889,25 @@ def test_platform_bootstrap_plan_is_explicit_minimal_and_unpinned() -> None:
         "public.macro_indicators_daily",
     )
     assert "platform-bootstrap-v1" in module.REVIEW_GATED_PLANS
-    assert "platform-bootstrap-v1" not in module.PINNED_PLAN_DIGESTS
     assert not module.plan_is_authorized("platform-bootstrap-v1", None)
-    assert not module.plan_is_authorized(
-        "platform-bootstrap-v1", module.get_plan_digest("platform-bootstrap-v1")
+    reviewed_digest = module.get_plan_digest("platform-bootstrap-v1")
+    assert reviewed_digest == module.PINNED_PLAN_DIGESTS["platform-bootstrap-v1"]
+    assert module.plan_is_authorized("platform-bootstrap-v1", reviewed_digest)
+
+    original_files = module.MIGRATION_PLANS["platform-bootstrap-v1"]
+    changed_migration = tmp_path / original_files[0].name
+    original_bytes = original_files[0].read_bytes()
+    changed_migration.write_bytes(original_bytes + b"\n-- unauthorized byte change\n")
+    monkeypatch.setitem(
+        module.MIGRATION_PLANS,
+        "platform-bootstrap-v1",
+        (changed_migration, *original_files[1:]),
     )
+
+    changed_digest = module.get_plan_digest("platform-bootstrap-v1")
+    assert changed_digest != reviewed_digest
+    assert not module.plan_is_authorized("platform-bootstrap-v1", reviewed_digest)
+    assert not module.plan_is_authorized("platform-bootstrap-v1", changed_digest)
 
 
 def test_platform_bootstrap_excludes_superseded_and_optional_migrations() -> None:
