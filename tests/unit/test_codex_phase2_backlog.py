@@ -77,6 +77,24 @@ def test_applied_migration_is_idempotent_but_drift_is_fatal() -> None:
         asyncio.run(migrator.claim_migration_attempt(drift, "080.sql", "new"))
 
 
+def test_fabric_required_tables_are_backed_by_the_reviewed_plan_ddl() -> None:
+    migrator = _load_path("db_migrate_required_ddl", "scripts/ops/db_migrate.py")
+    ddl = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in migrator.get_migration_files("fabric-v1")
+    )
+    created = {
+        match.lower()
+        for match in re.findall(
+            r"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?([a-z_][\w]*\.[a-z_][\w]*)",
+            ddl,
+            flags=re.IGNORECASE,
+        )
+    }
+
+    assert set(migrator.FABRIC_REQUIRED_TABLES) <= created
+
+
 def test_metric_annualization_comes_from_asset_profile_and_return_interval() -> None:
     from src.metrics.annualization import AnnualizationRegistry
     from src.metrics.engine import MetricCatalog, MetricEngine

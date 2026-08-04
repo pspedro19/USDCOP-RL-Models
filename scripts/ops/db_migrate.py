@@ -187,7 +187,6 @@ FABRIC_REQUIRED_TABLES = {
     "portfolio.kill_switch_event": "Kill-switch event ledger",
     "portfolio.kill_switch_action": "Fenced kill-switch effects",
     "portfolio.kill_switch_action_event": "Kill-switch attempt events",
-    "market.resample_policy": "Session-aware resampling policy",
     "demo.synthetic_model": "Synthetic models isolated from real performance",
 }
 
