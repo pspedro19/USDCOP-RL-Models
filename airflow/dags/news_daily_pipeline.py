@@ -283,17 +283,24 @@ def _measure_feature_availability(**context):
     alineado con la ingesta, y el dia que se desalinearan la medicion describiria un
     estado que ya no existe (CLD-469).
 
-    El cutoff sale de `news_feature_cutoff`, el MISMO helper que usa el consumidor. Si
-    midieramos con "ahora" y el weekly leyera otra ventana, habria features marcadas
-    disponibles que el consumidor no ve, y al reves — el gemelo del `quality_observed_at`
-    de C027.
-    """
-    from datetime import date
+    El cutoff es `data_interval_end` **exacto**, timezone-aware. Mi primera version uso
+    `news_feature_cutoff(fin.date())`, que suma tres dias, y Codex la rechazo con dos
+    razones correctas (CXD-502):
 
+      * este DAG corre **tres veces al dia** (`0 7,12,18 * * 1-5`) y las tres producian
+        la MISMA key --end+3d a medianoche--, asi que la segunda corrida colisionaba con
+        la primera aunque la evidencia hubiera cambiado;
+      * y esa key esta en el **futuro**: el viernes se pedia disponibilidad a lunes 00:00,
+        un instante que aun no ha ocurrido. Medir disponibilidad en un tiempo futuro no
+        significa nada.
+
+    El `+2d` de aquel helper pertenece a la **ventana de seleccion de articulos**, no al
+    tiempo de observacion. Reutilizarlo fue confundir dos relojes distintos porque ambos
+    se llamaban "cutoff".
+    """
     from src.data_quality.feature_availability import (
         load_feature_specs,
         measure_and_persist,
-        news_feature_cutoff,
     )
 
     from pathlib import Path
@@ -306,11 +313,10 @@ def _measure_feature_availability(**context):
             "no hay nada que medir, y una medicion vacia se leeria como 'todo disponible'"
         )
 
-    # Fecha LOGICA de la corrida, no `today()`: dos re-ejecuciones de la misma fecha
-    # deben medir la misma ventana o la idempotencia de (feature, instrumento, instante)
-    # dejaria de significar nada.
-    fin = context["data_interval_end"].date()
-    cutoff = news_feature_cutoff(fin)
+    # Instante LOGICO exacto de la corrida. Las tres del dia (07/12/18 UTC) dan tres
+    # cutoffs distintos, asi que no colisionan; y ninguno es futuro, asi que la medicion
+    # describe un estado que de verdad existia.
+    cutoff = context["data_interval_end"]
 
     from utils.dag_common import get_db_connection
 

@@ -43,32 +43,78 @@ def test_the_measurement_runs_after_the_features_it_measures() -> None:
     ), "la medicion no corre despues de las features que mide"
 
 
-def test_the_cutoff_is_shared_with_the_consumer_not_wall_clock() -> None:
-    """El corte sale de `news_feature_cutoff`, el MISMO helper que usa el consumidor.
+def test_the_three_daily_runs_produce_three_distinct_cutoffs() -> None:
+    """El cron es `0 7,12,18 * * 1-5`: las tres corridas NO pueden compartir key.
 
-    Si midieramos con "ahora" y el weekly leyera otra ventana, habria features marcadas
-    disponibles que el consumidor no ve, y al reves. Es el gemelo del
-    `quality_observed_at` de C027: alli acordamos re-evaluar con el instante original por
-    exactamente la misma razon.
+    Defecto que Codex rechazo (CXD-502) y era doble. Mi primera version usaba
+    `news_feature_cutoff(data_interval_end.date())`, que suma tres dias:
+
+        07:00 UTC -> 2026-08-07T00:00Z
+        12:00 UTC -> 2026-08-07T00:00Z     <- misma key
+        18:00 UTC -> 2026-08-07T00:00Z     <- misma key
+
+    Las tres colisionaban aunque la evidencia entre ellas hubiera cambiado. Y peor: esa
+    key esta en el **futuro** -- el viernes se pedia disponibilidad a lunes 00:00, un
+    instante que aun no ha ocurrido. Medir disponibilidad en un tiempo futuro no
+    significa nada.
+
+    La causa de fondo: el `+2d` de aquel helper pertenece a la **ventana de seleccion de
+    articulos**, no al tiempo de observacion. Reutilizarlo fue confundir dos relojes
+    porque ambos se llamaban "cutoff".
     """
+    from datetime import datetime, timezone
+
     fuente = DAG.read_text(encoding="utf-8")
+    assert 'schedule="0 7,12,18 * * 1-5"' in fuente, (
+        "cambio el cron: re-verifica que las corridas siguen sin colisionar"
+    )
+
     arbol = ast.parse(fuente)
+    cuerpo = next(
+        n for n in ast.walk(arbol)
+        if isinstance(n, ast.FunctionDef) and n.name == "_measure_feature_availability"
+    )
+    # Solo el cuerpo EJECUTABLE: el docstring nombra el helper viejo para explicar por
+    # que se retiro, y mirarlo entero hacia fallar el candado por su propia explicacion
+    # -- me paso al escribirlo.
+    ejecutable = ast.Module(
+        body=[n for n in cuerpo.body if not (isinstance(n, ast.Expr) and isinstance(n.value, ast.Constant))],
+        type_ignores=[],
+    )
+    texto = ast.unparse(ejecutable)
+
+    assert "cutoff = context['data_interval_end']" in texto.replace('"', "'"), (
+        "el cutoff no es el instante logico exacto de la corrida"
+    )
+    assert "news_feature_cutoff" not in texto, (
+        "vuelve a usar la ventana de seleccion de articulos como tiempo de observacion"
+    )
+
+    # Discriminante: los tres instantes reales dan tres claves distintas.
+    instantes = [datetime(2026, 8, 4, h, tzinfo=timezone.utc) for h in (7, 12, 18)]
+    assert len({i.isoformat() for i in instantes}) == 3
+
+    # Y ninguno es futuro respecto a su propia corrida, por construccion: el cutoff ES
+    # el final del intervalo que acaba de cerrarse.
+    for i in instantes:
+        assert i <= datetime(2026, 8, 4, 18, tzinfo=timezone.utc)
+
+
+def test_the_cutoff_is_never_wall_clock() -> None:
+    """Ni `now()` ni `today()`: dos re-ejecuciones de la misma corrida deben coincidir."""
+    arbol = ast.parse(DAG.read_text(encoding="utf-8"))
     cuerpo = next(
         n for n in ast.walk(arbol)
         if isinstance(n, ast.FunctionDef) and n.name == "_measure_feature_availability"
     )
     texto = ast.unparse(cuerpo)
 
-    assert "news_feature_cutoff" in texto, (
-        "el cutoff no usa el helper compartido: la medicion y el consumo miraran "
-        "ventanas distintas"
-    )
     for reloj in ("date.today(", "datetime.now(", "utcnow("):
         assert reloj not in texto, (
-            f"usa {reloj}: dos re-ejecuciones de la misma fecha logica medirian ventanas "
-            "distintas y la idempotencia por (feature, instante) dejaria de significar nada"
+            f"usa {reloj}: dos re-ejecuciones del mismo run logico medirian instantes "
+            "distintos y la idempotencia por (feature, instante) dejaria de existir"
         )
-    assert "data_interval_end" in texto, "el corte no se deriva de la fecha logica"
+    assert "data_interval_end" in texto
 
 
 def test_an_empty_catalog_fails_closed_instead_of_measuring_nothing() -> None:
