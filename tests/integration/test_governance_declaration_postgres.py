@@ -17,7 +17,13 @@ from src.governance.declaration import (
 
 
 @pytest.mark.asyncio
-async def test_python_declaration_matrix_matches_live_postgres_checks() -> None:
+async def test_python_declaration_matrix_matches_live_postgres_checks_for_action_surface() -> None:
+    """Compare the Python model with the live CHECKs for ``surface='action'``.
+
+    ``GovernanceDeclaration`` does not model ``surface``.  Diagnostic-surface
+    parity is therefore deliberately outside this test's claim and remains a
+    contract gap tracked by BL-16.
+    """
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
         pytest.skip("DATABASE_URL not provided; PostgreSQL integration not executed")

@@ -1,7 +1,7 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.1.0
+version: 1.1.1
 last_verified: 2026-08-04
 supersedes: []
 code_anchors:
@@ -56,10 +56,15 @@ Declaración PAPER+FULL ⇒ CI rojo; JSON con NaN ⇒ rojo.
 Tras aplicar `fabric-v1`, la matriz Python se contrastó con los `CHECK` reales de
 `control.strategy_declaration`. La integración obtiene las expresiones vivas mediante
 `pg_get_expr` y las evalúa por `SELECT` sobre cada candidato, sin insertar filas, crear objetos
-temporales ni desactivar los triggers de transición. La paridad cubre las dimensiones nominales de
-estado de investigación, tier de capital y estado operacional, además de `dag_declared` y el
-checklist exigido al retirar.
+temporales ni desactivar los triggers de transición. La paridad verificada está acotada
+explícitamente a `surface='action'`: cubre las dimensiones nominales de estado de investigación,
+tier de capital y estado operacional, además de `dag_declared` y el checklist exigido al retirar.
 
-Este avance elimina el hueco Python↔SQL, pero BL-16 permanece **PARTIAL**: ningún manifest/config
-productivo construye todavía una `GovernanceDeclaration` y la usa como gate antes de ejecutar su
-DAG. La paridad de dos mecanismos inertes no sustituye ese caller end-to-end.
+El cross-review `CLD-367` comprobó que `surface='diagnostic'` expone divergencias reales en el
+`CHECK` de `control.strategy_declaration`, porque `GovernanceDeclaration` no modela `surface`.
+Resolver si Python debe incorporar esa dimensión o si el `CHECK` SQL debe cambiar es una decisión
+de contrato pendiente; el test no oculta ni reclama cubrir esa superficie.
+
+BL-16 permanece **PARTIAL** por esa brecha y porque ningún manifest/config productivo construye
+todavía una `GovernanceDeclaration` y la usa como gate antes de ejecutar su DAG. La paridad acotada
+de dos mecanismos inertes no sustituye ese caller end-to-end.
