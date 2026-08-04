@@ -208,3 +208,73 @@ def test_required_features_are_declared_by_the_policy_itself(policy_id) -> None:
         f"{policy_id}: usa {sorted(usadas - declaradas)} sin declararlas como "
         "required_features; el snapshot podría llegar sin ellas"
     )
+
+
+@pytest.mark.parametrize("policy_id", sorted(SPECS))
+def test_a_rule_based_policy_never_declares_the_train_capability(policy_id) -> None:
+    """§11: `rule_based` no declara `capability=train`.
+
+    No es redundante con `retrain: never`: ese campo dice que NO se reentrena, y
+    `capabilities` dice que tareas se le pueden PEDIR. Declarar `train` en una policy
+    que no entrena haria que el factory le generase una tarea de entrenamiento vacia —
+    una tarea verde que no hace nada es peor que una que falta, porque el tablero la
+    cuenta como cobertura.
+    """
+    spec = SPECS[policy_id]
+    if (spec.get("engine") or {}).get("type") != "rule_based":
+        pytest.skip(f"{policy_id} no es rule_based")
+
+    capacidades = list(spec.get("capabilities") or [])
+    assert capacidades, f"{policy_id}: sin `capabilities` no se sabe que se le puede pedir"
+    assert "train" not in capacidades, (
+        f"{policy_id} es rule_based y declara capability 'train': el factory le crearia "
+        "una tarea de entrenamiento que no entrena nada"
+    )
+
+
+@pytest.mark.parametrize("policy_id", sorted(SPECS))
+def test_every_policy_declares_its_decision_cutoff(policy_id) -> None:
+    """§11: ningun input puede superar el `decision_cutoff` — y para eso hay que declararlo.
+
+    La validacion de §11 es sobre datos en ejecucion, pero su condicion previa es
+    verificable aqui: sin `decision_point` declarado no existe cutoff contra el que
+    comparar, y "ningun input lo supera" seria cierto por vacuidad. Una politica sin
+    punto de decision consumiria implicitamente "lo ultimo que haya", que es el
+    look-ahead mas facil de cometer y el mas dificil de ver.
+    """
+    entradas = SPECS[policy_id].get("inputs") or {}
+    cutoff = entradas.get("decision_point")
+
+    assert cutoff, (
+        f"{policy_id}: sin `inputs.decision_point`, la regla 'ningun input supera el "
+        "cutoff' se cumple por vacuidad y la policy leeria lo ultimo disponible"
+    )
+    assert isinstance(cutoff, str) and cutoff.strip()
+
+
+@pytest.mark.parametrize("policy_id", sorted(SPECS))
+def test_a_withdrawn_policy_keeps_its_manifest_and_hashes(policy_id) -> None:
+    """§11: `WITHDRAWN` conserva bundles y manifiesto.
+
+    Retirar una estrategia no puede borrar su rastro: sin `ssot_manifest` ni
+    `policy_hash` seria imposible reconstruir que decidia cuando estaba viva, y una
+    retirada se volveria indistinguible de un borrado. Es la misma razon por la que la
+    cuarentena guarda el `source_record` de la barra que rechaza.
+
+    Se exige de TODA policy, no solo de las retiradas: si el manifiesto se declarara al
+    retirar, no habria nada que conservar.
+    """
+    gobierno = SPECS[policy_id].get("governance") or {}
+
+    assert gobierno.get("ssot_manifest"), (
+        f"{policy_id}: sin `ssot_manifest`, retirarla borraria la unica forma de saber "
+        "que decidia"
+    )
+    assert str(gobierno.get("policy_hash", "")).startswith("sha256:"), (
+        f"{policy_id}: sin `policy_hash` sellado, un bundle retirado no se puede "
+        "verificar contra lo que corrio"
+    )
+    assert gobierno.get("frozen_at"), (
+        f"{policy_id}: sin `frozen_at` no se sabe desde cuando el manifiesto es el que "
+        "gobernaba"
+    )
