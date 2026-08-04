@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-29
+version: 1.1.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - scripts/analysis/book_construction.py
@@ -31,3 +31,10 @@ Shadow ≥26 periodos vs baseline neto de costos ANTES de mover capital; normali
 
 ## Notas constitución
 'Probé 12 esquemas y elegí el mejor' es el mismo pecado un nivel arriba — el allocator tiene familia y juez propios.
+
+## Bloqueo de cableado medido (2026-08-03)
+
+El allocator debe persistir en `portfolio.allocation` y publicar `portfolio.target`, objetos de
+la migración 077. No existen en la base viva; `src/portfolio/allocator.py` tiene tests pero cero
+llamadores productivos. Además de la sombra temporal ya declarada, DONE exige un productor y un
+consumidor reales después de aplicar 077 con autorización.

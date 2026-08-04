@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-29
+version: 1.1.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/public/data/registry.json
@@ -30,3 +30,11 @@ Test rojo con SYNTHETIC+active fuera de demo.
 
 ## Notas constitución
 Desconfianza de la magia: un equity sintético presentado como real es el peor bug de honestidad posible.
+
+## Bloqueo de cableado medido (2026-08-03)
+
+La frontera física y el traslado viven en la migración 081. Aunque `demo` existe en la base
+viva, 081 no está aplicada y `src/governance/synthetic_isolation.py` tiene tests pero cero
+llamadores productivos. DONE exige ejecutar el traslado autorizado, comprobar que no queda la
+fila en superficies reales y demostrar un consumidor de la vista demo; los unitarios no lo
+sustituyen.

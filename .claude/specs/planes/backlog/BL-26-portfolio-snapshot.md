@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.2.0
-last_verified: 2026-07-29
+version: 1.3.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - scripts/analysis/book_construction.py
@@ -98,3 +98,10 @@ Libro con señal COP de hoy + Oro de ayer ⇒ rechazado sin políticas declarada
 
 ## Notas constitución
 'La señal de hoy de SPX + la de ayer de Oro no es un libro, es una foto movida'.
+
+## Bloqueo de cableado medido (2026-08-03)
+
+El destino productivo es `portfolio.snapshot` y `portfolio.snapshot_signal`, migración 077 de
+`fabric-v1`. Esos objetos no existen en la base viva; `src/portfolio/snapshot.py` conserva tests
+pero cero llamadores productivos. Aplicar 077, persistir y consumir un snapshot real son
+requisitos de DONE, no evidencia sustituible por unitarios.

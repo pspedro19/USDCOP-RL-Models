@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-29
+version: 1.1.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - src/contracts/strategy_manifest.py
@@ -30,3 +30,10 @@ Mismo decision_fingerprint ⇒ mismo semantic_hash (test); derivation_id igual c
 
 ## Notas constitución
 E2 PRECEDE hechos y backfills (lección del roadmap auditado — evita re-trabajo de spine).
+
+## Bloqueo de cableado medido (2026-08-03)
+
+La declaración gobernada depende de `control.strategy_declaration` y sus eventos, definidos por
+la migración 070 de `fabric-v1`. Ese esquema no existe en la base viva. Hasta aplicar 070 con
+autorización, `src/governance/declaration.py` conserva tests pero cero llamadores productivos.
+Un test verde sin productor y consumidor real no satisface DONE.

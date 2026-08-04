@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-29
+version: 1.1.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - airflow/dags/asset_pipeline_factory.py
@@ -31,3 +31,11 @@ cagg 1d == asset_daily actual para provider_official (diff=0 donde aplica); lect
 
 ## Notas constitución
 No retención destructiva hasta que el raw esté respaldado (MinIO/Parquet).
+
+## Bloqueo de cableado medido (2026-08-03)
+
+El camino requiere identidad 072, `market.raw_bar`/`market.canonical_bar` de 073 y el perfil
+físico/caggs operator-only de 080. Ninguno está aplicado en la base viva;
+`src/market/resampling.py` tiene tests pero cero llamadores productivos. El orden obligatorio es
+072 → 073 → writers/backfill y vistas compatibles → preflight 080; DONE exige callers y diff
+contra datos reales, no sólo el módulo local.

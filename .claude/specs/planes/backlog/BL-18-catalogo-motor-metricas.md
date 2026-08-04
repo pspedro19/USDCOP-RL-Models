@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-29
+version: 1.1.0
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - services/common/metrics.py
@@ -30,3 +30,10 @@ Grep-CI: ningún sharpe/calmar fuera del motor; misma métrica idéntica en 5 en
 
 ## Notas constitución
 'annualization: from_asset_registry' resuelve mecánicamente la regla de relojes.
+
+## Bloqueo de cableado medido (2026-08-03)
+
+`src/metrics/persistence.py` depende de `control.metric_event`, definido por la migración 070.
+En la base viva el esquema `control` no existe; por eso el módulo tiene tests pero cero llamadores
+productivos. BL-18 no puede cerrar hasta aplicar 070 y demostrar al menos un productor y un
+consumidor reales sobre el evento persistido.
