@@ -125,6 +125,127 @@ def _make_verify(registry_root: str, registry_asset: str, strategy_ids: list[str
     return _verify
 
 
+
+# --- C-010 R3: cadena gobernada de politica (aditiva, fail-closed) -----------
+#
+# Solo se emite para referencias declaradas en `policy_runs` cuyo
+# `migration.status` sea PARITY_GREEN o CUTOVER. `SPEC_ONLY`/`PARITY_PENDING`
+# producen CERO tareas -- no un skip verde. Con el arbol actual no hay ninguna
+# entrada declarada, asi que el grafo de tareas queda IDENTICO; esa ausencia de
+# delta no depende de criterio, sino de que no hay nada que declarar.
+#
+# Promover un `migration.status` es acto EXCLUSIVO del operador (C-010 amendment):
+# este codigo solo lee el estado, nunca lo escribe ni lo infiere.
+ELIGIBLE_MIGRATION_STATES = frozenset({"PARITY_GREEN", "CUTOVER"})
+
+#: Ramificacion permitida: por `engine.type`, jamas por `strategy_id`
+#: (`strategy-engines.md` invariante 1).
+SUPPORTED_ENGINE_TYPES = frozenset({"rule_based"})
+
+
+class PolicyRunConfigError(RuntimeError):
+    """Declaracion de `policy_runs` invalida: falla al parsear el DAG, no en runtime."""
+
+
+def resolve_policy_runs(spec: dict) -> list[dict]:
+    """Resolver `policy_runs` a las referencias ELEGIBLES, o fallar cerrado.
+
+    Devuelve `[]` sin importar nada cuando no hay `policy_runs`, para que el
+    grafo actual no cambie ni adquiera dependencias nuevas.
+    """
+    declared = spec.get("policy_runs") or []
+    if not declared:
+        return []
+
+    seen: set[str] = set()
+    wanted: list[str] = []
+    for index, entry in enumerate(declared):
+        if not isinstance(entry, dict) or not isinstance(entry.get("policy_id"), str):
+            raise PolicyRunConfigError(
+                f"policy_runs[{index}] debe ser un mapping con `policy_id` de texto"
+            )
+        policy_id = entry["policy_id"].strip()
+        if not policy_id:
+            raise PolicyRunConfigError(f"policy_runs[{index}]: `policy_id` vacio")
+        if policy_id in seen:
+            raise PolicyRunConfigError(f"policy_runs: `policy_id` duplicado: {policy_id}")
+        seen.add(policy_id)
+        wanted.append(policy_id)
+
+    from src.strategies.policies.loader import load_all_policy_specs
+
+    by_id = {str(item["id"]): item for item in load_all_policy_specs()}
+    unknown = [pid for pid in wanted if pid not in by_id]
+    if unknown:
+        raise PolicyRunConfigError(
+            f"policy_runs referencia policies que el loader SSOT no conoce: {unknown}"
+        )
+
+    eligible: list[dict] = []
+    for policy_id in wanted:
+        policy_spec = by_id[policy_id]
+        status = (policy_spec.get("migration") or {}).get("status")
+        if status not in ELIGIBLE_MIGRATION_STATES:
+            continue  # inerte: cero tareas, nunca un skip verde
+        engine_type = (policy_spec.get("engine") or {}).get("type")
+        if engine_type not in SUPPORTED_ENGINE_TYPES:
+            raise PolicyRunConfigError(
+                f"{policy_id}: engine.type {engine_type!r} elegible pero no soportado "
+                f"por la cadena gobernada (soportados: {sorted(SUPPORTED_ENGINE_TYPES)})"
+            )
+        eligible.append({"policy_id": policy_id, "engine_type": engine_type})
+    return eligible
+
+
+def make_resolve_snapshot(policy_id: str):
+    """Tarea 1: materializar el snapshot causal. Aqui vive el cutoff."""
+
+    def _resolve(**context):
+        from src.orchestration.feature_snapshot import resolve_feature_snapshot
+
+        ti = context["ti"]
+        observations = ti.xcom_pull(key=f"observations::{policy_id}")
+        decision_cutoff = ti.xcom_pull(key=f"decision_cutoff::{policy_id}")
+        if not observations or not decision_cutoff:
+            raise PolicyRunConfigError(
+                f"{policy_id}: faltan observations/decision_cutoff; no se evalua a ciegas"
+            )
+        return resolve_feature_snapshot(observations, decision_cutoff=decision_cutoff)
+
+    return _resolve
+
+
+def make_evaluate_policy(policy_id: str):
+    """Tarea 2: evaluar la politica sobre el snapshot ya acotado por cutoff."""
+
+    def _evaluate(**context):
+        from src.policy_engine import evaluate_policy
+        from src.strategies.policies.loader import build_policy
+
+        ti = context["ti"]
+        snapshot = ti.xcom_pull(task_ids=f"policy_{policy_id}_resolve_snapshot")
+        if snapshot is None:
+            raise PolicyRunConfigError(f"{policy_id}: sin snapshot resuelto; no se evalua")
+        return evaluate_policy(build_policy(policy_id), snapshot, context.get("ctx"))
+
+    return _evaluate
+
+
+def make_publish_signal(policy_id: str):
+    """Tarea 3: publicar la decision. Sin decision no se publica nada."""
+
+    def _publish(**context):
+        from src.policy_engine import publish_signal
+
+        ti = context["ti"]
+        decision = ti.xcom_pull(task_ids=f"policy_{policy_id}_evaluate")
+        if decision is None:
+            raise PolicyRunConfigError(f"{policy_id}: sin decision; no se publica")
+        return publish_signal(decision)
+
+    return _publish
+
+
 def _build_asset_dag(asset_id: str, spec: dict, registry_root: str) -> DAG:
     """Build a single DS-cycle pipeline DAG for one asset."""
     stages = spec.get("stages") or []
@@ -180,6 +301,26 @@ def _build_asset_dag(asset_id: str, spec: dict, registry_root: str) -> DAG:
         )
         if prev is not None:
             dag.get_task(prev["id"]) >> verify
+
+        # C-010 R3: cadena gobernada por `engine.type`, solo para elegibles.
+        # Sin `policy_runs` declarados esto es un bucle vacio y el grafo no cambia.
+        for run in resolve_policy_runs(spec):
+            policy_id = run["policy_id"]
+            chain = [
+                PythonOperator(
+                    task_id=f"policy_{policy_id}_resolve_snapshot",
+                    python_callable=make_resolve_snapshot(policy_id),
+                ),
+                PythonOperator(
+                    task_id=f"policy_{policy_id}_evaluate",
+                    python_callable=make_evaluate_policy(policy_id),
+                ),
+                PythonOperator(
+                    task_id=f"policy_{policy_id}_publish",
+                    python_callable=make_publish_signal(policy_id),
+                ),
+            ]
+            verify >> chain[0] >> chain[1] >> chain[2]
 
     return dag
 
