@@ -1,0 +1,20 @@
+{
+  "table": "forecast_h5_paper_trading",
+  "until_year": 2026,
+  "until_week": 26,
+  "n_rows": 8,
+  "semantic_hash": "sha256:ed8fec3eea6560c0521c3246bd23c0474d37d5b78356aeec51004fc3eda9bc2e",
+  "semantic_fields": [
+    "strategy_id",
+    "signal_date",
+    "inference_year",
+    "inference_week",
+    "direction",
+    "leverage",
+    "week_pnl_pct",
+    "n_subtrades",
+    "cumulative_pnl_pct",
+    "gate_status",
+    "circuit_breaker"
+  ]
+}

@@ -658,5 +658,43 @@ with DAG(
         execution_timeout=timedelta(minutes=60),
     )
 
+    def _verify_ledger_anchor(**context) -> str:
+        """BL-17: tras escribir la semana, el pasado cerrado debe seguir reproduciendo.
+
+        Corre DESPUÉS de `paper_ledger_2026` a propósito: el momento en que el ledger
+        se toca es exactamente cuando una reescritura de la historia podría colarse. El
+        ancla cubre un prefijo por semana de corte, así que el append normal no la
+        rompe; sólo la rompe editar o borrar lo ya cerrado.
+        """
+        import json as _json
+
+        from src.identity.ledger_replay import assert_anchor_holds, read_ledger
+
+        raiz = Path(__file__).resolve().parents[2]
+        ruta = raiz / "data" / "anchors" / "paper_ledger_h5.json"
+        if not ruta.is_file():
+            raise RuntimeError(
+                f"falta el ancla del paper ledger ({ruta}): sin ancla no hay nada que "
+                "verificar y el gate seria decorativo"
+            )
+        ancla = _json.loads(ruta.read_text(encoding="utf-8"))
+
+        conn = get_db_connection()
+        try:
+            digest = assert_anchor_holds(ancla, read_ledger(conn))
+        finally:
+            conn.close()
+        logger.info(
+            "paper ledger reproduce su ancla %s-W%02d: %s",
+            ancla["until_year"], int(ancla["until_week"]), digest,
+        )
+        return digest
+
+    t_verify_anchor = PythonOperator(
+        task_id='verify_ledger_anchor',
+        python_callable=_verify_ledger_anchor,
+        execution_timeout=timedelta(minutes=5),
+    )
+
     t_load >> t_metrics >> t_gates >> t_persist >> t_alert
-    t_persist >> t_paper_ledger
+    t_persist >> t_paper_ledger >> t_verify_anchor
