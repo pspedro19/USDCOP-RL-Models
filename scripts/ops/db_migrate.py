@@ -102,7 +102,7 @@ PINNED_PLAN_DIGESTS = {
         "sha256:3fdb2d845fbe90e26b294bd09fb1d02b889b17ee71d4836ce47af9b60d49a261"
     ),
     "fabric-v1": (
-        "sha256:b83bf454e7447714b4606140164261177396f62dd2755cf4f6eab4cc86f87852"
+        "sha256:023ebffaa5afcb9af83942f3bc23ea74282eec120047d77407a23eccfe6ee1eb"
     ),
 }
 
