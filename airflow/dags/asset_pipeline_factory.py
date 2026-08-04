@@ -231,17 +231,92 @@ def make_evaluate_policy(policy_id: str):
     return _evaluate
 
 
+def _canonical_instrument_id(spec: dict) -> str:
+    """`instrument_id` canonico del activo que la policy declara.
+
+    Se resuelve contra `reference.instrument` --la espina de BL-37-- y NO por convencion
+    de nombres: `asset_id` y `canonical_symbol` son cosas distintas, y adivinar cual toca
+    es como se rompieron los joins que BL-37 existe para arreglar.
+    """
+    asset_id = (spec.get("asset") or {}).get("id") or spec.get("asset")
+    if not isinstance(asset_id, str) or not asset_id:
+        raise PolicyRunConfigError(
+            f"{spec.get('id')}: no declara `asset`; sin activo no hay instrumento canonico"
+        )
+
+    from utils.dag_common import get_db_connection
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT instrument_id::text FROM reference.instrument WHERE asset_id = %s",
+                (asset_id,),
+            )
+            fila = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not fila:
+        raise PolicyRunConfigError(
+            f"{asset_id}: sin fila en reference.instrument. La espina debe estar poblada "
+            "antes de publicar señales: una señal sin instrumento canonico no se puede "
+            "unir a nada"
+        )
+    return fila[0]
+
+
 def make_publish_signal(policy_id: str):
     """Tarea 3: publicar la decision. Sin decision no se publica nada."""
 
     def _publish(**context):
+        """Publicar la decision como `StrategySignalRecord`.
+
+        `publish_signal` exige cinco keyword-args obligatorios --`policy_version_id`,
+        `instrument_id`, `valid_from`, `valid_until`, `created_at`--. La primera version
+        de esta tarea llamaba `publish_signal(decision)` a secas: emitia la tarea y
+        **crasheaba con TypeError al ejecutarla**. La cadena existia y no podia
+        atravesarse, que es peor que no tenerla, porque el grafo la mostraba.
+
+        Los cinco salen de fuentes declaradas, ninguno se inventa:
+          * `policy_version_id` y `instrument_id` del propio spec y de la espina
+            canonica (`reference.instrument`), no de una convencion de nombres;
+          * la ventana de validez del intervalo de datos del DAG, que es la ventana
+            que la decision gobierna;
+          * `created_at` del instante logico de la corrida, NO de `now()`: dos
+            re-ejecuciones de la misma fecha deben producir el mismo registro, o el
+            replay dejaria de ser replay.
+        """
         from src.policy_engine import publish_signal
+        from src.strategies.policies.loader import load_policy_spec
 
         ti = context["ti"]
         decision = ti.xcom_pull(task_ids=f"policy_{policy_id}_evaluate")
         if decision is None:
             raise PolicyRunConfigError(f"{policy_id}: sin decision; no se publica")
-        return publish_signal(decision)
+
+        spec = load_policy_spec(policy_id)
+        version_id = (spec.get("governance") or {}).get("policy_hash") or spec.get("version")
+        if not version_id:
+            raise PolicyRunConfigError(
+                f"{policy_id}: sin `policy_hash` ni `version` declarados; una señal sin "
+                "identidad de politica no es auditable"
+            )
+
+        instrument_id = _canonical_instrument_id(spec)
+        inicio = context["data_interval_start"]
+        fin = context["data_interval_end"]
+
+        return publish_signal(
+            decision,
+            policy_version_id=str(version_id),
+            instrument_id=instrument_id,
+            valid_from=inicio.isoformat(),
+            valid_until=fin.isoformat(),
+            # Instante LOGICO, no `now()`: dos re-ejecuciones de la misma fecha deben
+            # producir el mismo registro.
+            created_at=fin.isoformat(),
+        )
 
     return _publish
 
