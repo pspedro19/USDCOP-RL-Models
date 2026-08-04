@@ -144,8 +144,8 @@ cadena gobernada. El candado causal existe: retirar esa llamada tumba dos tests
 
 **Pero el matiz importa más que el titular, y sin él esto sería una victoria falsa:** la cadena
 sólo se emite para `policy_runs` cuyo `migration.status` sea `PARITY_GREEN|CUTOVER`, y **hoy no
-hay ninguna entrada declarada ni ningún spec elegible**. Verificado contra Airflow vivo: la
-pipeline de BTC sigue listando sus 7 tareas y ninguna `policy_*`.
+hay ninguna entrada declarada ni ningún spec elegible**. Verificado contra Airflow vivo: el grafo
+previo de la pipeline de BTC permanece **sin ningún nodo `policy_*`**, es decir, sin delta.
 
 O sea el estado correcto **no** es "cableado y protegiendo", sino:
 
@@ -157,3 +157,25 @@ invocable** a **invocable y gated**; lo que la activa es una decisión del opera
 
 El resto de módulos enumerados arriba no cambia: siguen esperando `fabric-v1` aplicado — el plan
 quedó **pinneado** en `98cefd2d` (revisado en `CLD-350`), pero **pinear no es aplicar**.
+
+## Actualización — 2026-08-04: el esquema ya está aplicado, la brecha sigue
+
+La frase anterior era cierta al escribirla y **dejó de serlo el 2026-08-04**: `fabric-v1` se aplicó
+y se validó de forma bilateral. Se conserva arriba como hecho histórico —el pin precede al apply—
+y se corrige aquí, no borrando.
+
+**Lo que cambió:** los módulos marcados *dependency-blocked* por 070/072/073 ya no esperan esquema.
+**Lo que NO cambió:** siguen sin caller productivo. La naturaleza del gap se movió de *falta la
+tabla* a *falta quien la invoque*, y eso es un cambio de categoría, no un avance de estado.
+
+El apply lo demostró en la dirección incómoda: **crear DDL no crea llamadores**. Un barrido
+posterior sobre el código productivo encontró que la mayoría de las tablas del fabric no tienen ni
+escritor ni lector, y que varios aciertos aparentes eran rutas de módulo Python o comentarios, no
+consultas.
+
+El único caso que sí avanzó es `src/metrics/persistence.py`: hoy ejecuta contra PostgreSQL real
+—insert, replay idempotente, colisión bloqueada y offsets equivalentes del mismo instante—, así que
+su bloqueo restante es exactamente productor/consumidor. Esa decisión vive en
+[`DECISION-BL18-frontera-productor-consumidor`](../briefs/DECISION-BL18-frontera-productor-consumidor.md).
+
+**Ningún módulo pasa a DONE por esta actualización.**
