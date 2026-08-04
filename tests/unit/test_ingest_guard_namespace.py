@@ -269,3 +269,40 @@ def test_a_known_range_rejection_keeps_its_canonical_fk() -> None:
     assert not isinstance(decision.observed_value, dict) or "instrument_id" not in decision.observed_value
     # ...y un alias no registrado sí puede quedar nulo: ahí el hecho ES la ausencia.
     assert resolved_instrument_id(reglas, "nadie", "XXX/YYY") is None
+
+
+def test_every_quarantine_declares_the_evidence_tier_that_judged_it() -> None:
+    """Un rechazo por rango plano y uno por regla escalonada NO pueden ser iguales.
+
+    Cierra la contradicción que encontré en mi propia entrega (CLD-459): BL-40 dice que
+    "un rango legacy no basta", y yo había cableado USD/COP contra su `price_range`
+    plano. Hoy no rechaza nada porque el rango es ancho — y eso es suerte, no diseño.
+
+    La salida no es apagar el gate ni enmendar la ficha para que la entrega encaje, sino
+    que **el dato lo diga**: cada cuarentena registra con qué clase de evidencia se juzgó
+    la barra. El problema nunca fue que el gate corriera, sino que corriera sin dejar
+    saber sobre qué base — y eso sí es reparable sin decidir por nadie.
+    """
+    from src.data_quality.ingest_guard import range_evidence_tier
+
+    assert range_evidence_tier("USD/MXN") == "scoped", (
+        "el único instrumento con proveedor y ventana verificables perdió su tier"
+    )
+    for simbolo in ("USD/COP", "BTC/USDT", "XAU/USD", "SPX/500"):
+        assert range_evidence_tier(simbolo) == "declared", (
+            f"{simbolo} se juzga con un price_range del AssetProfile: debe declararse "
+            "como 'declared', no confundirse con una regla escalonada"
+        )
+    assert range_evidence_tier("USD/BRL") == "none", (
+        "USD/BRL no tiene rango: no puede aparecer como si se le hubiera aplicado uno"
+    )
+
+    import inspect
+
+    from src.data_quality import ingest_guard
+
+    escritura = inspect.getsource(ingest_guard.record_quarantine)
+    assert "range_evidence_tier" in escritura, (
+        "el evento de cuarentena no registra el tier: en la tabla, un rechazo por rango "
+        "plano quedaría indistinguible de uno por regla escalonada"
+    )

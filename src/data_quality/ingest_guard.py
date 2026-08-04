@@ -367,6 +367,7 @@ def record_quarantine(
     decision: QualityDecision,
     rule_version: str,
     instrument_id: str | None = None,
+    evidence_tier: str | None = None,
 ) -> None:
     """Escribe el evento. Es la mitad que convierte un rechazo en evidencia."""
     with conn.cursor() as cur:
@@ -381,7 +382,16 @@ def record_quarantine(
                 decision.rule_id or "bar.unknown",
                 rule_version,
                 json.dumps(_jsonable(decision.observed_value)),
-                json.dumps(_jsonable(dict(row))),
+                json.dumps(
+                    {
+                        "bar": _jsonable(dict(row)),
+                        # Con QUE clase de evidencia se juzgo esta barra. Sin esto, un
+                        # rechazo por rango plano y uno por regla escalonada son
+                        # indistinguibles en la tabla (CLD-459).
+                        "range_evidence_tier": evidence_tier
+                        or range_evidence_tier(provider_symbol),
+                    }
+                ),
             ),
         )
 
@@ -435,6 +445,7 @@ def screen_bars(
             decision=decision,
             rule_version=rule_version,
             instrument_id=instrumento,
+            evidence_tier=range_evidence_tier(provider_symbol),
         )
 
     return ScreeningResult(accepted=aceptadas, quarantined=rechazadas)
@@ -443,6 +454,32 @@ def screen_bars(
 #: Columnas OHLCV que viajan al publicador. `symbol`/`source` no van: la identidad la
 #: aporta el par `(provider_id, provider_symbol)` que se pasa aparte.
 BAR_FIELDS: tuple[str, ...] = ("time", "open", "high", "low", "close", "volume")
+
+
+def range_evidence_tier(symbol: str, assets_dir: Path = ASSETS_DIR, ranges_path: Path = QUALITY_RANGES) -> str:
+    """Qué clase de evidencia respalda el rango con el que se juzga este símbolo.
+
+    Nace de una contradicción que encontré en mi propia entrega (CLD-459): BL-40 dice
+    que *"un rango legacy no basta"* y que el gate no debe activarse sin identidad
+    verificable, pero yo había cableado USD/COP contra su `price_range` plano. Hoy no
+    rechaza nada porque el rango es ancho — y eso es suerte, no diseño.
+
+    En vez de apagar el gate o de enmendar la ficha para que mi entrega encaje, la
+    asimetría se hace **visible en el dato**: cada cuarentena declara con qué clase de
+    evidencia se juzgó. Un rango plano y uno escalonado dejan de ser indistinguibles en
+    la tabla, que era el problema real — no que el gate corriera, sino que corriera sin
+    que nadie pudiera saber sobre qué base.
+
+    * ``scoped``    — regla con proveedor y ventana verificables (hoy: usdmxn).
+    * ``declared``  — `price_range` del `AssetProfile`: declarado, versionado y
+                      revisable, pero sin proveedor ni corte temporal.
+    * ``none``      — sin rango: el símbolo no se juzga.
+    """
+    if symbol in scoped_symbols(assets_dir, ranges_path):
+        return "scoped"
+    if symbol in declared_ranges_by_canonical_symbol(assets_dir, ranges_path):
+        return "declared"
+    return "none"
 
 
 def declared_provider_for(symbol: str, assets_dir: Path = ASSETS_DIR) -> str | None:
