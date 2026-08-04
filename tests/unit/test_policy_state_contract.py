@@ -1,20 +1,19 @@
-"""BL-45 §15.2 — el contrato del estado, antes de que exista la primera policy stateful.
+"""BL-45 §15.2 — el contrato del estado, y su primer consumidor real.
 
-Medido al auditar el hueco que la ficha nombra:
+Cuando escribí estos candados, `PolicyContext.state` existía y **no lo usaba nadie**:
+cero referencias en `src/strategies/`. Era el mismo "mecanismo correcto sin llamador"
+del que salió BL-16, escondido en un campo de dataclass. `gold_dynamic_exit` —la
+estrategia que la spec cita como la que exige estado— vivía sólo como simulador de
+investigación en `scripts/analysis/`.
 
-* `PolicyContext.state` **existe** (`src/contracts/policy.py`) y **no lo usa nadie**: cero
-  referencias a `context.state` en `src/strategies/` y `src/contracts/`. Es el mismo
-  patrón "mecanismo correcto sin llamador" del que salió BL-16.
-* `gold_dynamic_exit` —la estrategia que la spec cita como la que exige estado— **no es
-  una `Policy`**: vive en `scripts/analysis/` como un simulador de investigación cuyo
-  estado son variables locales del bucle (`in_trade`, `entry_i`, `hi_close`, `trail_px`,
-  `prev_px`).
+El orden importó: primero se fijó **qué garantías debe dar el store** (aislamiento entre
+contextos, no herencia entre modos), y sólo después nació la policy que lo usa. Al revés,
+esas propiedades se habrían descubierto por accidente, que es como se cuelan los fallos
+de aislamiento entre estrategias.
 
-Portarla es modelado, no migración, y no se hace de paso. Lo que sí se puede hacer hoy
-—y es lo que falta para que el port no herede un bug— es **fijar el contrato del estado**:
-qué garantías debe dar el store antes de que alguien confíe en él. Sin esto, la primera
-policy stateful descubriría estas propiedades por accidente, que es como se cuelan los
-fallos de aislamiento entre estrategias.
+El canario que exigía "nadie usa `state` todavía" **se puso rojo** en cuanto la policy
+existió — su trabajo — y fue sustituido por su sucesor: quien use el store debe declarar
+`STATE_KEYS`, para que el runner sepa qué persistir.
 """
 
 from __future__ import annotations
@@ -64,30 +63,38 @@ def test_state_survives_within_a_context_and_does_not_leak_across_modes() -> Non
     )
 
 
-def test_no_production_policy_silently_depends_on_state_yet() -> None:
-    """Hoy NINGUNA policy productiva usa `state`, y eso debe seguir siendo explícito.
+def test_every_stateful_policy_declares_the_keys_it_persists() -> None:
+    """Toda policy que use el store debe DECLARAR que guarda y por que.
 
-    Este candado se pondrá **rojo** cuando alguien escriba la primera policy stateful —
-    que es su propósito: obliga a que ese incremento venga con su propia decisión sobre
-    persistencia (quién guarda el store entre corridas, qué pasa si se pierde) en vez de
-    aparecer como un efecto colateral. Portar `gold_dynamic_exit` es modelado, y el
-    modelado se declara.
+    Este candado sucede al canario que exigia que nadie usara `state` todavia: se puso
+    rojo en cuanto nacio `gold_dynamic_exit` como policy stateful, que era exactamente
+    su trabajo -- obligar a que ese incremento llegara con su contrato en vez de
+    aparecer como efecto colateral.
+
+    Ahora exige lo que hace operable el estado: que el modulo publique `STATE_KEYS`. Sin
+    esa lista, el runner no sabe QUE persistir entre corridas, y un trade abierto se
+    perderia en silencio al reiniciar -- la policy volveria a entrar creyendo estar plana.
     """
+    import importlib
     import inspect
     from pathlib import Path
 
     raiz = Path(inspect.getfile(PolicyContext)).resolve().parents[2]
-    usuarios = []
     for ruta in (raiz / "src" / "strategies").rglob("*.py"):
         texto = ruta.read_text(encoding="utf-8", errors="ignore")
-        if "context.state" in texto or "ctx.state" in texto:
-            usuarios.append(ruta.name)
-
-    assert not usuarios, (
-        f"{usuarios} ya usa el store de estado: este incremento necesita declarar su "
-        "política de persistencia (§15.2) — quién lo guarda entre corridas y qué decide "
-        "la policy si el estado se perdió"
-    )
+        if "context.state" not in texto and "ctx.state" not in texto:
+            continue
+        modulo = importlib.import_module(
+            str(ruta.relative_to(raiz).with_suffix("")).replace("\\", ".").replace("/", ".")
+        )
+        claves = getattr(modulo, "STATE_KEYS", None)
+        assert claves, (
+            f"{ruta.name} usa el store de estado sin declarar STATE_KEYS: el runner no "
+            "sabria que persistir, y un trade abierto se perderia al reiniciar"
+        )
+        assert all(isinstance(k, str) and k for k in claves), (
+            f"{ruta.name}: STATE_KEYS debe ser una lista de nombres"
+        )
 
 
 @pytest.mark.parametrize("modo", ["DECISION", "FREEZE", "REVALIDATE", "BACKFILL"])
