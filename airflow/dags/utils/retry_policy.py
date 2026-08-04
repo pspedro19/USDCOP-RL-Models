@@ -35,13 +35,47 @@ Version: 1.0.0
 
 import logging
 import random
+import sys
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from functools import wraps
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 logger = logging.getLogger(__name__)
+
+
+_DAGS_DIR = Path(__file__).resolve().parents[1]
+
+
+def _ensure_dags_services() -> None:
+    """Make ``services.dlq_service`` resolve despite root shadowing.
+
+    ``PYTHONPATH=/opt/airflow:/opt/airflow/dags`` puts the repo-root ``services``
+    package FIRST, so the ``from services.dlq_service import get_dlq_service``
+    inside :func:`_save_to_dlq` raised ``ModuleNotFoundError`` — and that function
+    swallows ``ImportError`` with a warning, so the DLQ row was never written and
+    nothing said so. The task itself still failed (both call sites propagate the
+    original exception), so what was lost was the forensic record and any
+    DLQ-based reprocessing, not the failure signal.
+
+    Same remedy already applied in ``l0_macro_backfill._ensure_dags_services``:
+    extend the winning package's ``__path__`` so both trees resolve. Root
+    submodules keep priority and the two trees have no name collisions.
+    """
+    local_services = str(_DAGS_DIR / 'services')
+    try:
+        import services
+    except ImportError:  # no root package present: plain sys.path is enough
+        if local_services not in sys.path:
+            sys.path.append(local_services)
+        return
+    if local_services not in services.__path__:
+        services.__path__.append(local_services)
+
+
+_ensure_dags_services()
 
 
 # =============================================================================
