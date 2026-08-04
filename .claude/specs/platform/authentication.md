@@ -2,7 +2,7 @@
 kind: as-built
 status: IMPLEMENTED
 contract: CTR-AUTH-001
-version: 1.3.0
+version: 1.3.1
 last_verified: 2026-08-04
 supersedes: []
 code_anchors:
@@ -88,6 +88,12 @@ aprobar a nadie. Ese círculo lo rompe un mecanismo que **ya existe**, no un scr
 
 **Open gaps** — tracked as tasks in `../audit/AUDIT-2026-07-remediation.md` §A8:
 - **CRITICAL** A8-01 — JWT secret env-name mismatch (`JWT_SECRET` vs `JWT_SECRET_KEY`) → API signs with a public default → all tokens forgeable.
+- **HIGH** A8-03 — **MITIGADO, no cerrado**. Ya implementados: flujo de aprobación por admin
+  (registro `202` + `PENDING`, sin tokens) **y** throttle por IP en el propio endpoint
+  (`auth.py:64-104`). **Residual abierto**: el registro sigue siendo **autoregistro público** — falta
+  gatearlo por *invite/admin* y falta **enforce de verificación de email**. `PENDING` impide el
+  acceso, pero **no impide la creación masiva de solicitudes**. Fuente:
+  `../audit/AUDIT-2026-07-remediation.md:210` lo define compuesto y en estado `MITIGATED`.
 - **HIGH** A8-04 (JWTs in localStorage).
 - **MEDIUM** A8-05 (Vault key default in dev), A8-06 (refresh not blacklisted on rotation), A8-07 (revocation fails OPEN on Redis down), A8-08 (broken execution login).
 
@@ -96,8 +102,6 @@ aprobar a nadie. Ese círculo lo rompe un mecanismo que **ya existe**, no un scr
 - **A8-09** — sin credencial hardcodeada; el login mock es dev-only y no acepta contraseña (`auth.service.ts:68-71`).
 - **A8-10** — enforcement **DB-backed**: `require_admin` (`admin.py:30-36`) resuelve el rol contra
   `sb_users`, no contra el token, así que la asimetría del refresh **no lo reabre**.
-- **A8-03** — el registro ya **no** devuelve tokens (202 + `PENDING`) y **sí** tiene throttle por IP
-  (`auth.py:64-104`, con el código citando el propio hallazgo).
 
 > Los demás siguen abiertos: **no** se han verificado en esta pasada y su ausencia de esta lista
 > significaría lo contrario de lo que este documento pretende.
