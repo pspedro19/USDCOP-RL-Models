@@ -262,9 +262,13 @@ class TestNormalizerDeterminism:
         if not norm_path.exists() or not feature_path.exists():
             pytest.skip("Config files not found")
 
+        # La firma real es `ObservationBuilder(config_path, stats_path, base_path)`.
+        # El test llamaba `feature_config_path=`, un nombre que la clase no acepta
+        # -- otra referencia stale que llevaba invisible mientras la suite entera
+        # moria antes de llegar aqui. Se corrige el TEST, no la firma.
         builder = ObservationBuilder(
+            config_path=str(feature_path),
             stats_path=str(norm_path),
-            feature_config_path=str(feature_path)
         )
 
         # Create test feature dict
