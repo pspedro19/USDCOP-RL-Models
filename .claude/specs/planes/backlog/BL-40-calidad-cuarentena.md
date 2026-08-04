@@ -1,27 +1,43 @@
 ---
 kind: roadmap
-status: PARTIAL
-version: 1.2.0
-last_verified: 2026-08-03
+status: IMPLEMENTED
+version: 1.3.0
+last_verified: 2026-08-05
 supersedes: []
 code_anchors:
   - src/data_quality/ohlcv_validators.py
   - src/data_quality/rules.py
   - config/quality/market_price_ranges.yaml
-  - airflow/dags/l0_macro_update.py
+  - src/market/publication.py
+  - src/data_quality/corrections.py
+  - src/data_quality/feature_availability.py
+  - airflow/dags/l0_ohlcv_realtime.py
+  - airflow/dags/l0_ohlcv_backfill.py
+  - airflow/dags/news_daily_pipeline.py
 ---
 
 # BL-40 — Calidad: cuarentena de anomalías + columnas fantasma
 
 **Fuente**: Plan Consolidado §5 / DATA-STRATEGY §50 · **Ola**: 1-2 · **Esfuerzo**: M · **Trials**: 0
 
-## Estado actual (as-built/perfil 2026-08-03)
+## Estado actual (as-built/perfil 2026-08-05)
 
-Entrega parcial: `src/data_quality/rules.py`, su configuración y la migración 073 definen
-decisiones fail-closed y `quality.quarantine_event`. El rango USD/MXN dejó de ser universal:
-la regla está limitada al productor `twelvedata` y a observaciones desde
-`1993-01-01T00:00:00Z`, corte de unidad monetaria documentado por Banxico SIE CF373. Falta
-todavía un consumidor productivo que invoque la regla y escriba la cuarentena.
+Implementado. `src/data_quality/rules.py`, su configuración y las migraciones 072, 073 y 084
+definen identidad, decisiones fail-closed, cuarentena y correcciones con contexto causal. El
+rango USD/MXN dejó de ser universal: la regla está limitada al productor `twelvedata` y a
+observaciones desde `1993-01-01T00:00:00Z`, corte de unidad monetaria documentado por Banxico
+SIE CF373.
+
+Los productores realtime y backfill llaman `publish_or_declare_gap` antes de escribir; el
+ingestor genérico usa el mismo publicador cuando la identidad tiene una regla escalonada. Una
+barra rechazada se persiste en `quality.quarantine_event` y no llega a
+`market.canonical_bar`. `apply_market_correction` reevalúa con el instante original, enlaza un
+único evento de corrección y publica a canonical antes de marcar `CORRECTED`; los reintentos
+idénticos son idempotentes y una corrección diferente falla cerrada.
+
+La medición de columnas fantasma se ejecuta tras cada corrida de noticias con el
+`data_interval_end` exacto. El análisis consume el último corte de las 18:00 UTC y convierte
+sentimiento no medido o placeholder constante en `null` más `reason`, nunca en neutral falso.
 
 El evaluador exige alias canónico, proveedor y timestamp timezone-aware. Proveedor distinto,
 instante anterior al corte, contexto ausente o llamada directa sin contexto quedan en
@@ -32,19 +48,16 @@ Cuando un proveedor tiene varios regímenes, se aplica el corte `valid_from` má
 esté vigente. Dos reglas del mismo proveedor con el mismo corte se rechazan al cargar la
 configuración; no se resuelven por orden accidental del YAML.
 
-## Qué falta exactamente
+## Alcance cerrado y límites deliberados
 
-- Aplicar y poblar primero la identidad `reference.provider_symbol` (migración 072) y el
-  sumidero `quality.quarantine_event` (073). Sin ambos, cablear el gate convertiría una
-  cuarentena fail-closed en pérdida silenciosa de barras.
-- Después, cablear `evaluate_provider_bar` en los productores realtime/backfill exclusivamente
-  para USD/MXN antes del upsert y persistir cada rechazo antes de impedir que llegue a canonical.
-  Esos DAGs COP son ownership de CLAUDE y requieren incremento coordinado.
-- Declarar reglas scoped para los demás instrumentos sólo con proveedor, ventana y fuente
-  verificables; un rango legacy no basta para cierre y el gate no debe activarse para COP/BRL
-  mientras esa identidad no exista.
-- Cablear raw→quality→quarantine→correction→canonical y declarar `UNAVAILABLE` para columnas
-  fantasma/sentimiento no medido.
+- Las reglas se activan únicamente donde hay proveedor, símbolo e intervalo resolubles y una
+  regla escalonada. Instrumentos con rangos legacy o sin evidencia declaran el hueco y conservan
+  el camino anterior; no se inventa cobertura.
+- Las migraciones gobernadas están aplicadas en PostgreSQL. La migración 084 es aditiva y
+  preserva los eventos legacy, que no pueden corregirse sin el contexto original.
+- Los probes de corrección usan una transacción exterior y terminan en rollback. Por eso la
+  tabla puede quedar vacía después de verificar el ciclo completo; no se dejan eventos de prueba
+  haciéndose pasar por incidentes reales.
 
 ## Impacto frontend
 /analysis deja de mostrar sentiment neutro falso (UNAVAILABLE explícito).
@@ -55,7 +68,15 @@ anómalas NO son features de COP (verificado: features usan DXY/WTI/VIX/EMBI) �
 v11.
 
 ## Verificación
-Query de rangos imposibles = 0 en canónicas; cuarentena poblada con las filas removidas + evento.
+
+- Suite focal conjunta de productores, publicador, corrección y disponibilidad: `60 passed`.
+- PostgreSQL: query de rangos imposibles USD/MXN posteriores al corte = `0` en canonical.
+- Probe reversible PostgreSQL: barra inválida → cuarentena contextual; corrección válida →
+  canonical + evento + estado `CORRECTED`; retry idéntico idempotente; rollback exterior deja
+  el estado previo intacto.
+- Tarea C028 real: cortes diarios distintos y exactos; al corte de las 18:00 UTC se observaron
+  `7/7 UNAVAILABLE`. El consumidor real devolvió `null+reason` para las filas afectadas.
+- Pendiente para DONE bilateral: cross-review de CLAUDE contra el hash sellado de esta promoción.
 
 ## Notas constitución
 Cuarentena, no parches: una corrección es un EVENTO con linaje, no una edición manual.
