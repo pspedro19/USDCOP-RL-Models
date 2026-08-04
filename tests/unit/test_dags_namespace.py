@@ -55,6 +55,8 @@ out["submodule_l2"] = probe(lambda: importlib.import_module("services.l2_data_qu
 out["submodule_backtest"] = probe(lambda: importlib.import_module("services.backtest_factory"))
 out["submodule_validation"] = probe(lambda: importlib.import_module("services.validation_strategies"))
 out["submodule_alerts"] = probe(lambda: importlib.import_module("services.alert_service"))
+out["submodule_metrics"] = probe(lambda: importlib.import_module("services.metrics_exporter"))
+out["root_services_common"] = probe(lambda: importlib.import_module("services.common.prometheus_metrics"))
 def _bare():
     from services import BacktestRunnerFactory  # noqa: F401
 out["bare_package_import"] = probe(_bare)
@@ -87,6 +89,7 @@ def test_helper_restores_every_submodule_the_dags_need():
         "submodule_backtest",
         "submodule_validation",
         "submodule_alerts",
+        "submodule_metrics",
     ):
         assert result[key] is True, f"{key} no resolvio: {result[key]}"
 
@@ -111,4 +114,19 @@ def test_dags_do_not_import_symbols_from_the_ambiguous_package():
     assert not offenders, (
         "importar simbolos del paquete `services` es ambiguo bajo el compose "
         f"enterprise; usar `from services.<modulo> import ...`: {offenders}"
+    )
+
+
+def test_root_services_common_is_preserved():
+    """Extender el namespace NO debe robarle submodulos al paquete raiz.
+
+    `services/macro_extraction_strategies.py` importa a proposito
+    `services.common.prometheus_metrics` del paquete RAIZ. Como el `__path__` del
+    ganador conserva su propia ruta en primera posicion, los submodulos raiz
+    mantienen prioridad; este candado lo fija para que una futura "mejora" que
+    reemplace el `__path__` en vez de extenderlo no rompa esa importacion.
+    """
+    result = _run_under_enterprise_layout()
+    assert result["root_services_common"] is True, (
+        f"se perdio el submodulo raiz: {result['root_services_common']}"
     )

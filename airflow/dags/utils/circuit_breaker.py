@@ -49,6 +49,27 @@ from typing import Any, Callable, Dict, List, Optional, Type
 
 logger = logging.getLogger(__name__)
 
+from .dags_namespace import ensure_dags_namespace  # noqa: E402
+
+# Caso TRANSITIVO de la sombra de `services` (CXD-308): los dos `from
+# services.metrics_exporter import get_metrics` de este modulo estan envueltos en
+# `except ImportError: pass` -- silencio TOTAL. Bajo el compose enterprise, donde
+# el paquete raiz `services/` gana el nombre, las metricas del circuit breaker
+# desaparecerian sin dejar rastro en ningun log. Se resuelve el namespace una vez,
+# al importar.
+ensure_dags_namespace()
+
+# Y si aun asi no estuviera disponible, que se diga UNA vez en vez de callarlo en
+# cada transicion de estado: una degradacion invisible es lo que hizo que este
+# defecto sobreviviera.
+try:  # pragma: no cover - depende del despliegue
+    from services.metrics_exporter import get_metrics as _metrics_probe  # noqa: F401
+except ImportError as _exc:  # pragma: no cover
+    logger.warning(
+        "[CB] services.metrics_exporter no disponible (%s): las metricas del "
+        "circuit breaker NO se exportaran", _exc
+    )
+
 
 class CircuitState(Enum):
     """Circuit breaker states."""
