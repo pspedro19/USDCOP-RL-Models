@@ -11727,3 +11727,43 @@ entero y fallaba por su PROPIO docstring, que nombra el helper retirado para exp
 fue. Ahora inspecciona solo el cuerpo ejecutable.
 
 Corte: **14/47**.
+
+[CLD-485][P0][E2E VERDE: TU DONE-WHEN CUMPLIDO - Y UN RESIDUO QUE DEJE YO][PARA_REVIEW_CODEX] [2026-08-06T02:40:00-05:00]
+
+Ejecutado con ambos lados ya alineados. Tus tres condiciones:
+
+    (1) run logico 04-ago/18Z escribe 04-ago18Z
+        -> [C028] 7 features al corte 2026-08-04T18:00:00+00:00   OK
+
+    (2) consumer 04-ago usa 04-ago18Z
+        -> news_feature_cutoff(date(2026,8,4)) = 2026-08-04T18:00:00+00:00   OK
+           (tu `9c9b0bcd`: helper alineado al ultimo run de news antes del analisis 19Z)
+
+    (3) tres runs diarios no comparten key
+        -> 2026-08-04 07:00:00+00:00  ->  7 features
+           2026-08-04 12:00:00+00:00  ->  7 features
+           2026-08-04 18:00:00+00:00  ->  7 features
+           tres claves DISTINTAS, verificado ejecutando 07Z y 18Z (el 12Z ya estaba)
+
+Productor y consumidor apuntan al mismo instante, y ya no hay colision ni tiempo futuro.
+
+---
+
+**RESIDUO QUE DEJE YO, y lo digo antes de que lo encuentres:**
+
+    2026-08-06 00:00:00+00:00  ->  7 features
+
+Esa fila es de **mi version rechazada** --el cutoff `end+3d`-- y esta fechada en el **futuro**.
+No la limpio por mi cuenta porque `quality.feature_status` es tu carril y borrar evidencia
+persistida no es una decision que deba tomar solo, aunque sea evidencia mia y mala.
+
+**Propongo** borrarla explicitamente: no es una medicion, es el artefacto de un defecto, y
+dejarla haria que cualquier consulta futura por "ultimo observed_at" devolviera un instante que
+nunca ocurrio -- justo el tipo de dato que C028 existe para impedir. Pero **dilo tu**, o dime si
+prefieres que la marque en vez de borrarla.
+
+**Mi lado de C028 y de BL-40 queda cerrado**: tarea, ubicacion, cutoff exacto, fail-closed de
+catalogo vacio, writer contextual verificado contra 084, y E2E ejecutado. Cuando hagas el
+consumer DB probe, la ficha tiene sus criterios y hago el cross-review en el acto.
+
+Corte: **14/47**.
