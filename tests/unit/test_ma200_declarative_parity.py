@@ -48,6 +48,16 @@ MA200_SPEC = {
         "default_target_exposure": 0.0,
         "default_direction": "FLAT",
         "default_reason_code": "CLOSE_BELOW_MA200",
+        # Fallback DECLARADO para el warm-up (CXD-462): la MA de 200 sesiones no existe
+        # hasta la barra 200. Declararlo conserva exactamente la conducta del coded
+        # vivo, pero como afirmación auditable en vez de un `0.0` aritmético.
+        "feature_fallbacks": {
+            "ma_200": {
+                "direction": "FLAT",
+                "target_exposure": 0.0,
+                "reason_code": "MA200_WARMUP_NO_SIGNAL",
+            }
+        },
     },
     "rules": [
         {
@@ -91,64 +101,60 @@ def _load_spx():
     return df.rename(columns={columnas["close"]: "close"})
 
 
-def test_declarative_ma200_matches_the_live_coded_policy_bar_by_bar() -> None:
-    """Paridad sobre la serie real completa, **donde la media existe**.
-
-    El warm-up se excluye a propósito y no por comodidad: ahí las dos implementaciones
-    no son comparables, y el porqué está fijado en
-    `test_the_warm_up_is_where_the_two_implementations_genuinely_disagree`.
-    """
+def _decisiones(spec, df, media):
+    """Exposición declarativa barra a barra, incluido el warm-up."""
     from src.contracts.policy import PolicyContext
     from src.contracts.policy_dsl import DeclarativePolicy
 
+    politica = DeclarativePolicy(spec)
+    for i in range(len(df)):
+        valor = float(media.iloc[i])
+        snapshot = {"close": float(df["close"].iloc[i]), "ma_200": valor}
+        yield i, politica.evaluate(
+            snapshot, PolicyContext(as_of=str(df["time"].iloc[i]), mode="DECISION")
+        )
+
+
+def test_declarative_ma200_matches_the_live_coded_policy_on_every_single_bar() -> None:
+    """Paridad **total** sobre la serie real, warm-up incluido (CXD-462).
+
+    El fallback declarado es lo que hace comparable el tramo inicial. Sin él las dos
+    implementaciones no eran equivalentes ahí, y la diferencia no era cosmética: el
+    coded convertía "no hay media" en exposición `0.0`.
+    """
     df = _load_spx()
     codificado = _coded_ma200(df)
     media = df["close"].rolling(200, min_periods=200).mean()
-    politica = DeclarativePolicy(MA200_SPEC)
 
-    divergencias, evaluadas = [], 0
-    for i in range(len(df)):
-        if media.iloc[i] != media.iloc[i]:  # NaN: warm-up, tramo no comparable
-            continue
-        evaluadas += 1
-        snapshot = {"close": float(df["close"].iloc[i]), "ma_200": float(media.iloc[i])}
-        decision = politica.evaluate(
-            snapshot, PolicyContext(as_of=str(df["time"].iloc[i]), mode="DECISION")
-        )
-        if float(decision.target_exposure) != float(codificado.iloc[i]):
-            divergencias.append(
-                (str(df["time"].iloc[i]), float(codificado.iloc[i]),
-                 float(decision.target_exposure))
-            )
+    divergencias = [
+        (str(df["time"].iloc[i]), float(codificado.iloc[i]), float(d.target_exposure))
+        for i, d in _decisiones(MA200_SPEC, df, media)
+        if float(d.target_exposure) != float(codificado.iloc[i])
+    ]
 
-    assert evaluadas > 7000, f"sólo {evaluadas} barras comparadas: serie insuficiente"
+    assert len(df) == 7943, f"el seed cambió de tamaño ({len(df)}): re-verifica la paridad"
     assert not divergencias, (
-        f"{len(divergencias)} de {evaluadas} barras divergen entre el coded y el "
-        f"declarativo; primeras: {divergencias[:5]}"
+        f"{len(divergencias)} de {len(df)} barras divergen; primeras: {divergencias[:5]}"
     )
 
 
-def test_the_warm_up_is_where_the_two_implementations_genuinely_disagree() -> None:
-    """Las 199 barras sin media NO son equivalentes, y el declarativo es el honesto.
+def test_removing_the_declared_fallback_fails_closed_during_warm_up() -> None:
+    """Retirar el fallback debe **romper**, no volver a decidir en silencio.
 
-    Hallazgo de esta paridad, no un ajuste del test:
-
-    * el **coded** hace `(close > ma).astype(float)`. Como `close > NaN` es `False` en
-      Python, las barras sin media salen `0.0` — es decir, "no hay dato" se convierte
-      silenciosamente en "la política dice estar plano", que son cosas distintas y
-      quedan indistinguibles en la serie.
-    * el **declarativo** rechaza el `NaN` con `NaN/Infinity forbidden` y **falla
-      cerrado**: se niega a decidir sin el dato.
-
-    El criterio literal de BL-45 ("evalúa idéntico") **no se cumple aquí**, y forzarlo
-    sería el error: haría falta enseñar al DSL a tragarse `NaN`, degradando la garantía
-    fuerte para imitar el defecto de la implementación vieja. Cuál de las dos semánticas
-    gobierna es decisión de gobierno; este candado impide que se resuelva por descuido.
+    Es el candado que convierte la paridad en una afirmación gobernada: sin la
+    declaración, el DSL se niega a decidir sin `ma_200` — que es su conducta correcta —
+    y el tramo de warm-up deja de existir en vez de rellenarse con un `0.0` plausible.
     """
     from src.contracts.policy import PolicyContext
     from src.contracts.policy_dsl import DeclarativePolicy
 
-    politica = DeclarativePolicy(MA200_SPEC)
+    sin_fallback = {
+        **MA200_SPEC,
+        "resolution": {
+            k: v for k, v in MA200_SPEC["resolution"].items() if k != "feature_fallbacks"
+        },
+    }
+    politica = DeclarativePolicy(sin_fallback)
 
     with pytest.raises(ValueError, match="not finite"):
         politica.evaluate(
@@ -156,10 +162,74 @@ def test_the_warm_up_is_where_the_two_implementations_genuinely_disagree() -> No
             PolicyContext(as_of="1995-01-03", mode="DECISION"),
         )
 
-    # Y el coded, en cambio, produce un 0.0 indistinguible de una decisión real.
-    pd = pytest.importorskip("pandas")
-    serie = pd.DataFrame({"close": [100.0, 101.0, 102.0]})
-    assert float(_coded_ma200(serie).iloc[0]) == 0.0
+
+def test_the_fallback_is_local_and_does_not_relax_the_engine() -> None:
+    """Otra política SIN fallback sigue rechazando `NaN`: no se tocó el default global.
+
+    Es el límite estricto que pidió CXD-462. Un fallback global habría convertido una
+    excepción declarada para un caso en una laxitud para todos, que es exactamente cómo
+    una garantía fuerte se erosiona sin que nadie decida erosionarla.
+    """
+    from src.contracts.policy import PolicyContext
+    from src.contracts.policy_dsl import DeclarativePolicy
+
+    otra = {
+        **MA200_SPEC,
+        "id": "otra_politica_v1",
+        "policy_hash": "sha256:" + "cd" * 32,
+        "resolution": {
+            k: v for k, v in MA200_SPEC["resolution"].items() if k != "feature_fallbacks"
+        },
+    }
+
+    with pytest.raises(ValueError, match="not finite"):
+        DeclarativePolicy(otra).evaluate(
+            {"close": 1.0, "ma_200": float("inf")},
+            PolicyContext(as_of="2026-01-05", mode="DECISION"),
+        )
+
+
+def test_a_fallback_decision_is_marked_as_such_and_never_leaks_a_nan() -> None:
+    """La decisión por ausencia se distingue de una decisión por regla, y es exportable.
+
+    Dos propiedades en una: `fallback_applied` con su `reason_code` propio impide
+    confundir "faltaba el dato" con "ninguna regla disparó"; y la traza registra `null`
+    en vez del `NaN` crudo, porque los contratos de export prohíben `NaN`/`Infinity` —
+    colarlo por la traza habría reintroducido justo lo que el DSL rechaza por la entrada.
+    """
+    from src.contracts.policy import PolicyContext
+    from src.contracts.policy_dsl import DeclarativePolicy
+
+    decision = DeclarativePolicy(MA200_SPEC).evaluate(
+        {"close": 4000.0, "ma_200": float("nan")},
+        PolicyContext(as_of="1995-01-03", mode="DECISION"),
+    )
+
+    assert float(decision.target_exposure) == 0.0
+    assert decision.direction == "FLAT"
+    assert decision.reason_codes == ("MA200_WARMUP_NO_SIGNAL",)
+    assert decision.rule_trace.fallback_applied is True
+    assert decision.decision_components == {"ma_200": None}
+    assert decision.rule_trace.rules[0].observed == {"ma_200": None}
+
+
+def test_a_corrupt_value_is_not_treated_as_an_absence() -> None:
+    """`"abc"` o `True` NO activan el fallback: no son ausencia, son contrato roto.
+
+    La distinción es el filo de todo el mecanismo. Un fallback que se tragara valores
+    corruptos volvería a fabricar decisiones sobre datos basura — con la agravante de
+    que ahora llevarían un `reason_code` que las hace parecer deliberadas.
+    """
+    from src.contracts.policy import PolicyContext
+    from src.contracts.policy_dsl import DeclarativePolicy
+
+    politica = DeclarativePolicy(MA200_SPEC)
+    for corrupto in ("abc", True, None):
+        with pytest.raises(ValueError):
+            politica.evaluate(
+                {"close": 4000.0, "ma_200": corrupto},
+                PolicyContext(as_of="1995-01-03", mode="DECISION"),
+            )
 
 
 def test_equality_is_not_above_the_average() -> None:
