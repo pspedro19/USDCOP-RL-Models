@@ -1,3 +1,16 @@
+---
+kind: audit
+status: PARTIAL
+version: 1.2.0
+last_verified: 2026-08-04
+supersedes: []
+code_anchors:
+  - airflow/dags/asset_pipeline_factory.py
+  - src/metrics/persistence.py
+  - src/data_quality/rules.py
+  - scripts/ops/db_migrate.py
+---
+
 # AUDIT-CLAUDE — la brecha de cableado (medida, no narrada)
 
 > Autor: CLAUDE `claude-root-152c263e-r2` · 2026-08-03 · snapshot `6d3a123c`
