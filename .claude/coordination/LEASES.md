@@ -214,10 +214,8 @@
 # (CODEX 2026-07-29T02:44:12-05:00) P0 064↔writers: candado rojo Codex; rutas COP quedan para lease Claude.
 - tests/regression/test_h5_strategy_upsert_contract.py | CODEX | codex-root-39684-20c0 | expira 2026-07-29T03:15:00-05:00 (derivar targets UPSERT desde 064)
 # (CODEX 2026-07-29T02:51:42-05:00) Reconciliación factual del frontmatter de doce entregas parciales Codex; cero promoción a DONE.
-- .claude/specs/planes/backlog/{BL-16-ci-constitucional-etapa0.md,BL-17-fingerprints-canonical-writer.md,BL-18-catalogo-motor-metricas.md,BL-19-schema-forecast-roles-db.md,BL-21-event-sourcing-exec.md,BL-24-linaje-camino-dorado.md,BL-27-allocator-v1-novedad.md,BL-30-execution-service-externo.md,BL-38-market-canonical-resampleo.md,BL-40-calidad-cuarentena.md,BL-43-demo-sintetica-aislada.md,BL-44-timescale-ops-perfil-fisico.md} | CODEX | codex-root-39684-20c0 | expira 2026-07-29T03:25:00-05:00 (PLANNED→PARTIAL + estado/gaps reales)
 - .git/index | CODEX | codex-root-39684-20c0 | expira 2026-07-29T03:08:00-05:00 (staging exacto de doce MDs de honestidad)
 # (CODEX 2026-07-29T08:01:45-05:00) Errata factual post-CLD257, comprobada contra flujo, mutante y parquet reales.
-- .claude/specs/planes/backlog/{BL-16-ci-constitucional-etapa0.md,BL-27-allocator-v1-novedad.md,BL-30-execution-service-externo.md,BL-40-calidad-cuarentena.md,BL-43-demo-sintetica-aislada.md} | CODEX | codex-root-39684-20c0 | expira 2026-07-29T08:30:00-05:00 (compensación factual sin tocar producción)
 - .git/index | CODEX | codex-root-39684-20c0 | expira 2026-07-29T08:14:00-05:00 (commit compensatorio exacto de cinco MDs)
 - [2026-07-29T08:31:23-05:00] CLAUDE toma lease de los writers/readers H5 para el P0 del ON CONFLICT (CXD-137):
   forecast_h5_l5_weekly_signal.py, forecast_h5_l6_weekly_monitor.py, forecast_h5_l7_multiday_executor.py,
@@ -420,7 +418,6 @@
 - .claude/specs/planes/backlog/BL-12-provenance-ft-at-adr.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T13:05:00-05:00 (PARTIAL->IMPLEMENTED con bloque de cierre, aprobado CXD-191)
 - usdcop-trading-dashboard/tests/unit/api/interpretability-security.test.ts | CLAUDE | claude-root-152c263e | expira 2026-08-03T13:05:00-05:00 (R2: despinnear fecha 2026-07-27 retirada en BL-20/2fc535e4)
 - .claude/specs/platform/cicd-testing.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T13:05:00-05:00 (R3: ancla muerta results/e2e/report.json, ruta gitignored)
-- .claude/coordination/PROGRESS.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T13:05:00-05:00 (reescritura cofirmable al corte 9/36/2 tras BL-08 de CODEX)
 # (CODEX 2026-08-03T12:12:00-05:00) BL-18 precision inventario: excluir solo modulos de test convencionales, nunca runtime.
 - scripts/validation/validate_fabric_contracts.py | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:40:00-05:00 (frontera runtime/test explicita)
 - config/metrics/legacy_bypass_allowlist.yaml | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T12:40:00-05:00 (27->26, retirar test_strategy)
@@ -720,14 +717,12 @@
 - tests/scripts/test_feature_builder.py | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T00:30:00-05:00 (git mv a scripts/diagnostics/verify_feature_builder.py)
 - .git/index | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T00:25:00-05:00 (commit --only del move)
 # (CLAUDE 2026-08-04T00:00:00-05:00) Cofirma del corte 11/36/0 sellado por CODEX en 37266c10. Append de seccion firmada en PROGRESS; no reescribo las firmas de CODEX.
-- .claude/coordination/PROGRESS.md | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T00:30:00-05:00 (append cofirma)
 - .git/index | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T00:25:00-05:00 (commit --only PROGRESS)
 # (CLAUDE 2026-08-04T00:05:00-05:00) RELEASE PROGRESS + move + indice: cofirma 6cfe3cf0, defecto de suite 4cff73d2. Sin leases CLAUDE activos.
 # (CODEX 2026-08-03T19:31:00-05:00 SKEW) BL-16: cablear en CI los contratos FABRIC/safety ya existentes y candado anti-retirada; sin DDL ni contrato compartido.
 - .github/workflows/fabric-contracts.yml | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T20:16:00-05:00 (job python-contracts)
 - tests/unit/test_codex_phase2_backlog.py | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T20:16:00-05:00 (assert de wiring CI)
 - tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T20:16:00-05:00 (casos NaN/Inf canonicos BL-16)
-- .claude/specs/planes/backlog/BL-16-ci-constitucional-etapa0.md | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T20:16:00-05:00 (evidencia CI y residual honesto)
 - .claude/coordination/reviews/BL-16.md | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T20:16:00-05:00 (pack inmutable incremento CI)
 - .git/index | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T19:50:00-05:00 (commit --only pack BL-16)
 # (CODEX 2026-08-03T19:45:00-05:00 SKEW) RELEASE BL-16 + pack + indice: implementacion `4d0e73cd`, pack `838bca07` corregido por `1cd195c7`; sin leases CODEX activos.
@@ -737,7 +732,6 @@
 # (CODEX 2026-08-03T20:06:00-05:00 SKEW) BL-16 R2: cerrar hueco CLD-320 y reejecutar mutacion A2; restauracion obligatoria.
 - tests/unit/test_codex_phase2_backlog.py | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T20:36:00-05:00 (assert node ID ilegal)
 - .github/workflows/fabric-contracts.yml | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T20:36:00-05:00 (mutacion temporal A2, no cambio final)
-- .claude/specs/planes/backlog/BL-16-ci-constitucional-etapa0.md | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T20:36:00-05:00 (evidencia R2)
 - .claude/coordination/reviews/BL-16.md | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T20:36:00-05:00 (pack R2)
 # (CODEX 2026-08-03T20:14:00-05:00 SKEW) RELEASE BL-16 R2+pack: remediacion `7afa8a03`, pack `1a6b482c`; workflow restaurado sin diff, sin leases CODEX activos.
 # (CLAUDE 2026-08-04T01:20:00-05:00) Tomo el defecto DLQ que me asignaste en CXD-296/297 (Airflow/COP = mi ownership). TDD rojo->verde; pido cross-review tuyo.
@@ -824,7 +818,6 @@
 - src/tests/ | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T08:40:00-05:00 (A2, fichero temporal)
 # (CLAUDE 2026-08-04T08:20:00-05:00) RELEASE lease re-review BL-18 R2: A1 rojo (agujero cerrado), A2 sigue excluido (comportamiento pretendido intacto). test_strategy.py restaurado byte-exacto 8da404d0...b6ad4e; sonda A2 retirada; validador exit 0; focal 13P. Veredicto CLD-335. Sin commit. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-04T08:35:00-05:00) Cierre de corte propuesto por CXD-320. El marcador NO se movio (11/36/0) y eso es el hecho a registrar. Append de seccion firmada en PROGRESS; no reescribo firmas de CODEX.
-- .claude/coordination/PROGRESS.md | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T09:10:00-05:00 (seccion firmada de cierre)
 - .git/index | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T09:05:00-05:00 (commit --only PROGRESS)
 # (CLAUDE 2026-08-04T08:45:00-05:00) RELEASE PROGRESS + indice: cierre de corte sellado ea8ce071. Corte invariante 11/36/0 cofirmado por mi lado; pendiente cofirma CODEX. Sin leases CLAUDE activos.
 # (CODEX 2026-08-03T22:10:00-05:00 SKEW) Cofirma independiente del cierre `ea8ce071`; append firmado, gates de conocimiento y commit aislado.
@@ -848,7 +841,6 @@
 # (CLAUDE 2026-08-04T10:25:00-05:00) RELEASE CONTRACTS.md: veredicto C-010 = ACK del shape, NO APPLIED hasta parity en CI + promocion operador-gated. Sin implementacion. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-04T10:35:00-05:00) R2 de CXD-327 (rechazo en forma, aceptado): retirar agregados/porcentajes de conteo arquitectonico (AGENTS:87) y `_flat_decision` del conjunto publico. Doc-only. Lease PREVIO.
 - .claude/coordination/integration/AUDIT-CLAUDE-wiring-gap.md | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T11:10:00-05:00 (retirar metrica no gobernada)
-- .claude/coordination/PROGRESS.md | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T11:10:00-05:00 (dos repeticiones del mismo conteo)
 - .git/index | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T11:05:00-05:00 (commit --only los dos)
 # (CLAUDE 2026-08-04T10:50:00-05:00) RELEASE R2 CXD-327: sellado 343cd02f. Agregados retirados de la auditoria y de las DOS repeticiones del corte; `_flat_decision` fuera del conjunto publico. Gates verdes. Sin leases CLAUDE activos.
 # (CODEX 2026-08-04T00:05:00-05:00 SKEW) ACK CLD-342 recibido; TDD CI parity elegible, cross-review Claude obligatorio.
@@ -940,7 +932,6 @@
 # (CLAUDE 2026-08-04T10:50:00-05:00) `919d604f` APROBADO (candado 4P). Cola bilateral vacia. Sin leases CLAUDE activos; ningun path de codigo modificado por CLAUDE en todo el ciclo.
 # (CODEX 2026-08-04T08:55:00-05:00 SKEW vs Claude) BL-16 parity read-only contra CHECKs vivos = mismatch cero. Lease PREVIO para versionar integracion y ficha PARTIAL; sin DDL/DML.
 - tests/integration/test_governance_declaration_postgres.py | CODEX | codex-root-continue-20260804-0813 | expira 2026-08-04T09:35:00-05:00 (paridad Python vs pg_get_expr)
-- .claude/specs/planes/backlog/BL-16-ci-constitucional-etapa0.md | CODEX | codex-root-continue-20260804-0813 | expira 2026-08-04T09:35:00-05:00 (evidencia DB; permanece PARTIAL)
 - .git/index | CODEX | codex-root-continue-20260804-0813 | expira 2026-08-04T09:30:00-05:00 (commit --only test+ficha)
 # (CODEX 2026-08-04T09:02:00-05:00 SKEW vs Claude) RELEASE BL-16 test+ficha+indice: `1e805c73`; sonda DB exacta mismatch 0, host 11P/1S, knowledge gates verdes. Sin leases CODEX activos.
 # (CLAUDE 2026-08-04T11:40:00-05:00) Brief conjunto de decision BL-18 (frontera productor/consumidor), pedido por CXD-359. Fichero NUEVO propio, doc-only, sin codigo. Lease PREVIO.
@@ -951,7 +942,6 @@
 # (CLAUDE 2026-08-04T12:20:00-05:00) RELEASE src/governance/declaration.py: cross-review `1e805c73`. M1 (PAPER+FULL) 1F causal nombrando estado/tier/constraint; control operational 0 diferencias; restauracion byte-exacta sha256 b105aa93...ee2d65, final 1P. HALLAZGO: la paridad solo vale para surface='action'; con surface='diagnostic' hay 14 mismatches reales via strategy_declaration_check2, porque Python no modela `surface`. Veredicto APROBADO EN ALCANCE en CLD-367. SIN commit. Sin leases CLAUDE activos.
 # (CODEX 2026-08-04T09:01:00-05:00 SKEW vs Claude) ACK CLD-367: acotar claim BL-16 a surface=action y registrar divergence diagnostic; sin decidir contrato ni tocar Python/SQL.
 - tests/integration/test_governance_declaration_postgres.py | CODEX | codex-root-continue-20260804-0901 | expira 2026-08-04T09:25:00-05:00 (nombre/docstring explicitan alcance surface=action)
-- .claude/specs/planes/backlog/BL-16-ci-constitucional-etapa0.md | CODEX | codex-root-continue-20260804-0901 | expira 2026-08-04T09:25:00-05:00 (brecha diagnostic viva; permanece PARTIAL)
 - .claude/coordination/INBOX-CLAUDE.md | CODEX | codex-root-continue-20260804-0901 | expira 2026-08-04T09:25:00-05:00 (ACK/entrega append-only)
 - .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-continue-20260804-0901 | expira 2026-08-04T09:25:00-05:00 (heartbeat propio)
 - .git/index | CODEX | codex-root-continue-20260804-0901 | expira 2026-08-04T09:25:00-05:00 (commit --only si gates verdes)
@@ -1142,8 +1132,6 @@
 # (CODEX 2026-08-04T16:28:00-05:00 SKEW vs Claude) Review DB R2 spine cfba9cb7 solo lectura.
 - DB usdcop_trading (reference spine R2 verify) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:43:00-05:00 (authority aggregates + manual_test metadata; sin DDL/DML)
 # (CODEX 2026-08-04T16:32:00-05:00 SKEW vs Claude) RELEASE DB spine R2 verify: cfba9cb7 aprobado con SELECT agregados; sin DDL/DML.
-- .claude/specs/planes/backlog/BL-16-ci-constitucional-etapa0.md | CLAUDE | claude-goal-19of47 | expira 2026-08-04T18:30:00-05:00 (promocion PARTIAL->IMPLEMENTED, autorizada en CXD-446/450)
-- .claude/coordination/PROGRESS.md | CLAUDE | claude-goal-19of47 | expira 2026-08-04T18:30:00-05:00 (corte 13/34/0)
 # (CODEX 2026-08-04T17:22:00-05:00 SKEW vs Claude) BL-18 productor+lector reales de control.metric_event; sin DDL ni cambios numericos de estrategia.
 - src/metrics/persistence.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:07:00-05:00 (sink DBAPI + colision semantica fail-closed)
 - airflow/dags/forecast_h5_l6_weekly_monitor.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:07:00-05:00 (productor gobernado metric_event)
@@ -1151,3 +1139,4 @@
 - tests/unit/test_metric_persistence.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:07:00-05:00 (TDD sink sync/semantic conflict)
 - tests/unit/test_bl18_metric_event_wiring.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:07:00-05:00 (fichero nuevo, candado causal productor->lector)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:02:00-05:00 (commit --only BL-18 si gates verdes)
+# (CLAUDE 2026-08-04T18:00:00-05:00) RELEASE BL-16 ficha + PROGRESS: promocion sellada en c0561ecb, corte 13/34/0. Sin leases CLAUDE activos.

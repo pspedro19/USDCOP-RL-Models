@@ -1,66 +1,56 @@
 # Handoff — «continúa con Claude»
 
-Actualizado por CODEX: 2026-08-03T20:33:00-05:00.
+Actualizado por CODEX: 2026-08-03T22:36:00-05:00 (SKEW respecto al reloj Claude).
 
-Cuando el operador diga **«continúa con Claude»**, retomar sin pedir que repita contexto:
+Cuando el operador diga **«continúa con Claude»**, retomar sin pedir contexto:
 
 1. Leer `PROTOCOL.md`, ambos inboxes, `LEASES.md`, ambos status, `CONTRACTS.md` y este handoff.
-2. Consultar otra vez `LEASES.md` inmediatamente antes de cada patch; hubo una colisión real
-   durante el review de migraciones y no debe repetirse.
-3. Preservar los canales runtime y `data/health/metric_events.jsonl`; no commitearlos ni
-   revertirlos.
-4. Coordinar por `INBOX-CLAUDE.md`, implementar incrementos acotados y pedir cross-review.
+2. Consultar `LEASES.md` inmediatamente antes de cada patch; no revisar working trees mutables.
+3. Preservar archivos runtime/unrelated dirty y nunca leer secretos.
+4. Coordinar cada acción material por `INBOX-CLAUDE.md`; lease antes de editar y review bilateral.
 
-## Estado cofirmado
+## Estado sellado
 
-- Backlog: **10 IMPLEMENTED / 36 PARTIAL / 1 PLANNED**. Solo BL-23 sigue PLANNED.
-- No push, DDL, pin de plan, `down -v`, rebuild ni reinicio de Docker sin autorización expresa.
-- `fabric-v1` continúa bloqueado por digest fijado distinto del contenido actual; su test rojo
-  conocido no debe maquillarse.
-- Docker usa un junction hacia `E:` para su disco. No romperlo ni reiniciar Docker sin necesidad.
-- El stack estaba levantado; el backtest API fue parado deliberadamente por Claude y no debe
-  iniciarse con la imagen vieja, porque conserva el entrypoint que replaya migraciones.
+- HEAD observado: `74a4f4f2` (auditoría Claude actualizada tras R3).
+- C-010 R3 está sellado en `3078ce06` y **APROBADO bilateralmente** por CXD-345.
+- Pin `fabric-v1` sellado en `98cefd2d` y **APROBADO bilateralmente** por CLD-350.
+- Pin no significa apply: no se ejecutó conexión DB, DDL, apply ni migración.
+- C-010 R3 no seleccionó una policy, no cambió `pipelines.yaml`, no promovió estados y no vuelve
+  BL-45 DONE; quedan sus incrementos posteriores.
+- No push. No reinicios/destrucción de Docker. No aplicar el plan sin autorización separada.
 
-## Trabajo sellado más reciente
+## Evidencia C-010 R3
 
-- `e4c9d538`: plan review-gated `platform-bootstrap-v1`, sin pin. Allowlist mínima y ordenada:
-  045, 046, 050, 051, 053, 054, 055. Excluye 047/pgvector, 052/crypto y rutas H5 redundantes.
-  `DATABASE_URL` tiene precedencia; fallback exige password explícito.
-- `51b0fb3e`: el runtime ya no replaya `legacy-init`; solo valida el esquema. El bootstrap
-  exige `sb_users`, `usdcop_m5_ohlcv` y `macro_indicators_daily` antes de cualquier DDL.
-- Claude aprobó ambos commits en CLD-309: **6/6 ataques adversariales muerden**, restauración
-  byte-exacta y sin mutaciones vivas. El plan sigue inejecutable deliberadamente por falta de pin.
-- `4aa160d2`: segunda línea de tests separa exclusiones y orden 053→055 de la allowlist exacta.
-  Focal 5P; suite safety 26P con el único test FABRIC conocido excluido. Se pidió review a Claude
-  en CXD-280; recoger su respuesta al volver.
-- `7f2bd3ad`: BL-35 registra `airflow dags list-import-errors` exit 0 / `No data found`, cofirmado
-  por Claude. Permanece PARTIAL porque falta observar el DAG sintético forecast→exec como import
-  error dentro del scheduler real.
-- BL-40 orden temporal quedó aprobado en CLD-306; `a07459a3` mata primer/último match.
+- Baseline/final: `python -m pytest tests/unit/test_c010_policy_runs.py -q` → **9 passed**.
+- Ataque A: todas las policies vigentes inelegibles → cero referencias resueltas.
+- Ataque B: promoción temporal de `btc_hodl_b1` a `PARITY_GREEN` → una referencia rule_based;
+  el candado que exige cero policies vigentes falló causalmente 1F.
+- Ataque C: promoción temporal de `smart_simple_v11` (`engine.type=composite`) →
+  `PolicyRunConfigError`, fail-closed.
+- Ataque D: retirar temporalmente `resolve_feature_snapshot` → **2 failed**, caller + cutoff.
+- YAML restaurados a sus SHA256 iniciales. Factory/test/YAML quedaron con blobs Git idénticos a
+  `3078ce06`, diff cero y sin status propio. El SHA físico del factory cambió al rematerializar
+  EOL en Windows; el blob canónico verificado es `17c633182b58a66831558acfab459ff18cbf3a44`.
 
-## Hechos y límites sobre cold boot
+## Coordinación Claude
 
-- El coldboot observado quedó rojo por esquema y datos faltantes; no declarar `STACK_HEALTHY`.
-- Los scripts 02 y 25 fallaron durante **replay** sobre una DB ya transformada. No está probado
-  que fallen en el orden one-shot de un volumen fresco. No editarlos: son migraciones aplicadas.
-- Claude ofreció ejecutar el ciclo destructivo y entregar salida cruda solo después de pin y
-  autoridad del operador. La palabra genérica «continúa» no se trató como autorización de pin
-  o borrado de volumen.
-- El negativo BL-35 requiere escritura runtime temporal. CXD-279 pidió cesión explícita a Claude;
-  recoger ACK antes de crear un DAG sintético, y retirarlo/verificar limpieza si se autoriza.
+- CLD-349 entregó R3; CXD-345 publica aprobación y libera leases.
+- CLD-350 aprobó adversarialmente el pin `98cefd2d`.
+- Claude actualizó su auditoría stale en `74a4f4f2`.
+- CLD-352 detectó que `db_migrate.py --status` no es read-only: llama a
+  `ensure_migrations_table()` y puede crear `_migrations`. No se ejecutó.
 
-## Siguiente acción exacta
+## Siguiente acción exacta mañana
 
-1. Leer el último `CLD-*` y confirmar que no haya leases activos o mutaciones vivas.
-2. Obtener review adversarial de `4aa160d2` y respuesta a la cesión BL-35 de CXD-279.
-3. Si el operador autoriza explícitamente el pin/coldboot destructivo, crear el pin en un commit
-   separado y revisado; después Claude ejecuta el ciclo acordado. Sin esa autorización, no hacerlo.
-4. Si se cede BL-35, ejecutar el negativo temporal dentro del scheduler sin reinicios ni DDL.
+1. Leer mensajes posteriores a CXD-345 y verificar leases/HEAD.
+2. Diagnosticar **solo en lectura de código** el comportamiento de `db_migrate.py --status`.
+3. Proponer/remediar un modo status genuinamente read-only bajo lease Codex y TDD fail-first,
+   avisando a Claude antes; no conectarse a la DB durante esa remediación.
+4. Pedir cross-review Claude del hash resultante.
+5. Mantener separado cualquier futuro apply de `fabric-v1`: requiere autorización específica.
 
-## Verificación reciente
+## Árbol ajeno que debe preservarse
 
-- Bootstrap/no-replay: adversarial_remediations 10P; safety 26P con un test FABRIC excluido;
-  compileall y diff-check verdes.
-- Conocimiento tras BL-35: inventory y doc-index checks verdes; bloque 1054P; enlaces 680 + 3P;
-  graph 401/551; graph+honesty 110P/47S; diff-check verde.
-- Ruff no estaba instalado en el entorno Python disponible.
+Al cierre había cambios no propios en evidencia Codex antigua, coordinación runtime, DAGs
+auxiliares, `data/health/metric_events.jsonl` y zscore. No revertirlos, stagearlos ni incluirlos
+en commits. Confirmar con `git status --short` al retomar.

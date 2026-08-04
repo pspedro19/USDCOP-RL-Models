@@ -4,17 +4,88 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-03T16:15:00-05:00 (reloj ejecutado; SKEW post-reinicio)
-instance_id: codex-root-backlog-20260803-1059
+timestamp: 2026-08-04T10:31:00-05:00 (reloj-ejecutado)
+instance_id: codex-root-continue-20260804-0813
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: [BL-28-REVIEW, BL-40-REVIEW]
+bl_activos: []
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno tras reinicio; polling directo de servicios
 archivos_bloqueados: []
-necesito_del_otro: ["Claude: veredictos cc9868aa y eaa39f60; wiring BL40; estado stack"]
-para_review: [BL-22-local@8aa3a75f, BL-18@a89931c7+55fcefc6+8765adee+22224fbc+672052fe]
+necesito_del_otro: ["Claude: proponer siguiente carril separado; no despausar DAGs ni reintentar forecast_h5_predictions"]
+para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-04T10:31:00-05:00 reloj-ejecutado — restore parcial aprobado: conteos exactos,
+  secuencias=max, frescura oficial 5 y focal 4P. Training bloqueado; lease liberado.
+- 2026-08-04T10:25:00-05:00 reloj-ejecutado — Claude liberó restore con parada correcta por deriva
+  forecast_h5_predictions; Codex verifica conteos/secuencias. Training bloqueado por frescura.
+- 2026-08-04T11:16:00-05:00 SKEW — restore completo sigue bajo lease Claude; solicitado heartbeat
+  no invasivo/renovación si continúa. Codex no consulta DB durante DML.
+- 2026-08-04T09:02:00-05:00 SKEW — BL-16 parity `1e805c73` sellada: DB mismatch 0 read-only, host 11P/1S, knowledge 1059P+inventory/links/graph verdes. CXD-362 pide mutacion PAPER+FULL; ficha sigue PARTIAL; leases liberados.
+- 2026-08-04T08:52:00-05:00 SKEW — CXD-360 toma BL-16 parity contra CHECKs vivos por pg_get_expr+SELECT, sin DDL/DML. Respeta dependencia previa a BL-17/26; BL-18 sigue PARTIAL por arquitectura sync/async.
+- 2026-08-04T08:50:00-05:00 SKEW — CLD-362/363 aprueban 1d3cb2e0/919d604f; seis hashes del ciclo bilaterales. Discovery BL-18: cero callers productivos; costura SystemHealth sync psycopg2 vs sink async y scheduler sin asyncpg. CXD-359 no inventa arquitectura, mantiene PARTIAL y pide decision conjunta. DONE_CYCLE.
+- 2026-08-04T08:48:00-05:00 SKEW — 6858b8d2 aprobado por CLD-361; limite DDL estatica docstring `919d604f` sellado con 51P. Espera review 1d3cb2e0; sin leases propios.
+- 2026-08-04T08:51:00-05:00 SKEW — BL-18 follow-up `1d3cb2e0`: offset guard 8P, ficha PARTIAL con unique semantic gap; knowledge 1059P/inventory/links/graph verdes. CXD-356 pide dos reviews; leases liberados.
+- 2026-08-04T08:47:00-05:00 SKEW — CLD-360 aprueba f7f853e6 contra PG real; CXD-355 toma test-only offset equivalente y ficha BL-18 para deuda unique/raw driver, mantiene PARTIAL. Review 6858b8d2 reiterado.
+- 2026-08-04T08:40:00-05:00 SKEW — CXD-354 corrige timestamps adelantados anteriores sin reescribir historial. Generalizacion `6858b8d2`: fail-first 4F/7P, final 51P; junto a BL-18 `f7f853e6` para review Claude. News PG timestamp queda latente/operator-contract blocked antes de bootstrap.
+- 2026-08-04T08:45:00-05:00 — BL-18 `f7f853e6` sellado: 55P, probe PG rollback PASS, ruff ausente. CXD-353 pide review Claude y toma generalizacion CLD-358 sobre todos los planes, sin DB/DDL.
+- 2026-08-04T08:36:00-05:00 — BL-18 probe PostgreSQL transaccional llego a sink y reprodujo DataError: string ISO enviado a TIMESTAMPTZ; rollback total. CXD-351 anuncia TDD parse UTC-aware fail-closed, paths disjuntos del review Claude.
+- 2026-08-04T08:30:00-05:00 — BL-38 honesty `70a979e7` sellado PARTIAL; knowledge 1059P, links 680/3P, graph 401/551/5P, inventory OK. Doc-index check conserva deriva amplia preexistente; no --write. CXD-350 desbloquea mutacion Claude sobre 5ed5cac9; leases liberados.
+- 2026-08-04T08:27:00-05:00 — ACK CLD-356: apply verificado bilateral; nueva regla aceptada, DDL requiere lease + ACK previo. CXD-349 toma doc-only BL-38 para declarar registry persistente ausente y mantener PARTIAL; paquete 5ed5cac9 intacto para ataque Claude.
+- 2026-08-04T08:24:00-05:00 — FABRIC APPLIED: 070-081 = 12 succeeded/0 failed. Remedio validador `5ed5cac9`: rojo causal 1F/7P, final focal 38P, validate DB 47/0, Fabric exit 0. Monitores 1042P/4F baseline manifests. CXD-348 pide cross-review Claude; leases liberados.
+- 2026-08-04T08:22:00-05:00 — Apply real desde trading-api: 070-081 = 12 succeeded/0 failed; post-validate rojo 47 present/1 missing (`market.resample_policy`). CXD-347 evidencia expectativa huerfana introducida sin DDL y anuncia remedio TDD local; migraciones aplicadas intactas.
+- 2026-08-04T08:18:00-05:00 — RETOMA: handoff Claude `1a064b3f` + autorizacion final `1aad9215` leidos. CXD-346 avisa apply `fabric-v1`; lease DB tomado. Se ejecutara comando pinneado exacto, sin `--status`, Docker/restart/push/secrets.
+- 2026-08-03T22:36:00-05:00 SKEW — HANDOFF READY por solicitud del operador. C-010 R3 3078ce06 APROBADO bilateral tras A-D, final 9P y blobs restaurados; pin 98cefd2d tambien bilateral por CLD-350. Memoria durable actualizada; siguiente ciclo diagnostica `--status` con DDL sin ejecutarlo.
+- 2026-08-03T22:28:00-05:00 SKEW — CLD-349/3078ce06 recibido; CXD-344 declara leases y cross-review A-D con restauracion SHA256. Sin promocion persistente ni pipelines.yaml.
+- 2026-08-03T22:24:00-05:00 SKEW — CXD-343 confirma pin 98cefd2d en HEAD y R3 aun mutable/sin commit; solicita heartbeat o paquete sellado. Codex no revisa working tree ni invade leases.
+- 2026-08-03T22:21:20-05:00 SKEW — CXD-342 confirma leases Claude de C-010 R3 y preserva ambos paths; solicita paquete inmutable con cero delta actual. Cross-review del pin 98cefd2d sigue pendiente; sin DB/DDL/apply.
+- 2026-08-04T01:45:00-05:00 SKEW — Pin fabric-v1 revisado sellado 98cefd2d: una linea, final 11P, digest exacto; sin DB/DDL/apply. CXD-341 entrega cross-review Claude y reitera inicio R3.
+- 2026-08-04T01:25:00-05:00 SKEW — Operador emite mandato explicito condicionado a avisar/coordinar Claude; registrado con limites AGENTS. CXD-339 ordena iniciar C-010 R3 bajo leases y review bilateral.
+- 2026-08-04T01:18:00-05:00 SKEW — CLD-346 estaba basado en estado pre-autorizacion. CXD-338 dirige a Claude al registro OPERATOR AUTHORIZED posterior y pide iniciar R3 bajo leases, sin promocion.
+- 2026-08-04T01:08:00-05:00 SKEW — Operador responde «continua» a pregunta cerrada de autorizacion; C-010 R3 autorizado con alcance estricto. CXD-337 asigna implementacion Airflow a Claude y review a Codex; promociones siguen prohibidas.
+- 2026-08-04T00:58:00-05:00 SKEW — ACK CLD-345: bloqueo tecnico C-010 retirado; cola bilateral vacia. Espera exclusiva de autorizacion operador para CTR-ASSET-PIPELINE-001/R3; sin WIP ni leases.
+- 2026-08-04T00:48:00-05:00 SKEW — ACK CLD-344: 041cb287 aprobado bilateral; restauracion diff cero, focal 5P, comando inerte explicito. C-010 condiciones satisfechas pero NO APPLIED; espera autorizacion expresa operador para CTR-ASSET-PIPELINE-001.
+- 2026-08-04T00:35:00-05:00 SKEW — CXD-334 deja formato exacto de cierre a Claude. Amendment C-010 registra promocion PARITY_GREEN/CUTOVER operator-only; CI bloquea pero no autoriza. Paths mutados Claude preservados.
+- 2026-08-04T00:22:00-05:00 SKEW — Claude ejecuta cross-review 041cb287 bajo leases fixture real+workflow. CXD-333 preserva WIP y espera A/B/C/D con restauracion; sin medicion concurrente.
+- 2026-08-04T00:12:00-05:00 SKEW — Tras ACK CLD-342, gate CI parity sellado 041cb287: 5F fail-first, final 159P, 0 elegibles explicito, validator 4 specs. CXD-332 entrega A/B/C/D a Claude; leases liberados, C-010 NO APPLIED.
+- 2026-08-03T23:55:00-05:00 SKEW — R2 343cd02f aprobado: 1007P, links/graph/inventory verdes. CXD-331 cierra rechazo documental y solicita unica respuesta binaria al diseño --ci-eligible; aun sin leases.
+- 2026-08-03T23:42:00-05:00 SKEW — Claude activo en R2 documental bajo leases correctos audit+PROGRESS. CXD-330 preserva paths y secuencia: hash/release primero, luego ACK CI; cero WIP paralelo.
+- 2026-08-03T23:35:00-05:00 SKEW — CXD-329 pide ACK textual de diseño+paths; CLD-340 es anterior a CXD-328 y no se usa como cesion implicita. Implementacion sigue pausada, sin leases.
+- 2026-08-03T23:28:00-05:00 SKEW — Por instruccion operador, CXD-328 detiene implementacion aislada y pide ACK Claude previo: modo parity --ci-eligible fail-closed, workflow+script+test Codex, cross-review Claude. Sin leases ni ediciones productivas.
+- 2026-08-03T23:18:00-05:00 SKEW — CXD-327 rechaza forma de d2086714: hallazgo cero callers policy_engine aceptado, pero 10/41/24% viene de scratchpad no versionado y no del inventory; `_flat_decision` no es superficie publica. Pide R2 cualitativo y luego review C-010.
+- 2026-08-03T23:05:00-05:00 SKEW — C-010/CXD-326 propone R3 aditivo con policy_runs explicito, sin inferir verify bundles; solo PARITY_GREEN/CUTOVER ejecutan, estado actual activa cero. Espera review contractual Claude antes de codigo.
+- 2026-08-03T22:50:00-05:00 SKEW — `d3a75061` aprobado: no hay rama por strategy_id; R3 exige unir config de etapas con specs engine.type y cambia CTR-ASSET-PIPELINE-001. CXD-325 lo clasifica CONTRACT_REQUIRED, sin WIP; gates 1004P, graph 401/551, 4 specs OK.
+- 2026-08-03T22:38:00-05:00 SKEW — `286ca56b` aprobado: validator 4 specs y 1223P. CXD-324 refuta bloqueo R3 con Airflow webserver+scheduler healthy y ordena slice minimo engine.type+cutoff+caller causal en carril Claude; espera leases/hash.
+- 2026-08-03T22:25:00-05:00 SKEW — CXD-323 reasigna BL-45 R3 a Claude: stack actual sano y focal R1/R2+cutoff 227P; brecha exacta es cero callers productivos de resolve_feature_snapshot. Espera lease+hash pequeno o bloqueo runtime reproducible; Codex no toca DAGs.
+- 2026-08-03T22:10:00-05:00 SKEW — PROGRESS `ea8ce071` cofirmado y sellado `445fc7be`: conteo directo 11/36/0; gates independientes 1106P/47S, links 680 y grafo 401/551 verdes. CXD-322; sin promociones ni decisiones operador-gated.
+- 2026-08-03T21:35:00-05:00 SKEW — ACK CLD-335: BL-18 cadena R2 aprobada, A1 rojo/A2 excluido, focal 13P; retirado de para_review y permanece PARTIAL por PG/070/callers. CXD-321 pide siguiente LOCAL_CLOSABLE Claude fuera de decisiones operador-gated.
+- 2026-08-03T21:28:00-05:00 SKEW — ObservationBuilder test-only `6aaae855` aprobado: 4P/1F/3S reproducido, unico rojo SSOT 15-vs-20 preservado. CXD-320 pide re-review inmediato BL-18 R2 sin otro WIP.
+- 2026-08-03T21:24:39-05:00 SKEW — ZScore `6a556c3e` aprobado: mutacion alias extra 1F/8P, restauracion diff cero, final 9P. CXD-319; espera ObservationBuilder y re-review BL-18 R2.
+- 2026-08-03T21:25:00-05:00 SKEW — BL-18 R2 `1a71af4b` cierra CLD-333: test-prefixed runtime se escanea, directorios tests se excluyen, allowlist factual vuelve 27. Mutacion 3F/2P, final 5P+validator exit0. CXD-318 pide re-review tras ZScore; BL-18 permanece PARTIAL.
+- 2026-08-03T21:25:00-05:00 SKEW — ACK CLD-332: BL-22 8aa3a75f aprobado con mutacion 1F, ocho escapes y restauracion exacta; retirado de para_review. CXD-317 autoriza BL-18 PARTIAL sin DDL y reitera decision ZScore ya fijada en CXD-316.
+- 2026-08-03T21:18:00-05:00 SKEW — `c665b539` aprobado en alcance tras reproducir 3P/2F/3S. CXD-316 prioriza defecto productivo ZScore con aliases exactos y validacion fail-closed, luego test stale ObservationBuilder y retorno obligatorio a BL-22. Sin decision canonica de metadata.
+- 2026-08-03T21:12:00-05:00 SKEW — Claude abrio fix seguro test_determinism con lease pero antes de BL-22. CXD-315 no interrumpe: exige sellar/release y tomar BL-22 inmediatamente, sin tercer WIP. Codex revisara ambos outputs.
+- 2026-08-03T21:08:00-05:00 SKEW — CXD-314 asigna avance concreto a Claude: cross-review BL-22 local primero y cadena BL-18 PARTIAL despues, separando bloqueo fabric/PG. Pide siguiente LOCAL_CLOSABLE propio tras sellar BL-22; Codex preserva paths.
+- 2026-08-03T21:02:50-05:00 SKEW — R3 `5ec5e732` APROBADO: diff docstring-only honesto, show-check verde, bateria consolidada namespace+DLQ 38P. CXD-313 cierra cadena 1ffc95bc/69b0c632/835f836b/20a73bf0/5ec5e732. Auditoria negativa CLD-329 aceptada; no se inventa deuda sobre fallbacks legitimos.
+- 2026-08-03T20:59:15-05:00 SKEW — R2 caller `20a73bf0` ahora causal: mutacion 1F/6P, restauracion diff cero, final 7P. Rechazo residual CXD-312 solo por docstring runtime que aun promete discriminacion refutada por el propio R2; R3 textual minimo pedido.
+- 2026-08-03T20:53:17-05:00 SKEW — Transitivo `835f836b` RECHAZADO: retirar caller `ensure_dags_namespace()` deja 5P; suite prueba helper pero no wiring. Restauracion diff cero/final 5P. CXD-311 pide R2 tests-only causal; produccion aceptada conceptualmente.
+- 2026-08-03T20:47:39-05:00 SKEW — Namespace enterprise `69b0c632` APROBADO: M1 retiro append 1F/3P, M2 bare import L4 1F/3P, restauracion diff cero, final 4P; combinado namespace+DLQ 35P. CXD-310 y leases liberados. Sin cambios propios persistentes.
+- 2026-08-03T20:31:46-05:00 SKEW — Claude mantiene leases correctos namespace pero aun sin hash posterior a 1ffc95bc; CXD-309 confirma preservacion y matriz adversarial del review. No se mide ni toca WIP mutable.
+- 2026-08-03T20:30:00-05:00 SKEW — Barrido read-only de sombras entregado CXD-308: L2 degrada silencioso, L4 falla por exports ausentes y circuit_breaker pierde metrics bajo enterprise; compact verde. Propuesta namespace cooperativo que conserva services.common root. Sin ediciones DAG; espera owner Claude.
+- 2026-08-03T20:26:03-05:00 SKEW — R3 DLQ `1ffc95bc` APROBADO: commit tests-only, retry_policy sin diff textual, corrida conjunta independiente 31P/3.14s. CXD-307; inicia auditoria read-only de sombras services/utils para handoff al owner Claude.
+- 2026-08-03T20:22:11-05:00 SKEW — DLQ R2 `2768cf25` aprobado en alcance: mutacion fallback 1F, restauracion limpia y final 3P. Cinco fallos historicos clasificados como tests stale contra backoff; Claude ya tomo lease R3 tests-only. CXD-306 enviado; Codex espera hash sin tocar su WIP.
+- 2026-08-03T20:42:00-05:00 — ACK CLD-322: BL-16 R2 aprobado bilateralmente; sigue PARTIAL por caller/paridad PG. Review DLQ 85ce2a83: camino principal 2F bajo mutación y 2P restaurado, pero R2 pedido por fallback incorrecto y test histórico aún incoleccionable (CXD-300).
+- 2026-08-03T20:14:00-05:00 — BL-16 R2 `7afa8a03` cierra rechazo CLD-320: mutación A2 ahora 1F, workflow restaurado, focal 6P, knowledge 1058P. Pack `1a6b482c`; CXD-298. Discovery DLQ reveló degradación productiva silenciosa y Claude ya tomó el fix.
+- 2026-08-03T19:45:00-05:00 — BL-16 incremento CI sellado `4d0e73cd`; TDD wiring 1F/3P->6P, layout 20P, knowledge/contract 1057P, links/graph verdes. Sigue PARTIAL por caller/paridad PG. Pack corregido `1cd195c7`; enviado CXD-294.
+- 2026-08-03T19:25:13-05:00 — Cross-review `4cff73d2` APROBADO: rename 100% identico; layout 20P; `pytest tests --collect-only` alcanza 5107 tests sin SystemExit/INTERNALERROR. Termina con 16 errores de entorno/import, no todos por POSTGRES_PASSWORD; correccion de evidencia pedida en CXD-293.
+- 2026-08-03T19:29:00-05:00 — BL-33 corrige brecha stale de review CLD-271 en `54e9f757`, sigue PARTIAL por evidencia operativa. Focal 5P + knowledge gates verdes.
+- 2026-08-03T19:21:00-05:00 — CLD-316 convertido en seis bloqueos concretos y requisito de caller, commit `ca490e42`; 1111P/47S y knowledge gates verdes. Estados invariantes 11/36/0.
+- 2026-08-03T19:12:00-05:00 — BL-35 DONE estricto sellado `37266c10` tras cofirma CLD-315 y limpieza bilateral. BL-23 aprobado PARTIAL por CLD-314. Corte oficial 11/36/0. Regla operativa aceptada: cero llamadores productivos impide DONE.
+- 2026-08-03T19:02:00-05:00 SKEW — Diagnostico BL-40 de CLD-312 convertido en dependencia ejecutable y sellado `0f63205b`: 072/073 antes de wiring, USD/MXN only, persist-before-drop; sigue PARTIAL. Knowledge gates verdes. Sin codigo productivo/DDL.
+- 2026-08-03T18:56:00-05:00 SKEW — BL-35 repetido bajo cesion explicita CLD-311: baseline limpio -> DatasetContractError nominal -> retirada -> No data found; DAG git status vacio y probe inexistente. Evidencia CXD-286 para cross-review. ACK CLD-311 review 4aa160d2; BL-40 queda dependency-blocked por 072/073 sin Fabric.
+- 2026-08-03T18:48:00-05:00 SKEW — BL-23 sellado `78032637`: PLANNED->PARTIAL honesto, test sobre catalogo real. Plan sin apply missing=[]; focal 3P; mutacion omitir archived 3F y restaurada sin diff; knowledge gates verdes. Pack enviado a Claude. Quedan apply+query PostgreSQL bloqueados por Fabric sin autoridad.
+- 2026-08-03T18:40:00-05:00 SKEW — BL-35 acceptance ejecutada dentro del scheduler real bajo cesion CLD-306. Baseline `No data found`; probe temporal `forecast://synthetic/prediction/v1 -> exec://synthetic/orders/v1` produjo import error nominal `DatasetContractError`; fichero retirado exactamente; cierre `No data found`. `Test-Path=False`; focal 2P/34D. Monitores 1037P/4F, las 4F son el drift congelado USD/COP preexistente documentado en PROGRESS, sin delta. Enviado a Claude para cross-review; no cierro unilateralmente.
+- 2026-08-03T18:31:00-05:00 SKEW — Raiz `codex-root-continue-20260803-1831` reanudada por orden del operador desde handoff `4355dbc7`. Arbol: solo LEASES + metric_events runtime; ambos preservados. CLD-306 ya cede el negativo BL-35; Docker Desktop no esta activo. Prohibiciones vigentes: sin pin, DDL, down-v, rebuild ni reinicio de servicios. Siguiente: eco Claude y arranque exclusivo del daemon; luego DAG sintetico temporal con retirada exacta y `No data found` final.
 - 2026-08-03T16:43:00-05:00 BL40 opcion A local sellado eaa39f60, 4 paths 197+/16-. Mutaciones provider/date 1F cada una; final focal 2P, amplia 53P/1F FABRIC, frontmatter 997P, honesty 105P/47S, links/index/inventory verdes; ruff no instalado. BL permanece PARTIAL por cero call sites productivos/wiring Claude.
 - 2026-08-03T16:32:00-05:00 C/E layout read-only: mismo NVMe GPT, pero Recovery 864MB entre C y E; extension directa imposible sin mover/eliminar particiones. E tiene ~383.96GB libres. CXD253 recomienda mover Docker VHDX 25.31GB a E con stack detenido+backup, no reparticionar. C apenas ~161MB libre; STOP writes continua.
 - 2026-08-03T16:25:00-05:00 P0 disco lleno: C Free=0 durante build Claude. Safety BL40 19P/1F FABRIC; segunda suite errored al escribir pytest cache, no cuenta. STOP writes/tests; no prune/borrado por lease y riesgo datos. CXD251 solicita owner action. WIP tres paths preservado.
@@ -254,3 +325,251 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - 2026-08-03T18:08:00-05:00 Heartbeat: SignalBridge/scheduler ya healthy; Airflow webserver starting y backtest-api restart loop. CXD-268 entrega estado a Claude sin leer logs ni tocar compose. BL-18/35 bloqueados; re-M5 a07459a3 pendiente.
 - 2026-08-03T18:15:00-05:00 Heartbeat: Airflow webserver+scheduler healthy; backtest restart loop. Runtime ensució data/health/metric_events.jsonl, preservado. CXD-269 pide cesión explícita BL-35 tras coldboot; espera re-M5 a07459a3. Sin leases CODEX/DDL/pin/push.
 - 2026-08-03T18:22:00-05:00 Heartbeat: backtest-api ya no aparece en docker ps, tratado como ausente no sano; resto visible estable. CXD-270 notifica a Claude. BL-35/re-M5 siguen esperando cesión; runtime metric_events preservado.
+## Heartbeat 2026-08-04T08:59:00-05:00 (SKEW vs Claude)
+
+- Estado: `WAITING_CLAUDE`.
+- BL-16: `1e805c73` bajo cross-review adversarial de Claude; sin tocar su lease.
+- BL-18: brief CLD-366 revisado. Bloqueado hasta corregir metadata/conteos y sustituir Opcion A
+  indiscriminada por A' hibrida (metricas numericas separadas de incidentes/acciones).
+- Tests ejecutados en este ciclo: `test_knowledge_frontmatter.py` = 1003 passed; el resultado
+  confirma un hueco de cobertura para `coordination/briefs`, no conformidad del front-matter.
+- Sin codigo, DDL, DML, Docker, push ni nuevos leases de fuente.
+## Heartbeat 2026-08-04T09:04:00-05:00 (SKEW vs Claude)
+
+- Estado: `WAITING_CLAUDE_REVIEW`.
+- BL-16: `98de5e7e` acota la paridad a `surface='action'` y registra la divergencia diagnostic;
+  permanece PARTIAL. Gates verdes; host 1S por falta de DATABASE_URL.
+- BL-18: CXD-363 mantiene bloqueo de implementacion hasta revision del brief con opcion A' hibrida.
+- Sin leases CODEX activos; sin DDL, DML, Docker o push.
+## Heartbeat 2026-08-04T09:05:00-05:00 (SKEW vs Claude)
+
+- Estado: `WAITING_CLAUDE_CHANGES`.
+- BL-18 brief v2: cambios pedidos porque `withdrawal_protocol_triggered` sí porta valor numérico;
+  A' debe rutear por naturaleza contractual/catalogada, no por nulabilidad. Faltan `data_*`.
+- ACK limitado a Claude para corregir luego el docstring falso de `HealthEvent`, sin wiring.
+- BL-16 `98de5e7e`: espera review focal Claude.
+- Deuda gate briefs registrada; sin normalización masiva. Sin código, DDL, DML, Docker o push.
+## Heartbeat 2026-08-04T09:09:00-05:00 (SKEW vs Claude)
+
+- Estado: `REVIEWING_CLAUDE_74a4f4f2`.
+- Review read-only anunciado en CXD-366; sin lease de fuente/documento y sin mutaciones.
+- BL-18 CXD-365 y BL-16 `98de5e7e` siguen esperando respuesta Claude, en paralelo.
+## Heartbeat 2026-08-04T09:13:00-05:00 (SKEW vs Claude)
+
+- Estado: `WAITING_CLAUDE_R2_74a4f4f2`.
+- Núcleo de `74a4f4f2` aprobado: caller real, ruta gated/inerte, C-010 9P.
+- R2 doc-only pedido: retirar conteo de tareas no gobernado y actualizar el estado post-apply de
+  fabric-v1 sin confundir disponibilidad de tablas con cableado.
+- Sin archivos de Claude editados, sin leases, DDL/DML, Docker o push.
+## Heartbeat 2026-08-04T09:15:00-05:00 (SKEW vs Claude)
+
+- `98de5e7e`: APROBADO bilateral tras CLD-369.
+- `74a4f4f2`: espera R2 Claude doc-only con post-apply completo, sin conteo de tareas y
+  front-matter tipado del fichero concreto.
+- BL-18 v2.1.0 recibido; pendiente ACK final tras inspección puntual.
+- BL-18 brief v2.1.0: APROBADO bilateral; queda decisión operator A' vs B, sin implementación.
+- Claude ejecuta R2 doc-only de `74a4f4f2`; Codex preserva fichero e índice hasta hash/release.
+## Heartbeat 2026-08-04T09:18:00-05:00 (SKEW vs Claude)
+
+- `df2c699f`: APROBADO bilateral; gates documentales independientes verdes.
+- Próximo: Claude corrige solo docstring `HealthEvent` bajo lease, sin shape/router/wiring.
+- BL-18 brief v2.1 aprobado; decisión A' vs B sigue operator-only.
+- Sin leases CODEX, DDL/DML, Docker o push.
+## Heartbeat 2026-08-04T09:21:00-05:00 (SKEW vs Claude)
+
+- `054424cc`: APROBADO bilateral.
+- Deuda knowledge: coordination runtime está mezclado con briefs/integration; vocabulario no
+  reconoce decision/review/spec. Diferido como migración de clase, sin falso kind ni gate parcial.
+- Espera Claude docstring-only `HealthEvent` según CXD-370/371.
+## Heartbeat 2026-08-04T09:25:00-05:00 (SKEW vs Claude)
+
+- `b3f2ff58`: producto/docstring y tripwire estructural aprobados; test documental rechazado por
+  M1 falso verde. Restauración exacta, final 27P.
+- Espera R2 Claude test-only con tres proposiciones semánticas causales.
+- Sin leases CODEX, DDL/DML, Docker o push.
+## Heartbeat 2026-08-04T09:27:00-05:00 (SKEW vs Claude)
+
+- News Engine CLD-375: CONTRACT_REQUIRED; dos almacenes paralelos + DDL fuera de planes. Bootstrap
+  bloqueado; sin brief nuevo mientras kind/cobertura decision estén sin resolver.
+- Prioridad inmediata: Claude R2 test-only HealthEvent según CXD-373/374.
+- Sin leases CODEX, cambios News Engine, DDL/DML, Docker o push.
+## Heartbeat 2026-08-04T09:34:00-05:00 (SKEW vs Claude)
+
+- `b3f2ff58+a9abfc7e`: APROBADOS bilateralmente; M1 rojo causal, final 27P.
+- Siguiente: Claude prepara matriz read-only News Engine en inbox; sin brief/código/DDL/bootstrap.
+- Sin leases CODEX, DDL/DML, Docker o push.
+## Heartbeat 2026-08-04T09:38:00-05:00 (SKEW vs Claude)
+
+- News Engine: corregido falso negativo de CLD-375; `mcp_server --init-db` es segundo creador DDL
+  fuera de planes. Recomendación provisional: `news_articles` SSOT, search como proyección.
+- Espera matriz read-only Claude con conflictos de identidad/datos. Sin implementación.
+## Heartbeat 2026-08-04T09:40:00-05:00 (SKEW vs Claude)
+
+- Directiva operador adoptada: una revisión por entrega; re-review solo por hash nuevo, evidencia
+  material o falso verde, siempre anunciado y coordinado.
+- News Engine: espera matriz consolidada Claude; Codex hará verificación puntual, no re-auditoría.
+## Heartbeat 2026-08-04T09:43:00-05:00 (SKEW vs Claude)
+
+- News Engine consolidado: production SSOT=`news_articles`; MCP search opt-in/dev, config cwd stale
+  y sin `--init-db`. Pregunta cerrada preparada para operador.
+- Recomendación provisional: MCP development-only; no implementación hasta decisión.
+- Bootstrap sigue sin apply mientras se confirma decisión y otros bloqueos.
+## Heartbeat 2026-08-04T09:48:00-05:00 (SKEW vs Claude)
+
+- ACK bilateral de la matriz News Engine; no habrá re-auditoría ni cambios prematuros.
+- Espera decisión del operador sobre soporte MCP de escritorio; recomendación conjunta:
+  development-only/no soportado en producción.
+- Sin leases CODEX, implementación, DDL/DML, bootstrap, Docker o push.
+## Heartbeat 2026-08-04T09:52:00-05:00 (SKEW vs Claude)
+
+- Operador confirma MCP desktop development-only/no soportado en producción.
+- Solicitado a Claude alcance mínimo, owner, paths y pruebas antes de editar; Codex tomará después
+  el carril DB/plan y los bloqueos independientes del bootstrap.
+- Sin leases CODEX, DDL/DML, bootstrap, Docker o push mientras se acuerda el reparto.
+## Heartbeat 2026-08-04T09:57:00-05:00 (SKEW vs Claude)
+
+- Inspección acotada: bootstrap continúa sin digest fijado y depende explícitamente de tablas de
+  legacy-init. Esto es independiente de la decisión MCP y no se saltará.
+- Espera propuesta de alcance/ownership Claude para el cambio dev-only; sin leases ni edición.
+## Heartbeat 2026-08-04T10:03:00-05:00 (SKEW vs Claude)
+
+- ACK CLD-380: digest reproducido independiente y baseline focal 30P.
+- Carril Codex activo: pin platform-bootstrap-v1 + test causal de mutación; explícitamente sin apply.
+- Claude solicitado para carril disjunto MCP development-only con leases propios.
+## Heartbeat 2026-08-04T10:10:00-05:00 (SKEW vs Claude)
+
+- Pin platform-bootstrap-v1 sellado `52507ab6`; 30P + 21P, compileall/diff-check verdes.
+- Validate DB bloqueado por conexión no configurada; ruff ausente. Sin apply/DDL/DML.
+- Entrega para única revisión causal Claude; leases Codex liberados. MCP sigue en carril Claude.
+## Heartbeat 2026-08-04T10:14:00-05:00 (SKEW vs Claude)
+
+- ACK alcance Claude: declarar MCP dev-only, conservar capacidad dev, README local y candados
+  documental/estructural; sin bindings/proyección/045.
+- Claude tiene leases MCP activos. Codex espera hash para revisión única y review de `52507ab6`.
+## Heartbeat 2026-08-04T10:25:00-05:00 (SKEW vs Claude)
+
+- Review `88eec770`: RECHAZADO. Base 30P/4S, pero plan review-gated nuevo sin required map produce
+  falso verde porque el candado DDL itera REQUIRED_TABLES_BY_PLAN.
+- R2 solicitada test-only: iterar MIGRATION_PLANS, fixture causal versionado y retirar conteo DAG
+  prohibido en prosa. Sin leases ni cambios Codex.
+## Heartbeat 2026-08-04T10:35:00-05:00 (SKEW vs Claude)
+
+- MCP dev-only `88eec770+d702a55b` APROBADO bilateral: 31P/4S + regresión exacta 1P.
+- Pin `52507ab6` también aprobado bilateral. Frente técnico previo al bootstrap cerrado.
+- Solicitado a Claude runbook mínimo de apply sin ejecutarlo; restauración de datos será fase
+  posterior separada. Sin leases, DDL/DML, bootstrap, Docker o push.
+## Heartbeat 2026-08-04T10:42:00-05:00 (SKEW vs Claude)
+
+- Runbook caveats enviados: CLI sin `--apply`; rama default ejecuta. Atomicidad por migración, no
+  por plan; fallo tardío puede dejar estado parcial reanudable.
+- Espera runbook Claude. Sin conexión DB, leases, DDL/DML o bootstrap.
+## Heartbeat 2026-08-04T10:48:00-05:00 (SKEW vs Claude)
+
+- ACK DDL bilateral: Claude ejecutará solo platform-bootstrap-v1 tras lease y preflight; Codex no
+  toma lease competidor y verificará después.
+- Restore explícitamente sin ACK todavía: requiere scope real de parquets/tablas vacías tras apply.
+- Sin DAG unpause, commerce-v1 o A'.
+## Heartbeat 2026-08-04T10:55:00-05:00 (SKEW vs Claude)
+
+- Claude reporta platform-bootstrap-v1 aplicado con éxito y lease liberado.
+- Codex toma lease read-only para verificación SQL independiente; restore sigue sin ACK.
+## Heartbeat 2026-08-04T11:03:00-05:00 (SKEW vs Claude)
+
+- Apply bootstrap aprobado por verificación SQL independiente; lease read-only liberado.
+- Todos los hashes parquet coinciden con manifiesto. Segundo ACK DML concedido a Claude para
+  restore allowlist completa; éxito exige reporte sin `insert failed`, no solo exit 0.
+## Heartbeat 2026-08-04T11:40:00-05:00 (SKEW vs Claude)
+
+- Restore verificado y aprobado en alcance/parcial; training sigue bloqueado por frescura.
+- Corregida a Claude la premisa del siguiente carril: ya existe bootstrap admin idempotente en el
+  startup del servicio, conectado por `ADMIN_BOOTSTRAP_*`; no procede duplicarlo con script/INSERT.
+- Sin lectura de secretos, DML, cambios de implementación ni DAG unpause. Espero spec-sync sellado
+  y propuesta corregida de Claude.
+## Heartbeat 2026-08-04T11:52:00-05:00 (SKEW vs Claude)
+
+- Review único de `a78bf6df`: RECHAZADO por tres contradicciones factuales: bootstrap admin
+  existente omitido; registro 202/PENDING/sin tokens y con throttle descrito como comportamiento
+  antiguo; `role` está en login pero se pierde al rotar por refresh.
+- R2 doc-only solicitada al dueño Claude. Sin tocar su fichero, secretos, DB o DAGs.
+## Heartbeat 2026-08-04T12:00:00-05:00 (SKEW vs Claude)
+
+- `6107e7a5+ac200746` cierran bootstrap y estructura Markdown, pero se cruzaron con CXD-395.
+- Persisten sólo dos hechos stale ya reportados: registro/throttle y pérdida de `role` al refresh.
+  R3 mínima solicitada; próximo review queda limitado a ese delta y knowledge gates.
+## Heartbeat 2026-08-04T12:08:00-05:00 (SKEW vs Claude)
+
+- Orden del operador interpretada como avance de A' en dirección; no como ACK de reinicio.
+- Claude debe cerrar R3 auth y luego someter contrato exacto de catálogo BL-18 antes de editar.
+- Fuera de alcance por ahora: implementación, consumidor, DB, reinicio, retirar JSONL y DAG unpause.
+## Heartbeat 2026-08-04T12:13:00-05:00 (SKEW vs Claude)
+
+- Tras autorización explícita adicional recibida por Claude, ACK bilateral a un único reinicio
+  acotado de `usdcop-signalbridge`; Claude ejecuta con lease y Codex verifica tras release.
+- Sin consultas competidoras durante la ventana. R3 auth y contrato A' siguen separados.
+## Heartbeat 2026-08-04T12:20:00-05:00 (SKEW vs Claude)
+
+- Lease de reinicio Claude aún activo, sin reporte. Solicitado heartbeat/release; Codex no consulta
+  servicio ni DB y no autoriza segundo intento.
+## Heartbeat 2026-08-04T10:48:00-05:00 (reloj-ejecutado)
+
+- Reinicio SignalBridge verificado y aprobado: healthy, un admin approved/active/verified y una
+  configuración asociada. Sin datos identificables, DDL ni DML; lease liberado.
+- Guest/is_test y migraciones fuera de plan quedan deuda separada para clasificación read-only.
+- Claude continúa R3 auth y propuesta contractual A'; ningún ACK de implementación aún.
+## Heartbeat 2026-08-04T11:00:00-05:00 (reloj-ejecutado)
+
+- Clasificación preliminar: migraciones fuera de plan tienen consumidores vivos en auth/RBAC,
+  comercio, datos, H5 y macro; no deben anexarse en bloque al bootstrap aplicado.
+- `064` no está supersedida por `050`; duplicidad `056` requiere orden explícito, no renombrado.
+- Siguiente: estado aplicado/dependencias read-only y diseño de planes nuevos review-gated.
+## Heartbeat 2026-08-04T11:12:00-05:00 (reloj-ejecutado)
+
+- CLD-397 revisada: A' aún sin ACK. Acordado source `system_health_engine` y priors como espejo
+  gobernado de CTR-SYSTEM-HEALTH-001 con paridad + bump de catálogo.
+- Pendiente mapping exacto warning/critical y orientación; Sharpe ratio es higher-is-better, a
+  diferencia de PSI/drift/slippage. R3 auth debe cerrar antes de leases.
+## Heartbeat 2026-08-04T11:20:00-05:00 (reloj-ejecutado)
+
+- `d92e3034`: hechos de registro/JWT/A8-10 aprobados; rechazo único a cerrar A8-03 compuesto.
+- R4 textual solicitada: A8-03 permanece MITIGATED con residual invite/admin + verificación.
+- No se reabren otros cambios; gates se ejecutarán sobre el próximo hash.
+## Heartbeat 2026-08-04T11:28:00-05:00 (reloj-ejecutado)
+
+- CLD-399 concede corrección de fuente: `ClockStatus.metrics`, no alertas `HealthEvent`.
+- A' bloqueada sin implementación: incluso PSI carece de contexto modelo/baseline; también faltan
+  formula_version y mapping warning/critical. Source y espejo/paridad de priors ya acordados.
+- Claude: R4 auth primero; luego brief doc-only actualizado. Codex sigue diseño de planes DB sin DDL.
+## Heartbeat 2026-08-04T11:38:00-05:00 (reloj-ejecutado)
+
+- DB read-only: ledger y objetos de migraciones clasificadas ausentes; lease liberado.
+- DAGs permanecen pausados: código H5 usa strategy_id, esquema vivo no lo tiene.
+- Propuesto reparto en planes identity/admin, commerce, market-data y H5 identity; sin edits/DDL.
+## Heartbeat 2026-08-04T11:48:00-05:00 (reloj-ejecutado)
+
+- R4 auth `4efc833d` aprobada en contenido. Gates focales verdes salvo doc-index check rojo por
+  drift amplio preexistente; no se ejecutó regeneración masiva.
+- Claude autorizado sólo a sincronizar brief A' doc-only; catálogo/código siguen bloqueados.
+## Heartbeat 2026-08-04T12:02:00-05:00 (reloj-ejecutado)
+
+- C-011 PROPOSED: plan identity-admin review-gated, dos 056 en orden explícito, required column+
+  tables, primera etapa sin pin y sin apply. Esperando ACK de Claude antes de leases.
+## Heartbeat 2026-08-04T12:12:00-05:00 (reloj-ejecutado)
+
+- Brief `c7868fe4`: núcleo A' aprobado; R2 doc-only por docstring histórico en presente, encabezado
+  inconsistente y §10 que reabre A'/B pese al veredicto BLOCKED/PARTIAL.
+- C-011 sigue esperando ACK; sin leases ni implementación DB.
+## Heartbeat 2026-08-04T12:22:00-05:00 (reloj-ejecutado)
+
+- CLD-402: dirección caller→motor aceptada sólo como propuesta. strategy_id desbloquea potencialmente
+  Sharpe/slippage, no PSI: falta baseline_id; prediction drift requiere model_id.
+- Solicitado shape fail-closed con identidad común + model_id/baseline_id explícitos opcionales.
+- Implementación identidad espera 064; C-011 independiente sigue esperando respuesta formal.
+## Heartbeat 2026-08-04T12:32:00-05:00 (reloj-ejecutado)
+
+- Hallazgo: 064 aislada rompe semántica de v_h5_performance_summary (join sólo por fecha).
+- C-012 PROPOSED: migración nueva 083 repara vista y plan h5-identity 064→083, sin pin/apply.
+- Esperando ACKs Claude de C-011 y C-012; sin leases.
+## Heartbeat 2026-08-04T12:42:00-05:00 (reloj-ejecutado)
+
+- C-011 ACK recibido de Claude (CLD-403); condiciones DML seed + precheck futuro incorporadas.
+- Leases tomados sólo para db_migrate.py y test_codex_safety_contracts.py. TDD plan sin pin; no apply.
