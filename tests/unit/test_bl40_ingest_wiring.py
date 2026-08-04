@@ -207,3 +207,93 @@ def test_run_executes_fabric_and_sends_only_accepted_rows_to_legacy(monkeypatch)
     pd.testing.assert_frame_equal(legacy_inputs[0], accepted)
     assert summary["db_m5_upserted"] == 1
     assert connection.committed and connection.closed and not connection.rolled_back
+
+
+def test_generic_writer_uses_shared_boundary_and_declares_uncovered(monkeypatch) -> None:
+    spec = importlib.util.spec_from_file_location("bl40_generic_boundary", WRITER)
+    assert spec and spec.loader
+    writer = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = writer
+    spec.loader.exec_module(writer)
+
+    frame = pd.DataFrame([{
+        "time": pd.Timestamp("2026-08-03T13:00:00Z"),
+        "open": 4.0,
+        "high": 4.1,
+        "low": 3.9,
+        "close": 4.05,
+        "volume": 10.0,
+    }])
+    calls: list[dict] = []
+
+    from src.data_quality import ingest_guard
+
+    def uncovered(_conn, **kwargs):
+        calls.append(kwargs)
+        return None
+
+    monkeypatch.setattr(ingest_guard, "publish_or_declare_gap", uncovered)
+    accepted, report = writer._publish_fabric_frame(
+        object(),
+        frame,
+        canonical_symbol="USD/COP",
+        provider_id="twelvedata_multi",
+        provider_symbol="USD/COP",
+        interval_id="PT5M",
+    )
+
+    pd.testing.assert_frame_equal(accepted, frame)
+    assert report == {
+        "raw": 0,
+        "canonical": 0,
+        "quarantined": 0,
+        "coverage": "UNAVAILABLE",
+    }
+    assert calls == [{
+        "symbol": "USD/COP",
+        "provider_id": "twelvedata_multi",
+        "interval_id": "PT5M",
+        "rows": frame.to_dict(orient="records"),
+        "source_uri": "script://ingest_asset_ohlcv/USD/COP/PT5M",
+    }]
+
+
+def test_generic_writer_sends_only_governed_accepts_to_legacy_boundary(monkeypatch) -> None:
+    spec = importlib.util.spec_from_file_location("bl40_generic_accepted", WRITER)
+    assert spec and spec.loader
+    writer = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = writer
+    spec.loader.exec_module(writer)
+
+    frame = pd.DataFrame([
+        {"time": pd.Timestamp("2026-08-03T13:00:00Z"), "close": 18.5},
+        {"time": pd.Timestamp("2026-08-03T13:05:00Z"), "close": 999.0},
+    ])
+    governed = SimpleNamespace(
+        accepted=[frame.iloc[0].to_dict()],
+        raw_count=2,
+        canonical_count=1,
+        quarantine_count=1,
+    )
+
+    from src.data_quality import ingest_guard
+
+    monkeypatch.setattr(
+        ingest_guard, "publish_or_declare_gap", lambda _conn, **_kwargs: governed
+    )
+    accepted, report = writer._publish_fabric_frame(
+        object(),
+        frame,
+        canonical_symbol="USD/MXN",
+        provider_id="twelvedata_backfill",
+        provider_symbol="USD/MXN",
+        interval_id="PT5M",
+    )
+
+    assert accepted["close"].tolist() == [18.5]
+    assert report == {
+        "raw": 2,
+        "canonical": 1,
+        "quarantined": 1,
+        "coverage": "SCOPED",
+    }

@@ -486,26 +486,44 @@ def _publish_fabric_frame(
     conn,
     df: pd.DataFrame,
     *,
+    canonical_symbol: str,
     provider_id: str,
     provider_symbol: str,
     interval_id: str,
-) -> tuple[pd.DataFrame, dict[str, int]]:
+) -> tuple[pd.DataFrame, dict[str, int | str]]:
     """Screen and stage raw/canonical/quarantine rows in the caller's transaction."""
-    from src.market.publication import publish_provider_rows
+    from src.data_quality.ingest_guard import publish_or_declare_gap
 
     rows = df.to_dict(orient="records")
-    result = publish_provider_rows(
+    result = publish_or_declare_gap(
         conn,
+        symbol=canonical_symbol,
         provider_id=provider_id,
-        provider_symbol=provider_symbol,
         interval_id=interval_id,
         rows=rows,
+        source_uri=(
+            f"script://ingest_asset_ohlcv/{provider_symbol}/{interval_id}"
+        ),
     )
+    if result is None:
+        log.warning(
+            "Fabric quality coverage UNAVAILABLE for %s via %s; "
+            "legacy ingestion continues without claiming screening",
+            canonical_symbol,
+            provider_id,
+        )
+        return df.copy(), {
+            "raw": 0,
+            "canonical": 0,
+            "quarantined": 0,
+            "coverage": "UNAVAILABLE",
+        }
     accepted = pd.DataFrame(result.accepted, columns=df.columns)
     return accepted, {
         "raw": result.raw_count,
         "canonical": result.canonical_count,
         "quarantined": result.quarantine_count,
+        "coverage": "SCOPED",
     }
 
 
@@ -633,6 +651,7 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
                 accepted, fabric = _publish_fabric_frame(
                     conn,
                     summary["m5_frame"],
+                    canonical_symbol=symbol,
                     provider_id=str(profile.data_source.provider).lower(),
                     provider_symbol=str(profile.data_source.provider_symbol),
                     interval_id="PT5M",
@@ -649,6 +668,7 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
                 accepted, fabric = _publish_fabric_frame(
                     conn,
                     summary["daily_frame"],
+                    canonical_symbol=symbol,
                     provider_id=str(daily_provider).lower(),
                     provider_symbol=str(profile.data_source.provider_symbol),
                     interval_id="P1D",
