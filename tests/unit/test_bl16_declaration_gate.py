@@ -114,14 +114,33 @@ def test_production_strategy_ssot_is_the_declared_integration_point() -> None:
     assert SSOT_V11.is_file(), f"SSOT de la estrategia H5 ausente: {SSOT_V11}"
 
 
-@pytest.mark.xfail(
-    reason="decisión de gobierno pendiente: PAPER admite ZERO y SHADOW; el gate la "
-    "reclama pero no la elige (CLD-431)",
-    strict=False,
-)
 def test_production_strategy_declares_governance() -> None:
-    """Cuando v11 declare gobernanza, el gate debe validarla contra el SSOT real."""
+    """El SSOT real de v11 declara gobernanza y el gate la valida.
+
+    `capital_tier: SHADOW` no se eligió: es la convención de la spec normativa,
+    cuyo ejemplo canónico para paper es PAPER+SHADOW+NOMINAL
+    (`04-CTR-QLAB-FABRIC-004.md:410-411`), y coincide con que la estrategia
+    paper-tradea de verdad — ejecuciones espejadas en `forecast_h5_paper_trading`.
+    """
     from src.governance.strategy_declaration import declaration_from_strategy_config
 
     decl = declaration_from_strategy_config(SSOT_V11)
+    assert decl.research_state.value == "PAPER"
+    assert decl.capital_tier.value == "SHADOW"
+    assert decl.operational_state.value == "NOMINAL"
     assert decl.dag_declared is True
+
+
+def test_production_dag_gates_on_the_declaration_before_producing_signals() -> None:
+    """El DAG H5 debe invocar el gate — es la propiedad end-to-end de BL-16.
+
+    Sin este candado, el motor de gobernanza vuelve a ser correcto y no invocado,
+    que es exactamente el estado del que este BL sale.
+    """
+    dag = (ROOT / "airflow" / "dags" / "forecast_h5_l5_weekly_signal.py").read_text(
+        encoding="utf-8"
+    )
+    assert "assert_strategy_may_run_dag" in dag, (
+        "el DAG de señal H5 no invoca el gate de gobernanza: validate_declaration "
+        "seguiría sin llamador productivo"
+    )
