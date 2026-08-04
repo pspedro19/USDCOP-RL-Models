@@ -31,13 +31,16 @@ de este guard rechazaba *todas* las barras, incluidas las buenas:
 
 Causa: `QualityRuleSet` indexa `price_ranges` por el `instrument_id` que devuelve el
 registry —desde la espina, un **UUID** (072)—, mientras que
-`config/quality/market_price_ranges.yaml` los indexa por **asset_id** (`usdmxn`,
-`usdclp`), el vocabulario anterior a que existiera identidad canónica.
+`config/quality/market_price_ranges.yaml` los indexa por slugs (`usdmxn`, `usdclp`), el
+vocabulario anterior a que existiera identidad canónica.
 
-Parecía una decisión de contrato, y no lo era: **la traducción ya estaba declarada**. La
-espina mapea `instrument → asset`, y cada activo declara su propio `price_range` en
-`config/assets/<id>.yaml`. Así que `canonical_price_ranges()` re-clava los rangos al UUID
-leyendo esas dos declaraciones, sin heurística y sin cambiar el evaluador. Medido:
+Resuelto según **CXD-454, opción (a)**: los rangos se resuelven por `canonical_symbol` y
+el UUID sigue siendo la identidad y la FK persistida — nada se hace determinista ni se
+reescribe en una tabla poblada. La traducción `canonical_symbol → instrument_id` sale del
+**registro** (`reference.instrument`), no de una equivalencia inferida en código; y los
+rangos por símbolo salen de dos declaraciones existentes (el YAML normativo y el
+`price_range` que cada activo declara sobre sí mismo). Sin heurística y sin tocar el
+evaluador. Medido:
 
     USD/COP dentro de rango   -> accepted=True
     USD/COP a 99999           -> QUARANTINED  rule='bar.range.<uuid>'
@@ -113,44 +116,79 @@ def registry_from_spine(conn) -> ProviderSymbolRegistry:
     )
 
 
-def canonical_price_ranges(conn, assets_dir: Path = ASSETS_DIR) -> dict[str, tuple[Decimal, Decimal]]:
+def canonical_price_ranges(
+    conn, assets_dir: Path = ASSETS_DIR, ranges_path: Path = QUALITY_RANGES
+) -> dict[str, tuple[Decimal, Decimal]]:
     """Rangos de precio **re-clavados a la identidad canónica** (el `instrument_id` UUID).
 
-    Aquí se resuelve el choque de namespaces sin inventar nada y sin tocar `rules.py`:
+    Forma acordada en CXD-454, opción (a): **los rangos se resuelven por
+    `canonical_symbol`; el UUID sigue siendo la identidad y la FK persistida.** No se
+    hace determinista ni se reescribe `instrument_id` en una tabla ya poblada.
 
-    * `QualityRuleSet` indexa sus rangos por el `instrument_id` que devuelve el registry,
-      que desde la espina es un **UUID**.
-    * `config/quality/market_price_ranges.yaml` los indexa por **asset_id** (`usdmxn`,
-      `usdclp`) — el vocabulario que existía antes de que hubiera identidad canónica.
-    * Y cada activo declara su propio `price_range` en `config/assets/<id>.yaml`.
+    La traducción `canonical_symbol → instrument_id` sale del **registro**
+    (`reference.instrument`), no de una equivalencia inferida en código. Esa distinción
+    es el fondo del asunto: dos identificadores que "se parecen" no son lo mismo salvo
+    que alguna capa lo declare, y aquí la declara la espina.
 
-    La traducción `asset_id → instrument_id` **no se fabrica**: la declara
-    `reference.instrument`, que es justamente lo que la espina pobló. Por eso este mapeo
-    es derivación y no heurística.
-
-    Un activo sin `price_range` declarado **no recibe rango**, y sin rango sus barras se
-    van a cuarentena. Es coherente con el resto de la espina: lo no declarado no se
-    rellena.
+    Un símbolo sin rango declarado **no recibe rango**, y sin rango sus barras se van a
+    cuarentena. Lo no declarado no se rellena.
     """
-    with conn.cursor() as cur:
-        cur.execute("SELECT asset_id, instrument_id::text FROM reference.instrument")
-        instrumento_por_asset = dict(cur.fetchall())
+    por_simbolo = declared_ranges_by_canonical_symbol(assets_dir, ranges_path)
 
+    # La traducción `canonical_symbol -> instrument_id` sale del REGISTRO
+    # (`reference.instrument`), no de una equivalencia inferida en código (CXD-454).
+    with conn.cursor() as cur:
+        cur.execute("SELECT canonical_symbol, instrument_id::text FROM reference.instrument")
+        uuid_por_simbolo = dict(cur.fetchall())
+
+    return {
+        uuid_por_simbolo[simbolo]: bounds
+        for simbolo, bounds in sorted(por_simbolo.items())
+        if simbolo in uuid_por_simbolo
+    }
+
+
+def declared_ranges_by_canonical_symbol(
+    assets_dir: Path = ASSETS_DIR, ranges_path: Path = QUALITY_RANGES
+) -> dict[str, tuple[Decimal, Decimal]]:
+    """Rangos declarados, indexados por **símbolo canónico** (CXD-454, opción (a)).
+
+    Dos fuentes, ambas declarativas y ninguna inventada:
+
+    1. `config/quality/market_price_ranges.yaml` — los rangos normativos. Hoy sólo
+       declara `usdmxn`/`usdclp`, que no tienen símbolo canónico porque carecen de
+       `AssetProfile`; se conservan aquí para que el día que lo tengan entren solos.
+    2. `config/assets/<id>.yaml::price_range` — el prior económico que cada activo
+       declara sobre sí mismo, bajo su `symbol` canónico.
+
+    Un activo sin ninguna de las dos **no recibe rango**: sin rango sus barras caen a
+    cuarentena. Lo no declarado no se rellena.
+    """
     rangos: dict[str, tuple[Decimal, Decimal]] = {}
-    for asset_id, instrument_id in sorted(instrumento_por_asset.items()):
-        ruta = assets_dir / f"{asset_id}.yaml"
-        if not ruta.is_file():
+
+    normativos = (yaml.safe_load(ranges_path.read_text(encoding="utf-8")) or {}).get(
+        "price_ranges", {}
+    )
+    for clave, valor in normativos.items():
+        if isinstance(valor, (list, tuple)) and len(valor) == 2 and not isinstance(valor[0], Mapping):
+            rangos[str(clave)] = (Decimal(str(valor[0])), Decimal(str(valor[1])))
+        # Las entradas escalonadas (lista de dicts con provider_id/valid_from) NO se
+        # aplanan aquí: perderían su alcance por proveedor y fecha, que es justo su
+        # razón de ser. Entran cuando el instrumento tenga identidad canónica.
+
+    for ruta in sorted(assets_dir.glob("*.yaml")):
+        declarado = yaml.safe_load(ruta.read_text(encoding="utf-8")) or {}
+        simbolo, rango = declarado.get("symbol"), declarado.get("price_range")
+        if not simbolo or not (isinstance(rango, (list, tuple)) and len(rango) == 2):
             continue
-        declarado = (yaml.safe_load(ruta.read_text(encoding="utf-8")) or {}).get("price_range")
-        if not (isinstance(declarado, (list, tuple)) and len(declarado) == 2):
-            continue
-        bajo, alto = Decimal(str(declarado[0])), Decimal(str(declarado[1]))
+        bajo, alto = Decimal(str(rango[0])), Decimal(str(rango[1]))
         if bajo <= 0 or bajo >= alto:
             raise IngestGuardError(
-                f"{asset_id}: price_range declarado inválido {declarado!r}; un rango que "
-                "no ordena no puede gobernar una cuarentena"
+                f"{ruta.name}: price_range declarado inválido {rango!r}; un rango que no "
+                "ordena no puede gobernar una cuarentena"
             )
-        rangos[instrument_id] = (bajo, alto)
+        rangos[str(simbolo)] = (bajo, alto)
+
     return rangos
 
 
@@ -158,7 +196,7 @@ def ruleset_from_spine(
     conn, assets_dir: Path = ASSETS_DIR, ranges_path: Path = QUALITY_RANGES
 ) -> QualityRuleSet:
     """`QualityRuleSet` con registry canónico y rangos ya traducidos a UUID."""
-    rangos = canonical_price_ranges(conn, assets_dir)
+    rangos = canonical_price_ranges(conn, assets_dir, ranges_path)
     if not rangos:
         raise IngestGuardError(
             "ningún activo de la espina declara price_range: el guard rechazaría toda "
