@@ -2,7 +2,7 @@
 kind: as-built
 status: IMPLEMENTED
 contract: CTR-AUTH-001
-version: 1.1.0
+version: 1.2.0
 last_verified: 2026-08-04
 supersedes: []
 code_anchors:
@@ -11,6 +11,7 @@ code_anchors:
   - services/signalbridge_api/app/services/user.py
   - database/migrations/053_sb_user_approval.sql
   - database/migrations/055_rbac_monetization.sql
+  - services/signalbridge_api/app/main.py
 ---
 # SDD Spec: Authentication & User Management
 
@@ -50,12 +51,27 @@ code_anchors:
 ## 3. Data Model
 
 - **`sb_users`** (`init-scripts/21-signalbridge-users-schema.sql:22`) — UUID PK, email (unique), bcrypt password hash, `is_verified`, `last_login`, timestamps. **Ya NO carece de rol** (verificado contra la DB viva, 2026-08-04): tras aplicar `platform-bootstrap-v1` la tabla suma `role` (default `'user'`), `status` (default `'pending'`), `must_reset_password`, `approved_by`/`approved_at`, `rejected_at`/`rejection_reason` (migración `053`) y `entitlements` JSONB (default `{"plan":"free"}`, migración `055`).
-  > **Deadlock de arranque conocido** (2026-08-04): el esquema soporta admin, pero no existe CLI de
-  > creación y el registro deja al usuario en `status='pending'`; aprobar exige un `admin_id` que
-  > sea fila real de `sb_users` (`services/signalbridge_api/app/services/user.py:210-222`). Con la
-  > tabla vacía **el primer admin no puede crearse por la vía normal**, y `/dashboard` responde
-  > `307 → /login`. Decisión pendiente del operador; no se resuelve acuñando credenciales desde un
-  > agente.
+### Bootstrap del primer admin — mecanismo existente
+
+Sin admin, el registro deja a todo usuario en `status='pending'` y aprobar exige un `admin_id` que
+sea **fila real** de `sb_users` (`app/services/user.py:210-222`): con la tabla vacía nadie puede
+aprobar a nadie. Ese círculo lo rompe un mecanismo que **ya existe**, no un script nuevo:
+
+- `UserService.bootstrap_admin()` (`app/services/user.py:271-310`) — **idempotente**: crea el admin
+  aprobado y activo con su `TradingConfig`, o promueve una cuenta existente **sin tocar su
+  contraseña**.
+- Se invoca **en cada arranque** desde `app/main.py:38-51`, y es un no-op si las variables no están.
+- Config en `app/core/config.py:76-80`; el compose (`docker-compose.yml:1528-1534`) ya define
+  `ADMIN_BOOTSTRAP_{EMAIL,PASSWORD,NAME}` con defaults **de desarrollo** — no aptos para producción.
+
+> **Incidente verificado (2026-08-04)**: el bootstrap **falló** en los arranques del 2026-08-03
+> (22:07 y 23:31) con `column sb_users.status does not exist`. La causa era que `053` aún no estaba
+> aplicada: el mecanismo llegó antes que su esquema. Tras aplicar `platform-bootstrap-v1` la columna
+> existe, pero **el bootstrap no se ha reintentado**, así que `sb_users` sigue vacío y `/dashboard`
+> responde `307 → /login`. Se resuelve reiniciando el servicio, no creando usuarios a mano.
+>
+> Lección para el orden de arranque: un bootstrap idempotente que corre al inicio **no compensa un
+> esquema incompleto** — falla silencioso en el log y deja el sistema sin puerta de entrada.
 - **`sb_trading_configs`** — per-user default trading config created at registration.
 - Token state is Redis-only (blacklist by `jti`, lockout counters) — no DB sessions table. Managed by Alembic + the init-script schema.
 
