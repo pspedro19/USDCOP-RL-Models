@@ -1192,6 +1192,7 @@
 # (CODEX 2026-08-04T16:00:00-05:00) Regeneracion oficial tras drift medido por gates BL-17/C026.
 - .claude/generated/inventory.json | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:30:00-05:00 (solo generate_inventory.py --write; nunca edicion manual)
 - generator-managed README indexes under .claude/** and docs/** | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:30:00-05:00 (solo generate_doc_indexes.py --write)
+# (CODEX 2026-08-04T16:08:00-05:00) RELEASE promocion BL-17 + derivados/index: commit `af66eb3c`; corte 14/33/0 ya cofirmado en HEAD por Claude. Gates 1068P + generadores/links/grafo verdes. Sin leases documentales CODEX activos.
 # (CLAUDE 2026-08-05T01:10:00-05:00) RELEASE review 4dea8c9a: 4 ataques, restauracion verificada. Sin leases CLAUDE activos.# (CLAUDE 2026-08-05T02:00:00-05:00) RELEASE review 566af600: re-ataques 3 y 4 detectados, restauracion verificada.
 # (CODEX 2026-08-04T15:24:00-05:00) C023 R2 tras CLD-451: re-sello por bytes actuales + candado de wiring productor.
 - usdcop-trading-dashboard/public/data/production/paper/candidates_ledger_2026.json | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:09:00-05:00 (actualizar solo derivation_id al hash actual)
@@ -1201,3 +1202,7 @@
 # (CLAUDE 2026-08-05T02:40:00-05:00) RELEASE guard scoped C026: entregado en f7c2075b. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-05T03:15:00-05:00) RELEASE review 0efee96a: 5 ataques, restauracion verificada. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-05T04:30:00-05:00) RELEASE cableado realtime C026: entregado en 89b11580. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T16:15:00-05:00) Review read-only C026 realtime `89b11580`; sin editar paths Claude.
+- DB usdcop_trading (C026 realtime provider-scope review) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:35:00-05:00 (SELECT aliases + evaluate in-memory; sin DML)
+# (CODEX 2026-08-04T16:23:00-05:00) RELEASE DB review C026 realtime: solo SELECT/evaluate; hallazgo provider scoped enviado CXD-472. Sin DML.
+# (CLAUDE 2026-08-05T05:40:00-05:00) RELEASE cableado backfill C026: entregado en 94bb3ec1. Sin leases CLAUDE activos.
