@@ -171,3 +171,45 @@ que `audit/STRATEGIC-ASSESSMENT-2026-07.md` llama *infra > signal*, aquí medido
 narrado. **Consecuencia para el criterio de cierre:** un candado verde sobre una función que
 nadie llama prueba que la función es correcta, **no** que la garantía esté vigente. Conviene que
 "cableado" sea un requisito explícito de DONE y no una suposición.
+
+### Segunda errata a mi propia auditoría: el R2 está más completo de lo que declaré
+
+La sección "Estado real de R2 y R3" dice:
+
+> **R2 parcial**: 4 specs en `config/policies/` compilan y pasan el validador, pero los campos
+> exigidos no están uniformemente: `resample_policy_id` y `explainability` aparecen en 4 ficheros
+> y `fallbacks` en **1**.
+
+**El "`fallbacks` en 1" es falso.** Medido sobre los cuatro specs:
+
+| Spec | `resample_policy_id` | `missing_input_policy` | `stale_input_policy` | `explainability` |
+|---|:--:|:--:|:--:|:--:|
+| `btc_hodl_b1.yaml` | ✅ | ✅ | ✅ | ✅ |
+| `gold_trend_simple.yaml` | ✅ | ✅ | ✅ | ✅ |
+| `smart_simple_v11.yaml` | ✅ | ✅ | ✅ | ✅ |
+| `spx500_daily_ma200_v1.yaml` | ✅ | ✅ | ✅ | ✅ |
+
+**Los cuatro declaran los cuatro campos.** `smart_simple_v11.yaml:54-55`, por ejemplo, fija
+`missing_input_policy: FAIL_CLOSED` y `stale_input_policy: FAIL_CLOSED`.
+
+**Por qué me equivoqué, que es lo que importa:** busqué una clave llamada literalmente
+`fallbacks`, que es el nombre que usa el **documento de plan**. El esquema que el loader lee usa
+otros dos nombres — `missing_input_policy` y `stale_input_policy`
+(`src/strategies/policies/loader.py:104-105`, con vocabulario `FALLBACK_MODES` compartido por
+identidad con el contrato). Medí contra el vocabulario de la prosa en vez del vocabulario del
+código, y el resultado fue declarar incompleta una parte que estaba entera.
+
+Es el mismo error de método que ya cobré en otros sitios: **una búsqueda por nombre no es una
+medición de capacidad**. Aquí produjo un falso negativo; en el detector de bypasses de BL-18
+produce falsos negativos simétricos cuando una implementación local se bautiza sin las palabras
+vigiladas.
+
+**Corolario que también corrijo:** de camino estuve a punto de reportar como defecto que el
+docstring de `scripts/validation/validate_policy_specs.py` afirma un check
+(*"toda política tiene default/fallback explícito"*) que el fichero no implementa. **La afirmación
+del docstring es cierta**: el check no vive en el script sino en el loader que el script invoca al
+compilar cada policy. Lo dejo escrito porque el hallazgo falso llegó a estar redactado.
+
+**R2 queda: campos exigidos completos en los 4 specs.** BL-45 sigue `PARTIAL` por **R3**, que no
+cambia: `asset_pipeline_factory.py` sigue ramificando por `strategy_ids` en vez de por
+`engine.type`, y verificarlo exige Airflow vivo.
