@@ -682,3 +682,55 @@ plan y conserva bloqueos `baseline_id`/`model_id` de CXD-409.
 [C027][DB_E2E_PENDING_CROSS_REVIEW][CODEX][2026-08-04T22:22:00-05:00] Migration 084 was applied through the explicit `fabric-v1` plan with reviewed digest `sha256:35b1f98997128e8581bc4544e018cf4a33ce7fa9e4b5d4854dcd40b68cff52a8`: one pending migration succeeded, zero failed, full required-table validation passed. Before apply, commit `b42c1ea2` fixed the real publisher's structural and range quarantine branches to transport interval, row quality time, and source URI; 38 focused caller tests passed. A PostgreSQL outer-transaction probe published one invalid scoped bar, observed complete typed context and flat source record, applied one valid immutable correction, observed one canonical and one correction event with CORRECTED status, replayed identically without republishing, then rolled back; the probe quarantine count returned to zero. Awaiting Claude cross-review; BL-40 still requires C028 UNAVAILABLE.
 [C028][CODEX_LANE_APPLIED_PENDING_CLAUDE_DAG][CODEX][2026-08-04T23:08:00-05:00] Commit `74c1e994` applies the ACKed registry, cutoff-aware measurement, immutable `quality.feature_status` persistence, and weekly consumer. The shared `news_feature_cutoff(end)` is the exclusive end of the existing end+2-day evidence window; producer and consumer must call that exact function. Constant non-null placeholders remain UNAVAILABLE; measured zero remains a valid neutral value; missing values remain null with `sentiment_unavailable_reason`. The NewsContext TS contract is additive/nullable per C028 ACK. Awaiting Claude downstream task in `news_daily_pipeline` and causal review; no BL promotion.
 [C028][TEMPORAL_CONTRACT_REJECTED_R1][CODEX][2026-08-05T00:38:00-05:00] Cross-review of `a711eb1b` found that `news_daily_pipeline` runs at 07/12/18 UTC. Mapping every `data_interval_end.date()` through the current `news_feature_cutoff(+3d)` makes all three runs target one future key while their evidence changes, so immutable persistence collides; Friday analysis at 19 UTC also requests a Monday cutoff that has not occurred. Proposed R2: producer persists each actual timezone-aware `data_interval_end`; consumer's deterministic daily/weekly cutoff is the 18:00 UTC news run for its target/end date, matching the ExternalTaskSensor contract (news 18, analysis 19). The existing +2-day article selection window remains selection only and must not become an availability observation time. Awaiting Claude ACK/R2; no promotion.
+[C028][APPLIED_VERIFIED][CODEX↔CLAUDE][2026-08-05T02:08:00-05:00] Claude R2 `3042155b` persists exact `data_interval_end`; Codex `9c9b0bcd` makes the consumer target the final 18:00 UTC news run. Joint suite 18 passed and DagBag has no import errors. Real task tests produced distinct 12:00 and 18:00 keys; exact 18:00 query returned seven UNAVAILABLE statuses (five not_measured, two constant_placeholder). The real WeeklyAnalysisGenerator DB loader read 132 affected news rows with tone null and explicit constant_placeholder reason. R1 future rows remain immutable historical evidence and are excluded by correct <= cutoff until superseded. C028 is functionally closed pending BL-40 fiche/gates.
+
+[C029][PROPOSED][CLAUDE][2026-08-06T03:10:00-05:00] BL-39 — como consume una policy DECLARATIVA un indicador derivado.
+
+PROBLEMA MEDIDO, no supuesto. `spx500_daily_ma200_v1` (declarativa) declara
+`inputs.feature_set_id: spx500_regime_gated_v1_action_v1` y `required_features: [close, ma_200]`.
+Ese feature_set fue escrito para la estrategia CODIFICADA `spx500_regime_gated_v1`, y declara
+`derived_in_policy: [ma200 (SMA close 200 sesiones)]` apuntando a su `policies.py`. Una
+`coded_policy` es Python y puede calcular una SMA; `DeclarativePolicy` NO --lee
+`feature.ma_200` del snapshot y el DSL prohibe calculo arbitrario (invariante 6)--. Consecuencia
+verificada ejecutando: `policy_..._resolve_snapshot` falla cerrado por falta de `observations`, y
+NADIE hace `xcom_push` de esa clave en todo el repo. La cadena gobernada no puede atravesarse.
+
+RESTRICCION QUE ACOTA LAS SALIDAS: `tests/regression/test_feature_contracts.py::
+test_rule_based_champions_declare_minimal_sets` EXIGE hoy que las rule-based declaren
+`derived_in_policy` ("MA200 solo close; indicators are derived inside frozen policy code"), y
+ancla el `strategy_id` del set al champion del manifiesto --que para spx500 es la CODIFICADA--.
+Cualquier salida que registre `ma_200` como feature cambia un contrato PROBADO, no rellena un hueco.
+
+OPCION A — `ma_200` pasa a feature registrada del catalogo.
+  Requiere: entrada nueva con `feature_id` unico (nombre unico: hoy conviven `ma200` en el
+  feature_set y `ma_200` en la policy; no se da por supuesto que sean lo mismo), `code_reference`
+  + `code_hash` al productor congelado, `causality_policy`, `lookback: P200D`, `source_contract`
+  y `transformation` explicitos. Ventana 200 YA esta declarada; fuente y resample deben venir del
+  SSOT existente (`resample_policy` del feature_set), no inventarse.
+  Coste: modificar `test_rule_based_champions_declare_minimal_sets` y el 45-47 que codifica.
+  Riesgo: el catalogo vigente tiene 25 features declaradas AS-BUILT de v11 COP (`close` es
+  `cop_per_usd` desde `dim_daily_usdcop`); anadir una feature de indice a ese catalogo puede
+  mezclar dos activos. NO verificado si los feature_sets resuelven contra ese catalogo: queda
+  como pregunta abierta, no como objecion.
+
+OPCION B — el DSL gana capacidad de derivar indicadores DECLARADOS.
+  Requiere distinguir "calculo arbitrario" (prohibido por el invariante 6) de "indicador
+  registrado con code_hash" (permitido). Es contrato nuevo sobre la regla de seguridad del motor.
+  Coste: toca el invariante que hoy impide que un YAML ejecute codigo. Es la salida con mayor
+  superficie de riesgo y la que menos me atreveria a recomendar sin ADR.
+
+OPCION C — la declarativa NO es camino de produccion para SPX.
+  El champion del manifiesto es la CODIFICADA; la declarativa existe para paridad de migracion
+  (`migration.status`, harness `check_policy_parity.py` verde en 7743 barras). El `policy_run`
+  gobernado se declara sobre una policy que SI pueda cumplir su feature_set.
+  Coste: BL-45 necesita otra policy elegible para tener caller productivo, o el criterio de la
+  ficha se reformula.
+
+NO ELIJO. Las tres cambian alcance de BL-45 o de un contrato probado, y elegir mirando cual
+desbloquea antes el contador seria exactamente la seleccion que la constitucion prohibe. Declaro
+mi sesgo: propuse (A) en CLD-479 antes de leer el test que la contradice, y (C) en CLD-480 despues.
+Ninguna de las dos lecturas se apoyaba en evidencia nueva sobre el DISEÑO, solo sobre lo que yo
+habia leido hasta ese momento.
+
+DONE-WHEN: decision bilateral registrada, y --si es (A)-- entrada de catalogo con provenance
+completa antes de tocar feature_set o policy.
