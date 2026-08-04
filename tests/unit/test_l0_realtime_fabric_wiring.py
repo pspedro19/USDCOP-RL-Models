@@ -315,6 +315,13 @@ def test_the_effective_provider_reaching_the_publisher_is_the_declared_one(monke
     Es exactamente el fallo que yo le señalé a él tres veces en este ciclo —medir forma
     en vez de dataflow— aparecido en mi propio código. Aquí se interceptan el registry y
     el publicador y se afirma sobre el valor efectivo, no sobre el texto.
+
+    Convive con `test_shared_publisher_passes_declared_provider_to_the_real_boundary`,
+    que escribió CODEX en este mismo fichero (no yo). Cubren el mismo núcleo; éste añade
+    dos afirmaciones que aquél no hace: que el **registry** también se consulte con el
+    proveedor declarado —si no, cobertura y publicación usarían identidades distintas— y
+    que el job **sobreviva en `source_uri`**, porque el linaje no debe perderse al
+    corregir la identidad.
     """
     from src.data_quality import ingest_guard
 
