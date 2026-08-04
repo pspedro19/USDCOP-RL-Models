@@ -1,7 +1,7 @@
 ---
 kind: decision
 status: OPEN
-version: 2.2.0
+version: 2.3.0
 last_verified: 2026-08-04
 supersedes: []
 code_anchors:
@@ -78,15 +78,17 @@ derive y nunca se regenere con `uuid4()`**.
 `catalog_version`, `formula_version`, `entity_type`, `entity_id`, `metric_namespace`. Y trae un solo
 `threshold` donde la tabla distingue `threshold_warning` de `threshold_critical`.
 
-> **El docstring del contrato es falso.** `system_health_contract.py:180-182` dice: *"cuando BL-18
-> materialice `control.metric_event`, estos eventos se insertan tal cual"*. No se pueden insertar
-> tal cual. Rellenar esas columnas con constantes sería **fabricar linaje**.
+> **Hallazgo histórico, ya corregido.** `system_health_contract.py` prometía que *"cuando BL-18
+> materialice `control.metric_event`, estos eventos se insertan tal cual"*. Era falso —faltan cinco
+> `NOT NULL`— y rellenar esas columnas con constantes habría sido **fabricar linaje**. El docstring
+> quedó corregido en `b3f2ff58`, y `a9abfc7e` le puso candados. Se conserva aquí como registro de
+> por qué la frontera está donde está, **no como estado actual del código**.
 
-## 5. `HealthEvent` mezcla dos naturalezas (objeción de CODEX, CXD-363/365)
+## 5. `HealthEvent` es un envelope de naturalezas heterogéneas (objeción de CODEX, CXD-363/365)
 
-Éste es el matiz que invalida mi recomendación original de mandar *todo* por `MetricEngine`.
+Éste es el matiz que invalida la recomendación original de mandar *todo* por `MetricEngine`.
 Los `kind` emitidos por `src/monitoring/system_health.py` no se parten por tener o no un número,
-sino por **qué son contractualmente**:
+sino por **qué son contractualmente** — y no son dos grupos, sino los que enumera la tabla:
 
 | Naturaleza contractual | `kind` emitidos | ¿Métrica declarada en catálogo? |
 |---|---|---|
@@ -203,7 +205,21 @@ de abajo.
 
 ## 10. Qué se pide al operador
 
-Elegir **A′** o **B**. El resto ya está medido y acordado entre los dos agentes.
+**A′ ya no está en discusión**: es la dirección conjunta de ambos agentes (§6) y B queda descartada
+—no la reabras—. Lo que bloquea hoy es una capa por debajo, y eso es lo que se decide:
 
-Queda además una pregunta menor derivada de A′, que **no bloquea** esta decisión: dónde persisten
-los incidentes (`control.incident` u otro contrato). Se aborda después, no aquí.
+1. **El contrato de identidad explícita.** La identidad no falta en el sistema: el caller la tiene
+   (`control_system_health.py` importa `H5_PRODUCTION_STRATEGY_ID` y filtra por `strategy_id`) y la
+   firma de `evaluate_*_clock()` **la descarta**. Decidir el shape que la transporta desbloquea tres
+   de las cuatro métricas. La cuarta —`prediction_drift_z`— necesita identidad de **modelo**, que es
+   otra dimensión y **no existe**; no se inventa.
+2. **`formula_version`.** Derivarlo de `CONTRACT_VERSION` (`system_health_contract.py:30`) o fijar
+   otro criterio. Es acuerdo, no relleno.
+
+**Y hay un orden que no es opcional**: los productores H5 ya usan `strategy_id` contra un esquema
+que **no lo tiene** (migración `064`, fuera de todo plan — CXD-405). Apoyar la identidad de las
+métricas en una columna ausente sería construir sobre esa misma deuda. **Primero `064` en un plan,
+después identidad, después catálogo.**
+
+Queda además una pregunta menor, que **no bloquea** lo anterior: dónde persisten los incidentes
+(`control.incident` u otro contrato). Se aborda después, no aquí.
