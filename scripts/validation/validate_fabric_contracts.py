@@ -20,10 +20,8 @@ METRIC_NAME_MARKERS = ("sharpe", "calmar")
 
 
 def is_runtime_python_path(relative_path: Path) -> bool:
-    return relative_path.name != "conftest.py" and not any(
-        part == "tests" or part.startswith("test_")
-        for part in relative_path.parts
-    )
+    """Exclude explicit test directories, never production files by basename."""
+    return relative_path.name != "conftest.py" and "tests" not in relative_path.parts[:-1]
 
 
 class _MetricDefinitionVisitor(ast.NodeVisitor):

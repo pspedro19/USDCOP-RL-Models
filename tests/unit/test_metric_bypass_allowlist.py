@@ -39,9 +39,24 @@ def test_allowlist_cannot_expand_without_retiring_an_entry() -> None:
     ]
 
 
-def test_metric_inventory_excludes_tests_but_not_similarly_named_runtime() -> None:
+def test_metric_inventory_excludes_test_directories_not_runtime_filenames() -> None:
     validator = _validator()
-    assert not validator.is_runtime_python_path(Path("src/engine/test_strategy.py"))
-    assert not validator.is_runtime_python_path(Path("tests/unit/strategy.py"))
+    assert validator.is_runtime_python_path(Path("src/engine/test_strategy.py"))
+    assert not validator.is_runtime_python_path(Path("src/tests/strategy.py"))
+    assert not validator.is_runtime_python_path(Path("services/api/tests/test_api.py"))
     assert validator.is_runtime_python_path(Path("src/engine/strategy_test.py"))
     assert validator.is_runtime_python_path(Path("services/analytics.py"))
+
+
+def test_metric_inventory_scans_test_prefixed_file_inside_runtime_root(tmp_path: Path) -> None:
+    validator = _validator()
+    candidate = tmp_path / "src" / "engine" / "test_strategy.py"
+    candidate.parent.mkdir(parents=True)
+    candidate.write_text(
+        "def sneaky_sharpe(values):\n    return sum(values) / len(values)\n",
+        encoding="utf-8",
+    )
+
+    assert validator.discover_metric_bypasses(tmp_path) == {
+        "src/engine/test_strategy.py::sneaky_sharpe"
+    }
