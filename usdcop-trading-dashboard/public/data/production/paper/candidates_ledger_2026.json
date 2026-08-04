@@ -13,7 +13,7 @@
     "schema_version": "1.0.0",
     "semantic_hash": "sha256:060251c04f3468e3e4e7e81ab5ff121778a0a932cb5483b5583065d2a3ed4cb7",
     "decision_fingerprint": "sha256:40dc856dd78334987bd37a741a9ab9aa13bb6e786fa888532de1250fdf26612e",
-    "derivation_id": "sha256:a2655252a4fb0189814c8287482bfbd0b2dc1a9ff8cdffce5e55299465c1e568"
+    "derivation_id": "sha256:ade796f40fe36f0d58d5641b427a10860a00b2627720dc30193375c9b0ef2e1b"
   },
   "strategies": {
     "smart_simple_v11": {
