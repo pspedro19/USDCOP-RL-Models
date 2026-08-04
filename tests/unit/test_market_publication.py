@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+import inspect
 from datetime import datetime, timezone
 
 from src.data_quality.rules import QualityDecision
 from src.market import publication
 from src.market.publication import _source_hash, _structurally_representable
+
+
+def test_publish_provider_rows_requires_source_uri_without_default() -> None:
+    parameter = inspect.signature(publication.publish_provider_rows).parameters["source_uri"]
+    assert parameter.kind is inspect.Parameter.KEYWORD_ONLY
+    assert parameter.default is inspect.Parameter.empty
 
 
 def _row(**changes):
