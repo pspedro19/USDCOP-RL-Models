@@ -451,6 +451,7 @@ def _db_conn():
 
 def _upsert(conn, table: str, df: pd.DataFrame, symbol: str, source: str,
             *, replace_symbols: list[str] | None = None) -> tuple[int, int]:
+    """Stage the legacy UPSERT; the caller owns commit/rollback with Fabric writes."""
     from psycopg2.extras import execute_values
     if df.empty:
         return 0, 0
@@ -473,14 +474,39 @@ def _upsert(conn, table: str, df: pd.DataFrame, symbol: str, source: str,
                 close=EXCLUDED.close, volume=EXCLUDED.volume,
                 source=EXCLUDED.source, updated_at=NOW()
         """, vals, page_size=1000)
-        conn.commit()
         return len(vals), deleted
     except Exception as e:
-        conn.rollback()
         log.error("  UPSERT %s failed: %s", table, e)
         raise
     finally:
         cur.close()
+
+
+def _publish_fabric_frame(
+    conn,
+    df: pd.DataFrame,
+    *,
+    provider_id: str,
+    provider_symbol: str,
+    interval_id: str,
+) -> tuple[pd.DataFrame, dict[str, int]]:
+    """Screen and stage raw/canonical/quarantine rows in the caller's transaction."""
+    from src.market.publication import publish_provider_rows
+
+    rows = df.to_dict(orient="records")
+    result = publish_provider_rows(
+        conn,
+        provider_id=provider_id,
+        provider_symbol=provider_symbol,
+        interval_id=interval_id,
+        rows=rows,
+    )
+    accepted = pd.DataFrame(result.accepted, columns=df.columns)
+    return accepted, {
+        "raw": result.raw_count,
+        "canonical": result.canonical_count,
+        "quarantined": result.quarantine_count,
+    }
 
 
 # ------------------------------------------------------------------ main
@@ -599,29 +625,48 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
 
     # ---- persist to DB (idempotent UPSERT) ----
     if use_db:
-        log.info("[3] UPSERT to DB (idempotent)")
+        log.info("[3] Atomic Fabric publication + legacy UPSERT (idempotent)")
+        conn = _db_conn()
         try:
-            conn = _db_conn()
             if not skip_intraday and isinstance(summary.get("m5_frame"), pd.DataFrame) and not summary["m5_frame"].empty:
                 tbl = GRANULARITY_TABLE["5min"]
-                n, _ = _upsert(conn, tbl, summary["m5_frame"], symbol,
+                accepted, fabric = _publish_fabric_frame(
+                    conn,
+                    summary["m5_frame"],
+                    provider_id=str(profile.data_source.provider).lower(),
+                    provider_symbol=str(profile.data_source.provider_symbol),
+                    interval_id="PT5M",
+                )
+                n, _ = _upsert(conn, tbl, accepted, symbol,
                                "twelvedata_" + profile.safe_name)
                 log.info("  %s: upserted %d rows (symbol=%s)", tbl, n, symbol)
                 summary["db_m5_upserted"] = n
+                summary["fabric_m5"] = fabric
             if not skip_daily and isinstance(summary.get("daily_frame"), pd.DataFrame) and not summary["daily_frame"].empty:
                 tbl = GRANULARITY_TABLE["daily"]
                 replace_symbols = (raw_source.get("replace_db_symbols")
                                    if summary.get("daily_authoritative") else None)
-                n, deleted = _upsert(conn, tbl, summary["daily_frame"], symbol,
+                accepted, fabric = _publish_fabric_frame(
+                    conn,
+                    summary["daily_frame"],
+                    provider_id=str(daily_provider).lower(),
+                    provider_symbol=str(profile.data_source.provider_symbol),
+                    interval_id="P1D",
+                )
+                n, deleted = _upsert(conn, tbl, accepted, symbol,
                                      summary.get("daily_source", "twelvedata_daily"),
                                      replace_symbols=replace_symbols)
                 log.info("  %s: upserted %d rows (symbol=%s)", tbl, n, symbol)
                 summary["db_daily_upserted"] = n
                 summary["db_daily_replaced"] = deleted
-            conn.close()
+                summary["fabric_daily"] = fabric
+            conn.commit()
         except Exception as e:
-            log.warning("  DB step skipped/failed: %s", e)
-            summary["db_error"] = str(e)
+            conn.rollback()
+            log.error("  Atomic DB publication failed: %s", e)
+            raise
+        finally:
+            conn.close()
 
     # strip frames from returned summary
     summary.pop("m5_frame", None)
