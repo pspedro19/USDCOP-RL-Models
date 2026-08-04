@@ -28,6 +28,14 @@ def test_canonical_numbers_are_typed_stable_and_line_ending_independent() -> Non
     assert canonical_json_bytes({"x": 1.0}) == b'{"x":1}'
 
 
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_canonical_json_rejects_nonfinite_numbers(value: float) -> None:
+    from src.identity.canonical import CanonicalizationError, canonical_json_bytes
+
+    with pytest.raises(CanonicalizationError, match="NaN and Infinity are forbidden"):
+        canonical_json_bytes({"value": value})
+
+
 def test_schema_quantum_applies_inside_arrays_and_unmatched_paths_fail() -> None:
     from src.identity.canonical import CanonicalizationError, canonical_json_bytes
 

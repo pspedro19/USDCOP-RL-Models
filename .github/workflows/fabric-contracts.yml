@@ -120,6 +120,13 @@ jobs:
       - name: Enforce diagnostic-only forecasting surfaces
         run: python -m pytest tests/regression/test_forecasting_caveat_present.py -q
       - run: python -m pytest tests/regression/test_approval_mutual_exclusion.py tests/unit/test_codex_phase2_backlog.py -q
+      - name: BL-16 constitutional declaration and canonical JSON gates
+        run: >-
+          python -m pytest
+          tests/unit/test_codex_fabric_contracts.py::test_governance_matrix_has_exactly_26_legal_state_combinations
+          tests/unit/test_codex_safety_contracts.py::test_illegal_governance_object_cannot_exist
+          tests/unit/test_codex_safety_contracts.py::test_canonical_json_rejects_nonfinite_numbers
+          -q
       - run: python scripts/validation/check_trial_ledger.py
       - run: python scripts/validation/report_ledger_dsr.py
       - run: python scripts/validation/validate_policy_specs.py
