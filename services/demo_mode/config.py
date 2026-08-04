@@ -2,7 +2,7 @@
 Demo Mode Configuration
 =======================
 
-SSOT: config.models table (model_id='investor_demo')
+SSOT: demo.synthetic_model_display (model_id='investor_demo')
 
 The demo mode is now a selectable model in the UI.
 To enable demo mode:
@@ -15,12 +15,31 @@ and to load demo config from the database.
 
 import logging
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import Any, Protocol
+
+from src.governance.synthetic_isolation import (
+    SyntheticIsolationError,
+    validate_model_boundary,
+)
 
 logger = logging.getLogger(__name__)
 
 # SSOT: model_id for demo mode
 DEMO_MODEL_ID = "investor_demo"
+
+
+class DemoModelConnection(Protocol):
+    async def fetchrow(self, query: str, *args: object) -> Mapping[str, Any] | None: ...
+
+
+_SELECT_DEMO_MODEL = """
+SELECT model_id, display_name, algorithm, environment, surface,
+       execution_eligible, display_metadata
+FROM demo.synthetic_model_display
+WHERE model_id = $1
+"""
 
 
 def is_demo_model(model_id: str) -> bool:
@@ -57,8 +76,8 @@ class DemoConfig:
     """
     Configuration for demo/investor mode.
 
-    SSOT: These values come from config.models.hyperparameters
-    and config.models.policy_config for model_id='investor_demo'
+    SSOT: identity and presentation metadata come from
+    demo.synthetic_model_display for model_id='investor_demo'.
 
     This dataclass is a local cache - the true source is the database.
     """
@@ -113,7 +132,7 @@ class DemoConfig:
         Create DemoConfig from a database model record.
 
         Args:
-            model_record: Row from config.models table
+            model_record: Row from demo.synthetic_model_display
 
         Returns:
             DemoConfig instance with values from database
@@ -138,8 +157,24 @@ class DemoConfig:
             market_open_hour=ec.get("market_open_hour", 8),
             market_close_hour=ec.get("market_close_hour", 12),
             model_id=model_record.get("model_id", DEMO_MODEL_ID),
-            model_name=model_record.get("name", "Demo Mode"),
+            model_name=model_record.get("display_name", "[DEMO - SYNTHETIC] Demo Mode"),
         )
+
+
+async def load_demo_config(
+    connection: DemoModelConnection,
+    model_id: str = DEMO_MODEL_ID,
+) -> DemoConfig:
+    """Load and revalidate the isolated demo registration before generating output."""
+
+    row = await connection.fetchrow(_SELECT_DEMO_MODEL, model_id)
+    if row is None:
+        raise SyntheticIsolationError(
+            f"demo model {model_id!r} is not registered in demo.synthetic_model_display"
+        )
+    record = dict(row)
+    validate_model_boundary(record, relation="demo.synthetic_model")
+    return DemoConfig.from_db_model(record)
 
 
 # Default config instance (used when DB not available)

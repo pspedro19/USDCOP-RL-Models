@@ -22,13 +22,13 @@ is_demo_model = lambda model_id: model_id == "investor_demo"  # Default fallback
 
 try:
     # Docker container path (PYTHONPATH=/app, module at /app/services/demo_mode)
-    from services.demo_mode import DemoTradeGenerator, is_demo_model
+    from services.demo_mode import DemoTradeGenerator, is_demo_model, load_demo_config
     DEMO_MODE_AVAILABLE = True
     logging.getLogger(__name__).info("Demo mode loaded (services.demo_mode)")
 except ImportError:
     try:
         # Local dev fallback (when running from services directory)
-        from demo_mode import DemoTradeGenerator, is_demo_model
+        from demo_mode import DemoTradeGenerator, is_demo_model, load_demo_config
         DEMO_MODE_AVAILABLE = True
         logging.getLogger(__name__).info("Demo mode loaded (demo_mode)")
     except ImportError as e:
@@ -103,9 +103,9 @@ async def _run_demo_backtest(request: BacktestRequest, req: Request):
     settings = get_settings()
     db_url = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
 
+    conn = await asyncpg.connect(db_url)
     try:
-        conn = await asyncpg.connect(db_url)
-
+        demo_config = await load_demo_config(conn, request.model_id)
         # Fetch OHLCV data for the date range
         query = """
             SELECT time, open, high, low, close, volume
@@ -113,8 +113,11 @@ async def _run_demo_backtest(request: BacktestRequest, req: Request):
             WHERE time >= $1::date AND time < ($2::date + interval '1 day')
             ORDER BY time
         """
-        rows = await conn.fetch(query, start_dt, end_dt)
-        await conn.close()
+        try:
+            rows = await conn.fetch(query, start_dt, end_dt)
+        except Exception as e:
+            logger.error(f"[INVESTOR MODE] Failed to fetch price data: {e}")
+            rows = []
 
         price_data = [
             {
@@ -130,12 +133,11 @@ async def _run_demo_backtest(request: BacktestRequest, req: Request):
 
         logger.info(f"[INVESTOR MODE] Loaded {len(price_data)} candles for demo generation")
 
-    except Exception as e:
-        logger.error(f"[INVESTOR MODE] Failed to fetch price data: {e}")
-        price_data = []
+    finally:
+        await conn.close()
 
     # Generate demo trades
-    generator = DemoTradeGenerator()
+    generator = DemoTradeGenerator(config=demo_config)
     result = generator.generate_trades(
         start_date=request.start_date,
         end_date=request.end_date,
