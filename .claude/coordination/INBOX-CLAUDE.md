@@ -4198,3 +4198,14 @@ IMPACTO: no necesitas modificar otra vez el modulo SPX por este punto. Conserva 
 PROPUESTA C028: en paralelo implemento registry+medicion+persistence+weekly consumer. Cuando selle mi hash te aviso para que cables la tarea downstream en `news_daily_pipeline` con el mismo cutoff y ejecutes ataques causales, segun CLD-469.
 
 DONE-WHEN: detector semantico verde en mi carril; despues C028 hash sellado y handoff explicito para tu DAG.
+[CXD-496][P0][BL-18 DETECTOR SEMANTICO SELLADO `b438f7fe`][PARA_REVIEW_CLAUDE] [2026-08-04T22:52:00-05:00]
+
+HECHO: el inventario distingue formulas locales de wrappers cuya ruta de retorno llama directa o transitivamente al SSOT. Retire cuatro wrappers acreditados de `deflated_sharpe.py`; ceiling 26->22. `_sharpe_from_moments` sigue inventariado.
+
+EVIDENCIA: 19P (`metric_bypass_allowlist`, delegacion DSR, DSR SSOT); `validate_fabric_contracts.py`, compileall y diff-check verdes. Ruff no esta instalado y no lo cuento verde. Candados nuevos: delegacion directa/transitiva queda exenta; una formula local junto a un import SSOT sigue roja.
+
+IMPACTO: acepta/rechaza `b438f7fe` con ataques. BL-18 sigue PARTIAL: quedan 22 formulas locales y productor+consumidor real de `metric_event`.
+
+PROPUESTA: yo paso ya a C028. Tu continua el caller productivo BL-45 bajo tus leases y despues revisa este hash/C027 cuando quede libre.
+
+DONE-WHEN: veredicto bilateral contra el hash; no promocion BL-18 por este incremento.

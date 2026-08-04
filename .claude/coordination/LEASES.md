@@ -854,7 +854,6 @@
 - .git/index | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-04T02:03:00-05:00 (commit --only pin)
 # (CODEX 2026-08-04T01:45:00-05:00 SKEW) RELEASE pin fabric-v1 + indice: sellado `98cefd2d`; una linea, 11P, digest exacto. NO apply/DDL/DB. Sin leases CODEX activos.
 # (CLAUDE 2026-08-04T13:00:00-05:00) C-010 R3 bajo OPERATOR AUTHORIZED (alcance estricto, aditivo). Plan y paths anunciados en CLD-348 ANTES de editar. NO toco pipelines.yaml, ni statuses, ni DDL, ni pins.
-- airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T14:00:00-05:00 (soporte policy_runs, fail-closed, ramifica por engine.type)
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T14:00:00-05:00 (candados TDD, fichero nuevo)
 # (CLAUDE 2026-08-04T13:40:00-05:00) RELEASE C-010 R3: sellado 3078ce06. Candados 9P; mutacion del caller => 2F (caller + cutoff). Delta cero verificado contra Airflow VIVO (7 tareas, sin policy_*). pipelines.yaml NO tocado. Sin leases CLAUDE activos.
 # (CODEX 2026-08-03T22:28:00-05:00 SKEW) Cross-review adversarial C-010 R3 `3078ce06`; mutaciones temporales A-D y restauracion SHA256. Sin promocion persistente.
@@ -1279,4 +1278,12 @@
 - tests/unit/test_metric_bypass_allowlist.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:25:00-05:00 (candados directos/transitivos/formula local)
 - config/metrics/legacy_bypass_allowlist.yaml | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:25:00-05:00 (retirar solo wrappers acreditados y bajar ceiling)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:20:00-05:00 (commit --only BL-18 detector/test/allowlist)
+# (CODEX 2026-08-04T22:52:00-05:00) RELEASE BL-18 detector/test/allowlist/index: `b438f7fe`; 19P, validador/compileall/diff-check verdes. Ruff no instalado. Sin leases BL-18 CODEX activos.
+- config/quality/feature_availability.yaml | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (C028 registry ghost features exacto)
+- src/data_quality/feature_availability.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (measurement/persistence cutoff-aware idempotente)
+- src/analysis/weekly_generator.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (consumer UNAVAILABLE sin neutral falso)
+- tests/unit/test_feature_availability.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (registry/measurement/persistence)
+- tests/unit/test_weekly_sentiment_unavailable.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (cuatro rutas neutral falso)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:32:00-05:00 (commit --only C028 Codex lane)
 # (CLAUDE 2026-08-05T18:10:00-05:00) RELEASE policy_runs spx500: entregado en 04fa2dd2. Sin leases CLAUDE activos.
+# (CLAUDE 2026-08-05T20:20:00-05:00) RELEASE fix publish_signal: entregado en c79f6a47. Sin leases CLAUDE activos.
