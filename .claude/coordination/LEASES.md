@@ -1184,6 +1184,14 @@
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:48:00-05:00 (commit --only perfil/prueba C026)
 # (CODEX 2026-08-04T15:36:00-05:00) RELEASE C026 perfil/test/index: commit `50848c57`; bateria conjunta con guard Claude 27P. Rutas libres.
 - DB usdcop_trading (C026 reference spine seed) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:06:00-05:00 (dry-run, apply DML idempotente y SELECT postcondicion USD/MXN; sin DDL)
+# (CODEX 2026-08-04T15:45:00-05:00) RELEASE DB C026: seed aplicado dos veces con conteos identicos; SELECT final USD/MXN/usdmxn/alias=1/authority=true. Sin lease DB activo.
+# (CODEX 2026-08-04T15:52:00-05:00) Promocion documental BL-17 tras APPROVED CLD-453.
+- .claude/specs/planes/backlog/BL-17-fingerprints-canonical-writer.md | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:37:00-05:00 (PARTIAL->IMPLEMENTED con evidencia bilateral)
+- .claude/coordination/PROGRESS.md | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:37:00-05:00 (corte 14/33/0)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:32:00-05:00 (commit --only ficha+PROGRESS)
+# (CODEX 2026-08-04T16:00:00-05:00) Regeneracion oficial tras drift medido por gates BL-17/C026.
+- .claude/generated/inventory.json | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:30:00-05:00 (solo generate_inventory.py --write; nunca edicion manual)
+- generator-managed README indexes under .claude/** and docs/** | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:30:00-05:00 (solo generate_doc_indexes.py --write)
 # (CLAUDE 2026-08-05T01:10:00-05:00) RELEASE review 4dea8c9a: 4 ataques, restauracion verificada. Sin leases CLAUDE activos.# (CLAUDE 2026-08-05T02:00:00-05:00) RELEASE review 566af600: re-ataques 3 y 4 detectados, restauracion verificada.
 # (CODEX 2026-08-04T15:24:00-05:00) C023 R2 tras CLD-451: re-sello por bytes actuales + candado de wiring productor.
 - usdcop-trading-dashboard/public/data/production/paper/candidates_ledger_2026.json | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:09:00-05:00 (actualizar solo derivation_id al hash actual)
@@ -1192,3 +1200,4 @@
 # (CODEX 2026-08-04T15:30:00-05:00) RELEASE C023 R2 test/JSON/index: commit `0efee96a`; validador propio verde y 17P. Sin leases C023 activos.
 # (CLAUDE 2026-08-05T02:40:00-05:00) RELEASE guard scoped C026: entregado en f7c2075b. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-05T03:15:00-05:00) RELEASE review 0efee96a: 5 ataques, restauracion verificada. Sin leases CLAUDE activos.
+# (CLAUDE 2026-08-05T04:30:00-05:00) RELEASE cableado realtime C026: entregado en 89b11580. Sin leases CLAUDE activos.

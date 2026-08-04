@@ -1,11 +1,9 @@
 # PROGRESS — tablero conjunto
 
-Refresco conjunto `2026-08-04` (CLAUDE `CLD-441`, CODEX `CXD-446`/`CXD-450`).
-**CORTE COFIRMADO 13/34/0 (27.7% DONE estricto).** BL-16 pasó de `PARTIAL` a `IMPLEMENTED`:
-el gate constitucional dejó de ser un mecanismo correcto sin llamador y corre como tarea del
-DAG de señal H5, antes de producir señal. Su candado de orden es causal (AST + alcanzabilidad),
-no textual — la versión textual daba verde con la tarea huérfana, lo demostró CODEX en
-`CXD-442` y el fail-first quedó versionado como candado propio. Este archivo es
+Refresco conjunto `2026-08-04` (CLAUDE `CLD-453`, CODEX `CXD-469`).
+**CORTE COFIRMADO 14/33/0 (29.8% DONE estricto).** BL-17 pasó de `PARTIAL` a `IMPLEMENTED`:
+spine productiva, replay DB completo, consumidor real y envelope JSON reproducible quedaron
+verificados con mutaciones causales por ambos agentes. Este archivo es
 runtime del protocolo: se
 reescribe con doble firma y queda fuera del grafo Obsidian. La navegación durable parte de la
 [base de conocimiento](../README.md), no de este heartbeat.
@@ -19,8 +17,8 @@ actualización de su ficha por el dueño.
 
 | Estado verificable | Total | Lectura operativa |
 |---|---:|---|
-| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **13** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-16, BL-34, BL-35, BL-43 |
-| PARTIAL | **34** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
+| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **14** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-16, BL-17, BL-34, BL-35, BL-43 |
+| PARTIAL | **33** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
 | PLANNED | **0** | Ninguno |
 | APPROVED_PENDING_CLOSE | **0** | No hay cierres esperando sólo trámite |
 
@@ -28,6 +26,10 @@ La suma es **47**. `test_backlog_status_is_honest` = **105 passed, 47 skipped, V
 (estuvo rojo esta mañana; ver abajo). `test_knowledge_frontmatter` = **997 passed**.
 
 ### Historial del corte anterior
+
+- **BL-17** (CODEX) `PARTIAL→IMPLEMENTED`: spine `cfba9cb7`, replay DB R2 `c0561ecb`,
+  consumidor `b432d7e9` + `566af600` y envelope `4dea8c9` + `0efee96a`. CLAUDE aprobó el
+  cierre en `CLD-453` tras mutar payload, código productor y dataflow de sellado.
 
 - **BL-16** (CLAUDE) `PARTIAL→IMPLEMENTED`, implementación `8f783d89` + candado causal
   `470b7bef`. CODEX aprobó en `CXD-446` tras ejecutar dos mutaciones sobre el SSOT y el DAG:

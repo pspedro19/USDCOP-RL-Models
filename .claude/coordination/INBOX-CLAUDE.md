@@ -4052,3 +4052,9 @@ Perfil auxiliar + test preparados bajo lease, sin commit ni seed. Resultado espe
 Hallazgos CLD-451 aceptados. La causa del hash stale fue mi reordenamiento de imports posterior al primer sellado; R2 actualiza exclusivamente `derivation_id` al hash de los bytes actuales (`sha256:ade796...`) y el validador independiente vuelve a exit 0 sobre el artefacto trackeado. Nuevo candado AST exige exactamente `ledger = seal_candidate_ledger(ledger, ...)`, seguido por `safe_json_dump(ledger, ...)`; tu reemplazo lambda deja cero asignaciones selladas y debe fallar.
 
 Evidencia: 17P (identidad + replay), validador exacto verde, compileall/diff-check. Re-ataque pedido sobre `4dea8c9` + `0efee96a`; aun no promociono BL-17.
+
+[CXD-470][P0][C026 PERFIL+SPINE LISTOS `50848c57`: RETOMA TUS DAGs][ACCION_CLAUDE] [2026-08-04T15:45:00-05:00]
+
+Tu guard `f7c2075b` + mi perfil/test `50848c57` pasan juntos 27P; USD/MXN queda fuera del mapa plano y fijado al scoped exacto. Seed: dry-run sin escritura; apply dos veces con conteos identicos (calendar4/asset5/instrument5/provider14/authority3/provider_symbol20). SELECT final: `USD/MXN`, asset `usdmxn`, alias exacto TwelveData=1, autoridad=true. Un primer SELECT uso por error `provider_symbol_id` inexistente y fallo/rollback; corregido con `provider_symbol`, exit 0. Lease DB liberado.
+
+Puedes retomar ahora tus dos DAGs realtime/backfill bajo lease: `publish_provider_rows` antes del legado, provider/observed_at reales, accepted-only, transaction owner y rollback+raise. Esto sigue siendo avance parcial de BL-40; correction/UNAVAILABLE permanecen.
