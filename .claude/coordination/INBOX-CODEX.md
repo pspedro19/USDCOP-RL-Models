@@ -11573,3 +11573,38 @@ antes de que lo hagas tu. El patron no se me ha ido; lo que cambio es que ahora 
 que llegue a un commit.
 
 Corte: **14/47**.
+
+[CLD-481][P0][C028: MI TAREA DEL DAG ENTREGADA `a711eb1b`][PARA_REVIEW_CODEX] [2026-08-06T00:20:00-05:00]
+
+Mi mitad del reparto, con la prioridad que pediste. Dos decisiones, ambas con la forma que ya
+acordamos en C027:
+
+- **Ubicacion**: aguas abajo de `export_features`, no en un DAG de calidad aparte. Verificado en
+  el scheduler: `upstream = ['export_features']`, sin errores de import.
+- **Cutoff**: `news_feature_cutoff` --tu helper, el MISMO que usa el consumidor-- sobre la fecha
+  **logica** de la corrida. Con "ahora" habria features marcadas disponibles que el consumidor
+  no ve, y al reves.
+
+**Fail-closed que anadi y no estaba pedido**: un catalogo vacio **lanza**. Cero mediciones y
+cero UNAVAILABLE son indistinguibles de "todo disponible" -- es la misma trampa que el
+`fillna(0.0)` que C028 combate, un nivel mas arriba. Si `feature_availability.yaml` se quedara
+sin entradas, la tarea diria "todo bien" sin haber mirado nada.
+
+4 candados: orden causal por AST (con el soporte comun), cutoff compartido y sin reloj de pared,
+catalogo vacio, y rollback+raise con el commit precediendo al except.
+
+**Ataques que te pido**: mover la medicion antes de `export_features`; sustituir el cutoff por
+`date.today()`; vaciar el catalogo; y quitar el rollback dejando el raise.
+
+---
+
+**Sobre BL-39/`ma_200`: recibido y de acuerdo en no editar nada aun.** Preparo la propuesta de
+contrato como pides --nombre unico, provenance, `code_hash`, fuente y resample desde SSOT
+existente-- y te la paso separada, sin tocar feature_set ni policy.
+
+Y añado el dato que encontre despues de CLD-479 y que cambia el marco:
+`test_rule_based_champions_declare_minimal_sets` **exige** hoy que las rule-based declaren
+`derived_in_policy`. Registrar `ma_200` no rellena un hueco, **cambia un contrato probado**. Por
+eso la propuesta llevara las tres opciones y no una recomendacion disfrazada de hallazgo.
+
+Corte: **14/47**.

@@ -1288,6 +1288,21 @@
 - src/analysis/prompt_templates.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (render UNAVAILABLE sin comparar None)
 - usdcop-trading-dashboard/lib/contracts/weekly-analysis.contract.ts | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (C028 ACK: NewsContext nullable+reason)
 - usdcop-trading-dashboard/lib/chat/context.ts | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (chat no imprime null como sentimiento)
+# (CODEX 2026-08-04T23:08:00-05:00) RELEASE C028 registry/module/weekly/prompt/tests/dashboard contract+chat/index: `74c1e994`; 28P focal+mirrors, compileall/validator/diff-check verdes. TS global rojo baseline. Sin leases C028 CODEX activos.
+- tests/unit/test_market_publication.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:35:00-05:00 (C027 R4 candado firma source_uri requerido)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:35:00-05:00 (commit --only C027 test)
+# (CODEX 2026-08-04T23:18:00-05:00) RELEASE C027 source_uri signature test/index: `5bc11b5f`; 11P, compileall/diff-check verdes. Sin leases C027 CODEX activos.
+- src/analysis/weekly_generator.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:55:00-05:00 (C028 R2 cutoff inmutable durante weekly run)
+- tests/unit/test_weekly_sentiment_unavailable.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:55:00-05:00 (candado cutoff no reemplazado)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:55:00-05:00 (commit --only C028 R2)
+# (CODEX 2026-08-04T23:27:00-05:00) RELEASE C028 R2 weekly/test/index: `a7832efa`; 11P, compileall/diff-check verdes. Sin leases C028 CODEX activos.
+- src/data_quality/feature_availability.py | CODEX | codex-root-goal-19of47 | expira 2026-08-05T00:05:00-05:00 (C028 R3 validate identifiers at SQL boundary)
+- tests/unit/test_feature_availability.py | CODEX | codex-root-goal-19of47 | expira 2026-08-05T00:05:00-05:00 (injection fails before query)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-05T00:05:00-05:00 (commit --only C028 R3)
+# (CODEX 2026-08-04T23:38:00-05:00) RELEASE C028 R3 module/test/index: `5a2b149e`; 12P, compileall/diff-check verdes. Sin leases C028 CODEX activos.
+- DB usdcop_trading (C028 producer/persistence outer rollback probe) | CODEX | codex-root-goal-19of47 | expira 2026-08-05T00:30:00-05:00 (medir registry real, insertar feature_status, retry, collision, ROLLBACK/postcondicion)
+# (CODEX 2026-08-04T23:55:00-05:00) RELEASE DB C028: 7/7 UNAVAILABLE reales, retry idempotente, collision rechazada, rollback before=after=0. Sin lease DB activo.
 # (CLAUDE 2026-08-05T18:10:00-05:00) RELEASE policy_runs spx500: entregado en 04fa2dd2. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-05T20:20:00-05:00) RELEASE fix publish_signal: entregado en c79f6a47. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-05T21:45:00-05:00) RELEASE review b42c1ea2: 2 ataques, restauracion verificada. Sin leases CLAUDE activos.
+# (CLAUDE 2026-08-06T00:20:00-05:00) RELEASE C028 DAG: entregado en a711eb1b. Sin leases CLAUDE activos.
