@@ -306,3 +306,42 @@ def test_every_quarantine_declares_the_evidence_tier_that_judged_it() -> None:
         "el evento de cuarentena no registra el tier: en la tabla, un rechazo por rango "
         "plano quedaría indistinguible de uno por regla escalonada"
     )
+
+
+def test_only_scoped_instruments_are_covered_by_the_gate() -> None:
+    """Cobertura = regla ESCALONADA. Un rango plano no basta (CXD-489 / texto de BL-40).
+
+    Historia de esta linea, porque explica por que el candado es asi de estricto:
+
+    1. Cablee el gate para COP/BTC/XAU/SPX usando el `price_range` de su `AssetProfile`.
+    2. Al releer BL-40 vi que decia literalmente *"un rango legacy no basta ... el gate
+       no debe activarse para COP/BRL mientras esa identidad no exista"*, y lo reporte
+       como contradiccion de mi propia entrega (CLD-459).
+    3. Mi primera reparacion fue **clasificar** la evidencia (`range_evidence_tier`) para
+       que la asimetria quedara visible en el dato. Util, pero insuficiente: seguia
+       juzgando barras con una regla que la ficha declara que no basta.
+    4. Codex resolvio por la lectura literal y tenia razon: un rango **sin proveedor ni
+       ventana** no puede decidir si una barra entra en la serie.
+
+    Lo que este candado impide es volver al paso 1 sin darse cuenta.
+    """
+    from src.data_quality.ingest_guard import range_evidence_tier, scoped_symbols
+
+    cubiertos = scoped_symbols()
+    assert "USD/MXN" in cubiertos or "usdmxn" in cubiertos
+
+    for simbolo in ("USD/COP", "BTC/USDT", "XAU/USD", "SPX/500"):
+        assert range_evidence_tier(simbolo) != "scoped", (
+            f"{simbolo} paso a scoped: si de verdad gano proveedor y ventana, este "
+            "candado sobra; si no, el gate volveria a juzgarlo con un rango plano"
+        )
+
+    import inspect
+
+    from src.data_quality import ingest_guard
+
+    decisor = inspect.getsource(ingest_guard.publish_or_declare_gap)
+    assert 'range_evidence_tier(symbol) != "scoped"' in decisor, (
+        "la cobertura dejo de exigir regla escalonada: un rango plano volveria a "
+        "decidir si una barra entra"
+    )

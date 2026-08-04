@@ -533,6 +533,19 @@ def publish_or_declare_gap(conn, *, symbol: str, provider_id: str, rows, interva
     if declarado is None:
         return None  # símbolo sin activo declarado: fuera de cobertura
 
+    # COBERTURA = REGLA ESCALONADA, no rango plano (CXD-489, y es el texto literal de
+    # BL-40: "un rango legacy no basta ... el gate no debe activarse para COP/BRL
+    # mientras esa identidad no exista").
+    #
+    # Yo habia cableado COP/BTC/XAU/SPX contra su `price_range` del AssetProfile y lo
+    # reporte como contradiccion en CLD-459. Mi primera reparacion fue clasificar la
+    # evidencia (`range_evidence_tier`) para que al menos la asimetria fuera visible en
+    # el dato -- util, pero insuficiente: seguia juzgando barras con una regla que la
+    # ficha declara que no basta. Codex resolvio por la lectura literal, y es la
+    # correcta: un rango sin proveedor ni ventana no puede decidir si una barra entra.
+    if range_evidence_tier(symbol) != "scoped":
+        return None
+
     try:
         registry_from_spine(conn).resolve(declarado, symbol)
     except IdentityError:
