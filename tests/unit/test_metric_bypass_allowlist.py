@@ -60,3 +60,35 @@ def test_metric_inventory_scans_test_prefixed_file_inside_runtime_root(tmp_path:
     assert validator.discover_metric_bypasses(tmp_path) == {
         "src/engine/test_strategy.py::sneaky_sharpe"
     }
+
+
+def test_metric_inventory_exempts_direct_and_transitive_ssot_delegation(tmp_path: Path) -> None:
+    validator = _validator()
+    candidate = tmp_path / "src" / "legacy.py"
+    candidate.parent.mkdir(parents=True)
+    candidate.write_text(
+        "def probabilistic_sharpe(value):\n"
+        "    from services.common.metrics import probabilistic_sharpe_ratio\n"
+        "    return float(probabilistic_sharpe_ratio(value, 20))\n\n"
+        "def deflated_sharpe(value):\n"
+        "    return probabilistic_sharpe(value)\n",
+        encoding="utf-8",
+    )
+
+    assert validator.discover_metric_bypasses(tmp_path) == set()
+
+
+def test_metric_inventory_does_not_exempt_local_formula_near_ssot_import(tmp_path: Path) -> None:
+    validator = _validator()
+    candidate = tmp_path / "src" / "legacy.py"
+    candidate.parent.mkdir(parents=True)
+    candidate.write_text(
+        "from services.common.metrics import sharpe_ratio\n\n"
+        "def calculate_sharpe(values):\n"
+        "    return sum(values) / len(values)\n",
+        encoding="utf-8",
+    )
+
+    assert validator.discover_metric_bypasses(tmp_path) == {
+        "src/legacy.py::calculate_sharpe"
+    }

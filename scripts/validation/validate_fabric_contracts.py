@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
+from typing import NamedTuple
 
 import yaml
 
@@ -17,6 +18,11 @@ SSOT_EXEMPTIONS = {
     Path("src/metrics/formulas.py"),
 }
 METRIC_NAME_MARKERS = ("sharpe", "calmar")
+SSOT_MODULES = {
+    "services.common.metrics",
+    "src.metrics.engine",
+    "src.metrics.formulas",
+}
 
 
 def is_runtime_python_path(relative_path: Path) -> bool:
@@ -24,16 +30,57 @@ def is_runtime_python_path(relative_path: Path) -> bool:
     return relative_path.name != "conftest.py" and "tests" not in relative_path.parts[:-1]
 
 
+class _MetricDefinition(NamedTuple):
+    identifier: str
+    name: str
+    return_calls: tuple[frozenset[str], ...]
+    ssot_aliases: frozenset[str]
+
+
+def _walk_without_nested_definitions(node: ast.AST):
+    """Yield descendants while keeping nested functions as separate scopes."""
+    for child in ast.iter_child_nodes(node):
+        if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            continue
+        yield child
+        yield from _walk_without_nested_definitions(child)
+
+
 class _MetricDefinitionVisitor(ast.NodeVisitor):
     def __init__(self, relative_path: Path) -> None:
         self.relative_path = relative_path
         self.scope: list[str] = []
-        self.found: set[str] = set()
+        self.definitions: list[_MetricDefinition] = []
 
     def _visit_definition(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
         qualified_name = "::".join((*self.scope, node.name))
         if any(marker in node.name.lower() for marker in METRIC_NAME_MARKERS):
-            self.found.add(f"{self.relative_path.as_posix()}::{qualified_name}")
+            scoped_nodes = tuple(_walk_without_nested_definitions(node))
+            aliases = {
+                alias.asname or alias.name
+                for child in scoped_nodes
+                if isinstance(child, ast.ImportFrom) and child.module in SSOT_MODULES
+                for alias in child.names
+            }
+            return_calls = []
+            for child in scoped_nodes:
+                if not isinstance(child, ast.Return) or child.value is None:
+                    continue
+                return_calls.append(
+                    frozenset(
+                        call.func.id
+                        for call in ast.walk(child.value)
+                        if isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
+                    )
+                )
+            self.definitions.append(
+                _MetricDefinition(
+                    identifier=f"{self.relative_path.as_posix()}::{qualified_name}",
+                    name=node.name,
+                    return_calls=tuple(return_calls),
+                    ssot_aliases=frozenset(aliases),
+                )
+            )
         self.scope.append(node.name)
         self.generic_visit(node)
         self.scope.pop()
@@ -66,7 +113,26 @@ def discover_metric_bypasses(repo_root: Path = REPO_ROOT) -> set[str]:
                 raise ValueError(f"cannot scan {relative_path.as_posix()}: {exc}") from exc
             visitor = _MetricDefinitionVisitor(relative_path)
             visitor.visit(tree)
-            found.update(visitor.found)
+            delegated_names: set[str] = set()
+            unresolved = list(visitor.definitions)
+            while True:
+                newly_delegated = {
+                    definition.name
+                    for definition in unresolved
+                    if definition.return_calls
+                    and all(
+                        calls & (definition.ssot_aliases | delegated_names)
+                        for calls in definition.return_calls
+                    )
+                }
+                if not newly_delegated - delegated_names:
+                    break
+                delegated_names.update(newly_delegated)
+            found.update(
+                definition.identifier
+                for definition in visitor.definitions
+                if definition.name not in delegated_names
+            )
     return found
 
 
