@@ -2,7 +2,7 @@
 kind: as-built
 status: IMPLEMENTED
 contract: CTR-AUTH-001
-version: 1.2.0
+version: 1.3.0
 last_verified: 2026-08-04
 supersedes: []
 code_anchors:
@@ -30,16 +30,22 @@ code_anchors:
 
 ## 1. As-Built Authentication (SignalBridge API — the auth SSOT)
 
-- **Registration** — `POST /api/auth/register` (`auth.py:42`) → `UserService.create` (`user.py:43`) inserts into **`sb_users`** (UUID PK, `21-signalbridge-users-schema.sql:22`) + a default `sb_trading_configs` row; returns access+refresh tokens immediately. **Open self-registration** — no invite, no email verification (`is_verified` never enforced), no lockout/rate-limit on this route.
+- **Registration** — `POST /api/auth/register` (`auth.py:64-104`) → `UserService.create` inserta en **`sb_users`** + su `sb_trading_configs`. **Flujo de aprobación por admin** (verificado 2026-08-04): responde **`202 ACCEPTED`**, deja la cuenta en **`PENDING`** y **NO devuelve tokens** — la descripción previa de "returns access+refresh tokens immediately" quedó stale. Además **sí hay throttle**: `LoginThrottle.check_locked("register", ip)` + `record_failure` por IP, con el código citando explícitamente A8-03.
 - **Password hashing** — **bcrypt** via passlib `CryptContext(schemes=["bcrypt"])` (`security.py:15`). No argon2, no explicit rounds, no server-side complexity policy.
 - **Login** — `POST /api/auth/login` (`auth.py:71`): Redis lockout check → `UserService.authenticate` (bcrypt verify) → failure `LoginThrottle.record_failure` / success `clear` + issue tokens + update `last_login`.
-- **JWT** — **HS256** (`config.py:52`) signed with `settings.jwt_secret_key`. Access TTL **30 min**, refresh **7 days**. Claims: `sub, email, **role**, exp, iat, type, jti` — el `role` **sí** viaja en el token desde `auth.py:151` (verificado 2026-08-04); la afirmación previa de que no existía quedó stale.
+- **JWT** — **HS256** (`config.py:52`) signed with `settings.jwt_secret_key`. Access TTL **30 min**, refresh **7 days**. Claims **en el login**: `sub, email, role, exp, iat, type, jti` (`auth.py:151`). El `role` **no** es un claim general: ver la asimetría del refresh justo abajo. La afirmación previa de que el rol no existía en absoluto quedó stale, pero afirmar que todo JWT lo lleva sería igual de falso.
 - **Refresh** — `POST /api/auth/refresh` re-verifies + re-issues both tokens (full rotation, but the old refresh token is **not** blacklisted → replay window, A8-06).
+  > **Asimetría verificada (2026-08-04)**: la rotación construye `token_data = {"sub", "email"}`
+  > (`auth.py:243`) — **sin `role`**. Un token recién rotado **pierde el claim** que sí traía el del
+  > login. No compromete la autorización del backend, porque `require_admin` resuelve el rol contra
+  > la fila de `sb_users` vía `get_current_active_user` y no contra el token; por eso A8-10 sigue
+  > cerrado. Pero **cualquier consumidor que lea el rol del JWT verá al usuario degradado tras el
+  > primer refresh**. Brecha declarada, no corregida en este carril.
 - **Logout / revocation** — `POST /api/auth/logout` (`auth.py:181`) blacklists the access `jti` in Redis (TTL=remaining life); `get_current_user` rejects blacklisted jti. Refresh tokens are **not** revoked on logout.
 - **Account lockout** — `LoginThrottle` (`login_security.py`): per-email AND per-IP counters, **5 failures / 15-min window → 15-min lockout**, HTTP 429 + `Retry-After`. Redis-backed and **fails OPEN if Redis is down** (A8-07).
 - **DEV bypass** — `SIGNALBRIDGE_DEV_MODE=true` → `get_current_user` returns a dummy `DevUser` (id=`1` int, `admin@trading.usdcop.com`), no token check (`middleware/auth.py:29`). Hard-guarded off when `app_env==production`. Set `true` in `docker-compose.compact.yml:529`; the testauth override flips it `false`.
 - **Global rate limiting** — `RateLimitMiddleware` added only when NOT development (`main.py:150`); compact runs `APP_ENV=development` → global IP rate-limit OFF (only login lockout active).
-- **Roles / RBAC** — **A8-10 corregido** (verificado 2026-08-04): `sb_users` tiene `role` (modelo en `app/models.py:38`), el JWT lo transporta (`auth.py:151`) y **hay enforcement real** — `require_admin` (`app/api/routes/admin.py:30-36`) devuelve **403** a todo principal no-admin. La API ya **no** es single-tier y sí puede honrar el rol del dashboard.
+- **Roles / RBAC** — **A8-10 corregido** (verificado 2026-08-04), y lo sostiene el **enforcement DB-backed**, no el token: `require_admin` (`app/api/routes/admin.py:30-36`) resuelve el rol desde la fila de `sb_users` vía `get_current_active_user` y devuelve **403** a todo principal no-admin. `sb_users.role` existe en el modelo (`app/models.py:38`). Que el JWT del login también lo lleve es **conveniencia, no el fundamento** — precisamente porque el refresh lo pierde (ver §1 Refresh). La API ya **no** es single-tier.
 
 ## 2. As-Built Authentication (Dashboard, Next.js)
 
@@ -82,13 +88,16 @@ aprobar a nadie. Ese círculo lo rompe un mecanismo que **ya existe**, no un scr
 
 **Open gaps** — tracked as tasks in `../audit/AUDIT-2026-07-remediation.md` §A8:
 - **CRITICAL** A8-01 — JWT secret env-name mismatch (`JWT_SECRET` vs `JWT_SECRET_KEY`) → API signs with a public default → all tokens forgeable.
-- **HIGH** A8-03 (open registration + public `/api/auth`, no throttle), A8-04 (JWTs in localStorage).
+- **HIGH** A8-04 (JWTs in localStorage).
 - **MEDIUM** A8-05 (Vault key default in dev), A8-06 (refresh not blacklisted on rotation), A8-07 (revocation fails OPEN on Redis down), A8-08 (broken execution login).
 
 **Cerrados desde la auditoría** (verificados contra el código el 2026-08-04, no declarados):
 - **A8-02** — `protectApiRoute` lleva la guarda `NODE_ENV!=='production'` (`lib/auth/api-auth.ts:98-103`).
 - **A8-09** — sin credencial hardcodeada; el login mock es dev-only y no acepta contraseña (`auth.service.ts:68-71`).
-- **A8-10** — rol en modelo + JWT + `require_admin` con 403 (`admin.py:30-36`).
+- **A8-10** — enforcement **DB-backed**: `require_admin` (`admin.py:30-36`) resuelve el rol contra
+  `sb_users`, no contra el token, así que la asimetría del refresh **no lo reabre**.
+- **A8-03** — el registro ya **no** devuelve tokens (202 + `PENDING`) y **sí** tiene throttle por IP
+  (`auth.py:64-104`, con el código citando el propio hallazgo).
 
 > Los demás siguen abiertos: **no** se han verificado en esta pasada y su ausencia de esta lista
 > significaría lo contrario de lo que este documento pretende.
