@@ -55,6 +55,14 @@ def test_shared_news_cutoff_is_timezone_aware_and_window_exact() -> None:
     )
 
 
+def test_weekly_cutoff_is_not_replaced_by_nested_daily_generation() -> None:
+    generator = _generator()
+    weekly_cutoff = news_feature_cutoff(date(2026, 8, 7))
+    generator._feature_cutoff = weekly_cutoff
+    generator._ensure_feature_cutoff(date(2026, 8, 3))
+    assert generator._feature_cutoff == weekly_cutoff
+
+
 def test_prompt_names_unavailable_sentiment_instead_of_neutral() -> None:
     rendered = build_news_section({
         "article_count": 92,

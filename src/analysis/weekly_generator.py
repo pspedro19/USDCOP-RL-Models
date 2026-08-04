@@ -132,9 +132,13 @@ class WeeklyAnalysisGenerator:
                 return float(value)
         return None
 
+    def _ensure_feature_cutoff(self, end: date) -> None:
+        if self._feature_cutoff is None:
+            self._feature_cutoff = news_feature_cutoff(end)
+
     def generate_for_date(self, target_date: date) -> DailyAnalysisRecord:
         """Generate daily analysis for a specific date."""
-        self._feature_cutoff = news_feature_cutoff(target_date)
+        self._ensure_feature_cutoff(target_date)
         iso_cal = target_date.isocalendar()
         logger.info(f"Generating daily analysis for {target_date}")
 
