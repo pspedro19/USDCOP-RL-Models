@@ -67,6 +67,18 @@ def _structurally_representable(row: Mapping[str, Any]) -> bool:
     return True
 
 
+def _quality_observed_at(row: Mapping[str, Any], *, fallback: datetime) -> datetime:
+    """Return the economic observation time used by provider/date-scoped rules.
+
+    ``fallback`` is only for malformed timestamps that will be quarantined by another
+    rule.  A valid historical row must never inherit the retrieval time of its batch.
+    """
+    try:
+        return _timestamp(row.get("time"))
+    except (TypeError, ValueError):
+        return fallback
+
+
 def _source_hash(
     row: Mapping[str, Any], *, provider_id: str, provider_symbol: str, interval_id: str
 ) -> str:
@@ -238,7 +250,7 @@ def publish_provider_rows(
 ) -> MarketPublicationResult:
     """Publish without committing; the caller owns one transaction with legacy writes."""
 
-    instant = (observed_at or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    retrieval_instant = (observed_at or datetime.now(timezone.utc)).astimezone(timezone.utc)
     ruleset = ruleset_from_spine(conn)
     instrument_id = resolved_instrument_id(ruleset, provider_id, provider_symbol)
     accepted: list[Mapping[str, Any]] = []
@@ -246,10 +258,11 @@ def publish_provider_rows(
 
     for original in rows:
         row = dict(original)
+        quality_instant = _quality_observed_at(row, fallback=retrieval_instant)
         if instrument_id is None or not _structurally_representable(row):
             safe = _safe_row(row)
             decision = ruleset.evaluate_provider_bar(
-                provider_id, provider_symbol, safe, observed_at=instant
+                provider_id, provider_symbol, safe, observed_at=quality_instant
             )
             if decision.accepted:
                 decision = QualityDecision(
@@ -278,12 +291,12 @@ def publish_provider_rows(
             provider_symbol=provider_symbol,
             interval_id=interval_id,
             row=row,
-            observed_at=instant,
+            observed_at=retrieval_instant,
             source_uri=source_uri,
         )
         raw_count += 1
         decision = ruleset.evaluate_provider_bar(
-            provider_id, provider_symbol, row, observed_at=instant
+            provider_id, provider_symbol, row, observed_at=quality_instant
         )
         if not decision.accepted:
             record_quarantine(
@@ -303,7 +316,7 @@ def publish_provider_rows(
             interval_id=interval_id,
             raw_bar_id=raw_bar_id,
             row=row,
-            observed_at=instant,
+            observed_at=retrieval_instant,
         )
         canonical_count += 1
         accepted.append(original)

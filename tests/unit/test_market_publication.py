@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from src.data_quality.rules import QualityDecision
+from src.market import publication
 from src.market.publication import _source_hash, _structurally_representable
 
 
@@ -50,3 +52,67 @@ def test_source_hash_is_stable_and_commits_provider_identity() -> None:
     assert first == replay
     assert first != other_provider
     assert first.startswith("sha256:")
+
+
+def test_scoped_quality_uses_each_rows_event_time_not_batch_retrieval_time(
+    monkeypatch,
+) -> None:
+    pre_cutoff = _row(time=datetime(1990, 1, 2, 13, tzinfo=timezone.utc), open=18.0,
+                      high=18.1, low=17.9, close=18.0)
+    post_cutoff = _row(time=datetime(2026, 8, 4, 15, tzinfo=timezone.utc), open=18.0,
+                       high=18.1, low=17.9, close=18.0)
+    evaluated_at: list[datetime] = []
+    canonical_rows: list[dict] = []
+    quarantined_rows: list[dict] = []
+
+    class Rules:
+        version = "scoped-test-v1"
+
+        def evaluate_provider_bar(self, _provider, _symbol, row, *, observed_at):
+            evaluated_at.append(observed_at)
+            if observed_at.year < 1993:
+                return QualityDecision(
+                    False,
+                    "QUARANTINED",
+                    "bar.range_scope",
+                    row,
+                    "no historical scoped range",
+                )
+            return QualityDecision(True, "VALID")
+
+    monkeypatch.setattr(publication, "ruleset_from_spine", lambda _conn: Rules())
+    monkeypatch.setattr(
+        publication, "resolved_instrument_id", lambda *_args: "instrument-usdmxn"
+    )
+    monkeypatch.setattr(
+        publication,
+        "_insert_raw",
+        lambda _conn, **kwargs: "raw-" + kwargs["row"]["time"].isoformat(),
+    )
+    monkeypatch.setattr(
+        publication,
+        "_insert_canonical",
+        lambda _conn, **kwargs: canonical_rows.append(kwargs["row"]),
+    )
+    monkeypatch.setattr(
+        publication,
+        "record_quarantine",
+        lambda _conn, **kwargs: quarantined_rows.append(kwargs["row"]),
+    )
+
+    result = publication.publish_provider_rows(
+        object(),
+        provider_id="twelvedata",
+        provider_symbol="USD/MXN",
+        interval_id="PT5M",
+        rows=[pre_cutoff, post_cutoff],
+        observed_at=datetime(2026, 8, 4, 16, tzinfo=timezone.utc),
+    )
+
+    assert evaluated_at == [pre_cutoff["time"], post_cutoff["time"]]
+    assert result.accepted == (post_cutoff,)
+    assert result.raw_count == 2
+    assert result.canonical_count == 1
+    assert result.quarantine_count == 1
+    assert canonical_rows == [post_cutoff]
+    assert quarantined_rows == [pre_cutoff]
