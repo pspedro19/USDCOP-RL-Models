@@ -345,3 +345,62 @@ def test_only_scoped_instruments_are_covered_by_the_gate() -> None:
         "la cobertura dejo de exigir regla escalonada: un rango plano volveria a "
         "decidir si una barra entra"
     )
+
+
+def test_the_quarantine_writes_the_typed_context_that_a_correction_needs() -> None:
+    """Writer contextual (084 / CXD-488): sin contexto tipado no hay correccion honesta.
+
+    Codex lo midio antes de implementar C027: `quality.quarantine_event` guardaba solo
+    OHLCV, con proveedor y simbolo **concatenados en `entity_id`**. Una correccion no
+    puede reconstruir la regla escalonada que juzgo la barra sin parsear esa cadena, y
+    parsear un campo de diagnostico es la heuristica que este ciclo lleva rechazando.
+
+    `observed_at` es el que mas importa: es el instante de CALIDAD de la barra original.
+    Sin el, corregir una barra de 1990 la evaluaria contra el escalon de hoy — el
+    agujero temporal que levante en CLD-456 y que resulto ser **el mismo defecto** que
+    Codex encontraba por el lado del esquema.
+    """
+    import inspect
+
+    from src.data_quality import ingest_guard
+
+    firma = inspect.signature(ingest_guard.record_quarantine).parameters
+    for campo in ("provider_id", "provider_symbol", "interval_id", "observed_at", "source_uri"):
+        assert campo in firma, f"record_quarantine no acepta '{campo}': 084 quedaria sin llenar"
+
+    escritura = inspect.getsource(ingest_guard.record_quarantine)
+    for columna in ("provider_id", "provider_symbol", "interval_id", "observed_at",
+                    "source_uri", "context_version"):
+        assert columna in escritura, f"el INSERT no escribe '{columna}'"
+
+    # Y `screen_bars` debe TRANSPORTARLO: aceptar los campos y no pasarlos seria peor
+    # que no aceptarlos, porque la firma prometeria un contexto que llega vacio.
+    transporte = inspect.getsource(ingest_guard.screen_bars)
+    for campo in ("interval_id=", "observed_at=", "source_uri="):
+        assert campo in transporte, f"screen_bars no propaga '{campo}' al evento"
+
+
+def test_source_record_stays_the_flat_original_bar() -> None:
+    """`source_record` es el registro ORIGINAL y nada mas (CXD-488).
+
+    Lo envolvi en `{bar, range_evidence_tier}` para hacer visible el tier, y era un
+    cambio de shape **incidental**: C027 compromete `source_record` como el registro
+    original y `correction_event.old_record` lo copia entero. Una mejora de
+    observabilidad no puede alterar en silencio un contrato que otro flujo ya usa.
+
+    El tier no se pierde — viaja en `observed_value`, que es diagnostico por definicion.
+    """
+    import inspect
+
+    from src.data_quality import ingest_guard
+
+    escritura = inspect.getsource(ingest_guard.record_quarantine)
+    assert 'json.dumps(_jsonable(dict(row)))' in escritura, (
+        "source_record dejo de ser la barra plana: romperia old_record de C027"
+    )
+    assert '"range_evidence_tier"' in escritura, "el tier se perdio del todo"
+    indice_tier = escritura.index('"range_evidence_tier"')
+    indice_source = escritura.index('json.dumps(_jsonable(dict(row)))')
+    assert indice_tier < indice_source, (
+        "el tier quedo dentro de source_record en vez de en observed_value"
+    )

@@ -368,30 +368,51 @@ def record_quarantine(
     rule_version: str,
     instrument_id: str | None = None,
     evidence_tier: str | None = None,
+    interval_id: str | None = None,
+    observed_at: datetime | None = None,
+    source_uri: str | None = None,
 ) -> None:
     """Escribe el evento. Es la mitad que convierte un rechazo en evidencia."""
     with conn.cursor() as cur:
         cur.execute(
+            # Contexto TIPADO (084): sin el, una correccion no puede reconstruir la
+            # regla escalonada que juzgo la barra --proveedor, intervalo e instante-- y
+            # tendria que parsear `entity_id`, que es la heuristica que este ciclo
+            # rechaza. `observed_at` es el instante de CALIDAD de la barra original: es
+            # lo que permite que corregir una barra de 1990 siga usando el escalon de su
+            # epoca en vez del de hoy.
             "INSERT INTO quality.quarantine_event "
             "(entity_type, entity_id, instrument_id, rule_id, rule_version, "
-            " observed_value, source_record) "
-            "VALUES ('ohlcv_bar', %s, %s::uuid, %s, %s, %s::jsonb, %s::jsonb)",
+            " observed_value, source_record, "
+            " provider_id, provider_symbol, interval_id, observed_at, source_uri, "
+            " context_version) "
+            "VALUES ('ohlcv_bar', %s, %s::uuid, %s, %s, %s::jsonb, %s::jsonb, "
+            "        %s, %s, %s, %s, %s, 1)",
             (
                 f"{provider_id}:{provider_symbol}",
                 instrument_id,
                 decision.rule_id or "bar.unknown",
                 rule_version,
-                json.dumps(_jsonable(decision.observed_value)),
                 json.dumps(
                     {
-                        "bar": _jsonable(dict(row)),
-                        # Con QUE clase de evidencia se juzgo esta barra. Sin esto, un
-                        # rechazo por rango plano y uno por regla escalonada son
-                        # indistinguibles en la tabla (CLD-459).
+                        "value": _jsonable(decision.observed_value),
+                        # Diagnostico, NO parte del registro original: con que clase de
+                        # evidencia se juzgo. Sin esto un rechazo por rango plano y uno
+                        # por regla escalonada son indistinguibles en la tabla.
                         "range_evidence_tier": evidence_tier
                         or range_evidence_tier(provider_symbol),
                     }
                 ),
+                # `source_record` es el registro ORIGINAL, plano. C027 lo compromete
+                # asi y `correction_event.old_record` lo copia entero: envolverlo en
+                # {bar, tier} fue un cambio de shape incidental que rompia ese contrato
+                # sin migracion (CXD-488). El tier viaja aparte, en `observed_value`.
+                json.dumps(_jsonable(dict(row))),
+                provider_id,
+                provider_symbol,
+                interval_id,
+                observed_at,
+                source_uri,
             ),
         )
 
@@ -417,6 +438,8 @@ def screen_bars(
     rows: Iterable[Mapping[str, Any]],
     rule_version: str = "unversioned",
     observed_at: datetime | None = None,
+    interval_id: str | None = None,
+    source_uri: str | None = None,
 ) -> ScreeningResult:
     """Evalúa cada barra; las rechazadas van a cuarentena y **no** se devuelven.
 
@@ -446,6 +469,11 @@ def screen_bars(
             rule_version=rule_version,
             instrument_id=instrumento,
             evidence_tier=range_evidence_tier(provider_symbol),
+            interval_id=interval_id,
+            # El instante de CALIDAD de la barra: es lo que permite que una correccion
+            # futura re-evalue con el escalon de su epoca (CLD-456/C027).
+            observed_at=observed_at,
+            source_uri=source_uri,
         )
 
     return ScreeningResult(accepted=aceptadas, quarantined=rechazadas)
