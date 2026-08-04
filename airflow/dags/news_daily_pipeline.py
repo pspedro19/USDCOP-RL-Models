@@ -275,6 +275,65 @@ def _generate_digest(**context):
         logger.info(f"Generated daily digest: {digest.total_articles} articles")
 
 
+def _measure_feature_availability(**context):
+    """C028 — medir que features estan realmente disponibles, y persistirlo.
+
+    Corre DOWNSTREAM de `export_features` a proposito: mide el estado que acaba de
+    producirse. Un DAG de calidad aparte habria creado un segundo schedule que mantener
+    alineado con la ingesta, y el dia que se desalinearan la medicion describiria un
+    estado que ya no existe (CLD-469).
+
+    El cutoff sale de `news_feature_cutoff`, el MISMO helper que usa el consumidor. Si
+    midieramos con "ahora" y el weekly leyera otra ventana, habria features marcadas
+    disponibles que el consumidor no ve, y al reves — el gemelo del `quality_observed_at`
+    de C027.
+    """
+    from datetime import date
+
+    from src.data_quality.feature_availability import (
+        load_feature_specs,
+        measure_and_persist,
+        news_feature_cutoff,
+    )
+
+    from pathlib import Path
+
+    raiz = Path("/opt/airflow") if Path("/opt/airflow/config").is_dir() else Path(__file__).resolve().parents[2]
+    specs = load_feature_specs(raiz / "config" / "quality" / "feature_availability.yaml")
+    if not specs:
+        raise RuntimeError(
+            "config/quality/feature_availability.yaml no declara features: sin catalogo "
+            "no hay nada que medir, y una medicion vacia se leeria como 'todo disponible'"
+        )
+
+    # Fecha LOGICA de la corrida, no `today()`: dos re-ejecuciones de la misma fecha
+    # deben medir la misma ventana o la idempotencia de (feature, instrumento, instante)
+    # dejaria de significar nada.
+    fin = context["data_interval_end"].date()
+    cutoff = news_feature_cutoff(fin)
+
+    from utils.dag_common import get_db_connection
+
+    conn = get_db_connection()
+    try:
+        mediciones = measure_and_persist(conn, specs, cutoff)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    no_disponibles = [m.feature_id for m in mediciones if getattr(m, "status", None) != "AVAILABLE"]
+    logging.info(
+        "[C028] %d features medidas al corte %s; UNAVAILABLE: %s",
+        len(mediciones), cutoff.isoformat(), no_disponibles or "ninguna",
+    )
+    return {"cutoff": cutoff.isoformat(), "measured": len(mediciones),
+            "unavailable": no_disponibles}
+
+
+
 with DAG(
     dag_id="news_daily_pipeline",
     default_args=DEFAULT_ARGS,
@@ -311,4 +370,11 @@ with DAG(
         python_callable=_generate_digest,
     )
 
+    availability = PythonOperator(
+        task_id="measure_feature_availability",
+        python_callable=_measure_feature_availability,
+    )
+
     ingest >> enrich >> cross_ref >> [features, digest]
+    # Aguas abajo de `export_features`: mide el estado que ese paso acaba de producir.
+    features >> availability
