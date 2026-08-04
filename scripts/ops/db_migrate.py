@@ -26,6 +26,7 @@ import asyncio
 import hashlib
 import logging
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -291,6 +292,25 @@ def get_plan_digest(plan: str) -> str:
         digest.update(path.read_bytes())
         digest.update(b"\0")
     return "sha256:" + digest.hexdigest()
+
+
+def created_tables_for_plan(plan: str) -> set[str]:
+    """Return tables declared by a plan, resolving bare names to ``public``."""
+    ddl = "\n".join(
+        path.read_text(encoding="utf-8") for path in get_migration_files(plan)
+    )
+    ddl = re.sub(r"/\*.*?\*/", "", ddl, flags=re.DOTALL)
+    ddl = re.sub(r"--[^\n]*", "", ddl)
+    created: set[str] = set()
+    pattern = re.compile(
+        r"\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
+        r"(?P<name>(?:\"?[a-z_]\w*\"?\.)?\"?[a-z_]\w*\"?)",
+        flags=re.IGNORECASE,
+    )
+    for match in pattern.finditer(ddl):
+        name = match.group("name").replace('"', "").lower()
+        created.add(name if "." in name else f"public.{name}")
+    return created
 
 
 def classify_migrations(
