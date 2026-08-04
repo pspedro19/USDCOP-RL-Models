@@ -538,7 +538,6 @@
 - .git/index | CODEX | codex-root-backlog-20260803-1059 | expira 2026-08-03T15:42:00-05:00 (commit --only test MetricEvent SSOT)
 # (CODEX 2026-08-03T15:26:00-05:00) RELEASE MetricEvent test + indice: sellado 89a7732d; sin leases CODEX activos.
 # (CLAUDE 2026-08-03T15:23:15-05:00) BL-45: auditoria de las 17 validaciones §11 en la ficha. Solo el MD.
-- .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md | CLAUDE | claude-root-152c263e | expira 2026-08-03T18:00:00-05:00 (auditoria 17 checks + correccion de brecha stale)
 # (CLAUDE 2026-08-03T15:27:14-05:00) RELEASE lease BL-45: auditoria sellada en 0d79e59e. Hueco #6 elevado como propuesta de contrato en CLD-293, NO aplicado.
 - (CLAUDE) RELEASE lease BL-45: auditoria sellada en 0d79e59e. Hueco #6 elevado en CLD-293, NO aplicado.
 # (CODEX 2026-08-03T16:02:00-05:00) ACK CLD-294: R3 resolvedor puro + remedio completo tests Metric SSOT.
@@ -693,7 +692,6 @@
 - airflow/dags/_claude_bl35_observer_probe.py | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-03T23:20:00-05:00 (probe temporal propio; retirada obligatoria)
 # (CLAUDE 2026-08-03T23:05:00-05:00) AVISO DE FIN del probe propio BL-35: retirado y verificado (mi fichero ausente, git status dags sin `??` mio). Observe el positivo con traceback completo. Lease del probe LIBERADO.
 # (CLAUDE 2026-08-03T23:05:00-05:00) Correccion de MI PROPIA auditoria BL-45: la fila #6 quedo stale tras `bf1e02f8`. Ficha propia.
-- .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-03T23:35:00-05:00 (errata fila #6, append)
 - .git/index | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-03T23:30:00-05:00 (commit --only ficha BL-45)
 # (CLAUDE 2026-08-03T23:10:00-05:00) RELEASE ficha BL-45 + indice: errata sellada 6d3a123c. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-03T23:30:00-05:00) Auditoria transversal propia de cableado (mide la afirmacion de CLD-315 en vez de narrarla). Fichero nuevo bajo integration/, disjunto de los de CODEX.
@@ -825,11 +823,9 @@
 - .git/index | CODEX | codex-root-continue-20260803-1831 | expira 2026-08-03T22:40:00-05:00 (commit --only PROGRESS)
 # (CODEX 2026-08-03T22:12:00-05:00 SKEW) RELEASE PROGRESS + indice: cofirma sellada `445fc7be`; gates 1106P/47S, links y grafo verdes. Sin leases CODEX activos.
 # (CLAUDE 2026-08-04T09:00:00-05:00) Segunda errata contra MI propia auditoria BL-45: el R2 esta mas completo de lo que declare; busque una clave `fallbacks` que no es el esquema. Doc-only, ficha propia. Lease PREVIO.
-- .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T09:35:00-05:00 (errata R2)
 - .git/index | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T09:30:00-05:00 (commit --only ficha)
 # (CLAUDE 2026-08-04T09:10:00-05:00) RELEASE ficha BL-45 + indice: segunda errata sellada 286ca56b. Doc-only, sin produccion. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-04T09:25:00-05:00) TERCERA errata contra mi auditoria BL-45: el factory NO ramifica por strategy_id. Doc-only. NO abro WIP de R3: su premisa era mi afirmacion erronea. Lease PREVIO.
-- .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T10:00:00-05:00 (errata R3)
 - .git/index | CLAUDE | claude-root-152c263e-r2 | expira 2026-08-04T09:55:00-05:00 (commit --only ficha)
 # (CLAUDE 2026-08-04T09:35:00-05:00) RELEASE ficha BL-45 + indice: tercera errata sellada d3a75061. NO abro WIP de R3: su premisa era mi error. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-04T09:50:00-05:00) Correccion de MI auditoria de cableado: `src/policy_engine` era un FALSO NEGATIVO por colision de nombre con stable_baselines3.evaluate_policy. Doc-only. Lease PREVIO.
@@ -1256,3 +1252,10 @@
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:47:00-05:00 (commit --only generic consumer)
 # (CODEX 2026-08-04T20:15:00-05:00) RELEASE generic ingest/test/index: `cb177022`; 9P, compileall/diff-check verdes.
 # (CLAUDE 2026-08-05T13:10:00-05:00) RELEASE R2 cobertura scoped: entregado en 32d58fc9. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T20:42:00-05:00) BL-18 DSR SSOT precision: gate uses full value, presentation rounds downstream.
+- services/common/metrics.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T21:22:00-05:00 (remove internal DSR/SR0 rounding)
+- tests/unit/test_deflated_sharpe.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T21:22:00-05:00 (lock exact 0.95004 boundary)
+- tests/regression/test_bl09_bl11_bl12_governance.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T21:22:00-05:00 (replace rounded gate expectations with full computed evidence)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T21:17:00-05:00 (commit --only BL-18 precision)
+# (CODEX 2026-08-04T21:00:00-05:00) RELEASE BL-18 DSR precision/test/index: `ffd88146`; 135P, compileall/diff-check verdes.
+# (CLAUDE 2026-08-05T14:00:00-05:00) RELEASE BL-45 + PROGRESS: corte 15/32/0. Sin leases CLAUDE activos.

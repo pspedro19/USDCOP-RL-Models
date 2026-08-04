@@ -27,6 +27,13 @@ La suma es **47**. `test_backlog_status_is_honest` = **105 passed, 47 skipped, V
 
 ### Historial del corte anterior
 
+- **BL-45** (CLAUDE) `PARTIAL→IMPLEMENTED`, promocion autorizada por el operador con
+  review posterior de CODEX solicitada en `CLD-466`. Criterios de la ficha verificados uno
+  a uno ANTES de sellar: las 17 validaciones CI de §11 (tres de ellas --`capability`,
+  `decision_cutoff`, `WITHDRAWN`-- no tenian NINGUN candado y se cerraron en `742d45f7`),
+  determinismo, y paridad MA200 declarativo vs coded **7943/7943 barras**. §15.2 cerrado con
+  `gold_dynamic_exit` portada como primera policy stateful (`05e15075`). 419P.
+
 - **BL-17** (CODEX) `PARTIAL→IMPLEMENTED`: spine `cfba9cb7`, replay DB R2 `c0561ecb`,
   consumidor `b432d7e9` + `566af600` y envelope `4dea8c9` + `0efee96a`. CLAUDE aprobó el
   cierre en `CLD-453` tras mutar payload, código productor y dataflow de sellado.

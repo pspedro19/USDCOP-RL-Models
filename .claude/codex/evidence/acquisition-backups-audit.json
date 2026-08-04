@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-28T17:57:35.918596+00:00",
+  "generated_at": "2026-08-04T00:48:21.776934+00:00",
   "files": [
     {
       "path": "data\\backups\\features\\asset_daily_ohlcv.parquet",
       "readable": true,
-      "rows": 60416,
+      "rows": 60432,
       "columns": [
         "time",
         "symbol",
@@ -20,9 +20,9 @@
       ],
       "time_column": "time",
       "start": "1979-12-27T00:00:00+00:00",
-      "end": "2026-07-27T00:00:00+00:00",
+      "end": "2026-07-29T00:00:00+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 32355,
+      "duplicate_timestamps": 32365,
       "median_gap_days": 0.0,
       "p95_gap_days": 1.0,
       "missing_pct": {
@@ -37,7 +37,7 @@
     {
       "path": "data\\backups\\features\\asset_native_ohlcv.parquet",
       "readable": true,
-      "rows": 286247,
+      "rows": 286428,
       "columns": [
         "time",
         "symbol",
@@ -53,9 +53,9 @@
       ],
       "time_column": "time",
       "start": "1971-12-01T00:00:00+00:00",
-      "end": "2026-07-27T19:00:00+00:00",
+      "end": "2026-07-29T00:00:00+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 207501,
+      "duplicate_timestamps": 207653,
       "median_gap_days": 0.0,
       "p95_gap_days": 0.041666666666666664,
       "missing_pct": {
@@ -342,7 +342,7 @@
     {
       "path": "data\\backups\\features\\macro_indicators_monthly.parquet",
       "readable": true,
-      "rows": 799,
+      "rows": 864,
       "columns": [
         "fecha",
         "polr_fed_funds_usa_m_fedfunds",
@@ -372,7 +372,7 @@
         "labr_sahm_usa_m_sahmrt"
       ],
       "time_column": "fecha",
-      "start": "1959-12-01T00:00:00+00:00",
+      "start": "1954-07-01T00:00:00+00:00",
       "end": "2026-06-01T00:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
@@ -409,7 +409,7 @@
     {
       "path": "data\\backups\\features\\market_ingestion_manifest.parquet",
       "readable": true,
-      "rows": 3262,
+      "rows": 3775,
       "columns": [
         "id",
         "run_at",
@@ -431,7 +431,7 @@
     {
       "path": "data\\backups\\features\\news_articles.parquet",
       "readable": true,
-      "rows": 119,
+      "rows": 132,
       "columns": [
         "id",
         "source_id",
@@ -462,17 +462,17 @@
       ],
       "time_column": "created_at",
       "start": "2026-07-05T19:59:18.296545+00:00",
-      "end": "2026-07-27T18:09:18.009277+00:00",
+      "end": "2026-07-28T12:09:01.457906+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 100,
+      "duplicate_timestamps": 111,
       "median_gap_days": 0.0,
-      "p95_gap_days": 0.2936924627928216,
+      "p95_gap_days": 0.39580185968750004,
       "missing_pct": {}
     },
     {
       "path": "data\\backups\\features\\news_feature_snapshots.parquet",
       "readable": true,
-      "rows": 7,
+      "rows": 8,
       "columns": [
         "id",
         "snapshot_date",
@@ -484,11 +484,11 @@
       ],
       "time_column": "created_at",
       "start": "2026-07-05T19:59:32.020830+00:00",
-      "end": "2026-07-27T14:06:04.105138+00:00",
+      "end": "2026-07-28T07:17:57.849877+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
-      "median_gap_days": 1.3382748184837965,
-      "p95_gap_days": 11.187370878408565,
+      "median_gap_days": 0.9996512889351853,
+      "p95_gap_days": 10.72711615579629,
       "missing_pct": {}
     },
     {
@@ -527,7 +527,7 @@
     {
       "path": "data\\backups\\features\\usdcop_m5_ohlcv.parquet",
       "readable": true,
-      "rows": 2204770,
+      "rows": 2206214,
       "columns": [
         "time",
         "symbol",
@@ -543,9 +543,9 @@
       ],
       "time_column": "time",
       "start": "2017-08-17T04:00:00+00:00",
-      "end": "2026-07-27T19:20:00+00:00",
+      "end": "2026-07-29T00:10:00+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 1265415,
+      "duplicate_timestamps": 1266513,
       "median_gap_days": 0.0,
       "p95_gap_days": 0.003472222222222222,
       "missing_pct": {
@@ -594,7 +594,7 @@
     {
       "path": "data\\backups\\seeds\\macro_indicators_daily_backup.parquet",
       "readable": true,
-      "rows": 18014,
+      "rows": 26326,
       "columns": [
         "fecha",
         "fxrt_index_dxy_usa_d_dxy",
@@ -627,21 +627,23 @@
         "finc_realyield10y_usa_d_dfii10",
         "volt_nfci_usa_d_nfci",
         "volt_stress_stlfsi_usa_d_stlfsi4",
-        "labr_claims_icsa_usa_d_icsa"
+        "labr_claims_icsa_usa_d_icsa",
+        "finc_spread_baa10y_usa_d_baa10y",
+        "polr_fed_funds_usa_d_dff"
       ],
       "time_column": "fecha",
-      "start": "1954-07-31T00:00:00+00:00",
-      "end": "2026-07-27T00:00:00+00:00",
+      "start": "1954-07-01T00:00:00+00:00",
+      "end": "2026-07-28T00:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
-      "p95_gap_days": 2.0,
+      "p95_gap_days": 1.0,
       "missing_pct": {}
     },
     {
       "path": "data\\backups\\seeds\\usdcop_m5_ohlcv_backup.parquet",
       "readable": true,
-      "rows": 2204770,
+      "rows": 2206214,
       "columns": [
         "time",
         "symbol",
@@ -654,9 +656,9 @@
       ],
       "time_column": "time",
       "start": "2017-08-17T04:00:00+00:00",
-      "end": "2026-07-27T19:20:00+00:00",
+      "end": "2026-07-29T00:10:00+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 1265415,
+      "duplicate_timestamps": 1266513,
       "median_gap_days": 0.0,
       "p95_gap_days": 0.003472222222222222,
       "missing_pct": {
@@ -838,7 +840,7 @@
     {
       "path": "seeds\\latest\\spx500_daily_ohlcv.parquet",
       "readable": true,
-      "rows": 7942,
+      "rows": 7943,
       "columns": [
         "time",
         "symbol",
@@ -850,7 +852,7 @@
       ],
       "time_column": "time",
       "start": "1995-01-03T21:00:00+00:00",
-      "end": "2026-07-27T20:00:00+00:00",
+      "end": "2026-07-28T20:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
@@ -918,7 +920,7 @@
     {
       "path": "seeds\\latest\\usdcop_daily_ohlcv.parquet",
       "readable": true,
-      "rows": 1703,
+      "rows": 1704,
       "columns": [
         "time",
         "open",
@@ -928,7 +930,7 @@
       ],
       "time_column": "time",
       "start": "2019-12-18T00:00:00+00:00",
-      "end": "2026-07-27T00:00:00+00:00",
+      "end": "2026-07-28T00:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
@@ -1099,7 +1101,7 @@
     "files": 34,
     "readable": 34,
     "unreadable": 0,
-    "rows": 5115486
+    "rows": 5127477
   },
   "decision": "PASS"
 }

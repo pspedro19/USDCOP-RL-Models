@@ -1,10 +1,16 @@
 ---
 kind: roadmap
-status: PARTIAL
-version: 1.1.0
+status: IMPLEMENTED
+version: 1.2.0
 last_verified: 2026-08-03
 supersedes: []
 code_anchors:
+  - src/contracts/policy.py
+  - src/contracts/policy_dsl.py
+  - src/strategies/policies/gold_dynamic_exit.py
+  - tests/unit/test_policy_ci_validations_gap.py
+  - tests/unit/test_ma200_declarative_parity.py
+  - tests/unit/test_policy_state_contract.py
   - src/contracts/signal_contract.py
   - airflow/dags/asset_pipeline_factory.py
   - config/assets/pipelines.yaml
