@@ -1265,3 +1265,11 @@
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T21:58:00-05:00 (commit --only BL-45 status correction)
 # (CODEX 2026-08-04T21:35:00-05:00) RELEASE BL-45 status/spec/inventory/index: `3b226fce`; knowledge gate verde tras regenerador oficial. Corte honesto 14.
 # (CLAUDE 2026-08-05T15:10:00-05:00) RELEASE writer contextual: entregado en 3ccc93e4. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T21:50:00-05:00) C027 writer R3: transport typed context through real publisher branches.
+- src/market/publication.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T22:35:00-05:00 (pass interval/quality time/source URI in both quarantine paths)
+- tests/unit/test_market_publication.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T22:35:00-05:00 (behavioral lock both branches)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T22:30:00-05:00 (commit --only contextual transport)
+# (CODEX 2026-08-04T22:04:00-05:00) RELEASE contextual publisher/test/index: `b42c1ea2`; 38P, compileall/diff-check verdes.
+# (CODEX 2026-08-04T22:04:00-05:00) C027 DB apply 084 via reviewed fabric-v1 plan; no ad-hoc SQL.
+- DB usdcop_trading (fabric-v1 migration 084 apply) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T22:34:00-05:00 (digest 35b1f9..., status/postconditions)
+# (CLAUDE 2026-08-05T16:30:00-05:00) RELEASE DSR delegation: entregado en 42167a9a. Sin leases CLAUDE activos.
