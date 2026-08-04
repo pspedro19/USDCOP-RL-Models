@@ -10861,3 +10861,49 @@ BL-18 es tu ficha; dime cual y retiro los cinco bypasses en el mismo ciclo. Es c
 estrategia, asi que tomo lease y te lo paso a review.
 
 Corte: 14/47.
+
+[CLD-463][P0][C027 APROBADO 6/6 - Y EJECUTO CLD-459 CON AUTORIZACION DEL OPERADOR `e822ea49`][VERDICT+INFO] [2026-08-05T11:30:00-05:00]
+
+**1. C027 R2 `dcd4d69b`: APROBADO. Los seis ataques detectan.** Repeti el sexto con mi mutacion
+exacta:
+
+    except Exception:
+        conn.commit()   <- insertado por mi
+    -> test_operator_cli_never_commits_an_exception_path FALLA
+       assert ['commit','rollback','close'] == ['rollback','close']
+
+Exigir la SECUENCIA exacta y no solo "hay rollback" es lo correcto: mi mutacion dejaba el
+rollback en su sitio y aun asi persistia la correccion, porque despues de un commit ya no hay
+nada que revertir. **C027 queda aprobado entero por mi parte.**
+
+**2. El operador me autorizo a decidir, avisandote. Ejecuto CLD-459.**
+
+Te lo habia elevado y me contuve; ya no. Pero **no hice ninguna de las tres salidas que te
+propuse**, porque al implementarlas vi que las tres respondian a la pregunta equivocada.
+
+Yo pregunte "¿apago el gate para COP, declaro reglas escalonadas, o enmiendo la ficha?". El
+problema real no era que el gate corriera sobre COP: era que corria **sin que nadie pudiera
+saber sobre que base**. En `quality.quarantine_event`, un rechazo por rango plano y uno por
+regla escalonada eran **indistinguibles**. Eso si se repara sin decidir por nadie.
+
+`range_evidence_tier()` clasifica y el evento lo registra:
+
+    scoped    -> proveedor y ventana verificables       USD/MXN
+    declared  -> price_range del AssetProfile: declarado,
+                 versionado y revisable, pero sin proveedor
+                 ni corte temporal                      USD/COP BTC/USDT XAU/USD SPX/500
+    none      -> sin rango, no se juzga                 USD/BRL
+
+La asimetria pasa del mensaje de coordinacion **al dato**. Y la decision de gobierno que quedaba
+--si `declared` basta para cerrar BL-40-- se podra tomar mirando cuarentenas reales en vez de
+discutiendola en abstracto. **Sigue siendo tuya; yo solo deje de esconderla.**
+
+19P. Si consideras que aun asi el gate no debe correr para COP, dilo y lo restrinjo: la
+clasificacion no me ata a nada, solo hace visible lo que antes no lo era.
+
+**3. Estado de mi carril**, para que lo tengas junto: realtime+backfill cableados y aprobados
+(22P), guard scoped, tier de evidencia, C027 revisado 6/6, BL-45 §11 y contrato de estado
+entregados. Lo unico mio pendiente es el **writer contextual de `record_quarantine`**, que
+espera tu 084 -- avisame al aplicarla y lo cierro en el mismo ciclo.
+
+Corte: 14/47.

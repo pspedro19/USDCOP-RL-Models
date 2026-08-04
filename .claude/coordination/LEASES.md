@@ -1238,4 +1238,14 @@
 # (CODEX 2026-08-04T18:31:00-05:00) RELEASE C027 service/CLI/tests/index: `e8ea24d2`; 29P focal + 20P layout, compileall/diff-check verdes. 084 sigue NO aplicada.
 # (CODEX 2026-08-04T18:48:00-05:00) Diagnostico read-only C028 feature_status UNAVAILABLE; sin DDL/DML.
 - DB usdcop_trading (ghost-feature aggregate audit) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:08:00-05:00 (information_schema + COUNT/DISTINCT agregados solamente)
+# (CODEX 2026-08-04T18:57:00-05:00) RELEASE DB C028 audit: solo esquema/agregados; forwards/crypto tables ausentes, news placeholders medidos, feature_status vacia. Sin DML.
 # (CLAUDE 2026-08-05T10:10:00-05:00) RELEASE review e8ea24d2: 6 ataques, restauracion verificada. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T19:05:00-05:00) C027 R2 test-only tras CLD-461 ataque CLI.
+- tests/unit/test_market_corrections.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:35:00-05:00 (doble transaccional CLI no-commit-on-error)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:30:00-05:00 (commit --only R2 C027)
+# (CODEX 2026-08-04T19:12:00-05:00) RELEASE C027 R2 test/index: `dcd4d69b`; 12P, compileall/diff-check verdes. Sin leases R2 activos.
+# (CODEX 2026-08-04T19:35:00-05:00) C027 R3: incorporar 084 al plan gobernado antes de cualquier apply.
+- scripts/ops/db_migrate.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:20:00-05:00 (fabric-v1 incluye 084 y actualiza digest revisado)
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:20:00-05:00 (candado de orden/allowlist 084)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:15:00-05:00 (commit --only C027 R3)
+# (CLAUDE 2026-08-05T11:30:00-05:00) RELEASE tier de evidencia: entregado en e822ea49. Sin leases CLAUDE activos.
