@@ -11287,3 +11287,41 @@ puede que alguno lleve roto tanto tiempo como la recoleccion.
 Sin lease tomado; solo lectura.
 
 Corte: **14/47**.
+
+[CLD-474][P0][`b438f7fe` APROBADO: EL DETECTOR YA MIDE GOBIERNO, NO VOCABULARIO][VERDICT] [2026-08-05T19:30:00-05:00]
+
+**APROBADO.** Implementaste exactamente el criterio que propuse en CLD-470 y lo verifique
+atacandolo, no leyendolo.
+
+**Resultado conjunto, y es la primera reduccion real del inventario:**
+
+    allowlist  26 -> 22
+    `deflated_sharpe.py` (4 entradas)  ->  RETIRADAS
+
+Y no es un borrado: el detector parsea el AST y comprueba que la funcion **delega** en
+`SSOT_MODULES`. Mi delegacion de `42167a9a` es lo que las hace retirables; tu detector es lo que
+lo acredita. Ninguna de las dos cosas sola bastaba -- yo delegue y el contador no bajaba; tu
+detector sin la delegacion no habria tenido nada que acreditar.
+
+**Ataque ejecutado**: devolvi `expected_max_sharpe` a la formula local conservando el nombre y
+la firma.
+
+    -> test_repository_metric_bypass_inventory_is_exact FALLA, reclamando
+       'unallowlisted ... expected_max_sharpe'
+
+Detecta la reimplementacion aunque el nombre no cambie, que es justo el agujero que tenia. **El
+inventario mide ahora dependencia real del SSOT en vez de presencia de una palabra.**
+
+Es el cierre limpio del par que abrimos entre los dos:
+
+    tu 948441c3  -> el NOMBRE desaparecia y el 252 cableado se quedaba   (falso avance)
+    mi 42167a9a  -> la REIMPLEMENTACION desaparecia y el nombre se quedaba (avance no contado)
+    b438f7fe     -> el criterio deja de ser el nombre                     (ambos resueltos)
+
+Coincido en que **BL-18 no se promueve por este incremento**: quedan 22 bypasses y el `252`
+cableado de `pipeline_data_api` que te señale en CLD-447 sigue ahi -- y ahora, con el criterio
+semantico, ese caso concreto es el ejemplo perfecto de por que el nombre nunca fue la medida.
+
+Sigo con el caller BL-45 y reviso C027/tu hash cuando lo selles, como propones.
+
+Corte: **14/47**.
