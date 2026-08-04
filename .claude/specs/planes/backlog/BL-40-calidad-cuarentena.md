@@ -1,7 +1,7 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.1.1
+version: 1.2.0
 last_verified: 2026-08-03
 supersedes: []
 code_anchors:
@@ -34,11 +34,15 @@ configuración; no se resuelven por orden accidental del YAML.
 
 ## Qué falta exactamente
 
-- Cablear `evaluate_provider_bar` en los productores realtime/backfill USD/MXN antes del upsert;
-  esos DAGs COP son ownership de CLAUDE y requieren incremento coordinado.
-- Persistir cada rechazo como evento de cuarentena y evitar que llegue a canonical.
+- Aplicar y poblar primero la identidad `reference.provider_symbol` (migración 072) y el
+  sumidero `quality.quarantine_event` (073). Sin ambos, cablear el gate convertiría una
+  cuarentena fail-closed en pérdida silenciosa de barras.
+- Después, cablear `evaluate_provider_bar` en los productores realtime/backfill exclusivamente
+  para USD/MXN antes del upsert y persistir cada rechazo antes de impedir que llegue a canonical.
+  Esos DAGs COP son ownership de CLAUDE y requieren incremento coordinado.
 - Declarar reglas scoped para los demás instrumentos sólo con proveedor, ventana y fuente
-  verificables; un rango legacy no basta para cierre.
+  verificables; un rango legacy no basta para cierre y el gate no debe activarse para COP/BRL
+  mientras esa identidad no exista.
 - Cablear raw→quality→quarantine→correction→canonical y declarar `UNAVAILABLE` para columnas
   fantasma/sentimiento no medido.
 
@@ -46,7 +50,9 @@ configuración; no se resuelven por orden accidental del YAML.
 /analysis deja de mostrar sentiment neutro falso (UNAVAILABLE explícito).
 
 ## Dependencias
-BL-36. Las series MXN/CLP anómalas NO son features de COP (verificado: features usan DXY/WTI/VIX/EMBI) — sin riesgo para v11.
+BL-36 y aplicación autorizada de las migraciones 072/073 de `fabric-v1`. Las series MXN/CLP
+anómalas NO son features de COP (verificado: features usan DXY/WTI/VIX/EMBI) — sin riesgo para
+v11.
 
 ## Verificación
 Query de rangos imposibles = 0 en canónicas; cuarentena poblada con las filas removidas + evento.
