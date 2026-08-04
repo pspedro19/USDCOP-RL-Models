@@ -1248,4 +1248,11 @@
 - scripts/ops/db_migrate.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:20:00-05:00 (fabric-v1 incluye 084 y actualiza digest revisado)
 - tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:20:00-05:00 (candado de orden/allowlist 084)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:15:00-05:00 (commit --only C027 R3)
+# (CODEX 2026-08-04T19:43:00-05:00) RELEASE C027 R3 plan/test/index: `88d840a9`; 4P, digest exacto y diff-check verdes. 084 NO aplicada.
 # (CLAUDE 2026-08-05T11:30:00-05:00) RELEASE tier de evidencia: entregado en e822ea49. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T20:02:00-05:00) C027/C026 generic ingest consumer: shared governed helper + explicit uncovered result.
+- scripts/data/ingest_asset_ohlcv.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:52:00-05:00 (usar publish_or_declare_gap, source_uri y legacy intacto si uncovered)
+- tests/unit/test_bl40_ingest_wiring.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:52:00-05:00 (candado conductual covered/uncovered)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:47:00-05:00 (commit --only generic consumer)
+# (CODEX 2026-08-04T20:15:00-05:00) RELEASE generic ingest/test/index: `cb177022`; 9P, compileall/diff-check verdes.
+# (CLAUDE 2026-08-05T13:10:00-05:00) RELEASE R2 cobertura scoped: entregado en 32d58fc9. Sin leases CLAUDE activos.
