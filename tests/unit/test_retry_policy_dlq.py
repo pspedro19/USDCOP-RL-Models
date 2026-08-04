@@ -74,3 +74,42 @@ def test_save_to_dlq_reaches_the_service_instead_of_warning(monkeypatch):
     assert saved[0]["source"] == "fred"
     assert saved[0]["variable"] == "FEDFUNDS"
     assert saved[0]["error_type"] == "RuntimeError"
+
+
+def test_fallback_branch_makes_services_package_importable(tmp_path):
+    """La rama sin paquete raiz `services` tambien debe resolver el submodulo.
+
+    Esta rama no la ejercitaba nadie, y por eso sobrevivio un bug real (CXD-302):
+    añadia `dags/services` a `sys.path`, con lo que `dlq_service` quedaba
+    importable como modulo TOP-LEVEL y `services.dlq_service` seguia fallando. Lo
+    que hay que poner en el path es el directorio de DAGs.
+
+    Se ejecuta en subproceso con un `sys.path` donde el paquete raiz `services`
+    NO existe; asi la rama se toma de verdad y no depende del orden de imports de
+    la sesion de tests.
+    """
+    import json
+    import subprocess
+    import sys as _sys
+
+    program = f"""
+import json, sys, importlib, importlib.util
+# path minimo: sin la raiz del repo, luego no hay paquete `services` que gane
+sys.path = [p for p in sys.path if p not in ({str(REPO)!r}, "")]
+spec = importlib.util.spec_from_file_location("rp_fallback", {str(RETRY_POLICY)!r})
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+try:
+    importlib.import_module("services.dlq_service")
+    print(json.dumps({{"ok": True}}))
+except Exception as exc:
+    print(json.dumps({{"ok": False, "error": f"{{type(exc).__name__}}: {{exc}}"}}))
+"""
+    proc = subprocess.run(
+        [_sys.executable, "-c", program],
+        capture_output=True,
+        text=True,
+        cwd=str(tmp_path),
+    )
+    payload = json.loads(proc.stdout.strip().splitlines()[-1])
+    assert payload["ok"], f"la rama fallback no resolvio services.dlq_service: {payload}"

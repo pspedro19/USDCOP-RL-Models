@@ -78,9 +78,15 @@ def _ensure_dags_services() -> None:
     local_services = str(_DAGS_DIR / 'services')
     try:
         import services
-    except ImportError:  # no root package present: plain sys.path is enough
-        if local_services not in sys.path:
-            sys.path.append(local_services)
+    except ImportError:
+        # No package wins the name yet.  The DAGS dir — not the ``services``
+        # subdir — is what must be importable, or ``dlq_service`` would only be
+        # reachable as a TOP-LEVEL module and ``services.dlq_service`` would keep
+        # failing.  (Reported by CODEX in CXD-302; the first version appended the
+        # subdir and the fallback branch was never exercised.)
+        dags_dir = str(_DAGS_DIR)
+        if dags_dir not in sys.path:
+            sys.path.append(dags_dir)
         return
     if local_services not in services.__path__:
         services.__path__.append(local_services)

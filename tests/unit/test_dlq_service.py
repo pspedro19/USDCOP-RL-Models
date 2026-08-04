@@ -28,6 +28,19 @@ for path in [str(DAGS_PATH), str(PROJECT_ROOT / 'src')]:
     if path not in sys.path:
         sys.path.insert(0, path)
 
+# `conftest.py` inserta PROJECT_ROOT, asi que el paquete RAIZ `services/` puede
+# haber ganado ya el nombre. Una vez importado, su `__path__` esta fijado y tocar
+# `sys.path` despues NO reabre `services.dlq_service`: hay que extender el
+# `__path__` del paquete que gano. Se hace aqui, y no en `conftest`, a proposito:
+# globalizarlo haria trivialmente cierto el candado de
+# `test_retry_policy_dlq.py`, que existe justamente para probar que
+# `utils/retry_policy._ensure_dags_services` hace esto por si mismo (CXD-302).
+import services as _services  # noqa: E402
+
+_LOCAL_SERVICES = str(DAGS_PATH / 'services')
+if _LOCAL_SERVICES not in _services.__path__:
+    _services.__path__.append(_LOCAL_SERVICES)
+
 from services.dlq_service import (
     DeadLetterQueueService,
     DeadLetterEntry,
