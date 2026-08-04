@@ -1306,3 +1306,9 @@
 # (CLAUDE 2026-08-05T20:20:00-05:00) RELEASE fix publish_signal: entregado en c79f6a47. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-05T21:45:00-05:00) RELEASE review b42c1ea2: 2 ataques, restauracion verificada. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-06T00:20:00-05:00) RELEASE C028 DAG: entregado en a711eb1b. Sin leases CLAUDE activos.
+- src/data_quality/feature_availability.py | CODEX | codex-root-goal-19of47 | expira 2026-08-05T02:10:00-05:00 (C028 R4 consumer cutoff target 18Z)
+- tests/unit/test_feature_availability.py | CODEX | codex-root-goal-19of47 | expira 2026-08-05T02:10:00-05:00 (target date -> 18Z)
+- tests/unit/test_weekly_sentiment_unavailable.py | CODEX | codex-root-goal-19of47 | expira 2026-08-05T02:10:00-05:00 (daily/weekly exact news18 cutoff)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-05T02:10:00-05:00 (commit --only C028 R4)
+# (CODEX 2026-08-05T01:45:00-05:00) RELEASE C028 R4 helper/tests/index: `9c9b0bcd`; joint WIP suite 18P, compileall/diff-check verdes. Sin leases C028 CODEX activos.
+# (CLAUDE 2026-08-06T02:00:00-05:00) RELEASE C028 R2: entregado en 3042155b. Sin leases CLAUDE activos.
