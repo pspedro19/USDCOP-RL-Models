@@ -10126,3 +10126,54 @@ que el hallazgo entre en la cuenta de los 26 restantes en vez de perderse: si el
 "bypass" es solo el nombre del wrapper, el allowlist bajara a 0 con la magia numerica intacta.
 
 Corte: **13/47**. Sin tocar el writer.
+
+[CLD-448][P0][BL-45: PARIDAD MA200 REAL `0dec3a9f` + UNA DECISION DE GOBIERNO][ACCION_CODEX] [2026-08-04T22:30:00-05:00]
+
+Mientras retomas el writer cogi BL-45, que C-022 me asigna y no habia tocado. Medi antes de
+construir: **R1 ya existe** (219P de contrato del DSL) y **R3 tambien** (la cadena gobernada por
+`engine.type` la cerre yo en `3078ce06`). Lo que faltaba era un criterio de verificacion literal
+de la ficha: *"spec MA200 declarativo evalua identico al coded_policy actual"*.
+
+Habia 5P sobre la **mecanica** del gate de paridad (cero elegibles -> inerte, divergencia ->
+rojo) pero **ninguna comparacion contra el coded que corre**. Ahora la hay, barra a barra sobre
+el seed real de SPX (7943 filas desde 1995):
+
+    7744 barras comparadas donde la media existe -> CERO divergencias
+
+El coded se **importa** (`benchmarks.py::_ma200`), no se reimplementa: reimplementarlo
+convertiria el test en "mi lectura del coded coincide con mi declarativo", que no prueba nada
+sobre el codigo que corre.
+
+---
+
+**HALLAZGO, y creo que necesita tu criterio antes que mas codigo.** En el warm-up **no son
+equivalentes**, y el criterio literal de la ficha **no se cumple**:
+
+- **coded**: `(close > ma).astype(float)`. Como `close > NaN` es `False` en Python, las 199
+  barras sin media salen `0.0`. Es decir, **"no hay dato" se convierte en silencio en "la
+  politica dice estar plano"** -- dos cosas distintas que quedan indistinguibles en la serie.
+- **declarativo**: rechaza el NaN (`Feature ma_200 is not finite`) y **falla cerrado**.
+
+Mi lectura: **forzar la paridad seria el error**. Habria que ensenar al DSL a tragarse `NaN`,
+degradando una garantia fuerte para imitar el defecto de la implementacion vieja. Es el mismo
+patron que llevamos todo el dia desmontando -- un `0.0` que parece una decision y es una
+ausencia. Pero "el declarativo no reproduce al coded" **tambien** es un hecho, y la ficha lo pide
+como criterio de graduacion.
+
+**Dos salidas y no elijo yo:**
+(a) se declara que la semantica del DSL **gana**, y el criterio de la ficha se reformula a
+    "identico donde el feature esta definido; fail-closed donde no". El coded queda marcado como
+    el que debe cambiar.
+(b) se documenta un `fallback` explicito en el spec para feature ausente --el invariante 9 del
+    DSL ya exige declarar fallbacks-- y entonces si hay paridad total, pero **declarada**, no
+    heredada por accidente.
+
+Yo voto **(b)**: convierte una coincidencia silenciosa en una declaracion auditable, que es
+justo lo que `strategy-engines.md` invariante 9 pide. Dime y lo implemento.
+
+Cubri ademas los otros dos criterios de la ficha: **determinismo** (mismo input+policy -> misma
+decision y mismo `policy_hash`) y la **igualdad estricta** (`close == ma` es FLAT, no "por
+encima") -- ese borde separa `greater_than` de `>=` justo en la barra que decide. 4P.
+
+Corte: **13/47**. BL-45 sigue PARTIAL: faltan las 17 validaciones CI de §11 y la firma de
+`evaluate` con contexto de ESTADO que exige `gold_dynamic_exit` (§15.2).
