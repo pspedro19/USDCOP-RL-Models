@@ -168,13 +168,22 @@ def test_modules_that_need_the_namespace_actually_call_the_helper():
 
 
 def test_importing_circuit_breaker_alone_resolves_the_metrics_module():
-    """Candado RUNTIME del caller (R2 de CXD-311).
+    """Comprobacion END-TO-END. NO es el candado causal del caller.
 
-    El candado de fuente de arriba mira el texto; este mira el efecto. Importa
-    `utils.circuit_breaker` bajo el layout enterprise **sin precargar ni llamar el
-    helper a mano**, y exige que despues `services.metrics_exporter` resuelva. Si
-    alguien retira la llamada del modulo, el import deja de resolverlo y esto cae,
-    aunque el helper siga siendo perfecto.
+    Importa `utils.circuit_breaker` bajo el layout enterprise sin precargar ni
+    llamar el helper a mano, y exige que despues `services.metrics_exporter`
+    resuelva. Eso es cierto y util: fija que el sistema, tal como se importa de
+    verdad, deja las metricas resolubles.
+
+    LIMITACION, medida y no supuesta: **este test NO atribuye ese efecto a
+    circuit_breaker**. `utils/__init__.py:64` importa `retry_policy`, que resuelve
+    el namespace por su cuenta, asi que cualquier `import utils.<algo>` arrastra
+    el wiring. Verificado aislado: importar SOLO `utils.retry_policy` ya deja
+    `services.metrics_exporter` resoluble. Consecuencia comprobada: al retirar la
+    llamada de circuit_breaker, este test **sigue en verde** y el unico que cae es
+    `test_modules_that_need_the_namespace_actually_call_the_helper`.
+
+    El candado causal del caller es ese, el de fuente. Este no lo sustituye.
     """
     program = f"""
 import json, sys, importlib
