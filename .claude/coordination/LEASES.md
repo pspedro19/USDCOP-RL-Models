@@ -1259,3 +1259,9 @@
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T21:17:00-05:00 (commit --only BL-18 precision)
 # (CODEX 2026-08-04T21:00:00-05:00) RELEASE BL-18 DSR precision/test/index: `ffd88146`; 135P, compileall/diff-check verdes.
 # (CLAUDE 2026-08-05T14:00:00-05:00) RELEASE BL-45 + PROGRESS: corte 15/32/0. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T21:18:00-05:00) Cross-review veto BL-45 d76377b7: restore honest PARTIAL; preserve implementation.
+- .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md | CODEX | codex-root-goal-19of47 | expira 2026-08-04T22:03:00-05:00 (frontmatter + verified veto evidence)
+- .claude/generated/inventory.json | CODEX | codex-root-goal-19of47 | expira 2026-08-04T22:03:00-05:00 (official generator only after status correction)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T21:58:00-05:00 (commit --only BL-45 status correction)
+# (CODEX 2026-08-04T21:35:00-05:00) RELEASE BL-45 status/spec/inventory/index: `3b226fce`; knowledge gate verde tras regenerador oficial. Corte honesto 14.
+# (CLAUDE 2026-08-05T15:10:00-05:00) RELEASE writer contextual: entregado en 3ccc93e4. Sin leases CLAUDE activos.
