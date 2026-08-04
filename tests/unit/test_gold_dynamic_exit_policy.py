@@ -34,7 +34,7 @@ SPEC = {
     "inputs": {
         "feature_set_id": "xauusd_dynamic_exit_action_v1",
         "resample_policy_id": "gold_daily_official_v1",
-        "required_features": ["open", "high", "low", "close", "atr_14",
+        "required_features": ["open", "high", "low", "close", "atr_14", "atr_prev",
                               "signal_prev", "size_prev"],
         "optional_features": [],
         "decision_point": "session_close",
@@ -57,7 +57,7 @@ def _politica():
 
 def _barra(**kw):
     base = {"open": 100.0, "high": 101.0, "low": 99.0, "close": 100.0,
-            "atr_14": 1.0, "signal_prev": 1, "size_prev": 0.5}
+            "atr_14": 1.0, "atr_prev": 1.0, "signal_prev": 1, "size_prev": 0.5}
     base.update(kw)
     return base
 
@@ -151,3 +151,42 @@ def test_two_contexts_do_not_share_the_open_trade() -> None:
     politica.evaluate(_barra(), uno)
     assert uno.state["in_trade"] is True
     assert otro.state == {}, "el segundo contexto heredo el trade abierto del primero"
+
+
+def test_the_entry_stop_uses_yesterdays_atr_not_todays() -> None:
+    """Defecto que midio Codex (CXD-490) y por el que rechazo la promocion: era real.
+
+    El simulador fija el stop de entrada con `atr_14.iloc[i-1]` y solo DESPUES lo
+    actualiza con el de hoy. Mi port usaba el de hoy en ambos sitios:
+
+        atr_prev=1, atr=10  ->  simulador 98.0   ·   mi policy 80.0
+
+    No es un detalle de precision: usar el ATR de HOY para el stop de entrada consume
+    informacion de la misma barra en la que se entra, que es la clase de fuga que esta
+    familia de estrategias tiene mas a mano.
+    """
+    politica = _politica()
+    ctx = PolicyContext(as_of="2026-01-05", mode="DECISION")
+
+    politica.evaluate(_barra(open=100.0, close=100.0, atr_14=10.0, atr_prev=1.0), ctx)
+
+    assert ctx.state["trail_px"] == 98.0, (
+        f"stop de entrada {ctx.state['trail_px']} en vez de 98.0: el ATR de hoy "
+        "volvio a fijar la entrada"
+    )
+
+
+def test_partial_state_fails_closed_instead_of_defaulting_to_zero() -> None:
+    """Un `in_trade=True` sin memoria no es "un trade de tamaño cero": es corrupcion.
+
+    Mi primera version leia `estado.get("size", 0.0)`, asi que un store truncado --por
+    un reinicio a medias, por una restauracion parcial-- habria decidido sobre memoria
+    inventada. Es el mismo defecto que perseguimos en los datos (una ausencia
+    renderizada como valor), aplicado al estado.
+    """
+    politica = _politica()
+    ctx = PolicyContext(as_of="2026-01-05", mode="DECISION")
+    ctx.state = {"in_trade": True}   # truncado: sin size ni trail_px
+
+    with pytest.raises(ValueError, match="estado incompleto"):
+        politica.evaluate(_barra(), ctx)

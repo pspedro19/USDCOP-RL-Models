@@ -50,7 +50,9 @@ STATE_KEYS = ("in_trade", "size", "hi_close", "trail_px")
 class GoldDynamicExitPolicy(CodedPolicy):
     """Entrada por voto de tendencia; salida por señal muerta o trailing stop ATR."""
 
-    required = ("open", "high", "low", "close", "atr_14", "signal_prev", "size_prev")
+    required = (
+        "open", "high", "low", "close", "atr_14", "atr_prev", "signal_prev", "size_prev",
+    )
 
     def decide(
         self, snapshot: Mapping[str, Any], context: PolicyContext
@@ -61,6 +63,12 @@ class GoldDynamicExitPolicy(CodedPolicy):
         minimo = self._get(snapshot, "low")
         cierre = self._get(snapshot, "close")
         atr = self._get(snapshot, "atr_14")
+        # ATR de AYER: el simulador fija el stop de entrada con `atr_14.iloc[i-1]` y
+        # sólo despues lo actualiza con el de hoy. Yo usaba el de hoy en ambos sitios y
+        # divergia -- con atr_prev=1 / atr=10 el simulador da 98 y yo daba 80 (CXD-490).
+        # No es un detalle de precision: usar el ATR de hoy para el stop de entrada
+        # consume informacion de la barra en la que se entra.
+        atr_ayer = self._get(snapshot, "atr_prev")
         senal_ayer = int(self._get(snapshot, "signal_prev"))
         size_ayer = float(self._get(snapshot, "size_prev"))
 
@@ -91,8 +99,11 @@ class GoldDynamicExitPolicy(CodedPolicy):
             # barra sería otra estrategia.
             estado["size"] = size_ayer
             estado["hi_close"] = max(apertura, cierre)
+            # Stop inicial con el ATR de AYER, y sólo despues el trailing de hoy: es el
+            # orden exacto del simulador congelado.
             estado["trail_px"] = max(
-                apertura - trail_mult * atr, estado["hi_close"] - trail_mult * atr
+                apertura - trail_mult * atr_ayer,
+                estado["hi_close"] - trail_mult * atr,
             )
             return self._decide_out(
                 context, "LONG", size_ayer, ("ENTRY_TREND_VOTE",), entradas, snapshot
@@ -101,8 +112,19 @@ class GoldDynamicExitPolicy(CodedPolicy):
         # En trade: las salidas se evalúan ANTES de actualizar el trailing, igual que el
         # simulador. Actualizar primero dejaría que el stop de hoy persiguiera al precio
         # de hoy y la salida no dispararía nunca.
-        size = float(estado.get("size", 0.0))
-        trail_px = float(estado.get("trail_px", 0.0))
+        # Estado PARCIAL falla cerrado: un `in_trade=True` sin `size` ni `trail_px` no
+        # es "un trade con size cero", es un store corrupto o truncado. Rellenarlo con
+        # 0.0 haria decidir sobre memoria inventada -- el mismo defecto que perseguimos
+        # en los datos, aplicado al estado.
+        faltantes = [k for k in ("size", "trail_px", "hi_close") if k not in estado]
+        if faltantes:
+            raise ValueError(
+                f"{self.sleeve_id}: estado incompleto con in_trade=True, faltan "
+                f"{faltantes}. Un trade abierto sin su memoria no se puede continuar; "
+                "el runner debe restaurar el store o declarar la posicion cerrada"
+            )
+        size = float(estado["size"])
+        trail_px = float(estado["trail_px"])
 
         senal_muerta = senal_ayer == 0
         toca_trailing = minimo <= trail_px
