@@ -51,6 +51,9 @@ code_anchors:
 ## 3. Data Model
 
 - **`sb_users`** (`init-scripts/21-signalbridge-users-schema.sql:22`) — UUID PK, email (unique), bcrypt password hash, `is_verified`, `last_login`, timestamps. **Ya NO carece de rol** (verificado contra la DB viva, 2026-08-04): tras aplicar `platform-bootstrap-v1` la tabla suma `role` (default `'user'`), `status` (default `'pending'`), `must_reset_password`, `approved_by`/`approved_at`, `rejected_at`/`rejection_reason` (migración `053`) y `entitlements` JSONB (default `{"plan":"free"}`, migración `055`).
+- **`sb_trading_configs`** — per-user default trading config created at registration.
+- Token state is Redis-only (blacklist by `jti`, lockout counters) — no DB sessions table. Managed by Alembic + the init-script schema.
+
 ### Bootstrap del primer admin — mecanismo existente
 
 Sin admin, el registro deja a todo usuario en `status='pending'` y aprobar exige un `admin_id` que
@@ -72,8 +75,6 @@ aprobar a nadie. Ese círculo lo rompe un mecanismo que **ya existe**, no un scr
 >
 > Lección para el orden de arranque: un bootstrap idempotente que corre al inicio **no compensa un
 > esquema incompleto** — falla silencioso en el log y deja el sistema sin puerta de entrada.
-- **`sb_trading_configs`** — per-user default trading config created at registration.
-- Token state is Redis-only (blacklist by `jti`, lockout counters) — no DB sessions table. Managed by Alembic + the init-script schema.
 
 ## 4. Security Posture & Backlog
 
