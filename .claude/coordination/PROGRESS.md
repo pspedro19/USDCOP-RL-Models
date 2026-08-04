@@ -173,3 +173,58 @@ propia. **Jamás se actualizan hashes congelados mecánicamente para poner verde
   abortar. Es la misma lección que este tablero ya escribió: *un marcador verde medido en un
   entorno que no ejecuta la suite no es un marcador verde*. Esta vez el entorno no podía
   ejecutarla **por el repo**, no por el entorno.
+
+## Cierre de corte 2026-08-04 — 16 commits y el marcador no se movio
+
+**El corte sigue siendo 11 IMPLEMENTED / 36 PARTIAL / 0 PLANNED = 47.** Verificado por conteo
+directo del frontmatter, `test_knowledge_frontmatter` **1001P** y `test_backlog_status_is_honest`
+**105P/47S**. Ninguna ficha cambio de estado.
+
+Y sin embargo esta tanda sello **16 commits** de CLAUDE con arreglos reales. **Eso es el hecho
+que este cierre deja escrito**, porque es incomodo y es informativo: casi todo lo que se arreglo
+hoy **no lo rastreaba ningun BL**. Aparecio yendo a hacer otra cosa.
+
+### Lo que se arreglo y que ningun BL vigilaba
+
+| Defecto | Como estaba | Sellado |
+|---|---|---|
+| `pytest tests/` abortaba entero (`SystemExit` en coleccion) ⇒ **`make test` no podia terminar** | invisible: CI corre scoped a `unit/` e `integration/` | `4cff73d2` |
+| DLQ nunca recibia las extracciones agotadas bajo compose enterprise | `except ImportError` → warning | `85ce2a83`+`68575bbe`+`2768cf25` |
+| 5 tests del DLQ stale contra el backoff productivo | el fichero **no coleccionaba**, asi que nadie los veia | `1ffc95bc` |
+| Sombra de `services` en `l2`/`l4` bajo enterprise (fallo en **task runtime**, no al parsear) | invisible para el gate de importacion | `69b0c632` |
+| Metricas del circuit breaker desaparecian sin log | `except ImportError: pass` | `835f836b`+`20a73bf0`+`5ec5e732` |
+| `test_determinism` llevaba **0 passed desde julio** por una ruta stale de la reorganizacion | el candado de layout vigila `scripts/`, no las referencias de los tests a `scripts/` | `c665b539` |
+| `ZScoreNormalizer` rechazaba los `norm_stats` que el **propio pipeline escribe** | lo tapaba la suite muerta de arriba | `6a556c3e` |
+
+Los tres ultimos son una cadena: una suite muerta escondia un defecto de produccion, y ese
+defecto solo aparecio al resucitarla.
+
+### Lo que esto dice del marcador
+
+Un tablero que no se mueve tras 16 commits no esta midiendo el trabajo: mide **promociones de
+BL**. Las dos cosas son legitimas, pero conviene no confundirlas — y en particular **no leer
+"corte estable" como "no paso nada"**. La medicion asociada esta en
+[`integration/AUDIT-CLAUDE-wiring-gap.md`](integration/AUDIT-CLAUDE-wiring-gap.md): **9 de 41
+modulos** con superficie publica sin un solo llamador productivo, ocho de ellos bloqueados por el
+pin de `fabric-v1`.
+
+### Deriva 20-vs-15: ya bloquea cuatro superficies
+
+Diagnosticada por CODEX en `CXD-299` y confirmada por CLAUDE en una segunda superficie
+independiente. Hoy impide: `get_feature_builder("current")`, `ObservationBuilder`
+(`config/feature_config.json` declara `dimension: 15`, el SSOT espera 20), los 4F de
+`test_feature_store_parity` y 1F de `test_determinism`. **Ninguno de los dos numeros se toca**:
+decidir que experimento esta activo es SSOT congelado, y regenerar `norm_stats` mirando
+resultados seria seleccion (`quant-constitution` §1).
+
+### Decisiones del operador acumuladas (ninguna avanzo hoy)
+
+1. Crear el usuario admin — sin el, `sb_users=0` y **ninguna pagina del dashboard es alcanzable**;
+   no se arregla restaurando, porque no hay dump de `sb_users` (ni debe haberlo).
+2. Pin de `fabric-v1` — mantiene ocho modulos completos sin proteger nada en ejecucion.
+3. Pin de `platform-bootstrap-v1` — bloquea el ciclo coldboot con salida cruda.
+4. Contrato real del News Engine — `CLAUDE.md:140` declara uno que `src/news_engine/` no importa.
+5. Deriva 20-vs-15 — cual experimento manda.
+
+— CLAUDE `claude-root-152c263e-r2` · 2026-08-04 · 16 commits desde `4355dbc7`; gates de
+frontmatter y honestidad verdes; corte invariante. **PENDIENTE COFIRMA CODEX.**
