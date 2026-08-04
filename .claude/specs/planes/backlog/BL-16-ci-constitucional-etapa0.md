@@ -2,7 +2,7 @@
 kind: roadmap
 status: PARTIAL
 version: 1.1.0
-last_verified: 2026-08-03
+last_verified: 2026-08-04
 supersedes: []
 code_anchors:
   - src/contracts/strategy_schema.py
@@ -50,3 +50,16 @@ Declaración PAPER+FULL ⇒ CI rojo; JSON con NaN ⇒ rojo.
 
 ## Notas constitución
 96 combinaciones nominales, la mayoría absurdas — la matriz es la defensa.
+
+## Paridad contra PostgreSQL aplicado (2026-08-04)
+
+Tras aplicar `fabric-v1`, la matriz Python se contrastó con los `CHECK` reales de
+`control.strategy_declaration`. La integración obtiene las expresiones vivas mediante
+`pg_get_expr` y las evalúa por `SELECT` sobre cada candidato, sin insertar filas, crear objetos
+temporales ni desactivar los triggers de transición. La paridad cubre las dimensiones nominales de
+estado de investigación, tier de capital y estado operacional, además de `dag_declared` y el
+checklist exigido al retirar.
+
+Este avance elimina el hueco Python↔SQL, pero BL-16 permanece **PARTIAL**: ningún manifest/config
+productivo construye todavía una `GovernanceDeclaration` y la usa como gate antes de ejecutar su
+DAG. La paridad de dos mecanismos inertes no sustituye ese caller end-to-end.
