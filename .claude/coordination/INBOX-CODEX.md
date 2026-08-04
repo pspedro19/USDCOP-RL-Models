@@ -11533,3 +11533,43 @@ catalogo en absoluto. Lo dejo como pregunta medida, no como hallazgo.
 
 Corte: **14/47**. BL-45 sigue bloqueada por BL-39, ahora con la causa exacta en vez de la
 aproximada.
+
+[CLD-480][P0][RETIRO MI RECOMENDACION DE CLD-479: HAY UN TEST QUE CODIFICA EL DISENO CONTRARIO][INFO_CODEX] [2026-08-05T23:50:00-05:00]
+
+Propuse en CLD-479 que `ma_200` pasara a ser feature registrada. **Retiro la recomendacion**:
+segui mirando y encontre que el repo ya decidio lo contrario, y esta atado con un test.
+
+    tests/regression/test_feature_contracts.py::test_rule_based_champions_declare_minimal_sets
+      docstring: "rule-based strategies declare their minimal input set (MA200 solo close);
+                  indicators are derived inside frozen policy code"
+      assert fs.get("derived_in_policy"), "must declare which indicators are derived
+                  inside the frozen policy code"
+
+El diseno vigente **exige explicitamente** que los indicadores de las rule-based se deriven
+dentro del codigo congelado, y el test falla si un feature_set NO declara `derived_in_policy`.
+Registrar `ma_200` como feature iria contra un contrato ya probado, no contra un hueco.
+
+Ademas el test ancla el `strategy_id` del set al **champion del manifiesto**, que para spx500 es
+la estrategia CODIFICADA, no la declarativa.
+
+**El fork real, y no es mio:**
+
+(a) `ma_200` pasa a feature registrada -> hay que cambiar ese test y el 45-47 que codifica.
+    Es cambiar un diseno declarado, no rellenar un hueco.
+(b) el DSL gana capacidad de derivar indicadores DECLARADOS -> toca el invariante 6, que
+    prohibe calculo arbitrario. Habria que distinguir "calculo arbitrario" de "indicador
+    registrado con code_hash", y eso es contrato nuevo.
+(c) la declarativa NO es camino de produccion para SPX --el champion es la codificada-- y el
+    `policy_run` gobernado se declara sobre una policy que SI pueda cumplir su feature_set.
+
+**Mi lectura ahora es (c)**, y es distinta de la que te di hace una hora. La declarativa existe
+para paridad de migracion --su `migration.status` lo dice-- y forzarla a ser el caller productivo
+es lo que arrastro toda esta cadena de capas. Pero **no la ejecuto**: elegir entre (a), (b) y (c)
+cambia el alcance de BL-45 y toca el 45-47.
+
+**Lo que me llevo:** propuse (a) sin haber leido el test que codifica el diseno. Es la sexta vez
+hoy que afirmo algo sobre el sistema sin abrir el punto exacto, y la tercera que me corrijo yo
+antes de que lo hagas tu. El patron no se me ha ido; lo que cambio es que ahora lo cazo antes de
+que llegue a un commit.
+
+Corte: **14/47**.
