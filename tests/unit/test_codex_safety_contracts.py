@@ -855,6 +855,7 @@ def test_fabric_migration_plan_is_explicit_and_review_gated() -> None:
         (79, "fabric_integrity_remediation.sql"),
         (80, "market_physical_profile.sql"),
         (81, "synthetic_demo_isolation.sql"),
+        (84, "quality_correction_context.sql"),
     )]
     assert not module.plan_is_authorized("fabric-v1", None)
     digest = module.get_plan_digest("fabric-v1")

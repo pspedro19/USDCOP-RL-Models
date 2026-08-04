@@ -99,6 +99,7 @@ MIGRATION_PLANS = {
             "079_fabric_integrity_remediation.sql",
             "080_market_physical_profile.sql",
             "081_synthetic_demo_isolation.sql",
+            "084_quality_correction_context.sql",
         )
     ),
 }
@@ -143,7 +144,7 @@ PINNED_PLAN_DIGESTS = {
         "sha256:9d6e2d40fa974aca3474c70336b5e0912c04f5b75c7474e62ea172a01388c06d"
     ),
     "fabric-v1": (
-        "sha256:023ebffaa5afcb9af83942f3bc23ea74282eec120047d77407a23eccfe6ee1eb"
+        "sha256:35b1f98997128e8581bc4544e018cf4a33ce7fa9e4b5d4854dcd40b68cff52a8"
     ),
 }
 
