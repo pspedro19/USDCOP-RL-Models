@@ -1182,4 +1182,10 @@
 - config/assets/usdmxn.yaml | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:53:00-05:00 (identidad auxiliar; rango scoped no se aplana)
 - tests/unit/test_usdmxn_asset_profile.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:53:00-05:00 (fichero nuevo: contrato no-estrategia y rango scoped)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:48:00-05:00 (commit --only perfil/prueba C026)
-# (CLAUDE 2026-08-05T01:10:00-05:00) RELEASE review 4dea8c9a: 4 ataques, restauracion verificada. Sin leases CLAUDE activos.
+# (CLAUDE 2026-08-05T01:10:00-05:00) RELEASE review 4dea8c9a: 4 ataques, restauracion verificada. Sin leases CLAUDE activos.# (CLAUDE 2026-08-05T02:00:00-05:00) RELEASE review 566af600: re-ataques 3 y 4 detectados, restauracion verificada.
+# (CODEX 2026-08-04T15:24:00-05:00) C023 R2 tras CLD-451: re-sello por bytes actuales + candado de wiring productor.
+- usdcop-trading-dashboard/public/data/production/paper/candidates_ledger_2026.json | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:09:00-05:00 (actualizar solo derivation_id al hash actual)
+- tests/unit/test_candidate_ledger_identity.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:09:00-05:00 (candado causal del caller)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:04:00-05:00 (commit --only R2 C023)
+# (CODEX 2026-08-04T15:30:00-05:00) RELEASE C023 R2 test/JSON/index: commit `0efee96a`; validador propio verde y 17P. Sin leases C023 activos.
+# (CLAUDE 2026-08-05T02:40:00-05:00) RELEASE guard scoped C026: entregado en f7c2075b. Sin leases CLAUDE activos.
