@@ -385,20 +385,60 @@ _METRIC_EVENT_IDENTITY_NOT_NULL = (
 )
 
 
-def test_health_event_docstring_does_not_promise_direct_insertion() -> None:
-    """El docstring no puede prometer que los eventos se insertan «tal cual»."""
+def _doc_normalizado(cls) -> str:
+    """Docstring con espacios colapsados: las frases del contrato cruzan saltos de línea."""
+    import re as _re
+
+    return _re.sub(r"\s+", " ", (cls.__doc__ or "")).lower()
+
+
+#: Las tres proposiciones POSITIVAS del contrato (brief DECISION-BL18 §5, CXD-365/373).
+#: Se exigen afirmaciones, no se prohíben frases: un candado por frase prohibida se sortea
+#: reescribiendo el texto con el significado invertido — pasó, y dio falso verde.
+_PROPOSICIONES_CONTRATO = (
+    (
+        "restriccion",
+        "declarados y gobernados como métricas en el catálogo",
+        "el docstring debe decir que SOLO los kinds catalogados se normalizan a MetricEvent",
+    ),
+    (
+        "negativa",
+        "no se insertan ahí",
+        "el docstring debe decir que ausencias, incidentes y acciones NO se insertan en metric_event",
+    ),
+    (
+        "no-implicacion",
+        "no convierte a un evento en una observación de catálogo",
+        "el docstring debe decir que portar una medición NO convierte el evento en observación",
+    ),
+)
+
+
+def test_health_event_docstring_states_the_three_contract_propositions() -> None:
+    """El docstring debe AFIRMAR las tres proposiciones, no solo evitar una frase falsa.
+
+    Este candado es un tripwire contra la deriva del texto, no una prueba de semántica:
+    la garantía dura es ``test_health_event_does_not_carry_metric_event_identity``.
+    """
     from src.monitoring.system_health_contract import HealthEvent
 
-    doc = (HealthEvent.__doc__ or "").lower()
+    doc = _doc_normalizado(HealthEvent)
     assert doc, "HealthEvent debe documentar su naturaleza"
-    assert "tal cual" not in doc, (
-        "HealthEvent no puede insertarse tal cual en control.metric_event: "
-        "le faltan columnas NOT NULL de identidad/versión"
+
+    faltan = [
+        (nombre, motivo)
+        for nombre, frase, motivo in _PROPOSICIONES_CONTRATO
+        if frase not in doc
+    ]
+    assert not faltan, "proposiciones ausentes del docstring: " + "; ".join(
+        f"{nombre} ({motivo})" for nombre, motivo in faltan
     )
-    # Debe nombrar que es un envelope mixto y que sólo lo catalogado se normaliza.
-    assert "catálogo" in doc or "catalogo" in doc, (
-        "el docstring debe decir que sólo los kinds declarados en el catálogo "
-        "pueden normalizarse a MetricEvent"
+
+    # La restricción sólo vale si es exclusiva: "sólo ... declarados y gobernados".
+    idx = doc.index("declarados y gobernados como métricas en el catálogo")
+    assert "sólo" in doc[max(0, idx - 120):idx], (
+        "la mención al catálogo debe ser una RESTRICCIÓN ('sólo los kind declarados...'), "
+        "no una permisión ('todos los kind, estén o no declarados...')"
     )
 
 
