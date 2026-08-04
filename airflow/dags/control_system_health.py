@@ -311,10 +311,18 @@ def evaluate_pnl_clock(**context):
                 live = np.array([r[0] for r in rows], dtype=float) / 100.0
                 paper = np.array([r[1] for r in rows], dtype=float) / 100.0
             cur.execute(
-                "SELECT running_sharpe FROM forecast_h5_paper_trading "
-                "WHERE strategy_id = %s "
-                "ORDER BY signal_date DESC LIMIT 1",
-                (H5_PRODUCTION_STRATEGY_ID,),
+                """
+                SELECT metric_value
+                FROM control.metric_event
+                WHERE entity_type = 'strategy' AND entity_id = %s
+                  AND strategy_id = %s AND asset_id = 'usdcop'
+                  AND environment = 'paper'
+                  AND metric_namespace = 'strategy' AND metric_name = 'sharpe'
+                  AND dimensions->>'window' = '26w'
+                  AND status <> 'INSUFFICIENT_SAMPLE'
+                ORDER BY event_time DESC LIMIT 1
+                """,
+                (H5_PRODUCTION_STRATEGY_ID, H5_PRODUCTION_STRATEGY_ID),
             )
             row = cur.fetchone()
             rolling_sharpe = float(row[0]) if row and row[0] is not None else None

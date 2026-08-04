@@ -24,7 +24,7 @@ Version: 1.2.0 (corta-circuitos de drawdown REVIVIDO: unidad resuelta desde prec
 Date: 2026-07-29
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 import logging
@@ -335,6 +335,83 @@ def compute_metrics(**context) -> Dict[str, Any]:
         conn.close()
 
 
+def persist_governed_metric_events(**context) -> dict[str, object]:
+    """Publish H5 paper Sharpe through the BL-18 engine and metric ledger."""
+    import numpy as np
+
+    from src.metrics.engine import MetricCatalog, MetricEngine
+    from src.metrics.persistence import persist_metric_event_dbapi
+
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT signal_date, direction, week_pnl_pct,
+                   entry_price, exit_price, leverage
+            FROM forecast_h5_executions
+            WHERE status = 'closed' AND strategy_id = %s
+            ORDER BY signal_date ASC
+            """,
+            (H5_PRODUCTION_STRATEGY_ID,),
+        )
+        rows = cur.fetchall()
+        if not rows:
+            return {"persisted": False, "reason": "no_closed_executions"}
+
+        as_of = datetime.combine(rows[-1][0], datetime.min.time(), tzinfo=timezone.utc)
+        window_start = as_of - timedelta(weeks=26)
+        window_rows = [row for row in rows if row[0] >= window_start.date()]
+        scale_to_points = resolve_return_scale_to_points(
+            (row[2], row[1], row[3], row[4], row[5]) for row in window_rows
+        )
+        returns = np.asarray(
+            [float(row[2] or 0) * scale_to_points / 100.0 for row in window_rows],
+            dtype=float,
+        )
+
+        root = Path(__file__).resolve().parents[2]
+        catalog = MetricCatalog.load(root / "config" / "metrics" / "catalog.yaml")
+        engine = MetricEngine.from_asset_registry(
+            catalog, assets_dir=root / "config" / "assets"
+        )
+        event = engine.compute(
+            entity_type="strategy",
+            entity_id=H5_PRODUCTION_STRATEGY_ID,
+            strategy_id=H5_PRODUCTION_STRATEGY_ID,
+            asset_id="usdcop",
+            metric="strategy.sharpe",
+            window="26w",
+            env="paper",
+            as_of=as_of,
+            run_id=f"h5-l6:{as_of.date().isoformat()}",
+            context={
+                "returns": returns,
+                "return_interval": "P1W",
+                "n_trades": len(returns),
+                "window_start": window_start,
+                "window_end": as_of,
+            },
+            lineage={
+                "dag_id": DAG_ID,
+                "source_table": "forecast_h5_executions",
+            },
+        )
+        result = persist_metric_event_dbapi(cur, event)
+        conn.commit()
+        return {
+            "persisted": True,
+            "inserted": result.inserted,
+            "metric_event_id": result.metric_event_id,
+            "status": event.status,
+        }
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 # =============================================================================
 # TASK 3: CHECK DECISION GATES
 # =============================================================================
@@ -630,6 +707,11 @@ with DAG(
         python_callable=persist_evaluation,
     )
 
+    t_metric_event = PythonOperator(
+        task_id='persist_governed_sharpe',
+        python_callable=persist_governed_metric_events,
+    )
+
     t_alert = PythonOperator(
         task_id='alert_summary',
         python_callable=honest_leaf(alert_summary),
@@ -696,5 +778,5 @@ with DAG(
         execution_timeout=timedelta(minutes=5),
     )
 
-    t_load >> t_metrics >> t_gates >> t_persist >> t_alert
-    t_persist >> t_paper_ledger >> t_verify_anchor
+    t_load >> t_metrics >> t_gates >> t_persist >> t_metric_event >> t_alert
+    t_metric_event >> t_paper_ledger >> t_verify_anchor

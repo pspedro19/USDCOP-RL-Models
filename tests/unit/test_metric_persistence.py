@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import pytest
 
 from src.metrics.errors import MetricContractError
-from src.metrics.persistence import persist_metric_event
+from src.metrics.persistence import persist_metric_event, persist_metric_event_dbapi
 
 
 class _Event:
@@ -76,7 +76,8 @@ async def test_metric_event_sink_is_parameterized_and_idempotent() -> None:
 
     assert result.inserted is False
     assert result.metric_event_id == _event().metric_event_id
-    assert "ON CONFLICT (metric_event_id) DO NOTHING" in connection.query
+    assert "ON CONFLICT DO NOTHING" in connection.query
+    assert "dimensions = $18::jsonb" in connection.query
     assert "$18::jsonb" in connection.query and "$19::jsonb" in connection.query
     assert _event().metric_event_id not in connection.query
     assert connection.args[0] == _event().metric_event_id
@@ -133,3 +134,44 @@ async def test_metric_event_sink_rejects_invalid_stored_jsonb() -> None:
         await persist_metric_event(
             _Connection(mutation={"dimensions": "not-json"}), _event()
         )
+
+
+class _Description:
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+class _DbApiCursor:
+    def __init__(self, *, mutation: dict[str, object] | None = None) -> None:
+        self.query = ""
+        self.args: tuple[object, ...] = ()
+        row = _event().to_record() | {"inserted": True}
+        row["event_time"] = datetime(2026, 8, 3, 16, tzinfo=timezone.utc)
+        row.update(mutation or {})
+        self._row = row
+        self.description = [_Description(name) for name in row]
+
+    def execute(self, query: str, args: tuple[object, ...]) -> None:
+        self.query = query
+        self.args = args
+
+    def fetchone(self) -> tuple[object, ...]:
+        return tuple(self._row.values())
+
+
+def test_dbapi_sink_is_transaction_neutral_and_parameterized() -> None:
+    cursor = _DbApiCursor()
+    result = persist_metric_event_dbapi(cursor, _event())
+
+    assert result.inserted is True
+    assert "ON CONFLICT DO NOTHING" in cursor.query
+    assert "%s::jsonb" in cursor.query
+    assert len(cursor.args) == 30
+
+
+def test_dbapi_sink_translates_semantic_identity_collision() -> None:
+    cursor = _DbApiCursor(
+        mutation={"metric_event_id": "2f24cb93-4d0a-56c0-a273-0cf15fa7a366"}
+    )
+    with pytest.raises(MetricContractError, match="semantic identity"):
+        persist_metric_event_dbapi(cursor, _event())

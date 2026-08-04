@@ -20,6 +20,14 @@ class MetricEventConnection(Protocol):
     async def fetchrow(self, query: str, *args: object) -> Mapping[str, Any] | None: ...
 
 
+class MetricEventCursor(Protocol):
+    description: object
+
+    def execute(self, query: str, args: tuple[object, ...]) -> object: ...
+
+    def fetchone(self) -> object: ...
+
+
 @dataclass(frozen=True, slots=True)
 class PersistMetricEventResult:
     metric_event_id: str
@@ -39,7 +47,7 @@ WITH attempted AS (
         $11, $12, $13, $14, $15,
         $16, $17, $18::jsonb, $19::jsonb
     )
-    ON CONFLICT (metric_event_id) DO NOTHING
+    ON CONFLICT DO NOTHING
     RETURNING metric_event_id, event_time, catalog_version, formula_version,
         entity_type, entity_id, strategy_id, asset_id, run_id, environment,
         metric_namespace, metric_name, metric_value, metric_unit, status,
@@ -50,13 +58,43 @@ WITH attempted AS (
         metric_namespace, metric_name, metric_value, metric_unit, status,
         threshold_warning, threshold_critical, dimensions, lineage, FALSE AS inserted
     FROM control.metric_event
-    WHERE metric_event_id = $1::uuid
+    WHERE metric_event_id = $1::uuid OR (
+        event_time = $2::timestamptz
+        AND catalog_version = $3 AND formula_version = $4
+        AND entity_type = $5 AND entity_id = $6
+        AND COALESCE(run_id, '') = COALESCE($9, '')
+        AND COALESCE(environment, '') = COALESCE($10, '')
+        AND metric_namespace = $11 AND metric_name = $12
+        AND dimensions = $18::jsonb
+    )
 )
 SELECT * FROM attempted
 UNION ALL
 SELECT * FROM stored
 LIMIT 1
 """
+
+_INSERT_OR_LOAD_DBAPI = (
+    _INSERT_OR_LOAD.replace("$19", "%s")
+    .replace("$18", "%s")
+    .replace("$17", "%s")
+    .replace("$16", "%s")
+    .replace("$15", "%s")
+    .replace("$14", "%s")
+    .replace("$13", "%s")
+    .replace("$12", "%s")
+    .replace("$11", "%s")
+    .replace("$10", "%s")
+    .replace("$9", "%s")
+    .replace("$8", "%s")
+    .replace("$7", "%s")
+    .replace("$6", "%s")
+    .replace("$5", "%s")
+    .replace("$4", "%s")
+    .replace("$3", "%s")
+    .replace("$2", "%s")
+    .replace("$1", "%s")
+)
 
 
 def _finite_optional(name: str, value: float | None) -> None:
@@ -158,6 +196,42 @@ async def persist_metric_event(
     if _normalize_stored(row) != _comparable_record(event):
         raise MetricContractError(
             f"metric_event_id collision with different payload: {event.metric_event_id}"
+        )
+    return PersistMetricEventResult(
+        metric_event_id=event.metric_event_id, inserted=bool(row["inserted"])
+    )
+
+
+def persist_metric_event_dbapi(
+    cursor: MetricEventCursor, event: MetricEvent
+) -> PersistMetricEventResult:
+    """DB-API variant; transaction ownership remains with the production caller."""
+
+    values = _event_values(event)
+    # DB-API placeholders are positional per occurrence; the stored branch reuses
+    # the UUID plus the columns from the semantic unique index.
+    stored_identity = tuple(
+        values[index] for index in (0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 17)
+    )
+    cursor.execute(_INSERT_OR_LOAD_DBAPI, values + stored_identity)
+    raw_row = cursor.fetchone()
+    if raw_row is None:
+        raise MetricContractError("metric_event insert returned no durable row")
+    if isinstance(raw_row, Mapping):
+        row = raw_row
+    else:
+        description = cursor.description
+        if not description:
+            raise MetricContractError("metric_event cursor returned no description")
+        names = [
+            column.name if hasattr(column, "name") else column[0]
+            for column in description
+        ]
+        row = dict(zip(names, raw_row))
+    if _normalize_stored(row) != _comparable_record(event):
+        raise MetricContractError(
+            "metric semantic identity or UUID collides with different payload: "
+            f"{event.metric_event_id}"
         )
     return PersistMetricEventResult(
         metric_event_id=event.metric_event_id, inserted=bool(row["inserted"])
