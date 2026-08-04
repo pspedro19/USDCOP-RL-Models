@@ -3,7 +3,7 @@
   "until_year": 2026,
   "until_week": 26,
   "n_rows": 8,
-  "semantic_hash": "sha256:ed8fec3eea6560c0521c3246bd23c0474d37d5b78356aeec51004fc3eda9bc2e",
+  "semantic_hash": "sha256:9214fd8b9a005a4b74f2a14ee34a6e151c1b859524e7333a79bb1d65beee7ab5",
   "semantic_fields": [
     "strategy_id",
     "signal_date",
@@ -14,7 +14,18 @@
     "week_pnl_pct",
     "n_subtrades",
     "cumulative_pnl_pct",
+    "running_da_pct",
+    "running_da_short_pct",
+    "running_da_long_pct",
+    "running_sharpe",
+    "running_max_dd_pct",
+    "n_weeks",
+    "n_long",
+    "n_short",
+    "long_pct_8w",
+    "consecutive_losses",
+    "circuit_breaker",
     "gate_status",
-    "circuit_breaker"
+    "notes"
   ]
 }

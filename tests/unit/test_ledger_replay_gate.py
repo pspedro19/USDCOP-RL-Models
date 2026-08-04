@@ -49,6 +49,17 @@ def _fila(semana: int, pnl: float, **extra):
         "cumulative_pnl_pct": pnl,
         "gate_status": None,
         "circuit_breaker": False,
+        "running_da_pct": 55.0,
+        "running_da_short_pct": 60.0,
+        "running_da_long_pct": 45.0,
+        "running_sharpe": 1.2,
+        "running_max_dd_pct": -3.4,
+        "n_weeks": 8,
+        "n_long": 5,
+        "n_short": 3,
+        "long_pct_8w": 62.5,
+        "consecutive_losses": 1,
+        "notes": None,
     }
     base.update(extra)
     return base
@@ -134,11 +145,15 @@ def test_write_metadata_is_excluded_so_a_restore_does_not_look_like_corruption(
     que termina con el candado apagado.
     """
     con_metadatos = [
-        {**f, "id": 100 + i, "created_at": "2026-08-04T00:00:00Z", "notes": "x"}
+        {**f, "id": 100 + i, "created_at": "2026-08-04T00:00:00Z"}
         for i, f in enumerate(ledger)
     ]
     assert ledger_semantic_hash(con_metadatos) == ledger_semantic_hash(ledger)
     assert not set(LEDGER_EXCLUDED_FIELDS) & set(LEDGER_SEMANTIC_FIELDS)
+    # Sólo el surrogate técnico se excluye. `notes` NO: es evidencia auditada, y sacarla
+    # exigiría un contrato explícito que hoy no existe (CXD-449 §1).
+    assert set(LEDGER_EXCLUDED_FIELDS) == {"id", "created_at"}
+    assert "notes" in LEDGER_SEMANTIC_FIELDS
 
 
 def test_an_incomplete_row_is_refused_instead_of_hashed(ledger) -> None:
@@ -193,11 +208,77 @@ def test_the_monitor_dag_verifies_the_anchor_after_writing_the_ledger() -> None:
     )
 
 
-def test_the_committed_anchor_is_well_formed() -> None:
-    """El ancla versionada existe y declara su corte, conteo y campos.
+def test_mutating_a_decision_metric_breaks_the_hash(ledger) -> None:
+    """`running_da_pct` es decisoria y DEBE entrar en el hash.
 
-    Se verifica su forma sin base de datos para que el candado corra en CI; la
-    verificación contra el ledger vivo es tarea del gate operativo.
+    Este candado nace de un falso verde propio que refutó Codex (CXD-449): la primera
+    versión hasheaba once campos "económicos" y omitía las métricas acumuladas, así que
+    `running_da_pct 55.0 -> 99.0` daba **hashes idénticos**. Y esas columnas no son
+    decoración: `control_system_health` lee `running_sharpe`, y el DA y el drawdown
+    gobiernan gates y circuit breaker.
+
+    La lección de fondo va más allá de añadir campos: la frontera correcta no era "lo
+    económico" —un juicio mío sobre qué importa— sino **lo persistido**, que se puede
+    comprobar contra el esquema en vez de argumentar.
+    """
+    for metrica, nuevo in (
+        ("running_da_pct", 99.0),
+        ("running_sharpe", 42.0),
+        ("running_max_dd_pct", -80.0),
+        ("consecutive_losses", 9),
+        ("notes", "editado a mano"),
+    ):
+        ancla = anchor_payload(ledger, until_year=2026, until_week=52)
+        mutado = [dict(f) for f in ledger]
+        mutado[0][metrica] = nuevo
+
+        with pytest.raises(LedgerReproductionError) as exc:
+            assert_anchor_holds(ancla, mutado)
+        assert exc.value.obtenido != exc.value.esperado, (
+            f"mutar '{metrica}' no cambió el hash: queda fuera del compromiso"
+        )
+
+
+def test_the_semantic_fields_cover_every_persisted_column() -> None:
+    """El conjunto hasheado debe ser TODA columna persistida menos el surrogate.
+
+    Comprobado contra el DDL real, no contra mi memoria: es lo que impide que la tupla
+    vuelva a quedarse corta cuando alguien añada una columna al ledger.
+    """
+    try:
+        from scripts.data.ingest_asset_ohlcv import _db_conn
+
+        conn = _db_conn()
+    except Exception:  # pragma: no cover - CI sin base de datos
+        pytest.skip("sin base de datos: la cobertura de columnas se verifica en entorno con DB")
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'forecast_h5_paper_trading'"
+            )
+            columnas = {fila[0] for fila in cur.fetchall()}
+    finally:
+        conn.close()
+
+    assert columnas, "la tabla del ledger no existe: no hay nada que hashear"
+    faltantes = columnas - set(LEDGER_SEMANTIC_FIELDS) - set(LEDGER_EXCLUDED_FIELDS)
+    assert not faltantes, (
+        "columnas persistidas que ni entran en el hash ni se excluyen explícitamente: "
+        f"{sorted(faltantes)}. Toda columna debe estar en un lado o en el otro; el "
+        "silencio es como el hash se quedó corto la primera vez"
+    )
+
+
+def test_the_committed_anchor_matches_a_hash_recomputed_from_its_own_fields() -> None:
+    """El ancla versionada existe, y su hash NO se valida contra sí mismo.
+
+    La versión anterior de este candado era **circular** (CXD-449): comparaba el ancla
+    contra la misma constante y por eso daba verde con un hash que ignoraba la mitad del
+    ledger. Ahora se exige que declare exactamente los campos que el código hashea hoy,
+    que es lo único verificable sin base de datos — y basta para detectar que el ancla
+    quedó vieja tras un cambio de contrato.
     """
     assert ANCHOR.is_file(), f"falta el ancla del paper ledger: {ANCHOR}"
     ancla = json.loads(ANCHOR.read_text(encoding="utf-8"))
@@ -206,5 +287,6 @@ def test_the_committed_anchor_is_well_formed() -> None:
     assert ancla["semantic_hash"].startswith("sha256:")
     assert ancla["n_rows"] > 0
     assert list(ancla["semantic_fields"]) == list(LEDGER_SEMANTIC_FIELDS), (
-        "el ancla se calculó sobre otro conjunto de campos que el que el código usa hoy"
+        "el ancla se calculó sobre otro conjunto de campos que el que el código usa hoy: "
+        "hay que re-anclar contra la base y volver a firmar el hash"
     )

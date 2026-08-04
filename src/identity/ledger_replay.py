@@ -28,8 +28,17 @@ from typing import Any, Iterable, Mapping, Sequence
 
 from src.identity.canonical import semantic_hash
 
-#: Campos que constituyen el hecho económico de una semana de paper trading.
-#: Cambiar esta tupla cambia la identidad de todo ledger: es un cambio de contrato.
+#: **Todas** las columnas persistidas del ledger salvo el surrogate técnico.
+#:
+#: La primera versión de esta tupla listaba once campos "económicos" y dejaba fuera las
+#: métricas acumuladas. Codex lo refutó con una mutación (CXD-449): cambiar
+#: `running_da_pct` de 55.0 a 99.0 producía **hashes idénticos**. Esas columnas no son
+#: derivadas decorativas — `running_sharpe` lo lee `control_system_health`, y el DA y el
+#: drawdown gobiernan gates y circuit breaker. Un gate de integridad que ignora las
+#: métricas por las que se decide protege lo que menos importa.
+#:
+#: La lección detrás: la frontera correcta no es "lo económico" —un juicio mío sobre qué
+#: importa— sino "lo persistido", que es un hecho comprobable contra el esquema.
 LEDGER_SEMANTIC_FIELDS: tuple[str, ...] = (
     "strategy_id",
     "signal_date",
@@ -40,12 +49,27 @@ LEDGER_SEMANTIC_FIELDS: tuple[str, ...] = (
     "week_pnl_pct",
     "n_subtrades",
     "cumulative_pnl_pct",
-    "gate_status",
+    "running_da_pct",
+    "running_da_short_pct",
+    "running_da_long_pct",
+    "running_sharpe",
+    "running_max_dd_pct",
+    "n_weeks",
+    "n_long",
+    "n_short",
+    "long_pct_8w",
+    "consecutive_losses",
     "circuit_breaker",
+    "gate_status",
+    # `notes` es evidencia auditada: excluirla exigiría un contrato explícito que hoy
+    # no existe, así que entra (CXD-449 §1).
+    "notes",
 )
 
-#: Metadatos de escritura, deliberadamente FUERA del hash (ver docstring del módulo).
-LEDGER_EXCLUDED_FIELDS: tuple[str, ...] = ("id", "created_at", "notes")
+#: Surrogate técnico, lo ÚNICO fuera del hash: `id` lo asigna la secuencia y `created_at`
+#: la hora de escritura. Restaurar un backup reasigna ambos sin que cambie un solo hecho,
+#: y un gate que gritara "corrupción" ante una restauración legítima acabaría apagado.
+LEDGER_EXCLUDED_FIELDS: tuple[str, ...] = ("id", "created_at")
 
 #: Clave de ordenación: la identidad de una fila de paper trading es su semana.
 _ORDER_KEY = ("strategy_id", "inference_year", "inference_week", "signal_date")

@@ -1,9 +1,11 @@
 # PROGRESS — tablero conjunto
 
-Refresco conjunto `2026-08-04` (CLAUDE `CLD-433`, CODEX `CXD-439`/`CXD-442`).
-**CORTE COFIRMADO 12/35/0 (25.5% DONE estricto).** BL-43 pasó de `PARTIAL` a `IMPLEMENTED`
-después de aplicar su frontera física, cablear la vista demo al backtest y demostrar con dos
-agentes que un modelo no registrado falla cerrado. Este archivo es
+Refresco conjunto `2026-08-04` (CLAUDE `CLD-441`, CODEX `CXD-446`/`CXD-450`).
+**CORTE COFIRMADO 13/34/0 (27.7% DONE estricto).** BL-16 pasó de `PARTIAL` a `IMPLEMENTED`:
+el gate constitucional dejó de ser un mecanismo correcto sin llamador y corre como tarea del
+DAG de señal H5, antes de producir señal. Su candado de orden es causal (AST + alcanzabilidad),
+no textual — la versión textual daba verde con la tarea huérfana, lo demostró CODEX en
+`CXD-442` y el fail-first quedó versionado como candado propio. Este archivo es
 runtime del protocolo: se
 reescribe con doble firma y queda fuera del grafo Obsidian. La navegación durable parte de la
 [base de conocimiento](../README.md), no de este heartbeat.
@@ -17,8 +19,8 @@ actualización de su ficha por el dueño.
 
 | Estado verificable | Total | Lectura operativa |
 |---|---:|---|
-| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **12** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-34, BL-35, BL-43 |
-| PARTIAL | **35** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
+| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **13** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-16, BL-34, BL-35, BL-43 |
+| PARTIAL | **34** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
 | PLANNED | **0** | Ninguno |
 | APPROVED_PENDING_CLOSE | **0** | No hay cierres esperando sólo trámite |
 
@@ -26,6 +28,11 @@ La suma es **47**. `test_backlog_status_is_honest` = **105 passed, 47 skipped, V
 (estuvo rojo esta mañana; ver abajo). `test_knowledge_frontmatter` = **997 passed**.
 
 ### Historial del corte anterior
+
+- **BL-16** (CLAUDE) `PARTIAL→IMPLEMENTED`, implementación `8f783d89` + candado causal
+  `470b7bef`. CODEX aprobó en `CXD-446` tras ejecutar dos mutaciones sobre el SSOT y el DAG:
+  `capital_tier PAPER+FULL` muere en el gate, y desenlazar la tarea del grafo pone el candado
+  en rojo. 45P conjuntos.
 
 - **BL-43** (CODEX) `PARTIAL→IMPLEMENTED`, implementación `4b056075`. CODEX demostró con
   mutación causal que el backtest depende de `demo.synthetic_model_display`; CLAUDE aprobó en

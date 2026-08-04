@@ -1,7 +1,7 @@
 ---
 kind: roadmap
-status: PARTIAL
-version: 1.1.1
+status: IMPLEMENTED
+version: 1.2.0
 last_verified: 2026-08-04
 supersedes: []
 code_anchors:
@@ -9,6 +9,10 @@ code_anchors:
   - tests/regression/test_strategy_manifests.py
   - .github/workflows/fabric-contracts.yml
   - tests/unit/test_codex_safety_contracts.py
+  - src/governance/strategy_declaration.py
+  - config/execution/smart_simple_v1.yaml
+  - airflow/dags/forecast_h5_l5_weekly_signal.py
+  - tests/unit/test_bl16_declaration_gate.py
 ---
 
 # BL-16 — CI constitucional Etapa 0 (legalidad + serialización canónica)
