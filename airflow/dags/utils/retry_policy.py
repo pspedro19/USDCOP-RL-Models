@@ -52,13 +52,24 @@ _DAGS_DIR = Path(__file__).resolve().parents[1]
 def _ensure_dags_services() -> None:
     """Make ``services.dlq_service`` resolve despite root shadowing.
 
-    ``PYTHONPATH=/opt/airflow:/opt/airflow/dags`` puts the repo-root ``services``
-    package FIRST, so the ``from services.dlq_service import get_dlq_service``
-    inside :func:`_save_to_dlq` raised ``ModuleNotFoundError`` — and that function
-    swallows ``ImportError`` with a warning, so the DLQ row was never written and
-    nothing said so. The task itself still failed (both call sites propagate the
-    original exception), so what was lost was the forensic record and any
-    DLQ-based reprocessing, not the failure signal.
+    Whether the bug bites is DEPLOYMENT-CONDITIONAL, verified against live
+    containers 2026-08-03:
+
+    * ``docker-compose.yml`` (enterprise) mounts ``./services:/opt/airflow/services``
+      for BOTH ``airflow-scheduler`` and ``airflow-webserver``. With
+      ``PYTHONPATH=/opt/airflow:/opt/airflow/dags`` the repo-root ``services``
+      package then WINS the name and ``from services.dlq_service import
+      get_dlq_service`` raises ``ModuleNotFoundError``. That is the stack where the
+      2026-07-27 ``health_check`` failure recorded in
+      ``l0_macro_backfill._ensure_dags_services`` happened.
+    * ``docker-compose.compact.yml`` does NOT mount it, so ``services`` resolves
+      straight to ``dags/services`` and the import already worked. Confirmed live:
+      ``services.__path__ == ['/opt/airflow/dags/services']``.
+
+    When it does bite, :func:`_save_to_dlq` swallows the ``ImportError`` with a
+    warning, so the DLQ row is never written and nothing says so. The task itself
+    still fails (both call sites propagate the original exception), so what is lost
+    is the forensic record and any DLQ-based reprocessing, not the failure signal.
 
     Same remedy already applied in ``l0_macro_backfill._ensure_dags_services``:
     extend the winning package's ``__path__`` so both trees resolve. Root

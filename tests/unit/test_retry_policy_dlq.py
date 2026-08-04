@@ -1,12 +1,18 @@
 """El DLQ de L0 debe recibir de verdad las extracciones agotadas (CTR-L0-DLQ-001).
 
 Por que existe este candado: `utils/retry_policy._save_to_dlq` importa
-`services.dlq_service`, pero bajo el PYTHONPATH de Airflow
-(`/opt/airflow:/opt/airflow/dags`, ver `l0_macro_update.py:351` y
-`l0_macro_backfill.py:72`) el paquete **raiz** `services/` gana el nombre y
-`services.dlq_service` no resuelve. El `except ImportError` de `_save_to_dlq` lo
-degradaba a un `warning`, asi que el registro DLQ **no se escribia y nadie se
-enteraba**.
+`services.dlq_service`. Cuando el paquete **raiz** `services/` esta en el path,
+gana el nombre y `services.dlq_service` no resuelve; el `except ImportError` de
+`_save_to_dlq` lo degrada a un `warning`, asi que el registro DLQ **no se escribe
+y nadie se entera**.
+
+Es CONDICIONAL AL DESPLIEGUE, comprobado contra contenedores vivos (2026-08-03):
+`docker-compose.yml` monta `./services:/opt/airflow/services` en scheduler Y
+webserver => el defecto muerde ahi (es el stack del fallo de `health_check` del
+2026-07-27 que documenta `l0_macro_backfill._ensure_dags_services`).
+`docker-compose.compact.yml` NO lo monta => alli `services.__path__` ya era
+`['/opt/airflow/dags/services']` y el import funcionaba. Este candado reproduce la
+condicion adversa a proposito, para que el arreglo no dependa del compose elegido.
 
 Matiz importante que este test NO afirma: la tarea si fallaba. Ambos llamadores
 propagan la excepcion original (`raise last_exception` y un `__exit__` que
