@@ -116,3 +116,35 @@ def test_scoped_quality_uses_each_rows_event_time_not_batch_retrieval_time(
     assert result.quarantine_count == 1
     assert canonical_rows == [post_cutoff]
     assert quarantined_rows == [pre_cutoff]
+
+
+def test_governed_correction_can_preserve_the_original_quality_instant(monkeypatch) -> None:
+    row = _row(time=datetime(2026, 8, 4, 15, tzinfo=timezone.utc))
+    original_instant = datetime(1990, 1, 2, 13, tzinfo=timezone.utc)
+    seen: list[datetime] = []
+
+    class Rules:
+        version = "scoped-test-v1"
+
+        def evaluate_provider_bar(self, *_args, observed_at, **_kwargs):
+            seen.append(observed_at)
+            return QualityDecision(True, "VALID")
+
+    monkeypatch.setattr(publication, "ruleset_from_spine", lambda _conn: Rules())
+    monkeypatch.setattr(
+        publication, "resolved_instrument_id", lambda *_args: "instrument-usdmxn"
+    )
+    monkeypatch.setattr(publication, "_insert_raw", lambda *_args, **_kwargs: "raw-id")
+    monkeypatch.setattr(publication, "_insert_canonical", lambda *_args, **_kwargs: None)
+
+    publication.publish_provider_rows(
+        object(),
+        provider_id="twelvedata",
+        provider_symbol="USD/MXN",
+        interval_id="PT5M",
+        rows=[row],
+        observed_at=datetime(2026, 8, 4, 16, tzinfo=timezone.utc),
+        quality_observed_at=original_instant,
+    )
+
+    assert seen == [original_instant]

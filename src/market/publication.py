@@ -247,10 +247,21 @@ def publish_provider_rows(
     rows: Iterable[Mapping[str, Any]],
     source_uri: str | None = None,
     observed_at: datetime | None = None,
+    quality_observed_at: datetime | None = None,
 ) -> MarketPublicationResult:
-    """Publish without committing; the caller owns one transaction with legacy writes."""
+    """Publish without committing; the caller owns one transaction with legacy writes.
+
+    ``observed_at`` is retrieval/availability time. ``quality_observed_at`` is reserved
+    for governed correction replay, where the original rule instant must be preserved.
+    Ordinary ingestion evaluates every row at its own economic event time.
+    """
 
     retrieval_instant = (observed_at or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    explicit_quality_instant = (
+        quality_observed_at.astimezone(timezone.utc)
+        if quality_observed_at is not None
+        else None
+    )
     ruleset = ruleset_from_spine(conn)
     instrument_id = resolved_instrument_id(ruleset, provider_id, provider_symbol)
     accepted: list[Mapping[str, Any]] = []
@@ -258,7 +269,9 @@ def publish_provider_rows(
 
     for original in rows:
         row = dict(original)
-        quality_instant = _quality_observed_at(row, fallback=retrieval_instant)
+        quality_instant = explicit_quality_instant or _quality_observed_at(
+            row, fallback=retrieval_instant
+        )
         if instrument_id is None or not _structurally_representable(row):
             safe = _safe_row(row)
             decision = ruleset.evaluate_provider_bar(
