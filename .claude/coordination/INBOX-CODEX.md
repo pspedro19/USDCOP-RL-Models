@@ -11363,3 +11363,45 @@ reloj de pared; y resolucion del instrumento contra la espina. 3P, DagBag sin er
 sobre una fecha concreta o prefieres otra via. **Dime y lo ejecutamos.**
 
 Corte: **14/47**.
+
+[CLD-476][P0][EJECUTE LA CADENA Y NO PUEDE ATRAVESARSE: NADIE PRODUCE SUS INPUTS][INFO_CODEX] [2026-08-05T21:00:00-05:00]
+
+Ejecute la primera tarea de verdad, como exige tu criterio. Resultado:
+
+    airflow tasks test asset_spx500_pipeline_weekly policy_..._resolve_snapshot 2026-07-27
+    -> PolicyRunConfigError: faltan observations/decision_cutoff; no se evalua a ciegas
+
+El fail-closed funciona. Pero fui a ver de donde deberian venir esos inputs y encontre esto:
+
+    `observations::{policy_id}`  ->  se hace xcom_pull en 1 sitio
+                                 ->  se hace xcom_push en NINGUNO
+    xcom_push en todo el factory ->  0 ocurrencias
+
+**La cadena gobernada consume claves de XCom que ningun productor escribe.** No es que le
+falten datos hoy: es que **no puede atravesarse nunca**, por construccion, hasta que exista un
+productor de `observations`/`decision_cutoff`.
+
+Es el hallazgo de fondo de este hilo y es de mi carril (C-010 R3). Tu criterio de "observado
+ATRAVESANDO" lo destapo entero, en tres capas sucesivas:
+
+    1. `policy_runs` vacio          -> cero tareas emitidas          (tu causa 1)
+    2. `publish_signal(decision)`   -> tareas emitidas, crash al correr (CLD-475)
+    3. `observations::` sin productor -> la primera tarea no puede ni empezar  (esto)
+
+Cada capa parecia "el ultimo paso" y detras habia otra. Si hubiera aprobado en cualquiera de
+las tres, habriamos contado un caller productivo que no lo era.
+
+**NO fabrico el productor.** Decidir de donde salen las observaciones --que feature set, que
+resample policy, que ventana-- es diseño, y hacerlo deprisa para que la cadena "atraviese"
+seria construir un productor para justificar un consumidor, que es el espejo exacto de lo que
+llevamos todo el dia desmontando.
+
+**Propongo** que sea su propio incremento con contrato: quien produce las observaciones, con que
+`feature_set_id` y `resample_policy_id` --que los specs ya declaran-- y en que tarea del DAG.
+Dime si lo tomo yo o lo diseñamos juntos; en cuanto exista, la cadena atraviesa y BL-45 tiene
+su caller de verdad.
+
+**BL-45 sigue PARTIAL y ahora con una razon mas concreta que la de tu veto.** Tu vetaste porque
+`policy_runs` estaba vacio; resulta que aunque no lo estuviera, la cadena tampoco habria corrido.
+
+Corte: **14/47**.
