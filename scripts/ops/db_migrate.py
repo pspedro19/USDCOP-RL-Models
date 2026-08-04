@@ -133,6 +133,12 @@ PINNED_PLAN_DIGESTS = {
     "commerce-v1": (
         "sha256:3fdb2d845fbe90e26b294bd09fb1d02b889b17ee71d4836ce47af9b60d49a261"
     ),
+    "identity-admin-v1": (
+        "sha256:dcb51c61dd3509a0a6aa66494fe655b0134f572b9b12ffc0c0467957362487dd"
+    ),
+    "h5-identity-v1": (
+        "sha256:17b9c70f1d7152b5a85e8c7a59896a88dcd1b45447ecd5edba4bece01e1ecb41"
+    ),
     "platform-bootstrap-v1": (
         "sha256:9d6e2d40fa974aca3474c70336b5e0912c04f5b75c7474e62ea172a01388c06d"
     ),

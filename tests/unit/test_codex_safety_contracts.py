@@ -946,7 +946,9 @@ def test_platform_bootstrap_orders_user_role_before_rbac_expansion() -> None:
     )
 
 
-def test_identity_admin_plan_is_explicit_review_gated_and_unpinned() -> None:
+def test_identity_admin_plan_is_explicit_review_gated_and_pinned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     import importlib.util
 
     path = Path("scripts/ops/db_migrate.py")
@@ -964,11 +966,10 @@ def test_identity_admin_plan_is_explicit_review_gated_and_unpinned() -> None:
         "public.sb_users",
     )
     assert "identity-admin-v1" in module.REVIEW_GATED_PLANS
-    assert "identity-admin-v1" not in module.PINNED_PLAN_DIGESTS
     assert not module.plan_is_authorized("identity-admin-v1", None)
-    assert not module.plan_is_authorized(
-        "identity-admin-v1", module.get_plan_digest("identity-admin-v1")
-    )
+    reviewed_digest = module.get_plan_digest("identity-admin-v1")
+    assert reviewed_digest == module.PINNED_PLAN_DIGESTS["identity-admin-v1"]
+    assert module.plan_is_authorized("identity-admin-v1", reviewed_digest)
     assert set(module.REQUIRED_TABLES_BY_PLAN["identity-admin-v1"]) == {
         "public.rbac_role_permissions",
         "public.rbac_user_overrides",
@@ -978,6 +979,21 @@ def test_identity_admin_plan_is_explicit_review_gated_and_unpinned() -> None:
             "is_test": "Admin-console test-user classification",
         }
     }
+
+    original_files = module.MIGRATION_PLANS["identity-admin-v1"]
+    changed_migration = tmp_path / original_files[0].name
+    changed_migration.write_bytes(
+        original_files[0].read_bytes() + b"\n-- unauthorized byte change\n"
+    )
+    monkeypatch.setitem(
+        module.MIGRATION_PLANS,
+        "identity-admin-v1",
+        (changed_migration, *original_files[1:]),
+    )
+    changed_digest = module.get_plan_digest("identity-admin-v1")
+    assert changed_digest != reviewed_digest
+    assert not module.plan_is_authorized("identity-admin-v1", reviewed_digest)
+    assert not module.plan_is_authorized("identity-admin-v1", changed_digest)
 
 
 def test_identity_admin_required_column_validation_fails_closed() -> None:
@@ -1030,7 +1046,9 @@ def test_required_column_validation_exposes_missing_objects_for_honest_summary()
     assert missing == ["public.sb_users.is_test"]
 
 
-def test_h5_identity_plan_is_ordered_review_gated_and_unpinned() -> None:
+def test_h5_identity_plan_is_ordered_review_gated_and_pinned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     import importlib.util
 
     path = Path("scripts/ops/db_migrate.py")
@@ -1050,11 +1068,10 @@ def test_h5_identity_plan_is_ordered_review_gated_and_unpinned() -> None:
         "public.forecast_h5_paper_trading",
     )
     assert "h5-identity-v1" in module.REVIEW_GATED_PLANS
-    assert "h5-identity-v1" not in module.PINNED_PLAN_DIGESTS
     assert not module.plan_is_authorized("h5-identity-v1", None)
-    assert not module.plan_is_authorized(
-        "h5-identity-v1", module.get_plan_digest("h5-identity-v1")
-    )
+    reviewed_digest = module.get_plan_digest("h5-identity-v1")
+    assert reviewed_digest == module.PINNED_PLAN_DIGESTS["h5-identity-v1"]
+    assert module.plan_is_authorized("h5-identity-v1", reviewed_digest)
     assert module.REQUIRED_COLUMNS_BY_PLAN["h5-identity-v1"] == {
         "public.forecast_h5_signals": {"strategy_id": "H5 signal identity"},
         "public.forecast_h5_executions": {"strategy_id": "H5 execution identity"},
@@ -1065,6 +1082,21 @@ def test_h5_identity_plan_is_ordered_review_gated_and_unpinned() -> None:
             "strategy_id": "Strategy-safe H5 performance projection"
         },
     }
+
+    original_files = module.MIGRATION_PLANS["h5-identity-v1"]
+    changed_migration = tmp_path / original_files[0].name
+    changed_migration.write_bytes(
+        original_files[0].read_bytes() + b"\n-- unauthorized byte change\n"
+    )
+    monkeypatch.setitem(
+        module.MIGRATION_PLANS,
+        "h5-identity-v1",
+        (changed_migration, *original_files[1:]),
+    )
+    changed_digest = module.get_plan_digest("h5-identity-v1")
+    assert changed_digest != reviewed_digest
+    assert not module.plan_is_authorized("h5-identity-v1", reviewed_digest)
+    assert not module.plan_is_authorized("h5-identity-v1", changed_digest)
 
 
 def test_commerce_surface_plan_is_scoped_review_gated_and_unpinned() -> None:
