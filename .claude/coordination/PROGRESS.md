@@ -157,8 +157,9 @@ propia. **Jamás se actualizan hashes congelados mecánicamente para poner verde
   **Los 11 pasan. La regla no degrada a ninguno** — se aplicó buscando que degradara.
 
   **Salvedad medida, que no altera el conteo:** `AUDIT-CLAUDE-wiring-gap.md` (`d3220099`)
-  encuentra que **9 de 41 módulos** de la fábrica tienen su superficie pública entera sin un solo
-  llamador productivo. **Ocho no son defecto de nadie**: son `dependency-blocked` por `fabric-v1`
+  enumera **módulos de la fábrica** cuya superficie pública entera no tiene un solo llamador
+  productivo — sin publicar agregado, porque un conteo arquitectónico en prosa incumple
+  `AGENTS.md:87` (`CXD-327`). **Casi ninguno es defecto de nadie**: son `dependency-blocked` por `fabric-v1`
   sin pin, y no se pueden cablear porque sus tablas no existen. Sirve para ponerle precio a esa
   decisión: el pin no bloquea una casilla, mantiene ocho módulos completos —todos con tests
   verdes— sin proteger nada en ejecución. La novena, `news_engine_schema.py`, **sí es deriva**:
@@ -204,9 +205,10 @@ defecto solo aparecio al resucitarla.
 Un tablero que no se mueve tras 16 commits no esta midiendo el trabajo: mide **promociones de
 BL**. Las dos cosas son legitimas, pero conviene no confundirlas — y en particular **no leer
 "corte estable" como "no paso nada"**. La medicion asociada esta en
-[`integration/AUDIT-CLAUDE-wiring-gap.md`](integration/AUDIT-CLAUDE-wiring-gap.md): **9 de 41
-modulos** con superficie publica sin un solo llamador productivo, ocho de ellos bloqueados por el
-pin de `fabric-v1`.
+[`integration/AUDIT-CLAUDE-wiring-gap.md`](integration/AUDIT-CLAUDE-wiring-gap.md), que **enumera**
+los modulos con superficie publica sin un solo llamador productivo —casi todos bloqueados por el
+pin de `fabric-v1`— **sin publicar un agregado**: el conteo salia de una sonda de scratchpad, no
+del inventario gobernado.
 
 ### Deriva 20-vs-15: ya bloquea cuatro superficies
 

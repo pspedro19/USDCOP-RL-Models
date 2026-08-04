@@ -22,19 +22,24 @@ así que se excluyeron los `__init__.py` de "producción". Con eso, los módulos
 
 ## Resultado
 
-| Medida | Valor |
-|---|---:|
-| Símbolos públicos analizados | 243 |
-| Con tests y **cero** llamadores productivos | **61** |
-| **Módulos con superficie pública 100% sin cablear** | **9 de 41 (22%)** |
+**Esta auditoría NO publica un conteo agregado, y esa es una corrección posterior asumida**
+(`CXD-327`): `AGENTS.md:87` prohíbe escribir conteos arquitectónicos en prosa, y el único origen
+válido de conteos es `.claude/generated/inventory.json`, que es **generado**. La sonda que produjo
+este hallazgo es un script de scratchpad, no versionado: sirve para **encontrar** casos, no para
+publicar una métrica. Lo que queda abajo es la **enumeración de la evidencia**, que es lo que se
+puede sostener fichero a fichero.
 
-El número que vale es el de **módulos**, no el de símbolos. 61 símbolos exagera: mezcla
+La ironía queda escrita a propósito: esta auditoría nació para sustituir narración por medición, y
+publicó su medición fuera del inventario gobernado. Un número sin procedencia gobernada es el
+mismo defecto que denuncia.
+
+Un agregado por símbolos habría exagerado de todas formas: mezcla
 mecanismos realmente muertos con superficie no usada de módulos que sí están vivos —
 `write_approval` no tiene llamador, pero `approval_store` está cableado en ocho scripts vía
 `approval_path`/`commit_approval_transition`. Un módulo entero sin un solo llamador no admite esa
 lectura benigna.
 
-### Los nueve
+### Los módulos enumerados
 
 | Módulo | Públicos | Con tests | BL | ¿Lo explica `fabric-v1`? |
 |---|---:|---:|---|---|
@@ -48,15 +53,15 @@ lectura benigna.
 | `src/governance/synthetic_isolation.py` | 2 | 2 | BL-43 | **Sí** |
 | `src/orchestration/feature_snapshot.py` | 2 | 2 | BL-45 #6 | Parcial (es R3) |
 
-## La lectura honesta: ocho de nueve NO son un defecto de nadie
+## La lectura honesta: casi todos NO son un defecto de nadie
 
-**Esto no acusa a nadie de escribir código muerto.** Ocho de los nueve son módulos de la fábrica
+**Esto no acusa a nadie de escribir código muerto.** Casi todos son módulos de la fábrica
 de control cuyo esquema (`fabric-v1`, migraciones 070–081) **no está aplicado**. No es que nadie
 los haya cableado: es que **no se pueden cablear todavía**, porque las tablas contra las que
 operan no existen. Verificado en la DB viva: de los diez esquemas de fabric sólo existe `demo`.
 
 Lo que sí hace esta medición es **poner precio a la decisión pendiente**. El pin de `fabric-v1`
-no bloquea "BL-18 integration" como una casilla suelta: mantiene **ocho módulos completos** en
+no bloquea "BL-18 integration" como una casilla suelta: mantiene **módulos completos** en
 estado de no proteger nada en ejecución, todos con tests verdes. Ése es el coste real de la
 decisión, y hasta ahora se estaba contando como una línea de tablero.
 
@@ -86,7 +91,7 @@ y toca `CLAUDE.md`, que no se edita sin instrucción del operador.
 1. **"Cableado" como requisito explícito de DONE.** Un candado verde sobre una función que nadie
    llama prueba que la función es correcta, **no** que la garantía esté vigente. Hoy tres fichas
    podrían haber sumado DONE sin que el sistema estuviera un gramo más protegido.
-2. **No** proponer que se retiren estos módulos ni que se relajen sus tests: ocho de nueve están
+2. **No** proponer que se retiren estos módulos ni que se relajen sus tests: casi todos están
    esperando una autorización, no un arreglo. Borrarlos sería el error opuesto.
 3. Para los `dependency-blocked`, que la ficha **nombre la dependencia concreta** (072/073/070)
    en vez de decir "PARTIAL". Ya se hizo en BL-40 tras `CLD-312`; conviene para los otros siete.
@@ -99,11 +104,11 @@ python scratchpad/wiring_audit.py     # imprime las tres tablas de arriba
 
 Medido contra `6d3a123c`, árbol limpio salvo canales runtime.
 
-## Correccion (2026-08-04): eran **10 de 41**, no 9 — falso negativo por colision de nombre
+## Correccion (2026-08-04): faltaba un módulo — falso negativo por colisión de nombre
 
 `src/policy_engine/runner.py` **debio aparecer en la tabla y no aparecio**. Su superficie publica
-—`evaluate_policy`, `publish_signal`, `write_policy_version_index`, `_flat_decision`— tiene **cero
-llamadores productivos**. Lo comprobado, fichero a fichero:
+—`evaluate_policy`, `publish_signal`, `write_policy_version_index`— tiene **cero llamadores
+productivos** (`_flat_decision` es privada por convención y no cuenta como superficie pública). Lo comprobado, fichero a fichero:
 
 | Aparicion de `evaluate_policy` fuera de `policy_engine/` | Que es |
 |---|---|
@@ -120,9 +125,9 @@ exportan un simbolo llamado `evaluate_policy`, asi que el homonimo de `stable_ba
 como "llamador productivo" del nuestro. **La medicion heredo el defecto que la propia auditoria
 denuncia**: una busqueda por nombre no es una medicion de capacidad.
 
-**Consecuencia sobre el numero:** el conteo pasa de **9/41 a 10/41 (24%)**, y el sesgo del metodo
-es **optimista** — puede haber mas falsos negativos por la misma causa. El numero publicado debe
-leerse como **cota inferior**, no como censo.
+**Consecuencia sobre el metodo, no sobre un numero:** el sesgo de esta sonda es **optimista** —
+puede haber mas falsos negativos por la misma causa. Por eso no se publica agregado: la sonda
+sirve para localizar casos, y cada caso se sostiene por su evidencia, no por un total.
 
 **Consecuencia sobre BL-45 R3, que es lo que lo destapo:** no existe "el menor slice productivo"
 que encadene `resolve_feature_snapshot` antes de evaluar, porque **`evaluate_policy` tampoco se
