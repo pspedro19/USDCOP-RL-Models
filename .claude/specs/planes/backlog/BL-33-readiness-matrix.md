@@ -1,7 +1,7 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.2.0
+version: 1.3.0
 last_verified: 2026-07-31
 supersedes: []
 code_anchors:
@@ -65,12 +65,15 @@ La matriz los registra como `RISK-06` y `TECH-06`, ambos `PARTIAL`.
 
 ## Qué falta para cierre
 
-1. Cross-review de CLAUDE sobre el commit compensatorio R2; el primer review quedó
-   `APROBADO_PARCIAL` y produjo la remediación de correspondencia.
-2. Resolver o asignar formalmente los dos gaps nuevos sin cambiar digests ni APIs por conveniencia.
-3. Incorporar evidencia operativa real: simulacros, sign-off humano independiente, Vault/roles,
+El cross-review R2 ya se ejecutó en `CLD-271`: sustituir la evidencia de `INV-04` por `LICENSE`
+produjo **1F/4P**, la restauración fue byte-exacta y Claude cerró su objeción. La garantía
+resultante es deliberadamente de inmutabilidad de targets revisados, no de verdad material; toda
+actualización legítima exige revisar y mover el pin, nunca relajar el test por conveniencia.
+
+1. Resolver o asignar formalmente los dos gaps nuevos sin cambiar digests ni APIs por conveniencia.
+2. Incorporar evidencia operativa real: simulacros, sign-off humano independiente, Vault/roles,
    RTO/RPO, reconciliación firmada y controles del Caso B cuando correspondan.
-4. Mantener el registro actualizado por evidencia; una fila no sube porque exista el archivo que
+3. Mantener el registro actualizado por evidencia; una fila no sube porque exista el archivo que
    describe la intención.
 
 Por estas brechas el BL avanza de `PLANNED` a `PARTIAL`, no a `IMPLEMENTED` ni DONE.
