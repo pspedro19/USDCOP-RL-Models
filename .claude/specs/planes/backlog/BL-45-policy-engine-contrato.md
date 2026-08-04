@@ -129,3 +129,45 @@ declara aquí en vez de dejar la casilla §11 como si estuviera cubierta.
 
 **BL-45 sigue PARTIAL.** Esta auditoría no cierra alcance: sustituye una brecha mal descrita
 por el mapa real, y aísla el único punto (#6) que no es trabajo sino decisión de contrato.
+
+### Errata a mi propia auditoría: la fila #6 quedó stale (CLAUDE, 2026-08-03, posterior a `0d79e59e`)
+
+La tabla de arriba declara la validación **#6** (*"ningún input supera `decision_cutoff`"*) como
+**❌ no implementable hoy**, y argumenta que no es *"un check que falte escribir"* sino *"una
+comprobación que la forma actual del contrato no permite expresar"*. Enumeraba dos salidas, y la
+segunda era *"que lo garantice aguas arriba `resolve_feature_snapshot`, que es **precisamente la
+tarea de R3 que no existe**"*.
+
+**Esa frase ya es falsa.** `bf1e02f8` (CODEX, posterior a mi auditoría) construye
+`src/orchestration/feature_snapshot.py::resolve_feature_snapshot`, que es **exactamente la
+salida 2**: recibe observaciones `{nombre: {value, available_at}}`, exige `available_at` y
+`value` en cada una, exige que los timestamps sean timezone-aware, **rechaza toda observación
+con `available_at > decision_cutoff`**, y sólo entonces proyecta al `{nombre: valor}` que el
+contrato de policy ya consumía. La metadata se queda en la frontera de lectura, así que el
+contrato compartido **no** cambió — que era justo lo que yo daba por bloqueante.
+
+**Pero #6 NO pasa a ✅, y la razón importa más que la fila.** `resolve_feature_snapshot` tiene
+**cero llamadores productivos**: sólo aparece en `tests/unit/test_feature_snapshot_cutoff.py` y,
+en `src/policy_engine/runner.py:8`, **dentro de un docstring** que lo describe como *"a future
+factory task … is wiring"*. Ninguna llamada real.
+
+**Estado corregido de #6: ⚠️ construido y no cableado** — ya no es "el contrato no lo permite
+expresar" (eso quedó resuelto), es "existe el mecanismo y nadie lo invoca". Cambia la naturaleza
+del pendiente: pasa de **decisión de contrato** (que exigía `C-NNN` + ACK) a **trabajo de R3**,
+que es wiring y no negociación. El recuento pasa de *12 aplicadas / 3 parciales / 1 no
+implementable* a **12 aplicadas / 4 parciales / 0 no implementables**.
+
+**El patrón, que es el hallazgo real y no es de BL-45.** Es la **tercera** vez el mismo día que
+aparece un mecanismo correcto, con tests, sin un solo llamador productivo:
+
+| Mecanismo | Tests | Llamadores productivos |
+|---|---|---|
+| `evaluate_provider_bar` (BL-40) | sí | **0** |
+| `feature_status` (BL-40) | sí | **0** |
+| `resolve_feature_snapshot` (BL-45 #6) | sí | **0** |
+
+Los tres pasan sus candados y ninguno protege nada en ejecución. Es exactamente el meta-problema
+que `audit/STRATEGIC-ASSESSMENT-2026-07.md` llama *infra > signal*, aquí medido en vez de
+narrado. **Consecuencia para el criterio de cierre:** un candado verde sobre una función que
+nadie llama prueba que la función es correcta, **no** que la garantía esté vigente. Conviene que
+"cableado" sea un requisito explícito de DONE y no una suposición.
