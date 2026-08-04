@@ -119,6 +119,15 @@ async def test_metric_event_sink_accepts_asyncpg_default_jsonb_text() -> None:
 
 
 @pytest.mark.asyncio
+async def test_metric_event_replay_accepts_equivalent_non_utc_offset() -> None:
+    result = await persist_metric_event(
+        _Connection(inserted=False),
+        _event(event_time="2026-08-03T11:00:00-05:00"),
+    )
+    assert result.inserted is False
+
+
+@pytest.mark.asyncio
 async def test_metric_event_sink_rejects_invalid_stored_jsonb() -> None:
     with pytest.raises(MetricContractError, match="stored dimensions is invalid JSON"):
         await persist_metric_event(

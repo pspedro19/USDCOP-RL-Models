@@ -2,7 +2,7 @@
 kind: roadmap
 status: PARTIAL
 version: 1.1.0
-last_verified: 2026-08-03
+last_verified: 2026-08-04
 supersedes: []
 code_anchors:
   - services/common/metrics.py
@@ -37,3 +37,18 @@ Grep-CI: ningún sharpe/calmar fuera del motor; misma métrica idéntica en 5 en
 En la base viva el esquema `control` no existe; por eso el módulo tiene tests pero cero llamadores
 productivos. BL-18 no puede cerrar hasta aplicar 070 y demostrar al menos un productor y un
 consumidor reales sobre el evento persistido.
+
+## Estado PostgreSQL posterior a Fabric (2026-08-04)
+
+La migración que crea `control.metric_event` ya fue aplicada. El sink
+`src/metrics/persistence.py` fue ejecutado contra PostgreSQL real: insert, replay idempotente y
+rechazo de colisión por UUID funcionan; las sondas de verificación se hicieron dentro de
+transacciones revertidas. `f7f853e6` normaliza el string ISO contractual a `datetime` UTC-aware en
+la frontera asyncpg y evita falsas colisiones cuando dos offsets representan el mismo instante.
+
+El BL permanece **PARTIAL**. Todavía no existe un productor y consumidor productivos que usen el
+evento persistido, ni se ha reducido a cero el allowlist de cálculos heredados. Además, la tabla
+tiene una identidad semántica única adicional: si un reintento conserva el payload pero regenera
+`metric_event_id`, el `ON CONFLICT` actual no captura esa restricción y puede filtrar una excepción
+del driver. Debe decidirse y probarse explícitamente si esa condición se traduce a
+`MetricContractError` o permanece fail-loud; no se declara resuelta por el arreglo temporal.
