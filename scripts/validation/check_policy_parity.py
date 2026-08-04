@@ -24,9 +24,6 @@ import math
 import sys
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -34,13 +31,31 @@ if str(ROOT) not in sys.path:
 from src.contracts.policy import PolicyContext  # noqa: E402
 from src.strategies.policies.loader import (  # noqa: E402
     build_policy,
+    load_all_policy_specs,
     load_policy_spec,
     policy_specs_dir,
 )
 
+np = None
+pd = None
+
 
 class DataUnavailable(RuntimeError):
     """El insumo congelado no está en disco. SKIP honesto, jamás un sustituto."""
+
+
+def _ensure_numeric_runtime() -> None:
+    """Import heavy parity dependencies only when a policy is actually eligible."""
+    global np, pd
+    if np is not None and pd is not None:
+        return
+    try:
+        import numpy as numpy_runtime
+        import pandas as pandas_runtime
+    except ImportError as exc:
+        raise DataUnavailable(f"runtime de paridad no disponible: {exc}") from exc
+    np = numpy_runtime
+    pd = pandas_runtime
 
 
 def _policy_exposures(spec: dict, snapshots: list[dict | None],
@@ -162,22 +177,50 @@ CHECKS = {
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--policy", default=None, help="id de una sola política")
+    target = ap.add_mutually_exclusive_group()
+    target.add_argument("--policy", default=None, help="id de una sola política")
+    target.add_argument(
+        "--ci-eligible",
+        action="store_true",
+        help="verifica estrictamente solo PARITY_GREEN/CUTOVER; nunca convierte SKIP en verde",
+    )
     args = ap.parse_args(argv)
 
-    targets = [args.policy] if args.policy else list(CHECKS)
+    if args.ci_eligible:
+        specs = load_all_policy_specs()
+        targets = [
+            str(spec["id"])
+            for spec in specs
+            if (spec.get("migration") or {}).get("status") in {"PARITY_GREEN", "CUTOVER"}
+        ]
+        if not targets:
+            print("[OK] 0 specs elegibles — nada verificado (SPEC_ONLY/PARITY_PENDING son inertes)")
+            return 0
+    else:
+        targets = [args.policy] if args.policy else list(CHECKS)
+
     skipped, failed = 0, 0
     for policy_id in targets:
         if policy_id not in CHECKS:
             print(f"[FAIL] {policy_id}: sin arnés de paridad (¿es SPEC_ONLY?)")
             failed += 1
             continue
+        try:
+            _ensure_numeric_runtime()
+        except DataUnavailable as exc:
+            print(f"[FAIL] {policy_id}: {exc}")
+            failed += 1
+            continue
         spec = load_policy_spec(policy_specs_dir() / f"{policy_id}.yaml")
         try:
             legacy, engine = CHECKS[policy_id](spec)
         except DataUnavailable as exc:
-            print(f"[SKIP] {policy_id}: {exc}")
-            skipped += 1
+            if args.ci_eligible:
+                print(f"[FAIL] {policy_id}: {exc}")
+                failed += 1
+            else:
+                print(f"[SKIP] {policy_id}: {exc}")
+                skipped += 1
             continue
         # La ventana de calentamiento se compara aparte: ahí el camino congelado
         # puede tratar un NaN como voto negativo mientras la política falla
