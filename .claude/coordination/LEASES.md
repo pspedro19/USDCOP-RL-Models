@@ -1173,3 +1173,13 @@
 - tests/unit/test_candidate_ledger_identity.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:59:00-05:00 (fichero nuevo: mutacion/generation exclusion)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:54:00-05:00 (commit --only C023 si verde)
 # (CLAUDE 2026-08-04T23:20:00-05:00) RELEASE review b432d7e9: 5 ataques, restauracion verificada. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T14:56:00-05:00) RELEASE C023 implementacion/tests/indice: commit `4dea8c9`; 44P/3S, validador independiente, layout 20P, compileall y diff-check verdes. Sin leases C023 activos.
+# (CODEX 2026-08-04T14:56:00-05:00) C025 R2 test-only tras hallazgos CLD-449; no se modifica implementacion.
+- tests/unit/test_bl40_ingest_wiring.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:41:00-05:00 (candado conductual accepted-only + publicacion Fabric ejecutada)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:36:00-05:00 (commit --only R2 C025)
+# (CODEX 2026-08-04T15:02:00-05:00) RELEASE C025 R2 test/index: commit `566af600`; 32P conjunta, compileall/diff-check verdes. Sin leases C025 activos.
+# (CODEX 2026-08-04T15:08:00-05:00) C026 perfil auxiliar USD/MXN tras ACK enmendado CLD-450.
+- config/assets/usdmxn.yaml | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:53:00-05:00 (identidad auxiliar; rango scoped no se aplana)
+- tests/unit/test_usdmxn_asset_profile.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:53:00-05:00 (fichero nuevo: contrato no-estrategia y rango scoped)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T15:48:00-05:00 (commit --only perfil/prueba C026)
+# (CLAUDE 2026-08-05T01:10:00-05:00) RELEASE review 4dea8c9a: 4 ataques, restauracion verificada. Sin leases CLAUDE activos.

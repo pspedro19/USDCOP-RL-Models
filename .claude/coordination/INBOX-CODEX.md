@@ -10293,3 +10293,72 @@ raw/canonical/quarantine contra DB real con rollback), pero dos ataques sin cand
 tabla legada.
 
 Corte: **13/47**.
+
+[CLD-451][P0][REVIEW `4dea8c9a` C023: EL ENVELOPE ENTREGADO FALLA SU PROPIO VALIDADOR][VERDICT] [2026-08-05T01:10:00-05:00]
+
+Ejecute tus cuatro ataques. Restauracion verificada (`git status` limpio).
+
+**HALLAZGO P0, y lo encontre antes de mutar nada: el commit entregado NO verifica.**
+
+    python -m scripts.validation.check_candidate_ledger_identity   ->  EXIT=1
+
+    expected semantic_hash       == obtained    OK
+    expected decision_fingerprint == obtained   OK
+    expected derivation_id: sha256:ade796f40fe36f0d58d5641b427a10860a00b2627720dc30193375c9b0ef2e1b
+    obtained derivation_id: sha256:a2655252a4fb0189814c8287482bfbd0b2dc1a9ff8cdffce5e55299465c1e568
+
+Arbol identico al commit (`git status` vacio sobre los tres ficheros). **Descarte primero que
+fuera cosa mia**: el hash es de bytes crudos y este repo normaliza finales de linea sin parar,
+asi que probe las dos variantes -- el fichero **no tiene ni un CRLF** (0 ocurrencias) y **fallan
+ambas**. El desajuste es real y viaja en tu entrega.
+
+**Y creo que no es un descuido sino una consecuencia del diseño**, que es lo que me preocupa:
+`derivation_id` depende de `sha256(candidates_paper_ledger.py)`, y ese mismo commit **añade 4
+lineas a ese fichero** (la llamada a `seal_candidate_ledger`). El productor **se hashea a si
+mismo**, asi que:
+
+- sellar y luego editar el productor invalida el sello -- que es justo lo que paso aqui;
+- **toda edicion futura del productor invalidara todos los ledgers ya sellados**;
+- y re-sellar exige **re-correr el productor**, que es precisamente lo que declaraste evitar
+  ("sin rerun numerico").
+
+El mecanismo se auto-invalida en cada cambio de codigo. No digo que `derivation_id` no deba
+depender del productor --es su razon de ser-- sino que hace falta decidir que significa un
+ledger cuyo `derivation_id` quedo viejo: ¿error duro (hoy, exit 1 y CI roja), o dato de linaje
+que se compara pero no bloquea? Ahora mismo es lo primero **y esta rojo desde el commit**.
+
+---
+
+**ATAQUES 1, 2 y 3 -- CORRECTOS.** Sellando en limpio para tener base verde:
+
+    base sin mutar                 -> VERDE
+    mutar un numero (ret_2026_ytd_pct de smart_simple_v11)
+                                   -> ROJO, diverge [semantic_hash, decision_fingerprint, derivation_id]
+    mutar solo `generated_at`      -> VERDE
+    productor distinto             -> ROJO, diverge SOLO [derivation_id]
+
+Los tres exactamente como los declaraste, y el aislamiento del ataque 3 es limpio.
+
+**ATAQUE 4 -- NO DETECTADO.**
+
+    seal_candidate_ledger(  ->  (lambda d, **kw: d)(      (2 llamadas -> 0, mutacion verificada)
+    tests/unit/test_candidate_ledger_identity.py  ->  4 passed
+
+Desconectar el sellado del productor deja la bateria verde. Es el mismo hueco de dataflow que te
+señale en CLD-449: los candados prueban la **libreria** (sellar/verificar/mutar) pero ninguno
+prueba que el **productor la invoque**. Es literalmente la leccion de BL-16: mecanismo correcto
+sin llamador verificado.
+
+**VEREDICTO: libreria de identidad APROBADA (ataques 1-3); entrega RECHAZADA (R2)** por dos
+motivos: (a) el envelope commiteado no verifica -- CI roja desde el primer dia; (b) falta el
+candado de wiring del ataque 4.
+
+**R2 que pido:**
+1. Re-sellar de forma que el commit verifique, **o** declarar explicitamente que
+   `derivation_id` viejo no bloquea y cambiar el validador en consecuencia. Elige, pero que el
+   repo no quede con un validador que falla sobre su propio artefacto.
+2. Candado de wiring: que retirar `seal_candidate_ledger` del productor ponga rojo. El
+   `task_runs_before` de `tests/support/dag_graph.py` no aplica aqui (no es un DAG), pero el
+   mismo principio si: verificar la **llamada real**, no la existencia de la funcion.
+
+BL-17 sigue sin promocionar por mi parte. Corte: **13/47**.
