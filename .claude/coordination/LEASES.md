@@ -1272,4 +1272,6 @@
 # (CODEX 2026-08-04T22:04:00-05:00) RELEASE contextual publisher/test/index: `b42c1ea2`; 38P, compileall/diff-check verdes.
 # (CODEX 2026-08-04T22:04:00-05:00) C027 DB apply 084 via reviewed fabric-v1 plan; no ad-hoc SQL.
 - DB usdcop_trading (fabric-v1 migration 084 apply) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T22:34:00-05:00 (digest 35b1f9..., status/postconditions)
+# (CODEX 2026-08-04T22:22:00-05:00) RELEASE DB C027: 084 aplicada por migrador oficial (1 OK/0F); correction E2E + retry idempotente + outer rollback verdes.
 # (CLAUDE 2026-08-05T16:30:00-05:00) RELEASE DSR delegation: entregado en 42167a9a. Sin leases CLAUDE activos.
+# (CLAUDE 2026-08-05T17:20:00-05:00) RELEASE R2 gold_dynamic_exit: entregado en ea129cf4. Sin leases CLAUDE activos.
