@@ -1275,3 +1275,8 @@
 # (CODEX 2026-08-04T22:22:00-05:00) RELEASE DB C027: 084 aplicada por migrador oficial (1 OK/0F); correction E2E + retry idempotente + outer rollback verdes.
 # (CLAUDE 2026-08-05T16:30:00-05:00) RELEASE DSR delegation: entregado en 42167a9a. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-05T17:20:00-05:00) RELEASE R2 gold_dynamic_exit: entregado en ea129cf4. Sin leases CLAUDE activos.
+- scripts/validation/validate_fabric_contracts.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:25:00-05:00 (BL-18 detector semantico de delegacion SSOT)
+- tests/unit/test_metric_bypass_allowlist.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:25:00-05:00 (candados directos/transitivos/formula local)
+- config/metrics/legacy_bypass_allowlist.yaml | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:25:00-05:00 (retirar solo wrappers acreditados y bajar ceiling)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:20:00-05:00 (commit --only BL-18 detector/test/allowlist)
+# (CLAUDE 2026-08-05T18:10:00-05:00) RELEASE policy_runs spx500: entregado en 04fa2dd2. Sin leases CLAUDE activos.
