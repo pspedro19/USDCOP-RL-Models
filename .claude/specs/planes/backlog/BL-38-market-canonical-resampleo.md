@@ -2,7 +2,7 @@
 kind: roadmap
 status: PARTIAL
 version: 1.1.0
-last_verified: 2026-08-03
+last_verified: 2026-08-04
 supersedes: []
 code_anchors:
   - airflow/dags/asset_pipeline_factory.py
@@ -39,3 +39,18 @@ físico/caggs operator-only de 080. Ninguno está aplicado en la base viva;
 `src/market/resampling.py` tiene tests pero cero llamadores productivos. El orden obligatorio es
 072 → 073 → writers/backfill y vistas compatibles → preflight 080; DONE exige callers y diff
 contra datos reales, no sólo el módulo local.
+
+## Estado de la base y hueco de persistencia (2026-08-04)
+
+El plan revisado `fabric-v1` ya fue aplicado y verificado por ambos agentes. Esto retira el
+bloqueo de esquema para `market.raw_bar` y `market.canonical_bar`, pero **no vuelve este BL
+IMPLEMENTED**: continúan pendientes sus writers, backfill, vistas de compatibilidad, preflight de
+agregados y comparación contra los datos vigentes.
+
+`market.resample_policy` no forma parte del DDL revisado y no tiene lectores SQL en el árbol. La
+expectativa que lo trataba como tabla requerida fue retirada del validador en `5ed5cac9` porque no
+estaba respaldada por ninguna migración. Esto corrige el gate, **no resuelve el diseño pendiente**:
+las policies declaran `resample_policy_id` y el contrato de versión conserva
+`resample_policy_hash`, pero esos valores todavía no resuelven contra un registro persistente.
+Definir ese registro requiere contrato y migración aditiva futuros; no se inventa su esquema como
+parte del arreglo del validador ni se edita una migración ya aplicada.
