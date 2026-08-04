@@ -49,9 +49,9 @@ def test_weekly_context_reports_unavailable_instead_of_neutral(monkeypatch) -> N
     assert result["highlights"][0]["sentiment"] is None
 
 
-def test_shared_news_cutoff_is_timezone_aware_and_window_exact() -> None:
+def test_shared_news_cutoff_is_the_exact_final_news_run() -> None:
     assert news_feature_cutoff(date(2026, 8, 7)) == datetime(
-        2026, 8, 10, tzinfo=UTC
+        2026, 8, 7, 18, tzinfo=UTC
     )
 
 

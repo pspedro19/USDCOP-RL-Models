@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -85,10 +85,10 @@ def _utc_cutoff(cutoff: datetime) -> datetime:
 
 
 def news_feature_cutoff(end: date) -> datetime:
-    """Exclusive end of the end+2-day news evidence window used by both sides."""
+    """Cutoff of the final daily news run consumed by the 19:00 UTC analysis."""
     if not isinstance(end, date):
         raise ValueError("news window end must be a date")
-    return datetime.combine(end + timedelta(days=3), datetime.min.time(), tzinfo=UTC)
+    return datetime.combine(end, time(hour=18), tzinfo=UTC)
 
 
 def measure_feature(cursor, spec: FeatureSpec, cutoff: datetime) -> FeatureMeasurement:

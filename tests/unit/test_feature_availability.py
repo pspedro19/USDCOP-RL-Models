@@ -11,6 +11,7 @@ from src.data_quality.feature_availability import (
     load_feature_specs,
     measure_feature,
     persist_measurement,
+    news_feature_cutoff,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -55,6 +56,12 @@ def test_repository_registry_contains_only_verified_ghost_features() -> None:
         "news_articles.gdelt_tone",
     }
     assert all(spec.require_variation for spec in specs)
+
+
+def test_consumer_cutoff_matches_the_final_daily_news_run() -> None:
+    assert news_feature_cutoff(datetime(2026, 8, 4).date()) == datetime(
+        2026, 8, 4, 18, tzinfo=UTC
+    )
 
 
 def test_constant_non_null_values_are_unavailable_at_exact_cutoff() -> None:
