@@ -1151,5 +1151,25 @@
 - config/metrics/legacy_bypass_allowlist.yaml | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:02:00-05:00 (27->26, solo decrece)
 - tests/unit/test_metric_consumer_migration.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:02:00-05:00 (paridad API sin bootstrap del servicio)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:57:00-05:00 (commit --only tres paths si verde)
+# (CODEX 2026-08-04T18:41:00-05:00 SKEW vs Claude) INCIDENTE: R2 de tests BL-18 se edito tras RELEASE anterior sin registrar lease nuevo PREVIO. No hubo colision (ruta propia, leases Claude liberados), pero incumple el orden del protocolo. Lease tomado ahora solo para verificar/sellar; no se presenta como previo.
+- tests/unit/test_bl18_metric_event_wiring.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:11:00-05:00 (R2 AST tras incidente de orden)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:06:00-05:00 (commit --only R2)
+# (CODEX 2026-08-04T18:49:00-05:00 SKEW vs Claude) RELEASE BL-18 bypass + R2 test/index: commits `948441c3` y `166273d7`; 13P y 33P, Fabric verde. Sin leases CODEX activos.
 # (CLAUDE 2026-08-04T18:00:00-05:00) RELEASE BL-16 ficha + PROGRESS: promocion sellada en c0561ecb, corte 13/34/0. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-04T19:55:00-05:00) RELEASE review 55cda935: 4 ataques ejecutados, restauracion byte-exacta verificada con git status limpio. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T19:02:00-05:00 SKEW vs Claude) C025 publicacion atomica representable/raw-quality-canonical; ACK bilateral CLD-443/445.
+- src/market/publication.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:47:00-05:00 (fichero nuevo: frontera DBAPI idempotente)
+- scripts/data/ingest_asset_ohlcv.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:47:00-05:00 (caller productivo fail-closed, commit unico)
+- tests/unit/test_market_publication.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:47:00-05:00 (fichero nuevo: unidad/causalidad)
+- tests/unit/test_bl40_ingest_wiring.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:47:00-05:00 (fichero nuevo: frontera writer)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:42:00-05:00 (commit --only C025 si gates verdes)
+- DB usdcop_trading (C025 rollback verify) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:37:00-05:00 (raw/quarantine/canonical en transaccion revertida; 0 filas finales)
+# (CODEX 2026-08-04T19:24:00-05:00 SKEW vs Claude) RELEASE C025 implementacion/tests/index/DB: `b432d7e9`; sondas rollback restauraron raw/canonical/quarantine/legacy. Sin leases CODEX activos.
+# (CODEX 2026-08-04T20:14:00-05:00 SKEW vs Claude) C023 artefacto JSON: envelope sellado + validador independiente; sin rerun numerico/trials.
+- src/identity/candidate_ledger.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:59:00-05:00 (fichero nuevo: seal/verify)
+- scripts/pipeline/candidates_paper_ledger.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:59:00-05:00 (productor escribe envelope)
+- scripts/validation/check_candidate_ledger_identity.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:59:00-05:00 (fichero nuevo: comando read-only)
+- usdcop-trading-dashboard/public/data/production/paper/candidates_ledger_2026.json | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:59:00-05:00 (añadir solo identity, payload numerico intacto)
+- tests/unit/test_candidate_ledger_identity.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:59:00-05:00 (fichero nuevo: mutacion/generation exclusion)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T20:54:00-05:00 (commit --only C023 si verde)
+# (CLAUDE 2026-08-04T23:20:00-05:00) RELEASE review b432d7e9: 5 ataques, restauracion verificada. Sin leases CLAUDE activos.
