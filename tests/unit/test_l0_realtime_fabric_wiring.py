@@ -257,3 +257,101 @@ def test_publication_uses_the_declared_provider_not_the_job_name() -> None:
         "la publicación no resuelve el proveedor declarado: volvería a publicar bajo el "
         "nombre del job y las reglas escalonadas no casarían nunca"
     )
+
+
+def test_shared_publisher_passes_declared_provider_to_the_real_boundary(monkeypatch) -> None:
+    """El valor resuelto llega al publisher; no basta con llamar al resolver y descartarlo."""
+    from src.data_quality import ingest_guard
+    from src.market import publication
+
+    resolved: list[tuple[str, str]] = []
+    published: list[dict] = []
+    sentinel = object()
+
+    class Registry:
+        def resolve(self, provider_id: str, provider_symbol: str) -> str:
+            resolved.append((provider_id, provider_symbol))
+            return "instrument-usdmxn"
+
+    monkeypatch.setattr(
+        ingest_guard,
+        "declared_provider_for",
+        lambda symbol: "twelvedata" if symbol == "USD/MXN" else None,
+    )
+    monkeypatch.setattr(ingest_guard, "registry_from_spine", lambda _conn: Registry())
+
+    def capture_publish(_conn, **kwargs):
+        published.append(kwargs)
+        return sentinel
+
+    monkeypatch.setattr(publication, "publish_provider_rows", capture_publish)
+
+    result = ingest_guard.publish_or_declare_gap(
+        object(),
+        symbol="USD/MXN",
+        provider_id="twelvedata_multi",
+        rows=[{"time": "2026-08-04T13:00:00Z"}],
+        interval_id="PT5M",
+        source_uri="dag://l0_ohlcv_realtime/USD/MXN",
+    )
+
+    assert result is sentinel
+    assert resolved == [("twelvedata", "USD/MXN")]
+    assert len(published) == 1
+    assert published[0]["provider_id"] == "twelvedata"
+    assert published[0]["provider_symbol"] == "USD/MXN"
+    assert published[0]["source_uri"].endswith("?job=twelvedata_multi")
+
+
+def test_the_effective_provider_reaching_the_publisher_is_the_declared_one(monkeypatch) -> None:
+    """CONDUCTUAL: se captura el `provider_id` que **llega** al publicador.
+
+    Refuerzo pedido por Codex (CXD-474), y tenía razón: la versión anterior de este
+    candado probaba `declared_provider_for(...)` por separado y que el fuente del helper
+    mencionara ese nombre. Una mutación podía llamar a `declared_provider_for`, ignorar
+    su resultado y seguir pasando el job a `publish_provider_rows`: **los dos asserts
+    seguían verdes y el apagón volvía**.
+
+    Es exactamente el fallo que yo le señalé a él tres veces en este ciclo —medir forma
+    en vez de dataflow— aparecido en mi propio código. Aquí se interceptan el registry y
+    el publicador y se afirma sobre el valor efectivo, no sobre el texto.
+    """
+    from src.data_quality import ingest_guard
+
+    capturado: dict[str, object] = {}
+
+    class _RegistroFalso:
+        def resolve(self, provider_id, symbol):
+            capturado["resuelto_con"] = provider_id
+            return "uuid-fingido"
+
+    def _publicador_falso(conn, **kwargs):
+        capturado["publicado_como"] = kwargs["provider_id"]
+        capturado["source_uri"] = kwargs["source_uri"]
+        return "resultado"
+
+    monkeypatch.setattr(ingest_guard, "registry_from_spine", lambda conn: _RegistroFalso())
+    monkeypatch.setattr(
+        "src.market.publication.publish_provider_rows", _publicador_falso
+    )
+
+    resultado = ingest_guard.publish_or_declare_gap(
+        None,
+        symbol="USD/MXN",
+        provider_id="twelvedata_multi",   # <- el JOB que llama
+        rows=[],
+        interval_id="PT5M",
+        source_uri="dag://l0_ohlcv_realtime/USD/MXN",
+    )
+
+    assert resultado == "resultado"
+    assert capturado["publicado_como"] == "twelvedata", (
+        f"se publicó como {capturado['publicado_como']!r}: con el nombre del job las "
+        "reglas escalonadas no casan y el 100% de USD/MXN acaba en cuarentena"
+    )
+    assert capturado["resuelto_con"] == "twelvedata", (
+        "el alias se resolvió con el job: la cobertura y la publicación usarían "
+        "identidades distintas"
+    )
+    # El job no se pierde — vive en el linaje, que es su sitio.
+    assert "twelvedata_multi" in str(capturado["source_uri"])
