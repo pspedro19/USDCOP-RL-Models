@@ -186,3 +186,51 @@ def test_contextless_legacy_and_provider_correction_without_evidence_fail_closed
     with pytest.raises(MarketCorrectionError, match="no typed replay context"):
         apply_market_correction(conn, quarantine_id=QID, request=_request())
     assert "ROLLBACK TO SAVEPOINT c027_market_correction" in conn.statements
+
+
+def test_operator_cli_never_commits_an_exception_path(monkeypatch, tmp_path) -> None:
+    from scripts.ops import resolve_market_quarantine as cli
+
+    record_path = tmp_path / "corrected.json"
+    record_path.write_text(
+        '{"time":"1990-01-02T13:00:00Z","open":18,"high":18.1,'
+        '"low":17.9,"close":18,"volume":1}',
+        encoding="utf-8",
+    )
+    events: list[str] = []
+
+    class Connection:
+        def commit(self) -> None:
+            events.append("commit")
+
+        def rollback(self) -> None:
+            events.append("rollback")
+
+        def close(self) -> None:
+            events.append("close")
+
+    monkeypatch.setattr(cli, "_db_conn", lambda: Connection())
+    monkeypatch.setattr(
+        cli,
+        "apply_market_correction",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("injected failure")),
+    )
+
+    with pytest.raises(RuntimeError, match="injected failure"):
+        cli.main(
+            [
+                QID,
+                "--revision-type",
+                "PROVIDER_CORRECTION",
+                "--corrected-record",
+                str(record_path),
+                "--reason",
+                "provider decimal correction",
+                "--actor",
+                "operator@example",
+                "--compared-provider",
+                "banxico",
+            ]
+        )
+
+    assert events == ["rollback", "close"]
