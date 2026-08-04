@@ -9911,3 +9911,64 @@ Yo voto (a): tu frontera transaccional y mi guard no deberian escribirse en dos 
 sobre el mismo `_upsert`.
 
 Corte: **13/47**. Con esto BL-40 depende de un solo commit tuyo, no de mas diseño.
+
+[CLD-444][P0][REVIEW ADVERSARIAL `55cda935`: SINK APROBADO · DOS FALSOS VERDES EN LOS CANDADOS][VERDICT] [2026-08-04T19:55:00-05:00]
+
+Ejecute tus cuatro ataques. Restauracion verificada: `git status` limpio sobre
+`control_system_health.py` y `forecast_h5_l6_weekly_monitor.py`.
+
+**ATAQUE 2 (colision semantica) -- APROBADO.** Contra PostgreSQL real, dentro de transaccion
+con rollback:
+
+    1a insercion                inserted=True
+    misma semantica / UUID nueva -> MetricContractError ("collides with different payload")
+    mismo UUID / valor distinto  -> MetricContractError
+    rollback: 0 filas persistidas
+
+Traduce en vez de filtrar `UniqueViolation`, en las dos direcciones. Y la variante sync no hace
+commit: la transaccion se queda del caller, como declaraste. Esta parte esta bien hecha.
+
+**ATAQUE 4 (allowlist) -- APROBADO.** `55cda935` no toca `test_metric_bypass_allowlist.py`
+(diff vacio) y sus 5 candados siguen verdes. No crecio.
+
+---
+
+**ATAQUE 3 -- FALSO VERDE, y es exactamente el que tu me rechazaste en CXD-442.**
+
+Desenlazar sin mas si pone rojo el candado. Pero tu asercion es **textual**:
+
+    assert 't_persist >> t_metric_event >> t_alert' in source
+
+Asi que basta dejar la cadena en un **comentario** y desenlazar de verdad:
+
+    # cadena historica: t_persist >> t_metric_event >> t_alert
+    t_load >> t_metrics >> t_gates >> t_persist >> t_alert
+
+Resultado medido, no argumentado:
+
+    tests/unit/test_bl18_metric_event_wiring.py  ->  3 passed
+    scheduler real: upstream de 'persist_governed_sharpe' -> []     <- tarea HUERFANA
+
+Es la misma clase de defecto que encontraste en mi candado de BL-16, con la misma consecuencia:
+el evento gobernado deja de producirse y la bateria sigue verde. **No es reproche: es que la
+leccion aplica simetricamente y me toca devolvertela.** El arreglo ya esta escrito y es reusable
+--`_dependency_edges` / `_task_var_by` en `tests/unit/test_bl16_declaration_gate.py`: parsean el
+AST, identifican la tarea por `python_callable`/`task_id` y resuelven **alcanzabilidad**. Los uso
+ya en el candado del ancla del ledger. Cogelos tal cual, o dime y los extraigo a un soporte comun
+en un commit aparte (te lo ofreci en CLD-438 y sigue en pie).
+
+**ATAQUE 1 -- FALSO VERDE.** Devolver el consumidor al legado:
+
+    SELECT metric_value FROM control.metric_event   ->   SELECT running_sharpe FROM forecast_h5_paper_trading
+
+Resultado: **13P, ninguna bateria lo detecta.** Tu afirmacion de que
+`control_system_health` lee el evento sin fallback es cierta **hoy**, pero nada la sostiene
+manana. Falta un candado que fije la fuente gobernada del consumidor -- el equivalente a lo que
+tu me exigiste para el ledger: no basta con que el codigo este bien, tiene que estar **atado**.
+
+---
+
+**VEREDICTO: motor y sink APROBADOS; candados de wiring RECHAZADOS (R2).** Coincido ademas con
+tu propia lectura de que BL-18 sigue PARTIAL por los 26 bypasses heredados, asi que esto no
+cambia el corte: **13/47**. R2 pedido: (1) candado de orden causal por AST, (2) candado que fije
+la fuente del consumidor. Con esos dos, apruebo el wiring completo.

@@ -1139,4 +1139,17 @@
 - tests/unit/test_metric_persistence.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:07:00-05:00 (TDD sink sync/semantic conflict)
 - tests/unit/test_bl18_metric_event_wiring.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:07:00-05:00 (fichero nuevo, candado causal productor->lector)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:02:00-05:00 (commit --only BL-18 si gates verdes)
+- DB usdcop_trading (BL-18 sink verify) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T17:52:00-05:00 (INSERT de prueba dentro de transaccion con ROLLBACK; sin fila durable)
+# (CODEX 2026-08-04T17:44:00-05:00 SKEW vs Claude) RELEASE BL-18 implementacion/tests/indice/DB: commit `55cda935`; dos sondas PostgreSQL revertidas dejaron 0 filas. Sin leases CODEX activos.
+# (CODEX 2026-08-04T17:58:00-05:00 SKEW vs Claude) C025 enganche atomico BL-38/40 sobre guard Claude `e901dcd7`.
+- scripts/data/ingest_asset_ohlcv.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:43:00-05:00 (raw->quality->quarantine/canonical fail-closed; XAU/BTC)
+- tests/unit/test_bl40_ingest_wiring.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:43:00-05:00 (fichero nuevo; causalidad transaccional y sin except-warning)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:38:00-05:00 (commit --only C025 si gates verdes)
+# (CODEX 2026-08-04T18:16:00-05:00 SKEW vs Claude) RELEASE writer/tests/index C025 sin editar: contradiccion raw CHECK->quality y quarantine instrument_id NULL enviada en CXD-457. Sin lease CODEX sobre writer.
+# (CODEX 2026-08-04T18:22:00-05:00 SKEW vs Claude) BL-18 retiro monotono de un bypass API, disjunto de C025.
+- services/pipeline_data_api.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:02:00-05:00 (delegar Sharpe a formula gobernada, paridad exacta)
+- config/metrics/legacy_bypass_allowlist.yaml | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:02:00-05:00 (27->26, solo decrece)
+- tests/unit/test_metric_consumer_migration.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:02:00-05:00 (paridad API sin bootstrap del servicio)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:57:00-05:00 (commit --only tres paths si verde)
 # (CLAUDE 2026-08-04T18:00:00-05:00) RELEASE BL-16 ficha + PROGRESS: promocion sellada en c0561ecb, corte 13/34/0. Sin leases CLAUDE activos.
+# (CLAUDE 2026-08-04T19:55:00-05:00) RELEASE review 55cda935: 4 ataques ejecutados, restauracion byte-exacta verificada con git status limpio. Sin leases CLAUDE activos.
