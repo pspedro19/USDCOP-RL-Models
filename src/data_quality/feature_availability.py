@@ -93,23 +93,26 @@ def news_feature_cutoff(end: date) -> datetime:
 
 def measure_feature(cursor, spec: FeatureSpec, cutoff: datetime) -> FeatureMeasurement:
     observed_at = _utc_cutoff(cutoff)
+    table = _identifier(spec.table, "table")
+    column = _identifier(spec.column, "column")
+    time_column = _identifier(spec.time_column, "time_column")
     cursor.execute(
         """SELECT column_name FROM information_schema.columns
            WHERE table_schema = 'public' AND table_name = %s
              AND column_name IN (%s, %s)""",
-        (spec.table, spec.column, spec.time_column),
+        (table, column, time_column),
     )
     present = {row[0] for row in cursor.fetchall()}
-    required = {spec.column, spec.time_column}
+    required = {column, time_column}
     if present != required:
         total = non_null = distinct = 0
         measured = False
         missing = sorted(required - present)
     else:
         cursor.execute(
-            f'SELECT COUNT(*), COUNT("{spec.column}"), '
-            f'COUNT(DISTINCT "{spec.column}") FROM "{spec.table}" '
-            f'WHERE "{spec.time_column}" <= %s',
+            f'SELECT COUNT(*), COUNT("{column}"), '
+            f'COUNT(DISTINCT "{column}") FROM "{table}" '
+            f'WHERE "{time_column}" <= %s',
             (observed_at,),
         )
         total, non_null, distinct = (int(value) for value in cursor.fetchone())
@@ -123,9 +126,9 @@ def measure_feature(cursor, spec: FeatureSpec, cutoff: datetime) -> FeatureMeasu
     )
     details = {
         "cutoff": observed_at.isoformat(),
-        "table": spec.table,
-        "column": spec.column,
-        "time_column": spec.time_column,
+        "table": table,
+        "column": column,
+        "time_column": time_column,
         "total_rows": total,
         "non_null_rows": non_null,
         "distinct_values": distinct,

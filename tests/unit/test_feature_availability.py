@@ -88,6 +88,19 @@ def test_naive_cutoff_is_rejected_before_query() -> None:
     assert cursor.executions == []
 
 
+def test_direct_spec_cannot_inject_an_sql_identifier() -> None:
+    cursor = FakeCursor([])
+    unsafe = FeatureSpec(
+        feature_id="unsafe",
+        table='news_articles"; DROP TABLE news_articles; --',
+        column="sentiment_score",
+        time_column="published_at",
+    )
+    with pytest.raises(ValueError, match="lowercase SQL identifier"):
+        measure_feature(cursor, unsafe, CUTOFF)
+    assert cursor.executions == []
+
+
 def test_persistence_is_idempotent_but_rejects_payload_collision() -> None:
     measurement = FeatureMeasurement(
         feature_id=_spec().feature_id,
