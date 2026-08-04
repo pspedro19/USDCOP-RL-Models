@@ -295,7 +295,12 @@ def get_plan_digest(plan: str) -> str:
 
 
 def created_tables_for_plan(plan: str) -> set[str]:
-    """Return tables declared by a plan, resolving bare names to ``public``."""
+    """Return statically declared tables, resolving bare names to ``public``.
+
+    This is a source-contract guard, not a SQL interpreter: it does not resolve
+    control flow or dynamic SQL. Runtime ``--validate`` remains authoritative
+    for objects whose creation depends on execution.
+    """
     ddl = "\n".join(
         path.read_text(encoding="utf-8") for path in get_migration_files(plan)
     )
