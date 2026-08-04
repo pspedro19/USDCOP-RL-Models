@@ -33,6 +33,12 @@ añadirlo, la verificación focal terminó en **6P** y el monitor de layout en *
 de manifiestos conservó su baseline conocido de **20P/4F**, sin delta. Este incremento no
 satisface DONE: todavía no hay caller productivo ni paridad ejecutada contra PostgreSQL.
 
+Cross-review `CLD-320` encontró que el primer candado protegía la matriz y los no-finitos, pero
+no el node ID que impide construir una declaración ilegal. R2 añadió esa tercera aserción. La
+mutación independiente —retirar sólo `test_illegal_governance_object_cannot_exist` del
+workflow— pasó indebidamente antes de R2 y ahora produce **1F** nombrando el gate ausente; el
+workflow fue restaurado antes del verde final.
+
 ## Impacto frontend
 Ninguno.
 

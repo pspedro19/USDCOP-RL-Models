@@ -239,6 +239,7 @@ def test_ci_and_readiness_matrix_are_executable_honest_contracts() -> None:
     assert "test_codex_phase2_backlog.py" in workflow
     assert "BL-16 constitutional declaration and canonical JSON gates" in workflow
     assert "test_governance_matrix_has_exactly_26_legal_state_combinations" in workflow
+    assert "test_illegal_governance_object_cannot_exist" in workflow
     assert "test_canonical_json_rejects_nonfinite_numbers" in workflow
     assert (
         "python -m pytest tests/regression/test_forecasting_caveat_present.py -q"
