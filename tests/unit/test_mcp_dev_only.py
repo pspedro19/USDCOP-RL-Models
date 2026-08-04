@@ -61,6 +61,65 @@ def _planes_que_declaran_la_tabla_dev(migrador) -> dict[str, list[str]]:
     return infractores
 
 
+def _plan_sql(migrador, plan: str) -> str:
+    return "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in migrador.get_migration_files(plan)
+    )
+
+
+def _ddl_declares_column(sql: str, table_name: str, column_name: str) -> bool:
+    """Recognize the column declaration forms used by governed plans."""
+    table = re.escape(table_name.split(".")[-1])
+    column = re.escape(column_name)
+    qualified_table = rf'(?:public\.)?"?{table}"?'
+
+    for match in re.finditer(
+        rf"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?{qualified_table}\s*\((.*?)\)\s*;",
+        sql,
+        re.IGNORECASE | re.DOTALL,
+    ):
+        if re.search(rf'(?:^|,)\s*"?{column}"?\s+', match.group(1), re.IGNORECASE):
+            return True
+
+    if re.search(
+        rf"ALTER\s+TABLE\s+{qualified_table}.*?"
+        rf"ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?\"?{column}\"?\b",
+        sql,
+        re.IGNORECASE | re.DOTALL,
+    ):
+        return True
+
+    view = re.search(
+        rf"CREATE\s+OR\s+REPLACE\s+VIEW\s+{qualified_table}\s+AS\s+SELECT\s+(.*?)\s+FROM\b",
+        sql,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if view and re.search(
+        rf"(?:\.\s*\"?{column}\"?\b|\bAS\s+\"?{column}\"?\b)",
+        view.group(1),
+        re.IGNORECASE,
+    ):
+        return True
+
+    return False
+
+
+def _required_columns_missing_from_plan_ddl(migrador) -> dict[str, list[str]]:
+    missing: dict[str, list[str]] = {}
+    for plan, tables in migrador.REQUIRED_COLUMNS_BY_PLAN.items():
+        sql = _plan_sql(migrador, plan)
+        absent = sorted(
+            f"{table}.{column}"
+            for table, columns in tables.items()
+            for column in columns
+            if not _ddl_declares_column(sql, table, column)
+        )
+        if absent:
+            missing[plan] = absent
+    return missing
+
+
 # ---------------------------------------------------------------------------
 # Candados ESTRUCTURALES — la garantía dura
 # ---------------------------------------------------------------------------
@@ -120,6 +179,31 @@ def test_dev_table_is_not_a_required_table_of_any_plan() -> None:
         f"{TABLA_DEV} figura como required table: {con_req}. "
         "Una herramienta dev-only no puede hacer fallar la validación de un plan"
     )
+
+
+def test_every_required_column_is_declared_by_its_plan_ddl() -> None:
+    """Un required column no puede ser una expectativa imposible de satisfacer."""
+    migrador = _cargar_migrador()
+
+    missing = _required_columns_missing_from_plan_ddl(migrador)
+    assert not missing, f"required columns sin DDL en su plan: {missing}"
+
+
+def test_required_column_guard_detects_a_synthetic_orphan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Prueba causal: un typo en el mapa debe quedar rojo antes del apply."""
+    migrador = _cargar_migrador()
+    monkeypatch.setitem(
+        migrador.REQUIRED_COLUMNS_BY_PLAN["commerce-surface-v1"]["public.user_cart"],
+        "invented_column",
+        "Synthetic orphan",
+    )
+
+    missing = _required_columns_missing_from_plan_ddl(migrador)
+    assert missing == {
+        "commerce-surface-v1": ["public.user_cart.invented_column"]
+    }
 
 
 # ---------------------------------------------------------------------------
