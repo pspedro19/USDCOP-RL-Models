@@ -175,3 +175,11 @@ assets:
       # S3 (2026-07-27): las dos estrategias se congelan y publican JUNTAS —
       # el baseline ma200_v1 es candidato operativo Y vara de medir del gated.
       strategy_ids: ["spx500_regime_gated_v1", "spx500_daily_ma200_v1"]
+    # C-010 R3 / BL-45: primer `policy_runs` REAL. Solo se emite cadena para policies
+    # cuyo `migration.status` esta en ELIGIBLE_MIGRATION_STATES; spx500_daily_ma200_v1
+    # llego a PARITY_GREEN con el harness OFICIAL (7743 barras, exposicion identica en
+    # float64), no por inferencia. Hasta ahora `policy_runs` estaba vacio en los tres
+    # activos, asi que el factory emitia cero tareas: mecanismo correcto sin llamador.
+    policy_runs:
+      - policy_id: spx500_daily_ma200_v1
+

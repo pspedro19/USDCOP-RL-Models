@@ -80,9 +80,16 @@ governance:
     reejecutar una política congelada").
 
 migration:
-  status: PARITY_PENDING
+  status: PARITY_GREEN
   legacy_producer: scripts/pipeline/publish_spx500_bundles.py (arm MA200_ID)
   legacy_reference: scripts/analysis/profitability_adapters.py::spx500 (dumb_position)
+  # Promovido a PARITY_GREEN con el HARNESS OFICIAL, no por inferencia:
+  #   python scripts/validation/check_policy_parity.py --policy spx500_daily_ma200_v1
+  #   [OK] 7743 barras, exposicion IDENTICA (float64), 2026-08-05
+  # Nota: mi test ad-hoc de CLD-448 comparaba contra benchmarks.py::_ma200, que NO es
+  # el productor declarado aqui. Esa comparacion sigue siendo valida sobre _ma200, pero
+  # NO era la paridad que esta ficha exige.
+  parity_evidence: "check_policy_parity 7743 bars identical float64 (2026-08-05)"
   parity_harness: scripts/validation/check_policy_parity.py --policy spx500_daily_ma200_v1
   parity_criterion: >-
     Igualdad EXACTA de la serie de exposición en fecha de decisión (float64,
