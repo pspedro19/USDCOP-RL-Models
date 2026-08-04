@@ -145,32 +145,19 @@ def should_run_today() -> bool:
 def _publish_symbol_rows(conn, *, symbol: str, provider_id: str, rows):
     """Publica las barras por la frontera Fabric, o `None` si el símbolo no tiene identidad.
 
-    La cobertura **se mide, no se declara en una lista**: un símbolo está cubierto si su
-    alias `(provider_id, symbol)` resuelve en `reference.provider_symbol`. Así, cuando
-    un instrumento entra en la espina queda cubierto solo, y mientras no esté, el hueco
-    es visible en vez de silencioso.
-
-    Devolver `None` para un símbolo sin identidad es deliberado y NO es un bypass
-    disfrazado: filtrar sus barras las mandaría todas a cuarentena y apagaría su
-    ingesta; escribirlas calladamente haría creer que pasaron un gate que nunca
-    corrió. El llamador registra el hueco, que es la única salida honesta hasta que el
-    instrumento tenga perfil.
+    La implementación vive en `src/data_quality/ingest_guard.py` para que este DAG y el
+    de backfill compartan **una** definición de cobertura. Duplicarla habría dejado dos
+    criterios que divergen en silencio — que es el defecto que este ciclo lleva
+    persiguiendo en varias formas.
     """
-    from src.market.identity import IdentityError
-    from src.market.publication import publish_provider_rows
-    from src.data_quality.ingest_guard import registry_from_spine
+    from src.data_quality.ingest_guard import publish_or_declare_gap
 
-    try:
-        registry_from_spine(conn).resolve(provider_id, symbol)
-    except IdentityError:
-        return None  # sin alias canónico: fuera de cobertura, y el llamador lo declara
-
-    return publish_provider_rows(
+    return publish_or_declare_gap(
         conn,
+        symbol=symbol,
         provider_id=provider_id,
-        provider_symbol=symbol,
-        interval_id='PT5M',
         rows=rows,
+        interval_id='PT5M',
         source_uri=f'dag://l0_ohlcv_realtime/{symbol}',
     )
 

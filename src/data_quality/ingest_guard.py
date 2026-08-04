@@ -440,6 +440,77 @@ def screen_bars(
     return ScreeningResult(accepted=aceptadas, quarantined=rechazadas)
 
 
+#: Columnas OHLCV que viajan al publicador. `symbol`/`source` no van: la identidad la
+#: aporta el par `(provider_id, provider_symbol)` que se pasa aparte.
+BAR_FIELDS: tuple[str, ...] = ("time", "open", "high", "low", "close", "volume")
+
+
+def declared_provider_for(symbol: str, assets_dir: Path = ASSETS_DIR) -> str | None:
+    """Proveedor **declarado** para un símbolo canónico, o `None` si nadie lo declara.
+
+    Existe por un defecto medido: las reglas escalonadas se declaran para el
+    **proveedor** (`twelvedata`), mientras que los DAGs escribían bajo el nombre de su
+    **job** (`twelvedata_multi`, `twelvedata_backfill`). El alias resuelve en los tres
+    casos, así que la barra pasaba la identidad y moría después en `bar.range_scope`:
+    el 100% de las barras USD/MXN habría acabado en cuarentena — un apagón disfrazado
+    de control de calidad.
+
+    La distinción ya estaba en el modelo que construimos: `authoritative_for` sólo la
+    tienen los proveedores **declarados**; los jobs quedaron registrados como
+    `observed_writer` sin autoridad. Publicar bajo el job contradecía esa separación.
+    El job no se pierde: viaja en `source_uri` y en la columna `source` legada, que es
+    donde vive el linaje.
+    """
+    for ruta in sorted(assets_dir.glob("*.yaml")):
+        declarado = yaml.safe_load(ruta.read_text(encoding="utf-8")) or {}
+        if declarado.get("symbol") != symbol:
+            continue
+        fuente = declarado.get("data_source")
+        if isinstance(fuente, Mapping) and fuente.get("provider"):
+            return str(fuente["provider"])
+    return None
+
+
+def publish_or_declare_gap(conn, *, symbol: str, provider_id: str, rows, interval_id: str, source_uri: str):
+    """Publica por la frontera Fabric, o devuelve `None` si el símbolo no tiene identidad.
+
+    La **cobertura se mide**: un símbolo está cubierto si su alias `(provider_id, symbol)`
+    resuelve en `reference.provider_symbol`. Una lista fija de símbolos cubiertos se
+    desincronizaría del catálogo en silencio — un instrumento entraría en la espina y
+    seguiría sin gate, o saldría y el gate lo bloquearía sin motivo.
+
+    `None` para un símbolo sin identidad **no es un bypass disfrazado**, y el llamador
+    está obligado a declararlo: filtrar sus barras las mandaría todas a cuarentena por
+    `unknown_alias` y apagaría una ingesta viva; escribirlas calladamente haría creer
+    que pasaron un gate que nunca corrió, y la ausencia de eventos de cuarentena se
+    leería como "todo limpio". El aviso es lo único que separa un hueco declarado de un
+    bypass.
+    """
+    from src.market.identity import IdentityError
+    from src.market.publication import publish_provider_rows
+
+    # Se publica bajo el proveedor DECLARADO, no bajo el nombre del job que llama. Ver
+    # `declared_provider_for`: publicar como `twelvedata_multi` hacía que las reglas
+    # escalonadas —declaradas para `twelvedata`— no casaran nunca.
+    declarado = declared_provider_for(symbol)
+    if declarado is None:
+        return None  # símbolo sin activo declarado: fuera de cobertura
+
+    try:
+        registry_from_spine(conn).resolve(declarado, symbol)
+    except IdentityError:
+        return None
+
+    return publish_provider_rows(
+        conn,
+        provider_id=declarado,
+        provider_symbol=symbol,
+        interval_id=interval_id,
+        rows=rows,
+        source_uri=f"{source_uri}?job={provider_id}",
+    )
+
+
 def rows_from_frame(df, columnas: Sequence[str]) -> list[dict[str, Any]]:
     """Convierte un DataFrame a filas planas para el evaluador, sin tocar valores."""
     return [

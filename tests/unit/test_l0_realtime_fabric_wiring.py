@@ -113,15 +113,40 @@ def test_coverage_is_measured_against_the_spine_not_hardcoded() -> None:
     seguiría sin gate, o saldría y el gate lo bloquearía sin motivo. Resolviendo el
     alias, la cobertura sigue al catálogo sola.
     """
-    fuente = DAG.read_text(encoding="utf-8")
+    import inspect
 
-    assert "registry_from_spine" in fuente, (
-        "la cobertura no consulta la espina: quedaría fijada en código"
+    from src.data_quality import ingest_guard
+
+    # La cobertura la decide el helper COMPARTIDO, no cada DAG por su cuenta. Este
+    # candado miraba antes el fichero del DAG y se puso rojo al extraer el helper —
+    # correcto: estaba fijando la capa equivocada.
+    decisor = inspect.getsource(ingest_guard.publish_or_declare_gap)
+    assert "registry_from_spine" in decisor and "resolve(" in decisor, (
+        "la cobertura no resuelve el alias contra la espina: quedaría fijada en código"
     )
-    for sospechoso in ("COVERED_SYMBOLS", "FABRIC_SYMBOLS", "SYMBOLS_WITH_GATE"):
-        assert sospechoso not in fuente, (
-            f"'{sospechoso}' parece una lista de cobertura fija: mídela contra "
-            "reference.provider_symbol en su lugar"
+
+    for fuente in (DAG.read_text(encoding="utf-8"), inspect.getsource(ingest_guard)):
+        for sospechoso in ("COVERED_SYMBOLS", "FABRIC_SYMBOLS", "SYMBOLS_WITH_GATE"):
+            assert sospechoso not in fuente, (
+                f"'{sospechoso}' parece una lista de cobertura fija: mídela contra "
+                "reference.provider_symbol en su lugar"
+            )
+
+
+def test_both_dags_share_one_definition_of_coverage() -> None:
+    """Los dos DAGs usan el MISMO helper: dos copias divergirían en silencio.
+
+    Es el defecto que este ciclo persiguió en varias formas —helpers duplicados,
+    criterios paralelos— y no tenía sentido reintroducirlo aquí.
+    """
+    backfill = (ROOT / "airflow" / "dags" / "l0_ohlcv_backfill.py").read_text(
+        encoding="utf-8"
+    )
+    realtime = DAG.read_text(encoding="utf-8")
+
+    for nombre, fuente in (("realtime", realtime), ("backfill", backfill)):
+        assert "publish_or_declare_gap" in fuente, (
+            f"el DAG de {nombre} no usa el helper compartido de cobertura"
         )
 
 
@@ -193,4 +218,42 @@ def test_the_order_lock_fails_when_publication_is_moved_after_the_insert() -> No
     assert not (max(publicacion) < min(inserts)), (
         "con la publicación movida después del INSERT el candado de orden sigue verde: "
         "estaría midiendo presencia, no precedencia"
+    )
+
+
+def test_publication_uses_the_declared_provider_not_the_job_name() -> None:
+    """Se publica bajo el PROVEEDOR declarado, no bajo el nombre del job que escribe.
+
+    Defecto medido al cablear el backfill, y era un apagón: las reglas escalonadas se
+    declaran para el proveedor (`twelvedata`), mientras los DAGs escribían como
+    `twelvedata_multi` / `twelvedata_backfill`. El alias resuelve en los tres casos, así
+    que la barra superaba la identidad y moría después en `bar.range_scope`:
+
+        USD/MXN por 'twelvedata'          -> accepted
+        USD/MXN por 'twelvedata_multi'    -> bar.range_scope
+        USD/MXN por 'twelvedata_backfill' -> bar.range_scope
+
+    El 100% de las barras USD/MXN habría acabado en cuarentena — control de calidad que
+    en realidad apaga una ingesta. La separación ya estaba en el modelo: sólo los
+    proveedores **declarados** tienen `authoritative_for`; los jobs quedaron como
+    `observed_writer` sin autoridad. El job no se pierde: viaja en `source_uri`.
+    """
+    from src.data_quality.ingest_guard import declared_provider_for
+
+    assert declared_provider_for("USD/MXN") == "twelvedata"
+    assert declared_provider_for("USD/COP") == "twelvedata"
+    assert declared_provider_for("BTC/USDT") == "binance"
+    assert declared_provider_for("USD/BRL") is None, (
+        "USD/BRL no tiene activo declarado: debe quedar fuera de cobertura, no recibir "
+        "un proveedor inventado"
+    )
+
+    import inspect
+
+    from src.data_quality import ingest_guard
+
+    decisor = inspect.getsource(ingest_guard.publish_or_declare_gap)
+    assert "declared_provider_for" in decisor, (
+        "la publicación no resuelve el proveedor declarado: volvería a publicar bajo el "
+        "nombre del job y las reglas escalonadas no casarían nunca"
     )

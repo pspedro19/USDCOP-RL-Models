@@ -401,16 +401,71 @@ def filter_market_hours(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def _screen_backfill_frame(conn, df: pd.DataFrame) -> pd.DataFrame:
+    """Filtra el lote dejando solo las barras aceptadas por el gate de calidad.
+
+    Se agrupa **por símbolo** porque el backfill puede traer varios en un lote y la
+    identidad canónica es por par `(proveedor, símbolo)`: publicar el lote entero bajo
+    un solo símbolo le pondría a unas barras la identidad de otras.
+
+    Un símbolo sin alias canónico (hoy `USD/BRL`, que no tiene `AssetProfile`) pasa sin
+    filtrar **con aviso**: filtrarlo apagaría su backfill, y escribirlo callado haría
+    creer que superó un gate que nunca corrió.
+    """
+    from src.data_quality.ingest_guard import BAR_FIELDS, publish_or_declare_gap
+
+    trozos = []
+    for symbol, grupo in df.groupby('symbol', sort=False):
+        filas = [
+            {campo: fila[campo] for campo in BAR_FIELDS if campo in fila}
+            for _, fila in grupo.iterrows()
+        ]
+        publicacion = publish_or_declare_gap(
+            conn,
+            symbol=str(symbol),
+            provider_id='twelvedata_backfill',
+            rows=filas,
+            interval_id='PT5M',
+            source_uri=f'dag://l0_ohlcv_backfill/{symbol}',
+        )
+        if publicacion is None:
+            logging.warning(
+                "[%s] fuera de la cobertura Fabric: sin alias canonico en "
+                "reference.provider_symbol, la barra NO pasa por el gate de calidad",
+                symbol,
+            )
+            trozos.append(grupo)
+            continue
+        if publicacion.quarantine_count:
+            logging.warning(
+                "[%s] %d barra(s) en cuarentena, NO se escriben en la tabla legada",
+                symbol, publicacion.quarantine_count,
+            )
+        instantes_ok = {f['time'] for f in publicacion.accepted}
+        trozos.append(grupo[grupo['time'].isin(instantes_ok)])
+
+    return pd.concat(trozos) if trozos else df.iloc[0:0]
+
+
 def insert_ohlcv_batch(conn, df: pd.DataFrame) -> int:
     """Insert OHLCV batch with UPSERT on (time, symbol)."""
     if df.empty:
         return 0
     cur = conn.cursor()
     try:
+        # C025/C026 — publicacion Fabric ANTES del UPSERT legado y en la MISMA
+        # transaccion (el commit de abajo cierra ambos caminos). Solo entran las barras
+        # `accepted`: una barra en cuarentena que aterriza igual anula la cuarentena.
+        aceptadas = _screen_backfill_frame(conn, df)
+        if aceptadas.empty:
+            conn.commit()
+            logging.info("0 barras aceptadas tras el gate de calidad")
+            return 0
+
         values = [
             (row['time'], row['symbol'], row['open'], row['high'],
              row['low'], row['close'], row['volume'], row['source'])
-            for _, row in df.iterrows()
+            for _, row in aceptadas.iterrows()
         ]
         execute_values(
             cur,
