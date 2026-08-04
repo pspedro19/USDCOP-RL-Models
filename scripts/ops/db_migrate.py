@@ -52,6 +52,13 @@ MIGRATION_PLANS = {
             "082_checkout_order_retry_transition.sql",
         )
     ),
+    "identity-admin-v1": tuple(
+        PROJECT_ROOT / "database" / "migrations" / name
+        for name in (
+            "056_admin_console_is_test.sql",
+            "056_rbac_dynamic_roles.sql",
+        )
+    ),
     # Fresh-clone platform schema.  This deliberately uses the consolidated H5
     # migration (050) instead of replaying its superseded 043/044 path, and
     # keeps optional extensions such as pgvector (047) out of the baseline.
@@ -86,9 +93,10 @@ MIGRATION_PLANS = {
     ),
 }
 REVIEW_GATED_PLANS = frozenset(
-    {"commerce-v1", "platform-bootstrap-v1", "fabric-v1"}
+    {"commerce-v1", "identity-admin-v1", "platform-bootstrap-v1", "fabric-v1"}
 )
 PLAN_PREREQUISITE_TABLES = {
+    "identity-admin-v1": ("public.sb_users",),
     "platform-bootstrap-v1": (
         "public.sb_users",
         "public.usdcop_m5_ohlcv",
@@ -201,7 +209,18 @@ REQUIRED_TABLES_BY_PLAN = {
         "public.checkout_orders": "Immutable sealed checkout quotes",
         "public.billing_events": "Provider-event idempotency ledger",
     },
+    "identity-admin-v1": {
+        "public.rbac_role_permissions": "Dynamic role-permission assignments",
+        "public.rbac_user_overrides": "Per-user RBAC overrides",
+    },
     "fabric-v1": FABRIC_REQUIRED_TABLES,
+}
+REQUIRED_COLUMNS_BY_PLAN = {
+    "identity-admin-v1": {
+        "public.sb_users": {
+            "is_test": "Admin-console test-user classification",
+        },
+    },
 }
 # Compatibility alias for old importers. CLI callers must select a plan.
 REQUIRED_TABLES = LEGACY_REQUIRED_TABLES
@@ -478,6 +497,34 @@ async def table_exists(conn, full_table_name: str) -> bool:
     return result
 
 
+async def column_exists(conn, full_table_name: str, column_name: str) -> bool:
+    """Check whether a required column exists on a schema-qualified table."""
+    if "." in full_table_name:
+        schema, table = full_table_name.split(".", 1)
+    else:
+        schema, table = "public", full_table_name
+
+    return await conn.fetchval("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.columns
+            WHERE table_schema = $1 AND table_name = $2 AND column_name = $3
+        )
+    """, schema, table, column_name)
+
+
+async def validate_required_columns(conn, plan: str) -> bool:
+    """Fail closed when a plan's postcondition columns are absent."""
+    missing = []
+    for table, columns in REQUIRED_COLUMNS_BY_PLAN.get(plan, {}).items():
+        for column, description in columns.items():
+            if not await column_exists(conn, table, column):
+                missing.append(f"{table}.{column}")
+                logger.warning(
+                    "  ✗ %s.%s - MISSING (%s)", table, column, description
+                )
+    return not missing
+
+
 async def validate_plan_prerequisites(conn, plan: str) -> bool:
     """Fail closed before plan DDL when an upstream schema is absent."""
     missing = [
@@ -658,10 +705,12 @@ async def validate_tables(plan: str = "legacy-init") -> bool:
                 missing.append(table_name)
                 logger.warning(f"  ✗ {table_name} - MISSING ({description})")
 
+        columns_valid = await validate_required_columns(conn, plan)
+
         logger.info("-" * 60)
         logger.info(f"Present: {len(present)}, Missing: {len(missing)}")
 
-        if missing:
+        if missing or not columns_valid:
             logger.error(
                 "Run scripts/ops/db_migrate.py with --plan %s and its reviewed "
                 "digest to create missing tables",

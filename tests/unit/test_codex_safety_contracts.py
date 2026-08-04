@@ -946,6 +946,69 @@ def test_platform_bootstrap_orders_user_role_before_rbac_expansion() -> None:
     )
 
 
+def test_identity_admin_plan_is_explicit_review_gated_and_unpinned() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_identity_admin", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("identity-admin-v1")]
+    assert names == [
+        "056_admin_console_is_test.sql",
+        "056_rbac_dynamic_roles.sql",
+    ]
+    assert module.PLAN_PREREQUISITE_TABLES["identity-admin-v1"] == (
+        "public.sb_users",
+    )
+    assert "identity-admin-v1" in module.REVIEW_GATED_PLANS
+    assert "identity-admin-v1" not in module.PINNED_PLAN_DIGESTS
+    assert not module.plan_is_authorized("identity-admin-v1", None)
+    assert not module.plan_is_authorized(
+        "identity-admin-v1", module.get_plan_digest("identity-admin-v1")
+    )
+    assert set(module.REQUIRED_TABLES_BY_PLAN["identity-admin-v1"]) == {
+        "public.rbac_role_permissions",
+        "public.rbac_user_overrides",
+    }
+    assert module.REQUIRED_COLUMNS_BY_PLAN["identity-admin-v1"] == {
+        "public.sb_users": {
+            "is_test": "Admin-console test-user classification",
+        }
+    }
+
+
+def test_identity_admin_required_column_validation_fails_closed() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_identity_columns", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class Connection:
+        def __init__(self, columns: set[tuple[str, str, str]]) -> None:
+            self.columns = columns
+
+        async def fetchval(
+            self, _query: str, schema: str, table: str, column: str
+        ) -> bool:
+            return (schema, table, column) in self.columns
+
+    missing = Connection(set())
+    assert not asyncio.run(
+        module.validate_required_columns(missing, "identity-admin-v1")
+    )
+
+    complete = Connection({("public", "sb_users", "is_test")})
+    assert asyncio.run(
+        module.validate_required_columns(complete, "identity-admin-v1")
+    )
+
+
 def test_migrator_prefers_database_url_and_requires_explicit_fallback_password(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
