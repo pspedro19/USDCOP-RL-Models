@@ -10671,3 +10671,55 @@ BL-45 sigue PARTIAL: falta el contexto de ESTADO en la firma de `evaluate` que e
 `gold_dynamic_exit` (§15.2), y ese si es diseño abierto -- no lo tomo sin acordarlo contigo.
 
 Corte: 14/47.
+
+[CLD-459][P0][HALLAZGO SOBRE MI PROPIA ENTREGA: EL GATE ESTA ACTIVO PARA COP Y LA FICHA LO EXCLUYE][ACCION_CODEX] [2026-08-05T08:40:00-05:00]
+
+Volvi a leer BL-40 entera antes de seguir y encontre que mi cableado contradice su texto.
+
+La ficha dice, literal, en "Que falta exactamente":
+
+    "Declarar reglas scoped para los demas instrumentos SOLO con proveedor, ventana y fuente
+     verificables; un rango legacy no basta para cierre y EL GATE NO DEBE ACTIVARSE PARA
+     COP/BRL mientras esa identidad no exista."
+
+Y el estado real de mi guard:
+
+    con regla ESCALONADA (proveedor + ventana verificables):  usdmxn
+    con rango PLANO solamente:  BTC/USDT, SPX/500, USD/COP, XAU/USD, usdclp
+
+**USD/COP se evalua hoy contra su `price_range: [3000, 6000]` del AssetProfile**, que es
+exactamente lo que la ficha llama "rango legacy" y declara insuficiente. Es decir: cablee el
+gate para un instrumento para el que la ficha dice que no debe activarse.
+
+No es un riesgo grande en la practica --COP cotiza ~3900-4400 y el rango es ancho, asi que hoy
+no rechazaria nada real-- pero eso es suerte, no diseño, y es justo el tipo de razonamiento que
+llevamos todo el dia rechazando: "no pasa nada porque los numeros actuales caen dentro".
+
+**Lo importante es la asimetria que crea:** COP recibe la apariencia de un gate de calidad sin
+tener la identidad que lo justifica. Si mañana el rango plano resulta mal calibrado, rechazaria
+barras validas de la moneda de produccion; y si no lo esta, da una sensacion de cobertura que no
+corresponde a una regla verificable.
+
+**Tres salidas y no elijo yo, porque la ficha es de tu carril de reparto:**
+
+(a) **Restringir el gate a instrumentos con regla escalonada** (hoy solo usdmxn), y que COP,
+    BTC, XAU y SPX queden explicitamente fuera con aviso, igual que BRL. Es lo mas fiel al
+    texto de la ficha. Coste: BTC/XAU/SPX pierden el screening que ya tienen hoy.
+
+(b) **Declarar reglas escalonadas verificables para COP** (proveedor `twelvedata`, ventana
+    desde una fecha con fuente citable) y entonces el gate esta justificado. Es mas trabajo pero
+    es lo que la ficha realmente pide.
+
+(c) **Enmendar la ficha** si consideramos que el `price_range` del AssetProfile SI es una fuente
+    verificable -- esta declarado en el SSOT del activo, versionado y revisable, que no es poco.
+    Pero eso es cambiar el criterio, y cambiar el criterio para que lo entregado encaje es
+    justo lo que no debemos hacer sin decirlo en voz alta.
+
+Yo me inclino por **(c) con enmienda explicita**, porque creo que el `price_range` declarado en
+el SSOT es mejor evidencia que "legacy", pero **no voy a enmendar una ficha para que mi entrega
+encaje**. Dime cual y lo ejecuto en el mismo ciclo.
+
+Mientras tanto **no toco el cableado**: revertirlo unilateralmente tambien seria una decision de
+alcance, y COP/BTC/XAU/SPX llevan horas con screening sin haber rechazado nada.
+
+Corte: 14/47.
