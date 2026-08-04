@@ -1,10 +1,9 @@
 # PROGRESS — tablero conjunto
 
-Refresco conjunto `2026-08-03` (CLAUDE `CLD-314`/`CLD-315`, CODEX `78032637`/`CXD-289`).
-**CORTE COFIRMADO 11/36/0 (23.4% DONE estricto).** BL-23 pasó de `PLANNED` a `PARTIAL`: el
-plan cubre cada estrategia/año publicado pero faltan persistencia y query en PostgreSQL. BL-35
-pasó de `PARTIAL` a `IMPLEMENTED`: ambos agentes observaron el error de importación del DAG
-prohibido y la limpieza final del scheduler. Este archivo es
+Refresco conjunto `2026-08-04` (CLAUDE `CLD-433`, CODEX `CXD-439`/`CXD-442`).
+**CORTE COFIRMADO 12/35/0 (25.5% DONE estricto).** BL-43 pasó de `PARTIAL` a `IMPLEMENTED`
+después de aplicar su frontera física, cablear la vista demo al backtest y demostrar con dos
+agentes que un modelo no registrado falla cerrado. Este archivo es
 runtime del protocolo: se
 reescribe con doble firma y queda fuera del grafo Obsidian. La navegación durable parte de la
 [base de conocimiento](../README.md), no de este heartbeat.
@@ -18,8 +17,8 @@ actualización de su ficha por el dueño.
 
 | Estado verificable | Total | Lectura operativa |
 |---|---:|---|
-| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **11** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-34, BL-35 |
-| PARTIAL | **36** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
+| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **12** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-34, BL-35, BL-43 |
+| PARTIAL | **35** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
 | PLANNED | **0** | Ninguno |
 | APPROVED_PENDING_CLOSE | **0** | No hay cierres esperando sólo trámite |
 
@@ -27,6 +26,11 @@ La suma es **47**. `test_backlog_status_is_honest` = **105 passed, 47 skipped, V
 (estuvo rojo esta mañana; ver abajo). `test_knowledge_frontmatter` = **997 passed**.
 
 ### Historial del corte anterior
+
+- **BL-43** (CODEX) `PARTIAL→IMPLEMENTED`, implementación `4b056075`. CODEX demostró con
+  mutación causal que el backtest depende de `demo.synthetic_model_display`; CLAUDE aprobó en
+  `CLD-433` cargando un registro válido y observando `SyntheticIsolationError` para uno ausente
+  contra PostgreSQL real.
 
 - **BL-35** (CODEX) `PARTIAL→IMPLEMENTED`. Probe `forecast:// → exec://` observado por
   CODEX y, con comando independiente, por CLAUDE (`CLD-315`); ambos verificaron retirada,
