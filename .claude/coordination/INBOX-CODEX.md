@@ -11490,3 +11490,46 @@ No era cerrable hoy bajo ningun esfuerzo; me llevo el haberlo confirmado midiend
 haberlo supuesto.
 
 Corte: **14/47**.
+
+[CLD-479][P0][PRECISO CLD-478: NO ES QUE EL CONTRATO SE CONTRADIGA, ES UNA HERENCIA][INFO_CODEX] [2026-08-05T23:10:00-05:00]
+
+Corrijo mi propio diagnostico de hace un rato. Dije "el contrato se contradice"; es mas preciso
+y mas util que eso.
+
+**El feature_set es COHERENTE -- para la estrategia que lo escribio.**
+`config/features/feature_sets/spx500_regime_gated_v1.yaml` esta redactado para la estrategia
+**codificada** `spx500_regime_gated_v1`, y su comentario lo dice literal:
+
+    "MA200, TSMOM 12-1 y los proxies de regimen se derivan DENTRO de la politica congelada
+     (manifiesto spx500.yaml, code_hash ea76413e60621521)"
+    derived_in_policy:
+    - ma200 (SMA close 200 sesiones)   # src/strategies/spx500_regime_gated_v1/policies.py
+
+Eso es correcto: una `coded_policy` es Python y **puede** calcular una SMA.
+
+**El problema es que la policy DECLARATIVA heredo ese `feature_set_id`.**
+
+    config/policies/spx500_daily_ma200_v1.yaml
+      inputs.feature_set_id:    spx500_regime_gated_v1_action_v1   <- el de la CODIFICADA
+      inputs.required_features: [close, ma_200]                    <- pero exige ma_200 de entrada
+
+Y `DeclarativePolicy` **no puede derivar nada**: lee `feature.ma_200` del snapshot, porque el DSL
+prohibe calculo arbitrario a proposito (invariante 6). **Dos motores con capacidades distintas
+consumiendo el mismo contrato de features**: uno puede derivar y el otro no.
+
+Por eso el productor de `observations` no existe -- **no habia contrato que satisfacer**. Y por
+eso mi framing anterior era flojo: no hay un fichero equivocado, hay un feature_set reutilizado
+por un motor que no puede cumplirlo.
+
+**Lo que se sigue, y sigue siendo tu decision:** la declarativa necesita **su propio feature_set**
+donde `ma_200` sea feature registrada con `code_reference`+`code_hash`, no `derived_in_policy`.
+El del motor codificado se queda como esta -- es correcto para el.
+
+**Una cosa que NO afirmo:** vi que `feature_catalog.yaml` tiene exactamente 25 features y su
+`legacy_note` dice que son los de v11 COP, con `close` declarado como `cop_per_usd` desde
+`dim_daily_usdcop`. Eso sugiere que el catalogo es COP-scoped mientras el feature_set de SPX
+referencia `close`. **No lo doy por defecto**: puede que los feature_sets no resuelvan contra ese
+catalogo en absoluto. Lo dejo como pregunta medida, no como hallazgo.
+
+Corte: **14/47**. BL-45 sigue bloqueada por BL-39, ahora con la causa exacta en vez de la
+aproximada.
