@@ -338,12 +338,14 @@ def deflated_sharpe_ratio(
     """Deflated Sharpe Ratio: PSR evaluated against the null-expected MAX Sharpe over N trials.
 
     Corrects the single-test PSR for multiple testing (selection bias from trying ``n_trials``
-    strategies). Returns ``{sr0, dsr, significant}`` where ``dsr`` is the probability the strategy's
-    true Sharpe beats the best-of-N under the null; ``significant`` = dsr > 0.95.
+    strategies). Returns ``{sr0, dsr, significant}`` where ``dsr`` is the full-precision
+    probability the strategy's true Sharpe beats the best-of-N under the null;
+    ``significant`` = dsr > 0.95. Presentation code may round a displayed copy, but
+    rounding here would let formatting move a value across the constitutional gate.
     """
     sr0 = expected_max_sharpe_null(n_trials, trials_sharpe_std)
     dsr = probabilistic_sharpe_ratio(sharpe_per_period, n_obs, skew, kurtosis, sr_benchmark=sr0)
-    return {"sr0": round(sr0, 4), "dsr": round(dsr, 4), "significant": bool(dsr > 0.95)}
+    return {"sr0": float(sr0), "dsr": float(dsr), "significant": bool(dsr > 0.95)}
 
 
 def trial_aware_moments(returns: np.ndarray | list[float], sr_benchmark: float = 0.0) -> dict:

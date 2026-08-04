@@ -147,9 +147,9 @@ def test_three_dsr_levels_are_actually_computed_for_the_production_track(records
     )
     assert result["method"] == "computed"
     assert result["n_x3"] == {"family": 60, "cluster": 138, "global": 239}
-    assert result["dsr_family"] == 0.6368
-    assert result["dsr_cluster"] == 0.6212
-    assert result["dsr_global"] == 0.6116
+    assert result["dsr_family"] == pytest.approx(0.6367873961929025, abs=1e-15)
+    assert result["dsr_cluster"] == pytest.approx(0.6211972290871814, abs=1e-15)
+    assert result["dsr_global"] == pytest.approx(0.611565016876676, abs=1e-15)
     assert result["claim_allowed"] is False
     # el DSR es no-creciente en n_trials: family >= cluster >= global
     assert result["dsr_family"] >= result["dsr_cluster"] >= result["dsr_global"]
