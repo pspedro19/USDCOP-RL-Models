@@ -98,3 +98,33 @@ python scratchpad/wiring_audit.py     # imprime las tres tablas de arriba
 ```
 
 Medido contra `6d3a123c`, árbol limpio salvo canales runtime.
+
+## Correccion (2026-08-04): eran **10 de 41**, no 9 — falso negativo por colision de nombre
+
+`src/policy_engine/runner.py` **debio aparecer en la tabla y no aparecio**. Su superficie publica
+—`evaluate_policy`, `publish_signal`, `write_policy_version_index`, `_flat_decision`— tiene **cero
+llamadores productivos**. Lo comprobado, fichero a fichero:
+
+| Aparicion de `evaluate_policy` fuera de `policy_engine/` | Que es |
+|---|---|
+| `src/contracts/policy.py:72` | docstring |
+| `src/strategies/policies/loader.py:53` | comentario (`#:`) |
+| `src/experiments/experiment_runner.py:391` | **otra funcion**: `stable_baselines3.common.evaluation.evaluate_policy` |
+| `src/ml_workflow/training_callbacks.py:259` | **otra funcion**: la misma de `stable_baselines3` |
+
+Y `publish_signal` fuera del modulo es un **metodo de otra clase**
+(`services/common/redis_streams_manager.py:455`), no esta funcion.
+
+**Por que mi propio script no lo vio:** cuenta apariciones del **nombre**. Dos librerias distintas
+exportan un simbolo llamado `evaluate_policy`, asi que el homonimo de `stable_baselines3` se conto
+como "llamador productivo" del nuestro. **La medicion heredo el defecto que la propia auditoria
+denuncia**: una busqueda por nombre no es una medicion de capacidad.
+
+**Consecuencia sobre el numero:** el conteo pasa de **9/41 a 10/41 (24%)**, y el sesgo del metodo
+es **optimista** — puede haber mas falsos negativos por la misma causa. El numero publicado debe
+leerse como **cota inferior**, no como censo.
+
+**Consecuencia sobre BL-45 R3, que es lo que lo destapo:** no existe "el menor slice productivo"
+que encadene `resolve_feature_snapshot` antes de evaluar, porque **`evaluate_policy` tampoco se
+invoca desde produccion**. Encadenar el cutoff ahi uniria dos mecanismos que nadie llama. El
+cableado real de R3 empieza mas arriba: alguien tiene que invocar el motor de politicas.
