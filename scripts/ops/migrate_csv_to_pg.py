@@ -1,6 +1,17 @@
 """
 Migrate GDELT historical CSV to PostgreSQL news_articles_search table.
 
+**Esquema de desarrollo: su ``CREATE TABLE`` queda fuera de todo plan de migración
+revisado.** ``news_articles_search`` alimenta la herramienta MCP de escritorio
+(``src/news_engine/mcp_server.py``), que es **development-only** desde 2026-08-04.
+No es el almacén canónico de noticias: ése es ``news_articles`` (migración 045),
+que escriben los DAGs productivos vía ``src/news_engine/storage/database.py``.
+
+Este script **no se retira** pese a ser dev: es la única vía de recarga del
+histórico GDELT desde CSV. Lo que se corrige es la confusión, no la capacidad.
+``tests/unit/test_mcp_dev_only.py`` impide que la tabla entre en un plan gobernado
+por deriva.
+
 Reads data/news/gdelt_articles_historical.csv, creates the search table if it
 does not exist, and UPSERTs rows by url_hash (SHA256 of URL).
 

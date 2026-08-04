@@ -1,13 +1,32 @@
 """
-MCP News Server for USDCOP Trading System.
+MCP News Server for USDCOP Trading System — **development-only**.
 
-Exposes 7 read-only tools for querying USDCOP-relevant news articles via the
-Model Context Protocol (MCP). Supports stdio (Claude Desktop) and HTTP modes.
+Herramienta local de consulta vía Model Context Protocol (Claude Desktop).
+**No está soportada en producción** (decisión del operador, 2026-08-04), y no es
+una restricción nueva: no aparece en ningún `docker-compose`, `Dockerfile`, script
+de arranque ni DAG, y la librería `mcp` no está instalada en los contenedores del
+stack. La decisión reconoce lo que ya era cierto.
 
-Usage:
-    python src/news_engine/mcp_server.py              # stdio mode (Claude Desktop)
-    python src/news_engine/mcp_server.py --http 8080   # HTTP mode on port 8080
-    python src/news_engine/mcp_server.py --init-db     # Create PG schema
+Deuda declarada — no se arregla por ser dev-only, pero no debe descubrirse dos veces:
+
+1. **Su esquema vive fuera de todo plan de migración revisado.** `--init-db` crea
+   ``news_articles_search`` con un ``CREATE TABLE`` propio, igual que
+   ``scripts/ops/migrate_csv_to_pg.py``. Esa tabla **no** pertenece a
+   `platform-bootstrap-v1` ni a ningún otro plan, y no es el almacén canónico: el
+   canónico es ``news_articles`` (migración 045), que escriben los DAGs productivos.
+   Un candado en ``tests/unit/test_mcp_dev_only.py`` impide que entre en un plan por
+   deriva; gobernarla exigiría una decisión explícita.
+2. **Sus filtros de fecha están rotos contra PostgreSQL.** ``_pg_search``,
+   ``_pg_top_headlines``, ``by_category`` y ``_pg_source_stats`` pasan ``str`` a un
+   parámetro ``$n::timestamptz``; asyncpg exige ``datetime`` y el cast explícito no
+   salva (verificado contra el motor real). Sin pool, los cuatro caen a su fallback CSV.
+
+Uso local:
+    python src/news_engine/mcp_server.py              # stdio (Claude Desktop)
+    python src/news_engine/mcp_server.py --http 8080   # HTTP en el puerto 8080
+    python src/news_engine/mcp_server.py --init-db     # crea el esquema dev (opt-in)
+
+``--init-db`` es explícito: el arranque por defecto **no** toca el esquema.
 
 Part of Phase 4: MCP News Server implementation.
 """
