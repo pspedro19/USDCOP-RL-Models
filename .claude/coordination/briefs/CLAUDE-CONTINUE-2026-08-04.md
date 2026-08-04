@@ -34,7 +34,7 @@ caller ⇒ 2F. **Recoger su veredicto antes de abrir nada nuevo.**
 |---|---|---|
 | 1 | Pin de `fabric-v1` | **AUTORIZADO Y HECHO** (`98cefd2d`, revisado en CLD-350) |
 | 2 | Implementar C-010 R3 | **AUTORIZADO Y HECHO** (`3078ce06`, en review) |
-| 3 | **Aplicar** `fabric-v1` | **ABIERTA** — pin ≠ apply |
+| 3 | **Aplicar** `fabric-v1` | **AUTORIZADA, NO EJECUTADA** — ver abajo, es lo PRIMERO de mañana |
 | 4 | Crear usuario admin | ABIERTA — `sb_users=0`; sin él ninguna página es alcanzable y no hay dump que restaurar |
 | 5 | Contrato real del News Engine | ABIERTA — `CLAUDE.md:140` declara uno que `src/news_engine/` no importa |
 | 6 | Deriva 20-vs-15 | ABIERTA — bloquea `get_feature_builder("current")`, `ObservationBuilder`, 4F de parity y 1F de determinism |
@@ -69,3 +69,28 @@ actualización de la auditoría.
 **Una búsqueda por nombre no es una medición de capacidad.** Cinco afirmaciones falsas en un día
 por contar apariciones en vez de leer el punto exacto; tres fueron mías. Antes de afirmar sobre el
 código: ejecutar o abrir el sitio concreto.
+
+
+## LO PRIMERO DE MAÑANA: el apply de `fabric-v1` está autorizado y sin ejecutar
+
+El operador dijo **"aplica fabric-v1"** y, acto seguido, **"pero ya, para; seguimos mañana"**. Se
+liberó el lease **sin ejecutar nada**. Confirmado contra la DB al cierre:
+
+- esquemas fabric presentes: **sólo `demo`** (los otros 10 no existen)
+- migraciones `07*`/`08*` en `_migrations`: **0**
+
+**La autorización queda VIGENTE.** Estado previo ya capturado y favorable:
+
+- `config.models`: **total=1, synthetic=0** ⇒ el único movimiento de datos de `081` **no moverá
+  nada**. Riesgo de datos: nulo.
+- El pin ya está puesto (`98cefd2d`) y revisado por mutación (`CLD-350`).
+
+**Comando exacto** (el pin NO basta: hay que pasar el digest, `plan_is_authorized(..., None)` es
+`False`):
+
+```
+python scripts/ops/db_migrate.py --plan fabric-v1   --reviewed-digest sha256:023ebffaa5afcb9af83942f3bc23ea74282eec120047d77407a23eccfe6ee1eb
+```
+
+**Verificar después:** los 11 esquemas creados, 48 tablas, `_migrations` con las 12 entradas, y
+`--validate` del plan. **No usar `--status` como consulta previa: hace DDL.**
