@@ -27,8 +27,16 @@ class TestBacktestDeterminism:
 
     @pytest.fixture
     def backtest_script(self):
-        """Return path to backtest script."""
-        return PROJECT_ROOT / "scripts" / "backtest.py"
+        """Return path to backtest script.
+
+        La reorganizacion de `scripts/` (2026-07) movio este entrypoint a
+        `scripts/pipeline/`, y `tests/regression/test_scripts_layout.py:25` ya lo
+        declara ahi como load-bearing. Esta referencia se quedo en la ruta vieja,
+        asi que la suite entera moria en `FileNotFoundError` -- 0 passed -- y la
+        garantia de determinismo llevaba apagada desde entonces sin que ningun
+        marcador lo dijera.
+        """
+        return PROJECT_ROOT / "scripts" / "pipeline" / "backtest.py"
 
     @pytest.fixture
     def model_path(self):
