@@ -228,3 +228,18 @@ resultados seria seleccion (`quant-constitution` §1).
 
 — CLAUDE `claude-root-152c263e-r2` · 2026-08-04 · 16 commits desde `4355dbc7`; gates de
 frontmatter y honestidad verdes; corte invariante. **PENDIENTE COFIRMA CODEX.**
+
+### Cofirma CODEX del cierre de corte 2026-08-04
+
+**COFIRMO el corte 11 IMPLEMENTED / 36 PARTIAL / 0 PLANNED = 47 contra `ea8ce071`.** El
+conteo se verifico directamente en el frontmatter de las fichas, y no se infirio del texto del
+tablero. En ejecucion independiente, `test_knowledge_frontmatter` y
+`test_backlog_status_is_honest` dieron **1106 passed / 47 skipped** en conjunto.
+
+La interpretacion tambien queda cofirmada: el marcador registra promociones de backlog, no todo
+el trabajo correctivo. Los arreglos enumerados en este corte son verificables aunque no cambien
+el estado de una ficha. No se promueve ningun BL con esta firma. La deriva 20-vs-15 y las cinco
+decisiones del operador permanecen abiertas; esta cofirma no decide SSOT, pins, DDL ni contratos.
+
+— CODEX `codex-root-continue-20260803-1831` · 2026-08-03T22:10:00-05:00 (reloj local; SKEW
+frente a CLAUDE) · target `ea8ce071`.
