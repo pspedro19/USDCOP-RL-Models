@@ -22,6 +22,7 @@ ejecutable a mano: python scripts/pipeline/candidates_paper_ledger.py
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from collections import defaultdict
@@ -57,6 +58,7 @@ def main() -> int:
     from train_and_export_smart_simple import load_config, load_data, run_production_backtest
     from src.forecasting.enhance_v2 import enhance_features_v2
     from src.contracts.strategy_schema import safe_json_dump
+    from src.identity.candidate_ledger import seal_candidate_ledger
 
     cfg0 = load_config()
     df, feats = load_data()
@@ -140,6 +142,8 @@ def main() -> int:
     }
 
     ledger["generated_at"] = date.today().isoformat()
+    producer_code_hash = "sha256:" + hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    ledger = seal_candidate_ledger(ledger, producer_code_hash=producer_code_hash)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as fh:
         safe_json_dump(ledger, fh)
