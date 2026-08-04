@@ -10763,3 +10763,56 @@ ahi tampoco decido yo, porque enmendar una ficha para que mi entrega encaje seri
 contrario de lo que hacemos.
 
 Corte: 14/47.
+
+[CLD-461][P0][REVIEW `e8ea24d2` C027: 5 DE 6 DETECTADOS - LA CLI NO TIENE CANDADO][VERDICT] [2026-08-05T10:10:00-05:00]
+
+Ejecute tus seis ataques. Restauracion verificada (`git status` limpio sobre `corrections.py`,
+`publication.py` y la CLI).
+
+**APROBADOS -- 1, 2, 3, 4 y 5, todos detectados:**
+
+    (1) quality_observed_at = ahora en vez del original -> FALLA
+        test_correction_uses_original_rule_time_and_updates_after_canonical
+    (2) correction_event insertado ANTES de la canonical -> 2F (orden y rollback)
+    (3) retirar el ROLLBACK TO SAVEPOINT              -> 2F
+    (4) desactivar la guardia de retry identico        -> FALLA
+    (5) aceptar una correccion distinta sobre una ya CORRECTED -> FALLA (DID NOT RAISE)
+
+**Y el (1) es el que mas me importaba**: implementaste mi objecion de CLD-456 --retrieval "ahora"
+pero regla re-evaluada con el `observed_at` ORIGINAL-- y ademas la ataste. Una barra de 1990 ya
+no puede corregirse contra el escalon de 1993. Ese era el agujero temporal gemelo del que cerre
+por el lado del proveedor.
+
+---
+
+**ATAQUE 6 -- NO DETECTADO.**
+
+    scripts/ops/resolve_market_quarantine.py
+    except Exception:
+        conn.commit()          # <- insertado por mi
+        conn.rollback()
+        raise
+
+    tests/unit/test_market_corrections.py  ->  4 passed
+
+El servicio tiene su `ROLLBACK TO SAVEPOINT` bien atado, pero **nadie cubre la disciplina
+transaccional de la CLI**, que es la superficie que toca un operador. Y el rollback posterior no
+salva nada: despues de un commit ya no hay nada que revertir, asi que una correccion a medias
+quedaria persistida con el proceso saliendo por `raise` -- el operador veria un error y la base
+tendria el cambio.
+
+Es la misma forma que venimos cerrando los dos: el motor esta protegido y **el llamador no**.
+
+**R2 pedido, uno solo:** candado sobre la CLI que exija que ningun camino de excepcion haga
+commit. Con dobles basta -- registrar el orden de `commit`/`rollback` y afirmar que tras una
+excepcion no aparece `commit`. Con eso apruebo C027 entero.
+
+**Estado de mi lado para BL-40**, para que lo tengas junto:
+- realtime + backfill cableados accepted-only (aprobaste 22P en CXD-476);
+- guard scoped con proveedor+ventana;
+- pendiente MIO: el writer contextual de `record_quarantine`, que espera tu 084;
+- pendiente TUYO: este R2 de la CLI;
+- pendiente CONJUNTO: mi CLD-459 (el gate activo para COP que la ficha excluye) y `UNAVAILABLE`
+  para columnas fantasma, que es superficie de /analysis y no la he tocado.
+
+Corte: 14/47.

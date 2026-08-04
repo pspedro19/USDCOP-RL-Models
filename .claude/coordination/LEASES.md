@@ -1206,3 +1206,36 @@
 - DB usdcop_trading (C026 realtime provider-scope review) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T16:35:00-05:00 (SELECT aliases + evaluate in-memory; sin DML)
 # (CODEX 2026-08-04T16:23:00-05:00) RELEASE DB review C026 realtime: solo SELECT/evaluate; hallazgo provider scoped enviado CXD-472. Sin DML.
 # (CLAUDE 2026-08-05T05:40:00-05:00) RELEASE cableado backfill C026: entregado en 94bb3ec1. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T16:45:00-05:00) C026 R3 test-only: candado conductual provider declarado vs job tras CXD-474.
+- tests/unit/test_l0_realtime_fabric_wiring.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T17:15:00-05:00 (captura provider efectivo en helper compartido)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T17:10:00-05:00 (commit --only test R3)
+# (CODEX 2026-08-04T16:53:00-05:00) RELEASE C026 R3 test/index: commit `58f2e34d`; bateria conjunta 20P, compileall/diff-check verdes. Sin leases C026 CODEX activos.
+# (CODEX 2026-08-04T17:04:00-05:00) Review final C026 sobre `94bb3ec1`+`f0d9ad06`; sin editar paths Claude.
+- DB usdcop_trading (C026 final rollback probe USD/MXN) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T17:29:00-05:00 (2 publicaciones, SELECT deltas, ROLLBACK y postcondicion)
+# (CODEX 2026-08-04T17:10:00-05:00) RELEASE DB review final C026: accepted1/raw2/canonical1/quarantine1; rollback restauro 0/0/0. Sin lease DB activo.
+# (CODEX 2026-08-04T17:31:00-05:00) Re-auditoria temporal C026 disparada por objecion CLD-456; sin editar implementacion.
+- DB usdcop_trading (C026 historical scoped-time rollback probe) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T17:51:00-05:00 (barra USD/MXN pre-1993 por helper real; ROLLBACK)
+# (CODEX 2026-08-04T17:35:00-05:00) RELEASE DB re-auditoria C026: barra 1990 fue aceptada/raw/canonical indebidamente; rollback restauro 0/0/0. Hallazgo CXD-479.
+# (CODEX 2026-08-04T17:35:00-05:00) C026 R4 tiempo scoped por fila; publisher es carril CODEX.
+- src/market/publication.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:20:00-05:00 (separar retrieval instant de event-time usado por regla)
+- tests/unit/test_market_publication.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:20:00-05:00 (candado causal por fila pre/post corte)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:15:00-05:00 (commit --only R4 C026)
+- DB usdcop_trading (C026 R4 pre/post-cutoff rollback probe) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:05:00-05:00 (lote USD/MXN 1990+2026; ROLLBACK/postcondicion)
+# (CODEX 2026-08-04T17:43:00-05:00) RELEASE C026 R4 implementation/test/index/DB: `924990aa`; 27P, mixed-time DB probe y rollback verdes. Sin leases C026 activos.
+# (CODEX 2026-08-04T17:52:00-05:00) C027 DDL 084 tras ACK CLD-457; no se aplica hasta writer contextual Claude.
+- database/migrations/084_quality_correction_context.sql | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:37:00-05:00 (migracion aditiva nueva, 073 intacta)
+- tests/unit/test_quality_correction_context_migration.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:37:00-05:00 (candados portable/context/unique)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:32:00-05:00 (commit --only DDL/test C027)
+- DB usdcop_trading (084 transactional syntax/trigger probe) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T18:22:00-05:00 (DDL+2 inserts under outer ROLLBACK; migration remains unapplied)
+# (CODEX 2026-08-04T18:03:00-05:00) RELEASE C027 DDL/test/index/DB: `7309114b`; 95P, trigger probe y DDL rollback verdes. 084 NO aplicada. Sin leases DDL activos.
+# (CODEX 2026-08-04T18:10:00-05:00) C027 service+CLI tras ACK CLD-457; sin aplicar 084.
+- src/data_quality/corrections.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:10:00-05:00 (servicio savepoint/idempotencia/correction chain)
+- scripts/ops/resolve_market_quarantine.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:10:00-05:00 (CLI operador, commit/rollback owner)
+- src/market/publication.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:10:00-05:00 (override explicito quality_observed_at para correction)
+- tests/unit/test_market_corrections.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:10:00-05:00 (TDD service/CLI)
+- tests/unit/test_market_publication.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:10:00-05:00 (override temporal causal)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:05:00-05:00 (commit --only C027 service/CLI/tests)
+# (CODEX 2026-08-04T18:31:00-05:00) RELEASE C027 service/CLI/tests/index: `e8ea24d2`; 29P focal + 20P layout, compileall/diff-check verdes. 084 sigue NO aplicada.
+# (CODEX 2026-08-04T18:48:00-05:00) Diagnostico read-only C028 feature_status UNAVAILABLE; sin DDL/DML.
+- DB usdcop_trading (ghost-feature aggregate audit) | CODEX | codex-root-goal-19of47 | expira 2026-08-04T19:08:00-05:00 (information_schema + COUNT/DISTINCT agregados solamente)
+# (CLAUDE 2026-08-05T10:10:00-05:00) RELEASE review e8ea24d2: 6 ataques, restauracion verificada. Sin leases CLAUDE activos.
