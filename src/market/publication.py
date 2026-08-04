@@ -245,7 +245,7 @@ def publish_provider_rows(
     provider_symbol: str,
     interval_id: str,
     rows: Iterable[Mapping[str, Any]],
-    source_uri: str | None = None,
+    source_uri: str,
     observed_at: datetime | None = None,
     quality_observed_at: datetime | None = None,
 ) -> MarketPublicationResult:
@@ -293,6 +293,9 @@ def publish_provider_rows(
                 decision=decision,
                 rule_version=ruleset.version,
                 instrument_id=instrument_id,
+                interval_id=interval_id,
+                observed_at=quality_instant,
+                source_uri=source_uri,
             )
             quarantine_count += 1
             continue
@@ -320,6 +323,9 @@ def publish_provider_rows(
                 decision=decision,
                 rule_version=ruleset.version,
                 instrument_id=instrument_id,
+                interval_id=interval_id,
+                observed_at=quality_instant,
+                source_uri=source_uri,
             )
             quarantine_count += 1
             continue

@@ -63,7 +63,7 @@ def test_scoped_quality_uses_each_rows_event_time_not_batch_retrieval_time(
                        high=18.1, low=17.9, close=18.0)
     evaluated_at: list[datetime] = []
     canonical_rows: list[dict] = []
-    quarantined_rows: list[dict] = []
+    quarantined: list[dict] = []
 
     class Rules:
         version = "scoped-test-v1"
@@ -97,7 +97,7 @@ def test_scoped_quality_uses_each_rows_event_time_not_batch_retrieval_time(
     monkeypatch.setattr(
         publication,
         "record_quarantine",
-        lambda _conn, **kwargs: quarantined_rows.append(kwargs["row"]),
+        lambda _conn, **kwargs: quarantined.append(kwargs),
     )
 
     result = publication.publish_provider_rows(
@@ -106,6 +106,7 @@ def test_scoped_quality_uses_each_rows_event_time_not_batch_retrieval_time(
         provider_symbol="USD/MXN",
         interval_id="PT5M",
         rows=[pre_cutoff, post_cutoff],
+        source_uri="dag://l0_ohlcv_backfill/USD/MXN?job=twelvedata_backfill",
         observed_at=datetime(2026, 8, 4, 16, tzinfo=timezone.utc),
     )
 
@@ -115,7 +116,49 @@ def test_scoped_quality_uses_each_rows_event_time_not_batch_retrieval_time(
     assert result.canonical_count == 1
     assert result.quarantine_count == 1
     assert canonical_rows == [post_cutoff]
-    assert quarantined_rows == [pre_cutoff]
+    assert [item["row"] for item in quarantined] == [pre_cutoff]
+    assert quarantined[0]["interval_id"] == "PT5M"
+    assert quarantined[0]["observed_at"] == pre_cutoff["time"]
+    assert quarantined[0]["source_uri"].startswith("dag://l0_ohlcv_backfill/")
+
+
+def test_structural_quarantine_carries_the_same_typed_context(monkeypatch) -> None:
+    malformed = _row(high=4080.0)
+    quarantined: list[dict] = []
+
+    class Rules:
+        version = "scoped-test-v1"
+
+        def evaluate_provider_bar(self, *_args, observed_at, **_kwargs):
+            return QualityDecision(
+                False, "QUARANTINED", "bar.ohlc_order", {}, "invalid OHLC"
+            )
+
+    monkeypatch.setattr(publication, "ruleset_from_spine", lambda _conn: Rules())
+    monkeypatch.setattr(
+        publication, "resolved_instrument_id", lambda *_args: "instrument-usdmxn"
+    )
+    monkeypatch.setattr(
+        publication,
+        "record_quarantine",
+        lambda _conn, **kwargs: quarantined.append(kwargs),
+    )
+
+    result = publication.publish_provider_rows(
+        object(),
+        provider_id="twelvedata",
+        provider_symbol="USD/MXN",
+        interval_id="PT5M",
+        rows=[malformed],
+        source_uri="dag://l0_ohlcv_realtime/USD/MXN?job=twelvedata_multi",
+        observed_at=datetime(2026, 8, 4, 16, tzinfo=timezone.utc),
+    )
+
+    assert result.quarantine_count == 1
+    assert len(quarantined) == 1
+    assert quarantined[0]["interval_id"] == "PT5M"
+    assert quarantined[0]["observed_at"] == malformed["time"]
+    assert quarantined[0]["source_uri"].startswith("dag://l0_ohlcv_realtime/")
 
 
 def test_governed_correction_can_preserve_the_original_quality_instant(monkeypatch) -> None:
@@ -143,6 +186,7 @@ def test_governed_correction_can_preserve_the_original_quality_instant(monkeypat
         provider_symbol="USD/MXN",
         interval_id="PT5M",
         rows=[row],
+        source_uri="ops://market_correction/test",
         observed_at=datetime(2026, 8, 4, 16, tzinfo=timezone.utc),
         quality_observed_at=original_instant,
     )
