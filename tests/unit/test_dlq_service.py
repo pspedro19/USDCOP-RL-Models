@@ -54,6 +54,22 @@ from services.dlq_service import (
 # FIXTURES
 # =============================================================================
 
+def _make_due(dlq_service, entry):
+    """Adelantar `next_retry_at` al pasado y persistir.
+
+    `DeadLetterEntry.__post_init__` agenda el primer reintento con backoff
+    exponencial (2^0 = 1 minuto), asi que una entrada recien guardada NO es
+    retry-ready: `can_retry()` da False y `get_pending_entries()` -- que documenta
+    "ready for retry", no "todas las PENDING" -- devuelve 0. Eso es el contrato,
+    no un defecto. Estos tests asumian reintento inmediato, asi que la correccion
+    va en el test: se hace vencer el backoff explicitamente. Ver CXD-305.
+    """
+    entry.next_retry_at = datetime.utcnow() - timedelta(minutes=1)
+    dlq_service._entries[entry.id] = entry
+    dlq_service._save_entry(entry)
+    return entry
+
+
 @pytest.fixture
 def temp_dlq_dir():
     """Create a temporary directory for DLQ storage."""
@@ -104,9 +120,16 @@ class TestDeadLetterEntry:
         assert sample_entry.status == DLQStatus.PENDING
         assert sample_entry.retry_count == 0
 
-    def test_can_retry_initial(self, sample_entry):
-        """Test that new entry can be retried."""
-        assert sample_entry.can_retry() is True
+    def test_can_retry_initial_is_backoff_scheduled(self, sample_entry):
+        """Una entrada nueva NO es retry-ready: nace con backoff programado.
+
+        `__post_init__` fija `next_retry_at = now + 2^retry_count` minutos. El test
+        original esperaba True porque asumia reintento inmediato; el contrato
+        declara backoff exponencial y la implementacion lo cumple.
+        """
+        assert sample_entry.next_retry_at is not None
+        assert sample_entry.next_retry_at > datetime.utcnow()
+        assert sample_entry.can_retry() is False
 
     def test_can_retry_after_max(self, sample_entry):
         """Test that entry cannot be retried after max retries."""
@@ -216,13 +239,14 @@ class TestDeadLetterQueueService:
 
     def test_get_pending_entries(self, dlq_service):
         """Test retrieving pending entries."""
-        # Add some entries
-        dlq_service.save_failed_extraction(
+        # Add some entries y vencer su backoff: `get_pending_entries` devuelve
+        # las READY FOR RETRY, no todas las PENDING (ver `_make_due`).
+        _make_due(dlq_service, dlq_service.save_failed_extraction(
             source='fred', variable='VAR1', error='Error 1', payload={}
-        )
-        dlq_service.save_failed_extraction(
+        ))
+        _make_due(dlq_service, dlq_service.save_failed_extraction(
             source='investing', variable='VAR2', error='Error 2', payload={}
-        )
+        ))
 
         pending = dlq_service.get_pending_entries()
 
@@ -243,9 +267,9 @@ class TestDeadLetterQueueService:
 
     def test_retry_dead_letters_success(self, dlq_service):
         """Test successful retry of dead letters."""
-        entry = dlq_service.save_failed_extraction(
+        entry = _make_due(dlq_service, dlq_service.save_failed_extraction(
             source='fred', variable='FEDFUNDS', error='Error', payload={}
-        )
+        ))
 
         # Mock successful retry
         def mock_retry(e):
@@ -262,9 +286,9 @@ class TestDeadLetterQueueService:
 
     def test_retry_dead_letters_failure(self, dlq_service):
         """Test failed retry of dead letters."""
-        entry = dlq_service.save_failed_extraction(
+        entry = _make_due(dlq_service, dlq_service.save_failed_extraction(
             source='fred', variable='FEDFUNDS', error='Error', payload={}
-        )
+        ))
 
         # Mock failed retry
         def mock_retry(e):
@@ -282,12 +306,12 @@ class TestDeadLetterQueueService:
 
     def test_retry_source_filter(self, dlq_service):
         """Test retry with source filter."""
-        dlq_service.save_failed_extraction(
+        _make_due(dlq_service, dlq_service.save_failed_extraction(
             source='fred', variable='VAR1', error='Error', payload={}
-        )
-        dlq_service.save_failed_extraction(
+        ))
+        _make_due(dlq_service, dlq_service.save_failed_extraction(
             source='investing', variable='VAR2', error='Error', payload={}
-        )
+        ))
 
         def mock_retry(e):
             return RetryResult(entry_id=e.id, success=True)
