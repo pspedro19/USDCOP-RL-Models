@@ -13,7 +13,6 @@ de integridad falla de tres maneras distintas:
 
 from __future__ import annotations
 
-import ast
 import json
 import sys
 from pathlib import Path
@@ -32,6 +31,8 @@ from src.identity.ledger_replay import (  # noqa: E402
     assert_anchor_holds,
     ledger_semantic_hash,
 )
+
+from tests.support.dag_graph import by_task_id, dag_source, task_runs_before  # noqa: E402
 
 ANCHOR = ROOT / "data" / "anchors" / "paper_ledger_h5.json"
 
@@ -177,35 +178,39 @@ def test_the_monitor_dag_verifies_the_anchor_after_writing_the_ledger() -> None:
     no prueba nada — una tarea huérfana pasa ese test. Aquí se resuelve alcanzabilidad
     sobre el grafo `>>`, y el sentido importa: verificar ANTES de escribir dejaría sin
     cubrir justo el momento en que el ledger se toca.
-
-    Los helpers vienen del módulo de BL-16 en vez de duplicarse; extraerlos a un soporte
-    común es la limpieza natural, pero ese fichero está ahora mismo en re-review y no
-    conviene moverlo bajo los pies del revisor.
     """
-    from tests.unit.test_bl16_declaration_gate import _dependency_edges, _task_var_by
+    fuente = dag_source("forecast_h5_l6_weekly_monitor.py")
 
-    fuente = (ROOT / "airflow" / "dags" / "forecast_h5_l6_weekly_monitor.py").read_text(
-        encoding="utf-8"
-    )
-    arbol = ast.parse(fuente)
-
-    escritor = _task_var_by(
-        arbol,
-        lambda kw: isinstance(kw.get("task_id"), ast.Constant)
-        and kw["task_id"].value == "paper_ledger_2026",
-    )
-    verificador = _task_var_by(
-        arbol,
-        lambda kw: isinstance(kw.get("task_id"), ast.Constant)
-        and kw["task_id"].value == "verify_ledger_anchor",
-    )
-    assert escritor and verificador, "faltan las tareas de escritura o verificación"
-
-    aristas = _dependency_edges(arbol)
-    assert (escritor, verificador) in aristas, (
+    assert task_runs_before(
+        fuente, by_task_id("paper_ledger_2026"), by_task_id("verify_ledger_anchor")
+    ), (
         "verify_ledger_anchor no corre después de paper_ledger_2026: el gate no cubre "
         "el momento en que el ledger se modifica"
     )
+
+
+def test_the_order_lock_here_also_fails_when_unlinked() -> None:
+    """El par fail-first, igual que en BL-16: desenlazar debe poner esto en rojo.
+
+    Se aplica sobre la fuente real, así que la demostración se ejecuta en cada corrida
+    en vez de haber ocurrido una sola vez cuando se escribió el candado.
+
+    La mutación se **verifica antes de creerla**: la primera versión de este test hacía
+    un `replace` de una cadena que había dejado de existir —Codex insertó su tarea de
+    métricas en medio y la cadena pasó de `t_persist >> t_paper_ledger` a
+    `t_metric_event >> t_paper_ledger`—, así que no mutaba nada y el candado quedaba
+    verde por vacío. Un fail-first que no comprueba haber roto algo no demuestra nada.
+    """
+    original = dag_source("forecast_h5_l6_weekly_monitor.py")
+    huerfano = original.replace(" >> t_verify_anchor", "")
+
+    assert huerfano != original, (
+        "la mutación no se aplicó: la cadena cambió de forma y este test estaría "
+        "midiendo el DAG intacto"
+    )
+    assert not task_runs_before(
+        huerfano, by_task_id("paper_ledger_2026"), by_task_id("verify_ledger_anchor")
+    ), "con la verificación desenlazada el candado sigue verde: mide presencia, no orden"
 
 
 def test_mutating_a_decision_metric_breaks_the_hash(ledger) -> None:

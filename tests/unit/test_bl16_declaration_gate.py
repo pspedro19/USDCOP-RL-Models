@@ -19,7 +19,6 @@ gobierno (`PAPER` admite `ZERO` y `SHADOW`) y el gate la reclama, no la suple.
 
 from __future__ import annotations
 
-import ast
 import sys
 from pathlib import Path
 
@@ -28,6 +27,12 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+
+from tests.support.dag_graph import (  # noqa: E402
+    by_callable,
+    by_task_id,
+    task_runs_before,
+)
 
 #: SSOT real de la estrategia en producción H5.
 SSOT_V11 = ROOT / "config" / "execution" / "smart_simple_v1.yaml"
@@ -136,78 +141,22 @@ def test_production_strategy_declares_governance() -> None:
 DAG_H5 = ROOT / "airflow" / "dags" / "forecast_h5_l5_weekly_signal.py"
 
 
-def _rshift_leaves(node: ast.AST, lado: str) -> set[str]:
-    """Nombres en el extremo `lado` de una expresión `a >> b >> [c, d]`."""
-    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.RShift):
-        return _rshift_leaves(node.right if lado == "right" else node.left, lado)
-    if isinstance(node, (ast.List, ast.Tuple)):
-        return {e.id for e in node.elts if isinstance(e, ast.Name)}
-    if isinstance(node, ast.Name):
-        return {node.id}
-    return set()
-
-
-def _dependency_edges(tree: ast.AST) -> set[tuple[str, str]]:
-    """Aristas upstream→downstream declaradas con el operador `>>` de Airflow."""
-    aristas: set[tuple[str, str]] = set()
-    for nodo in ast.walk(tree):
-        if isinstance(nodo, ast.BinOp) and isinstance(nodo.op, ast.RShift):
-            for arriba in _rshift_leaves(nodo.left, "right"):
-                for abajo in _rshift_leaves(nodo.right, "left"):
-                    aristas.add((arriba, abajo))
-    return aristas
-
-
-def _task_var_by(tree: ast.AST, predicado) -> str | None:
-    """Variable del operador cuyo `Call(...)` satisface `predicado(kwargs)`.
-
-    Se identifica por lo que la tarea HACE (su `python_callable` / `task_id`), nunca
-    por cómo se llama la variable: renombrar `t_governance` no debe burlar el candado.
-    """
-    for nodo in ast.walk(tree):
-        if (
-            isinstance(nodo, ast.Assign)
-            and len(nodo.targets) == 1
-            and isinstance(nodo.targets[0], ast.Name)
-            and isinstance(nodo.value, ast.Call)
-        ):
-            kwargs = {k.arg: k.value for k in nodo.value.keywords if k.arg}
-            if predicado(kwargs):
-                return nodo.targets[0].id
-    return None
-
-
 def _gate_precede_a_la_senal(source: str) -> bool:
     """¿La tarea del gate es upstream real de la que produce la señal?
 
     Causal a propósito: no busca texto, resuelve alcanzabilidad sobre el grafo de
     dependencias. Una tarea definida pero **huérfana** (no enlazada con `>>`) devuelve
     `False`, que es exactamente el agujero que CXD-442 encontró en la versión textual.
+
+    Los primitivos viven en `tests/support/dag_graph.py` desde que el mismo defecto
+    apareció en un candado de Codex (CLD-444): duplicarlos habría dejado dos copias que
+    corregir la próxima vez.
     """
-    tree = ast.parse(source)
-
-    gate = _task_var_by(
-        tree,
-        lambda kw: isinstance(kw.get("python_callable"), ast.Name)
-        and kw["python_callable"].id == "assert_governance_declaration",
+    return task_runs_before(
+        source,
+        by_callable("assert_governance_declaration"),
+        by_task_id("generate_signal"),
     )
-    senal = _task_var_by(
-        tree,
-        lambda kw: isinstance(kw.get("task_id"), ast.Constant)
-        and kw["task_id"].value == "generate_signal",
-    )
-    if gate is None or senal is None:
-        return False
-
-    aristas = _dependency_edges(tree)
-    alcanzados, frontera = {gate}, [gate]
-    while frontera:
-        actual = frontera.pop()
-        for arriba, abajo in aristas:
-            if arriba == actual and abajo not in alcanzados:
-                alcanzados.add(abajo)
-                frontera.append(abajo)
-    return senal in alcanzados
 
 
 def test_production_dag_gates_on_the_declaration_before_producing_signals() -> None:
