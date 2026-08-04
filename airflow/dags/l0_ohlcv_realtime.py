@@ -142,6 +142,39 @@ def should_run_today() -> bool:
 # MAIN TASK: Fetch + store for one symbol
 # =============================================================================
 
+def _publish_symbol_rows(conn, *, symbol: str, provider_id: str, rows):
+    """Publica las barras por la frontera Fabric, o `None` si el símbolo no tiene identidad.
+
+    La cobertura **se mide, no se declara en una lista**: un símbolo está cubierto si su
+    alias `(provider_id, symbol)` resuelve en `reference.provider_symbol`. Así, cuando
+    un instrumento entra en la espina queda cubierto solo, y mientras no esté, el hueco
+    es visible en vez de silencioso.
+
+    Devolver `None` para un símbolo sin identidad es deliberado y NO es un bypass
+    disfrazado: filtrar sus barras las mandaría todas a cuarentena y apagaría su
+    ingesta; escribirlas calladamente haría creer que pasaron un gate que nunca
+    corrió. El llamador registra el hueco, que es la única salida honesta hasta que el
+    instrumento tenga perfil.
+    """
+    from src.market.identity import IdentityError
+    from src.market.publication import publish_provider_rows
+    from src.data_quality.ingest_guard import registry_from_spine
+
+    try:
+        registry_from_spine(conn).resolve(provider_id, symbol)
+    except IdentityError:
+        return None  # sin alias canónico: fuera de cobertura, y el llamador lo declara
+
+    return publish_provider_rows(
+        conn,
+        provider_id=provider_id,
+        provider_symbol=symbol,
+        interval_id='PT5M',
+        rows=rows,
+        source_uri=f'dag://l0_ohlcv_realtime/{symbol}',
+    )
+
+
 def fetch_and_store_symbol(symbol: str, **context):
     """
     Fetch OHLCV for a single symbol and store in DB.
@@ -232,11 +265,53 @@ def fetch_and_store_symbol(symbol: str, **context):
         conn = get_db_connection()
         try:
             cur = conn.cursor()
+
+            # C025/C026 — publicacion Fabric ANTES del UPSERT legado, en la MISMA
+            # transaccion (el commit de abajo cierra ambos caminos). Solo se escriben
+            # las barras `accepted`: una barra en cuarentena no puede aterrizar en la
+            # tabla de mercado, que es la propiedad entera de BL-40.
+            filas_fabric = [
+                {'time': row['time'], 'open': row['open'], 'high': row['high'],
+                 'low': row['low'], 'close': row['close'], 'volume': row['volume']}
+                for _, row in df_filtered.iterrows()
+            ]
+            publicacion = _publish_symbol_rows(
+                conn, symbol=symbol, provider_id='twelvedata_multi', rows=filas_fabric
+            )
+            if publicacion is None:
+                # Simbolo SIN identidad canonica (hoy USD/BRL: no tiene AssetProfile).
+                # No se filtra ni se finge cobertura: se declara el hueco y se registra.
+                # Filtrar aqui apagaria su ingesta; callarlo seria peor, porque la
+                # ausencia de eventos de cuarentena pareceria "todo limpio".
+                logging.warning(
+                    "[%s] fuera de la cobertura Fabric: sin alias canonico en "
+                    "reference.provider_symbol, la barra NO pasa por el gate de calidad",
+                    symbol,
+                )
+                aceptadas = df_filtered
+            else:
+                # Se empareja por `time`, que es la clave de la barra (UPSERT es por
+                # `(time, symbol)`). Emparejar por identidad de objeto habría dependido
+                # de que el publicador devuelva los MISMOS dicts, algo que su contrato
+                # no promete.
+                instantes_ok = {f['time'] for f in publicacion.accepted}
+                aceptadas = df_filtered[df_filtered['time'].isin(instantes_ok)]
+                if publicacion.quarantine_count:
+                    logging.warning(
+                        "[%s] %d barra(s) en cuarentena, NO se escriben en la tabla legada",
+                        symbol, publicacion.quarantine_count,
+                    )
+
             values = [
                 (row['time'], row['symbol'], row['open'], row['high'],
                  row['low'], row['close'], row['volume'], row['source'])
-                for _, row in df_filtered.iterrows()
+                for _, row in aceptadas.iterrows()
             ]
+            if not values:
+                conn.commit()
+                logging.info("[%s] 0 barras aceptadas tras el gate de calidad", symbol)
+                cb.record_success()
+                return {'status': 'all_quarantined', 'symbol': symbol, 'rows': 0}
 
             execute_values(
                 cur,
