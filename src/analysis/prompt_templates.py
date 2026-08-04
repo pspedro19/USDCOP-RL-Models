@@ -159,12 +159,19 @@ def build_news_section(news_context: dict, highlights: list = None) -> str:
 
     lines = []
     article_count = news_context.get("article_count", 0)
-    avg_sentiment = news_context.get("avg_sentiment", 0)
-
-    sentiment_word = "positivo" if avg_sentiment > 0.15 else (
-        "negativo" if avg_sentiment < -0.15 else "neutral"
-    )
-    lines.append(f"- {article_count} articulos procesados, sentimiento promedio: {sentiment_word}")
+    avg_sentiment = news_context.get("avg_sentiment")
+    if avg_sentiment is None:
+        reason = news_context.get("sentiment_unavailable_reason", "feature.not_measured")
+        lines.append(
+            f"- {article_count} articulos procesados, sentimiento: NO DISPONIBLE ({reason})"
+        )
+    else:
+        sentiment_word = "positivo" if avg_sentiment > 0.15 else (
+            "negativo" if avg_sentiment < -0.15 else "neutral"
+        )
+        lines.append(
+            f"- {article_count} articulos procesados, sentimiento promedio: {sentiment_word}"
+        )
 
     for cat, count in sorted(
         news_context.get("top_categories", {}).items(),

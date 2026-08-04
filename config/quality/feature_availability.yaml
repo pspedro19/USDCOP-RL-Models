@@ -1,0 +1,37 @@
+version: "1.0.0"
+features:
+  - feature_id: macro_banrep_forwards_monthly.forward_rate
+    table: macro_banrep_forwards_monthly
+    column: forward_rate
+    time_column: published_at
+    require_variation: true
+  - feature_id: crypto_derivatives_daily.liquidations_usd
+    table: crypto_derivatives_daily
+    column: liquidations_usd
+    time_column: published_at
+    require_variation: true
+  - feature_id: crypto_derivatives_daily.open_interest
+    table: crypto_derivatives_daily
+    column: open_interest
+    time_column: published_at
+    require_variation: true
+  - feature_id: crypto_derivatives_daily.long_short_ratio
+    table: crypto_derivatives_daily
+    column: long_short_ratio
+    time_column: published_at
+    require_variation: true
+  - feature_id: news_articles.sentiment_score
+    table: news_articles
+    column: sentiment_score
+    time_column: published_at
+    require_variation: true
+  - feature_id: news_articles.sentiment_label
+    table: news_articles
+    column: sentiment_label
+    time_column: published_at
+    require_variation: true
+  - feature_id: news_articles.gdelt_tone
+    table: news_articles
+    column: gdelt_tone
+    time_column: published_at
+    require_variation: true
