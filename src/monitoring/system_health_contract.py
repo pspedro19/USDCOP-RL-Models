@@ -175,10 +175,28 @@ class DataProbe:
 
 @dataclass
 class HealthEvent:
-    """Evento emitido por un reloj — costura hacia control.metric_event (BL-18).
+    """Evento emitido por un reloj — **envelope operativo mixto** (BL-18).
 
-    Cuando BL-18 materialice ``control.metric_event``, estos eventos se
-    insertan tal cual (thresholds copiados al evaluar, como exige BL-18).
+    Los ``kind`` que viajan aquí no son todos de la misma naturaleza: hay
+    observaciones métricas (``model_drift_psi``, ``prediction_drift``,
+    ``sharpe_decay``, ``slippage_excess``), la *ausencia* de una métrica
+    (``metric_missing``), incidentes y diagnósticos (``parity_broken``,
+    ``data_*``) y actos de protocolo (``withdrawal_protocol_triggered``).
+
+    Sólo los ``kind`` **declarados y gobernados como métricas en el catálogo**
+    pueden normalizarse después a un ``MetricEvent`` y persistirse en
+    ``control.metric_event``. Los demás —ausencias, incidentes y acciones— no
+    se insertan ahí, aunque adjunten la medición que los causó: llevar un
+    número no convierte a un evento en una observación de catálogo.
+
+    Este evento **no puede insertarse directamente** en ``control.metric_event``:
+    la tabla exige ``catalog_version``, ``formula_version``, ``entity_type``,
+    ``entity_id`` y ``metric_namespace`` como ``NOT NULL``, y ninguno existe ni
+    se deriva de aquí. Rellenarlos con constantes sería fabricar linaje.
+
+    El destino por defecto sigue siendo el JSONL append-only, que actúa como
+    buffer durable; la frontera productor/consumidor es una decisión abierta en
+    ``.claude/coordination/briefs/DECISION-BL18-frontera-productor-consumidor.md``.
     """
 
     kind: str

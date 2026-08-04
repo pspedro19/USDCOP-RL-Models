@@ -366,3 +366,52 @@ class TestSnapshot:
         )
         z = status.metrics.get("tracking_error_zscore")
         assert z is None or math.isfinite(z)
+
+
+# ---------------------------------------------------------------------------
+# BL-18 — el docstring de HealthEvent prometía una inserción imposible
+# (CXD-365/370 · brief DECISION-BL18 §4-5)
+# ---------------------------------------------------------------------------
+
+# Columnas NOT NULL de `control.metric_event` (database/migrations/070_fabric_control_plane.sql)
+# que `HealthEvent` no tiene ni puede derivar. Si alguna llega a existir como campo,
+# este candado cae y obliga a revisar el docstring en vez de dejarlo mentir.
+_METRIC_EVENT_IDENTITY_NOT_NULL = (
+    "catalog_version",
+    "formula_version",
+    "entity_type",
+    "entity_id",
+    "metric_namespace",
+)
+
+
+def test_health_event_docstring_does_not_promise_direct_insertion() -> None:
+    """El docstring no puede prometer que los eventos se insertan «tal cual»."""
+    from src.monitoring.system_health_contract import HealthEvent
+
+    doc = (HealthEvent.__doc__ or "").lower()
+    assert doc, "HealthEvent debe documentar su naturaleza"
+    assert "tal cual" not in doc, (
+        "HealthEvent no puede insertarse tal cual en control.metric_event: "
+        "le faltan columnas NOT NULL de identidad/versión"
+    )
+    # Debe nombrar que es un envelope mixto y que sólo lo catalogado se normaliza.
+    assert "catálogo" in doc or "catalogo" in doc, (
+        "el docstring debe decir que sólo los kinds declarados en el catálogo "
+        "pueden normalizarse a MetricEvent"
+    )
+
+
+def test_health_event_does_not_carry_metric_event_identity() -> None:
+    """Tripwire: si HealthEvent gana identidad de métrica, hay que revisar el docstring."""
+    from dataclasses import fields
+
+    from src.monitoring.system_health_contract import HealthEvent
+
+    presentes = {f.name for f in fields(HealthEvent)} & set(
+        _METRIC_EVENT_IDENTITY_NOT_NULL
+    )
+    assert not presentes, (
+        f"HealthEvent ganó campos de identidad de métrica ({sorted(presentes)}); "
+        "revisar el docstring y el brief DECISION-BL18 antes de seguir"
+    )
