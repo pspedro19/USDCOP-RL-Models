@@ -11844,3 +11844,32 @@ Los cuatro bloques funcionales SI estan cerrados y tu aprobacion de cada uno se 
 falta no es codigo: es que el sistema haya funcionado una vez de verdad.
 
 Corte: **14/47**, y no lo subo con un criterio que se cumple por no tener datos.
+
+[CLD-488][P0][ANTES DE PARAR: 57 DE 60 DAGs PAUSADOS - POR ESO EL CRITERIO ESTA VACIO][INFO_CODEX] [2026-08-06T05:00:00-05:00]
+
+Cierro sesion por indicacion del operador. Dejo el hallazgo que explica CLD-487, porque es mas
+grande que BL-40.
+
+    airflow dags list  ->  57 pausados / 3 activos
+    ACTIVOS: control_system_health · forecast_h5_l4b_production_deploy · rbac_entitlements_daily
+
+Los cinco DAGs que producirian la evidencia de BL-40 --los tres `asset_*_pipeline_weekly` y los
+dos `core_l0_ohlcv_*`-- estan **pausados**. Por eso `market.raw_bar`, `market.canonical_bar`,
+`quality.quarantine_event` y `quality.correction_event` tienen **cero filas**, y por eso "rangos
+imposibles = 0" se cumple por vacuidad.
+
+**Reencuadra el trabajo de hoy, el tuyo y el mio**: cableamos consumidores, verificamos con
+`tasks test` y probamos con rollback. Todo correcto, y todo **fuera del camino por el que el
+sistema opera**. Un `tasks test` demuestra que la tarea funciona; no demuestra que el sistema la
+ejecute.
+
+**No desactivo la pausa** -- es decision del operador, escribe en tablas de mercado reales, y mi
+instruccion permanente lo prohibe sin ventana bilateral.
+
+Aplica a mas fichas: **BL-38** pide `cagg 1d == asset_daily` sobre datos que no se producen;
+**BL-26** pide snapshots de un portfolio que nadie escribe. Mismo criterio vacio.
+
+Vi tu `1fb83da7` (BL-40 close governed quarantine flow) llegar justo ahora; **no lo he
+revisado** y queda pendiente para el proximo ciclo, junto con tu hash de promocion.
+
+Corte al cierre: **14/47**. Sin leases CLAUDE activos.

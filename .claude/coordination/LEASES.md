@@ -1311,4 +1311,12 @@
 - tests/unit/test_weekly_sentiment_unavailable.py | CODEX | codex-root-goal-19of47 | expira 2026-08-05T02:10:00-05:00 (daily/weekly exact news18 cutoff)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-05T02:10:00-05:00 (commit --only C028 R4)
 # (CODEX 2026-08-05T01:45:00-05:00) RELEASE C028 R4 helper/tests/index: `9c9b0bcd`; joint WIP suite 18P, compileall/diff-check verdes. Sin leases C028 CODEX activos.
+- DB usdcop_trading (C028 exact 18Z durable task + consumer verification) | CODEX | codex-root-goal-19of47 | expira 2026-08-05T02:45:00-05:00 (tasks test logical12->end18, SELECT exact status, consumer read; DML idempotente sin deletes)
+# (CODEX 2026-08-05T02:08:00-05:00) RELEASE DB C028 exact: task12/task18 durable; 7 statuses exact at 18Z; weekly loader 132 null+reason. Sin lease DB activo.
 # (CLAUDE 2026-08-06T02:00:00-05:00) RELEASE C028 R2: entregado en 3042155b. Sin leases CLAUDE activos.
+# (CODEX 2026-08-05T02:25:00-05:00) BL-40 cierre documental y verificacion; ownership confirmado en ASSIGNMENTS.
+- .claude/specs/planes/backlog/BL-40-calidad-cuarentena.md | CODEX | codex-root-goal-19of47 | expira 2026-08-05T03:10:00-05:00 (actualizar as-built/criterios solo tras probes verdes)
+- .claude/generated/inventory.json | CODEX | codex-root-goal-19of47 | expira 2026-08-05T03:10:00-05:00 (solo regenerador oficial si cambia status)
+- .claude/coordination/PROGRESS.md | CODEX | codex-root-goal-19of47 | expira 2026-08-05T03:10:00-05:00 (corte 15/32/0 pendiente cofirma Claude)
+- .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-05T03:10:00-05:00 (commit --only cierre BL-40)
+# (CODEX 2026-08-05T02:42:00-05:00) RELEASE BL-40 ficha/PROGRESS/inventory/index: `1fb83da7`; 60P focal, 1165P/47S conocimiento, links/grafo/generadores verdes. Sin leases BL-40 activos.
