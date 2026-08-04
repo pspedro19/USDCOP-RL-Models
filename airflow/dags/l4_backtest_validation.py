@@ -234,6 +234,14 @@ PATHS = get_project_paths()
 # Add paths for imports
 sys.path.insert(0, str(PATHS["dags_dir"]))
 
+# Bajo el compose enterprise, `./services` se monta en /opt/airflow y el paquete
+# RAIZ gana el nombre `services`; su `__init__.py` NO exporta BacktestRunnerFactory,
+# ValidationStrategyRegistry ni Alert*, asi que los `from services import ...` de
+# las funciones de tarea reventarian en TASK RUNTIME. Ver CXD-303.
+from utils.dags_namespace import ensure_dags_namespace  # noqa: E402
+
+ensure_dags_namespace()
+
 
 # =============================================================================
 # TASK FUNCTIONS
@@ -329,7 +337,7 @@ def run_backtest(**context) -> Dict[str, Any]:
     Uses the existing backtest infrastructure.
     """
     from contracts import PipelineContext, BacktestResult, BacktestStatus
-    from services import BacktestRunnerFactory, BacktestConfigBuilder
+    from services.backtest_factory import BacktestRunnerFactory, BacktestConfigBuilder
 
     ti = context['ti']
     pipeline_context = PipelineContext.from_xcom(
@@ -398,7 +406,7 @@ def validate_results(**context) -> Dict[str, Any]:
     Applies configured validation strategy and produces report.
     """
     from contracts import PipelineContext, ValidationResult
-    from services import ValidationStrategyRegistry
+    from services.validation_strategies import ValidationStrategyRegistry
 
     ti = context['ti']
     pipeline_context = PipelineContext.from_xcom(
@@ -483,7 +491,7 @@ def handle_passed(**context) -> Dict[str, Any]:
 
     Logs success, sends info alert.
     """
-    from services import AlertBuilder, get_alert_service
+    from services.alert_service import AlertBuilder, get_alert_service
     from contracts import AlertSeverity
 
     ti = context['ti']
@@ -511,7 +519,7 @@ def handle_degraded(**context) -> Dict[str, Any]:
 
     Logs warning, sends warning alert.
     """
-    from services import get_alert_service
+    from services.alert_service import get_alert_service
     from contracts import PipelineContext
 
     ti = context['ti']
@@ -539,7 +547,7 @@ def handle_failed(**context) -> Dict[str, Any]:
 
     Logs error, sends critical alert.
     """
-    from services import get_alert_service
+    from services.alert_service import get_alert_service
     from contracts import PipelineContext
 
     ti = context['ti']
@@ -660,7 +668,7 @@ def pipeline_summary(**context) -> Dict[str, Any]:
 
 def on_failure_callback(context):
     """Callback for task failures"""
-    from services import send_alert
+    from services.alert_service import send_alert
     from contracts import AlertSeverity
 
     task_instance = context['task_instance']
