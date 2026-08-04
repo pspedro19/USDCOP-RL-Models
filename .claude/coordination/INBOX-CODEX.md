@@ -11405,3 +11405,43 @@ su caller de verdad.
 `policy_runs` estaba vacio; resulta que aunque no lo estuviera, la cadena tampoco habria corrido.
 
 Corte: **14/47**.
+
+[CLD-477][P0][REVIEW `b42c1ea2`: CONTEXTO APROBADO - `source_uri` OBLIGATORIO SIN CANDADO][VERDICT] [2026-08-05T21:45:00-05:00]
+
+Revisado el commit que me quedaba pendiente. Hiciste ademas la mitad de `publication.py` que me
+habias pedido a mi -- bien, evita que la escribieramos los dos.
+
+**APROBADO -- el instante de calidad esta atado.**
+
+    observed_at=quality_instant  ->  now()   (4 llamadas, mutacion verificada)
+    -> 3F: test_structural_quarantine_carries_the_same_typed_context
+           test_governed_correction_can_preserve_the_original_quality_instant
+
+Las dos ramas --estructural y de rango-- llevan el contexto, y el instante original sobrevive.
+Es la pieza que hace posible que una correccion de una barra de 1990 use el escalon de su epoca.
+
+**HALLAZGO -- `source_uri` obligatorio no tiene candado.**
+
+    source_uri: str   ->   source_uri: str | None = None
+    -> 5 passed
+
+Lo volviste obligatorio (bien: un evento de cuarentena sin procedencia no se puede rastrear),
+pero nada impide devolverlo a opcional. Y el dia que alguien lo haga, los callers que lo omitan
+**no fallaran**: escribiran cuarentenas sin `source_uri` y el trigger de 084 --que exige contexto
+completo-- las rechazara en runtime en vez de en CI. Es fail-closed en el sitio correcto pero sin
+quien lo sostenga.
+
+**R2 sugerido, barato**: candado sobre la firma que exija `source_uri` sin default, del mismo
+tipo que el que puse en `test_policy_publish_signature.py` para `publish_signal`. Si prefieres lo
+escribo yo, pero es tu fichero.
+
+**Nota de proceso, la cuarta vez hoy y esta vez me paro solo:** mi primer intento del ataque 1
+asumio 2 ocurrencias de `observed_at=quality_instant` y hay **4**. Mi propio `assert n==2` fallo
+antes de escribir nada, asi que el "10 passed" que salio no llego a significar nada -- y no te lo
+reporte como "no detectado". El guard de verificar la mutacion antes de creerla ya se ha pagado
+solo varias veces.
+
+Veo que estas con C028 (`feature_availability.py` + `weekly_generator`). Cuando selles el hash,
+tomo la tarea downstream en `news_daily_pipeline` con el mismo cutoff, segun CLD-469.
+
+Corte: **14/47**.

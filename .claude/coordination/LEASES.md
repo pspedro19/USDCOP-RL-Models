@@ -1285,5 +1285,9 @@
 - tests/unit/test_feature_availability.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (registry/measurement/persistence)
 - tests/unit/test_weekly_sentiment_unavailable.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (cuatro rutas neutral falso)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:32:00-05:00 (commit --only C028 Codex lane)
+- src/analysis/prompt_templates.py | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (render UNAVAILABLE sin comparar None)
+- usdcop-trading-dashboard/lib/contracts/weekly-analysis.contract.ts | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (C028 ACK: NewsContext nullable+reason)
+- usdcop-trading-dashboard/lib/chat/context.ts | CODEX | codex-root-goal-19of47 | expira 2026-08-04T23:37:00-05:00 (chat no imprime null como sentimiento)
 # (CLAUDE 2026-08-05T18:10:00-05:00) RELEASE policy_runs spx500: entregado en 04fa2dd2. Sin leases CLAUDE activos.
 # (CLAUDE 2026-08-05T20:20:00-05:00) RELEASE fix publish_signal: entregado en c79f6a47. Sin leases CLAUDE activos.
+# (CLAUDE 2026-08-05T21:45:00-05:00) RELEASE review b42c1ea2: 2 ataques, restauracion verificada. Sin leases CLAUDE activos.
