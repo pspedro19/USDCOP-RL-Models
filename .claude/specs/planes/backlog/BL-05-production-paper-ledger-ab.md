@@ -74,3 +74,35 @@ en los archivos tocados.
 **Para cerrar el gap E2E** hace falta un dashboard servido con este remedio y sesión `admin`
 (el panel está oculto para `free`/`subscriber` — `ProductionView::isClientView`), y luego
 `npx playwright test tests/e2e/paper-candidates-a11y.spec.ts --project=chromium`.
+
+### El gap E2E, ya DIAGNOSTICADO y no sólo «no ejecutado» (2026-08-05)
+
+El operador levantó la orden del 2026-07-28 **de forma acotada**: «dev server sí, Docker no». Se
+persiguió hasta el final y **el bloqueo real quedó identificado con precisión**: no es que falte
+ejecutar, es que **este E2E no puede correr sin contenedores**. Camino recorrido, en orden, con lo
+que cada capa enseñó:
+
+| Intento | Resultado | Qué enseñó |
+|---|---|---|
+| `npm run dev` + playwright | **K-044 aborta**: «el HTML servido no expone un BUILD_ID reconocible» | El guard del propio repo rechaza un dev server: sin artefacto identificable, la corrida no es evidencia *en ninguna dirección* |
+| `npm run build` + `npm start` | **K-044 aborta**: artefacto `2026-08-05T14:01:21.496Z` **22 s anterior** al commit `802b0267` | «Un verde contra un build rancio es peor que no tener evidencia, porque parece que sí la tienes» |
+| rebuild tras el último commit de código servido | **K-044 pasa** | El guard compara contra el último commit que toca *rutas servidas*, no contra cualquier commit |
+| corrida real | falta el binario de Chromium → `npx playwright install chromium` | — |
+| corrida real (2º) | `[next-auth][error][NO_SECRET]` | `npm start` (producción) exige `NEXTAUTH_SECRET`; se pasó uno desechable **al proceso**, sin tocar ningún `.env` |
+| corrida real (3ª) | **login no aterriza en `/production`** | **Causa final, medida en el log del servidor** (abajo) |
+
+```
+[API] SignalBridge auth login error: getaddrinfo ENOTFOUND usdcop-signalbridge
+[UserRepository] findByEmail error: [PostgreSQL] Database configuration missing.
+                 Set DATABASE_URL or (POSTGRES_HOST, POSTGRES_USER, POSTGRES_PASSWORD)
+```
+
+El panel es **admin-only** y la autenticación admin se apoya en **dos servicios de contenedor**:
+`usdcop-signalbridge` (nombre DNS que sólo resuelve dentro de la red de compose) y PostgreSQL
+(`sb_users`). Por tanto **«dev server sin Docker» es insuficiente por construcción** para este BL,
+y no por un detalle de configuración que se pueda rodear.
+
+**BL-05 sigue `PARTIAL`, y ahora por una razón exacta en vez de por una orden genérica.** Lo que
+falta es una decisión de infraestructura del operador (levantar Postgres + SignalBridge), no
+trabajo de código. Las tres pruebas siguen sin evidencia y **no deben darse por verdes**: los
+cuatro gaps del rechazo CXD-022 están cerrados salvo éste.
