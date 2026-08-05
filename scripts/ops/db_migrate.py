@@ -72,6 +72,9 @@ MIGRATION_PLANS = {
     "feature-status-provenance-v1": (
         PROJECT_ROOT / "database" / "migrations" / "085_feature_status_provenance.sql",
     ),
+    "lineage-verification-v1": (
+        PROJECT_ROOT / "database" / "migrations" / "086_lineage_last_verified_at.sql",
+    ),
     # Fresh-clone platform schema.  This deliberately uses the consolidated H5
     # migration (050) instead of replaying its superseded 043/044 path, and
     # keeps optional extensions such as pgvector (047) out of the baseline.
@@ -113,6 +116,7 @@ REVIEW_GATED_PLANS = frozenset(
         "feature-status-provenance-v1",
         "h5-identity-v1",
         "identity-admin-v1",
+        "lineage-verification-v1",
         "platform-bootstrap-v1",
         "fabric-v1",
     }
@@ -120,6 +124,7 @@ REVIEW_GATED_PLANS = frozenset(
 PLAN_PREREQUISITE_TABLES = {
     "commerce-surface-v1": ("public.sb_users",),
     "feature-status-provenance-v1": ("quality.feature_status",),
+    "lineage-verification-v1": ("lineage.node",),
     "h5-identity-v1": (
         "public.forecast_h5_signals",
         "public.forecast_h5_executions",
@@ -248,6 +253,9 @@ REQUIRED_TABLES_BY_PLAN = {
     "feature-status-provenance-v1": {
         "quality.feature_status": "Governed feature availability measurements",
     },
+    "lineage-verification-v1": {
+        "lineage.node": "Lineage nodes with producer verification clock",
+    },
     "platform-bootstrap-v1": PLATFORM_BOOTSTRAP_REQUIRED_TABLES,
     "commerce-v1": {
         "public.checkout_orders": "Immutable sealed checkout quotes",
@@ -270,6 +278,11 @@ REQUIRED_COLUMNS_BY_PLAN = {
     "feature-status-provenance-v1": {
         "quality.feature_status": {
             "created_at": "Database-owned feature-status creation seal",
+        },
+    },
+    "lineage-verification-v1": {
+        "lineage.node": {
+            "last_verified_at": "Latest producer-observed verification time",
         },
     },
     "commerce-surface-v1": {

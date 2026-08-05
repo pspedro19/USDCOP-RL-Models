@@ -28,7 +28,7 @@ import logging
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -562,6 +562,7 @@ def upsert_all(**context) -> Dict[str, Any]:
     Contract: CTR-L0-4TABLE-001
     """
     FrequencyRoutedUpsertService = _get_upsert_service_cls()
+    from src.lineage.graph import RevisionType
 
     logger.info("=" * 60)
     logger.info("L0 MACRO UPDATE v2.1 - UPSERT Phase (4-Table Architecture)")
@@ -592,6 +593,28 @@ def upsert_all(**context) -> Dict[str, Any]:
     conn = get_db_connection()
     upsert_service = FrequencyRoutedUpsertService(conn)
 
+    dag_run = context.get('dag_run')
+    conf = (getattr(dag_run, 'conf', None) or {}) if dag_run is not None else {}
+    raw_revision_type = conf.get(
+        'macro_revision_type', RevisionType.PROVIDER_CORRECTION.value
+    )
+    try:
+        revision_type = RevisionType(raw_revision_type)
+    except ValueError as exc:
+        allowed = ', '.join(item.value for item in RevisionType)
+        conn.close()
+        raise ValueError(
+            f"invalid macro_revision_type {raw_revision_type!r}; expected one of {allowed}"
+        ) from exc
+    run_id = str(context.get('run_id') or getattr(dag_run, 'run_id', '') or '')
+    if not run_id:
+        conn.close()
+        raise ValueError("Airflow run_id is required for macro lineage")
+    actor = str(conf.get('macro_revision_actor') or _MACRO_UPDATE_DAG_ID)
+    event_time = context.get('logical_date')
+    if not isinstance(event_time, datetime) or event_time.tzinfo is None:
+        event_time = datetime.now(timezone.utc)
+
     results = {
         'success': 0,
         'failed': 0,
@@ -612,7 +635,11 @@ def upsert_all(**context) -> Dict[str, Any]:
             upsert_result = upsert_service.upsert_variable(
                 variable,
                 df,
-                n=SAFETY_RECORDS
+                n=SAFETY_RECORDS,
+                revision_type=revision_type,
+                actor=actor,
+                run_id=run_id,
+                event_time=event_time,
             )
 
             freq = upsert_result.get('frequency', 'daily')
