@@ -751,3 +751,10 @@ seal no later than their cutoff. Existing rows remain immutable but non-authorit
 measurement. Remove ungoverned numeric CSV fallbacks; missing governance remains explicit
 UNAVAILABLE. Proposed split: CODEX migration/registry/weekly consumer/tests; CLAUDE agent_tools
 surface/tests. No apply until bilateral ACK, pinned plan review, and managed DB engine.
+
+[C031][CODE_APPLIED_PENDING_PIN][CODEX↔CLAUDE][2026-08-05T00:28:00-05:00] Bilateral shape ACK
+in CLD-492. Claude lane `f625bb1e` removes the unused agent_tools reader; Codex `25d2f4cd` adds
+085 plus an unpinned review-gated plan and creation-seal consumer, and `2032ab32` removes the final
+weekly reader. Joint suite 76 passed. PostgreSQL outer-transaction probes proved DB-owned seal and
+future-observation rejection, then confirmed 085 absent and zero probe rows. Migration remains
+technically unauthorized and unapplied pending independent digest review and pin.

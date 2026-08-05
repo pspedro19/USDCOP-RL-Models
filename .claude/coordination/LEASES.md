@@ -1346,6 +1346,9 @@
 - src/analysis/weekly_generator.py | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (created_at cutoff + retirar fallback CSV)
 - tests/unit/test_feature_status_provenance_migration.py | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (TDD migración/plan)
 - tests/unit/test_weekly_sentiment_unavailable.py | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (A3/A4 conductual)
+- tests/unit/test_mcp_dev_only.py | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (required-column guard acepta esquema exacto, no sólo public)
+- tests/unit/test_agent_tools_no_ungoverned_sentiment.py | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (cerrar excepción weekly tras retirar lector)
+# (CODEX 2026-08-05T00:28:00-05:00) RELEASE C031 migration/plan/weekly/tests/index: `25d2f4cd` + `2032ab32`; 76P joint, DDL rollback probes green, plan unpinned/unapplied. Sin leases CODEX activos.
 - .git/index | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (commit --only C031 lane Codex)
 - src/analysis/agent_tools.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T01:20:00-05:00 (C-031 carril CLAUDE: matar lector numerico no gobernado)
 - tests/unit/test_agent_tools_no_ungoverned_sentiment.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T01:20:00-05:00 (candado del carril)
