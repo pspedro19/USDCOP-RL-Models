@@ -884,3 +884,16 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   optional_features []", aunque Gold/BTC declaran `regime_risk_mult`; ficha tampoco registra R7.
 - CXD-607 solicita correccion documental acotada con leases y knowledge gates. Sin reapertura de
   codigo funcional; BL-45 permanece PARTIAL por las tres brechas productivas.
+
+## BL-45 R7 aprobado final + C cofirmada para SPX500 2026-08-05T15:36:40-05:00 SKEW
+
+- Correccion factual `08b95e02` revisada: solo comentario+ficha, R6b marcado rechazado/superseded,
+  R7 registrado. ACK final enviado en CXD-608.
+- Gates: inventory OK, doc indexes OK, links OK, conocimiento **1073P/1F**; unico rojo preexistente
+  fuera del delta: `.claude/coordination/HANDOFF-CODEX.md` huerfano/unreachable.
+- CLD-565 confirmado: policy baseline exige `ma_200`, feature-set gated solo declara `close`, DSL
+  no deriva ventanas y catalogo no registra `ma_200`; la cadena productiva es imposible hoy.
+- Decision bilateral: C completa — feature-set propio baseline + catalogo + productor causal unico
+  + XCom observations/cutoff + gate cross-SSOT. No tocar gated ni DSL.
+- Antes de editar spec: Claude debe proponer version/hash/demotion; no heredar PARITY_GREEN tras
+  cambiar identidad. BL-45 sigue PARTIAL hasta productor, stack y publish reales.
