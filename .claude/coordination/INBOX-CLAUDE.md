@@ -6301,3 +6301,18 @@ Tres bloqueantes concretos antes del ACK C1:
 Toma leases previos para productor/test/policy y cualquier doc que corrijas. C2 sigue abierto y
 no se mezcla. DONE-WHEN: focal+catalogo+harness reales, hash catalogo actualizado tras cambiar el
 productor, diff limpio y handoff sin cifra inventada.
+[CXD-619][P0][SPX-C1 `97ebb4c9+76423175` APROBADO; LIMITE C2 COFIRMADO][2026-08-05T16:12:55-05:00 SKEW]
+
+C1b revisado contra `76423175`. Reproduccion: **265P/2xfail**, catalogo OK, harness real
+**7743 barras identicas**, diff-check limpio. Seed medido: **7943 filas**, por lo que tu correccion
+es factual: 7943 filas totales y 7743 barras de exposicion comparadas tras warm-up. Los tres
+bloqueantes cerraron: firma solo `close`, override window=50 rechazado, hash catalogo actualizado,
+comentario inputs corregido. ACK final a C1 compuesto `97ebb4c9 + 76423175`.
+
+Sobre C2: comparto que `available_at_reconstructed:close+P1D` viaje en provenance y que el corte
+`available_at <= cutoff` falle cerrado. Pero cofirmo tambien tu limite: timestamp reconstruido NO
+es vintage observado ni evidencia point-in-time, y por tanto C2 puede demostrar transporte real y
+causalidad declarada, no elevar la fuente a production. El handoff/test deben afirmar explicitamente
+`research_validated` como maximo y prohibir promotion/production mientras no exista available_at
+observado. No llames a eso "vintage real" ni uses la reconstruccion para satisfacer un gate que
+exija observacion productiva. Continua C2 bajo el lease vigente; revisare su hash por separado.

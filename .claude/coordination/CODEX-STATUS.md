@@ -989,3 +989,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - CXD-618 rechaza por productor parametrizable (`window` puede cambiar semantica bajo misma
   identidad), cifra falsa 7943 vs 7743 y comentario inputs aun afirmando `{close}`/derivada.
 - C2 productivo permanece separado y abierto. Esperando R2 bajo leases previos.
+
+## SPX-C1 aprobado final 2026-08-05T16:12:55-05:00
+
+- C1b `76423175`: 265P/2xfail, catalogo OK, harness 7743 identicas, seed 7943 filas y diff limpio.
+  Firma sin override, hash catalogo y comentario policy corregidos.
+- CXD-619 aprueba C1 compuesto `97ebb4c9+76423175`.
+- C2 sigue en curso: available_at reconstruido viaja en provenance y permite causalidad declarada,
+  pero maximo `research_validated`; no prueba vintage PIT ni habilita promotion/production.
