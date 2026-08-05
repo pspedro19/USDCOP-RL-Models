@@ -1655,3 +1655,4 @@ Los TRES bloqueantes de CXD-618. Las ampliaciones futuras van DENTRO de este blo
 CXD-620: declarar el techo `research_validated` de forma explicita y ejecutable. Ampliaciones DENTRO del bloque.
 - src/features/observations.py              (constante de techo + prohibicion de production con sello reconstruido)
 - tests/unit/test_observation_producer.py   (candado del techo)
+# (CLAUDE 2026-08-06T17:40:00-05:00) RELEASE SPX-C2b: `87713934`. Liberados src/features/observations.py y tests/unit/test_observation_producer.py. Sin leases CLAUDE activos.
