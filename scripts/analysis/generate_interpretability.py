@@ -93,16 +93,22 @@ def _models_for_asset(asset: str, kind: str) -> tuple[str, ...]:
     impedir. Los `hybrid_*` quedan FUERA de la ruta de arbol a proposito: mezclan lineal
     y arbol, y TreeSHAP no es correcto sobre ellos (decision declarada en la ficha).
     """
-    if asset == "usdcop":
+    # COP conserva su vocabulario HISTORICO en linear/tree (`xgboost`, no `xgboost_pure`):
+    # sus artefactos ya estan publicados bajo esos nombres y renombrarlos los dejaria
+    # huerfanos. La ruta `hybrid` es NUEVA para todos, asi que ahi se lee la config
+    # tambien para COP — que declara los mismos nueve modelos que Gold y BTC.
+    if asset == "usdcop" and kind in ("linear", "tree"):
         return ZOO_LINEAR_MODELS if kind == "linear" else ZOO_TREE_MODELS
-    cfg_rel = ASSET_CONFIGS.get(asset)
-    if cfg_rel is None:
+    if asset not in ASSET_CONFIGS:
         raise ValueError(f"activo sin config de forecasting declarada: {asset!r}")
+    cfg_rel = ASSET_CONFIGS[asset] or "config/forecasting_ssot.yaml"
     import yaml
     declared = list((yaml.safe_load((REPO / cfg_rel).read_text(encoding="utf-8"))
                      .get("models") or {}).keys())
     if kind == "linear":
         return tuple(m for m in declared if m in ZOO_LINEAR_MODELS)
+    if kind == "hybrid":
+        return tuple(m for m in declared if m.startswith("hybrid_"))
     return tuple(m for m in declared if m.endswith("_pure"))
 
 
@@ -1021,6 +1027,260 @@ def generate_zoo_tree(model_ids: tuple[str, ...] | None = None,
         paths.append(p)
         print(f"[tree] {mid}: {_rel(p)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
               f"add_err={add_err:.2e})", flush=True)
+    return paths
+
+
+def generate_zoo_hybrid(model_ids: tuple[str, ...] | None = None,
+                        *, supersede: bool = False, asset: str = "usdcop") -> list[Path]:
+    """SHAP EXACTO de los hibridos por DESCOMPOSICION, no TreeSHAP sobre el conjunto.
+
+    El hibrido NO es un arbol: `HybridBaseModel.predict` es una combinacion CONVEXA
+
+        pred(X) = (1-a) * boost.predict(X)  +  a * ridge.predict(scaler.transform(X))
+
+    Aplicarle TreeSHAP puro seria incorrecto —solo veria el booster y se comeria el
+    termino lineal—, y esa es la razon por la que la ficha de BL-20 los dejo fuera.
+    Pero la atribucion correcta NO es dificil: **SHAP es aditivo y lineal en la salida
+    del modelo**, asi que una combinacion lineal de modelos tiene por valores SHAP la
+    misma combinacion lineal de sus valores SHAP:
+
+        phi  = (1-a) * phi_tree            + a * phi_linear
+        base = (1-a) * base_tree           + a * intercept
+
+    Es EXACTO, no una aproximacion, y no hay que creerselo: `sum(phi) + base` tiene que
+    reproducir `hybrid.predict(X)` hasta precision de coma flotante. Ese es
+    `additivity_max_abs_err` — si no cuadra, el artefacto NO se publica y sale la
+    degradacion tipada. La prueba viaja con el dato.
+
+    Las dos mitades son a su vez exactas: TreeSHAP nativo del booster (mismo backend que
+    la ruta de arbol) y la forma cerrada del lineal. El `Ridge` interno se ajusta sobre
+    `scaler.transform(X)`, cuya media de train es 0, luego su baseline es el intercept y
+    `phi_j = coef_j * z_j` — sin centrado adicional que inventar.
+    """
+    from sklearn.preprocessing import StandardScaler
+    from src.forecasting.models.factory import ModelFactory
+    from src.forecasting.ssot_config import ForecastingSSOTConfig
+    from src.forecasting.dataset_loader import ForecastingDatasetLoader
+
+    if model_ids is None:
+        model_ids = _models_for_asset(asset, "hybrid")
+    if not model_ids:
+        return []
+    cfg = ForecastingSSOTConfig.load(ASSET_CONFIGS[asset])
+    loader = ForecastingDatasetLoader(cfg, project_root=REPO)
+    df, _ = loader.load_dataset()
+    feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
+    df = df.sort_values("date").reset_index(drop=True)
+    df["y5"] = df["close"].shift(-HORIZON) / df["close"] - 1.0
+    df["regime"] = _regime_labels(df)
+    version = pd.Timestamp(df["date"].iloc[-1]).date().isoformat()
+
+    folds = _annual_expanding_folds(df, feat_cols)
+    if not folds:
+        raise RuntimeError("zoo hibrido: ningun fold anual cumple la guarda de train minimo")
+    distinct_train_rows = _distinct_train_rows(folds)
+    data_fp = _frame_fingerprint(df, feat_cols + ["close"])
+    code_fp = _code_fingerprint()
+
+    paths: list[Path] = []
+    for mid in model_ids:
+        booster = mid.replace("hybrid_", "")        # hybrid_xgboost -> xgboost
+        try:
+            backend_name, shap_fn = _tree_shap_backend(booster)
+        except Exception as exc:
+            p = _write("zoo", asset, mid, version, _unavailable_payload(
+                mid, version, "backend_import_failed", f"{type(exc).__name__}: {exc}",
+                provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
+                            "config_fingerprint": _sha(b"<no backend>"),
+                            "model_fingerprint": _sha(b"<no backend>"),
+                            "model_fingerprint_basis": "unavailable"}, asset=asset),
+                supersede=supersede)
+            paths.append(p)
+            print(f"[hybrid] {mid}: DEGRADADO (backend_import_failed) -> {_rel(p)}", flush=True)
+            continue
+
+        try:
+            phi_parts, base_parts, dates, fold_meta = [], [], [], []
+            add_err = 0.0
+            alpha_used = None
+            for f in folds:
+                sc = StandardScaler().fit(f["Xtr"])
+                Xte = sc.transform(f["test"][feat_cols].to_numpy(float))
+                mdl = ModelFactory.create(mid)      # hiperparametros CONGELADOS (defaults)
+                mdl.fit(sc.transform(f["Xtr"]), f["ytr"])
+
+                a = float(mdl.params.get("alpha", 0.3))
+                alpha_used = a if alpha_used is None else alpha_used
+
+                # (i) parte ARBOL: TreeSHAP nativo explica la salida CRUDA del booster,
+                # pero el wrapper aplica DESPUES un reescalado de varianza
+                # (`xgboost.py::predict`: y = mean + s*(raw - mean)) y es ESA la que entra
+                # en la combinacion del hibrido. Ignorarlo fue mi primer intento y la
+                # aditividad lo delato: 1e-2, no 1e-16. El reescalado es AFIN, asi que se
+                # compone exacto — phi' = s*phi, base' = s*base + t — y `s`,`t` se DERIVAN
+                # de la pareja (crudo, reescalado) en vez de reimplementar la formula.
+                phi_t, base_t = shap_fn(mdl._boosting_model, Xte)
+                raw = np.asarray(mdl._boosting_model._model.predict(Xte), float).ravel()
+                scaled = np.asarray(mdl._boosting_model.predict(Xte), float).ravel()
+                if np.ptp(raw) > 0:
+                    s_aff, t_aff = np.polyfit(raw, scaled, 1)
+                    resid = float(np.nanmax(np.abs(s_aff * raw + t_aff - scaled)))
+                    # Tolerancia anclada a la PRECISION REAL del booster, no a un numero
+                    # bonito: XGBoost predice en float32 (~1e-7 relativo), asi que un
+                    # residuo de 1e-9 sobre valores de orden 1e-2 es redondeo, no
+                    # no-afinidad. Con 1e-9 absoluto el guard rechazaba una composicion
+                    # CORRECTA (medido: 1.013e-09 vs 1.000e-09). Esto NO afloja el
+                    # criterio: quien decide de verdad es el candado de aditividad de
+                    # abajo, que compara contra la prediccion del hibrido COMPLETO.
+                    tol = max(1e-8, 1e-6 * float(np.nanmax(np.abs(scaled))))
+                    if resid > tol:
+                        raise RuntimeError(
+                            f"{mid}: el post-proceso del booster NO es afin (residuo "
+                            f"{resid:.3e} > {tol:.3e}); la descomposicion exacta no aplica")
+                else:                              # booster degenerado (constante)
+                    s_aff, t_aff = 1.0, float(np.nanmean(scaled - raw))
+                phi_t = s_aff * np.asarray(phi_t, float)
+                base_t = s_aff * np.asarray(base_t, float) + t_aff
+                # (ii) parte LINEAL: forma cerrada sobre las coordenadas del Ridge interno
+                Z = np.asarray(mdl._scaler.transform(Xte), float)
+                coefs = np.asarray(mdl._linear_model.coef_, float).ravel()
+                phi_l = Z * coefs
+                base_l = float(np.asarray(mdl._linear_model.intercept_).ravel()[0])
+
+                phi = (1.0 - a) * np.asarray(phi_t, float) + a * phi_l
+                bias = (1.0 - a) * np.asarray(base_t, float) + a * base_l
+                if phi.shape[1] != len(feat_cols):
+                    raise RuntimeError(
+                        f"{mid}: {phi.shape[1]} contribuciones vs {len(feat_cols)} features")
+
+                # LA PRUEBA: contra la prediccion del HIBRIDO COMPLETO, no de una mitad.
+                pred = np.asarray(mdl.predict(Xte), float).ravel()
+                add_err = max(add_err,
+                              float(np.nanmax(np.abs(phi.sum(axis=1) + bias - pred))))
+                phi_parts.append(phi)
+                base_parts.append(np.asarray(bias, float).ravel())
+                dates.append(f["test"][["date", "regime"]])
+                fold_meta.append(_fold_meta(f, len(Xte), float(np.nanmean(bias))))
+
+            # CANDADO DURO DE ADITIVIDAD — mas estricto que la ruta de arbol a proposito.
+            # Alli TreeSHAP es exacto por construccion del backend; aqui la descomposicion
+            # es MIA, asi que su exactitud hay que DEMOSTRARLA y no publicarla si falla.
+            # Mi primer intento daba 1e-2 (olvidaba el reescalado del wrapper) y habria
+            # publicado una atribucion que no explica al modelo.
+            # Umbral anclado a la PRECISION ALCANZABLE del backend, no a un numero redondo.
+            # XGBoost computa en float32 (~1e-7 relativo): su TreeSHAP nativo ya deja
+            # residuos de 1e-9..1e-8 sobre predicciones de orden 1e-2, y la ruta de arbol
+            # PURO publica 2.72e-08 sin objecion. Un 1e-9 absoluto rechazaba
+            # descomposiciones CORRECTAS por redondeo (medido: 3.9e-09 / 1.8e-08 / 6.4e-09).
+            # Esto NO es aflojar hasta que pase: mi version equivocada —la que olvidaba el
+            # reescalado del wrapper— daba 1e-2, que este umbral sigue rechazando por SEIS
+            # ordenes de magnitud.
+            pred_scale = float(np.nanmax(np.abs(np.concatenate(base_parts)))) or 1.0
+            tol_add = max(1e-9, 1e-6 * pred_scale)
+            if not np.isfinite(add_err) or add_err > tol_add:
+                raise RuntimeError(
+                    f"{mid}: la descomposicion NO reproduce la prediccion del hibrido "
+                    f"(additivity_max_abs_err={add_err:.3e} > {tol_add:.3e}). No se publica: "
+                    f"una atribucion que no suma a la prediccion no explica al modelo.")
+
+            phi = np.vstack(phi_parts)
+            meta = pd.concat(dates, ignore_index=True)
+            base_value = float(np.nanmean(np.concatenate(base_parts)))
+        except Exception as exc:
+            p = _write("zoo", asset, mid, version, _unavailable_payload(
+                mid, version, "shap_computation_failed", f"{type(exc).__name__}: {exc}",
+                provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
+                            "config_fingerprint": _sha(b"<shap failed>"),
+                            "model_fingerprint": _sha(b"<shap failed>"),
+                            "model_fingerprint_basis": "unavailable"}, asset=asset),
+                supersede=supersede)
+            paths.append(p)
+            print(f"[hybrid] {mid}: DEGRADADO (shap_computation_failed) -> {_rel(p)}", flush=True)
+            continue
+
+        global_rows = _agg_rows(phi, feat_cols, np.ones(len(phi), dtype=bool))
+        top_features = [{"rank": i + 1, **r} for i, r in enumerate(global_rows)]
+        scale = float(np.nanmean([r["mean_abs_shap"] for r in global_rows]))
+        yr_arr = meta["date"].dt.year.to_numpy()
+        by_year = {str(int(y)): _agg_rows(phi, feat_cols, yr_arr == y)
+                   for y in sorted(set(yr_arr))}
+        reg_arr = meta["regime"].to_numpy()
+        by_regime = {str(r): _agg_rows(phi, feat_cols, reg_arr == r)
+                     for r in sorted(set(reg_arr))}
+
+        params = {k: v for k, v in (ModelFactory.create(mid).get_params() or {}).items()
+                  if isinstance(v, (int, float, str, bool, type(None)))}
+        config_fp = _canonical_sha({
+            "horizon": HORIZON, "purge_days": HORIZON, "min_train": MIN_TRAIN,
+            "features": feat_cols, "scaler": "StandardScaler train-only por fold",
+            "model_id": mid, "params": params, "shap_backend": backend_name,
+            "decomposition": "convex_alpha_weighted_tree_plus_linear",
+            "forecasting_ssot": _file_fingerprint(Path(cfg._config_path)),
+            "regime_gate_config": _file_fingerprint(
+                REPO / "config" / "execution" / "smart_simple_v1.yaml"),
+        })
+        model_fp = _canonical_sha({
+            "basis": "frozen_recipe_plus_fold_train_fingerprints",
+            "model_id": mid, "params": params,
+            "folds": [m["fold_fingerprint"] for m in fold_meta],
+        })
+
+        payload = {
+            "nota": NOTA,
+            "surface": "zoo",
+            "asset": asset,
+            "model_id": mid,
+            "model_type": "hybrid",
+            "method": "hybrid_shap_convex_decomposition",
+            "attribution_not_shap": False,
+            "version": version,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "provenance": {
+                "data_fingerprint": data_fp,
+                "code_fingerprint": code_fp,
+                "config_fingerprint": config_fp,
+                "model_fingerprint": model_fp,
+                "model_fingerprint_basis": "frozen_recipe_plus_fold_train_fingerprints",
+            },
+            "shap_backend": f"{backend_name} (parte arbol) + forma cerrada Ridge (parte lineal)",
+            "shap_package_available": _shap_package_available(),
+            "additivity_max_abs_err": add_err,
+            "hybrid_alpha": alpha_used,
+            "fit": {
+                "scheme": ("walk-forward EXPANDING ANUAL: fit con filas < 1-ene-Y menos purga "
+                           f"de {HORIZON}d; atribucion SOLO sobre filas del año Y (test-fold)"),
+                "origin": version,
+                **_train_size_summary(fold_meta, distinct_train_rows),
+                "horizon": HORIZON,
+                "purge_days": HORIZON,
+                "scaler": "StandardScaler train-only por fold",
+                "params": params,
+            },
+            "folds": fold_meta,
+            "scope": ("SHAP EXACTO por DESCOMPOSICION del hibrido, no TreeSHAP sobre el "
+                      "conjunto: pred = (1-a)*boost(X) + a*ridge(scaler(X)), y SHAP es "
+                      "aditivo y lineal en la salida, luego phi = (1-a)*phi_tree + a*phi_lin "
+                      "y base = (1-a)*base_tree + a*intercept. Aplicar TreeSHAP puro seria "
+                      "incorrecto (ignoraria el termino lineal). La exactitud NO se afirma: "
+                      "se COMPRUEBA contra la prediccion del hibrido COMPLETO y se publica "
+                      "como additivity_max_abs_err. Filas OOS unicamente; hiperparametros "
+                      "defaults CONGELADOS, ninguna metrica de acierto computada (0 trials)."),
+            "base_value": base_value,
+            "n_rows": int(len(phi)),
+            "n_features": len(feat_cols),
+            "n_folds": len(fold_meta),
+            "top_features": top_features,
+            "by_year": by_year,
+            "by_regime": by_regime,
+            "regime_gate": ("gate Hurst congelado de config/execution/smart_simple_v1.yaml "
+                            "evaluado con retornos <= la propia fila (sin look-ahead)"),
+            "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
+            "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
+        }
+        p = _write("zoo", asset, mid, version, payload, supersede=supersede)
+        paths.append(p)
+        print(f"[hybrid] {mid}: {_rel(p)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
+              f"alpha={alpha_used}, add_err={add_err:.2e})", flush=True)
     return paths
 
 

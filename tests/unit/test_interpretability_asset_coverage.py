@@ -54,7 +54,7 @@ def _expected_matrix() -> list[tuple[str, str]]:
     return [
         (asset, mid)
         for asset in COVERED_ASSETS
-        for kind in ("linear", "tree")
+        for kind in ("linear", "tree", "hybrid")
         for mid in _models_for_asset(asset, kind)
     ]
 
@@ -93,9 +93,9 @@ def test_the_expected_matrix_is_not_empty() -> None:
     comprobar nada. Este test es el que impide que el juez desaparezca en silencio.
     """
     matriz = _expected_matrix()
-    assert len(matriz) >= 18, (
+    assert len(matriz) >= 27, (
         f"la matriz esperada colapsó a {len(matriz)} entradas: con 3 activos x "
-        f"(3 lineales + 3 arboles) deben ser >= 18. Un colector vacio dejaria este "
+        f"(3 lineales + 3 arboles + 3 hibridos) deben ser >= 27. Un colector vacio "
         f"fichero verde sin juzgar nada.")
 
 

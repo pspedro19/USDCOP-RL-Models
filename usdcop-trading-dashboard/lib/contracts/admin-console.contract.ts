@@ -613,10 +613,34 @@ export interface InterpRuleSummary extends InterpSummaryBase {
   by_year: Record<string, InterpRuleYear>;
 }
 
+/**
+ * C035 — híbrido (booster + Ridge). **No es un árbol**: `HybridBaseModel.predict` es una
+ * combinación convexa `(1-a)·boost(X) + a·ridge(scaler(X))`, y aplicarle TreeSHAP puro
+ * sería incorrecto porque ignoraría el término lineal — la razón por la que BL-20 los dejó
+ * fuera hasta 2026-08-05.
+ *
+ * La atribución correcta **no es difícil, es exacta**: SHAP es aditivo y lineal en la salida
+ * del modelo, luego una combinación lineal de modelos tiene por SHAP la misma combinación
+ * lineal de sus SHAP — `φ = (1-a)·φ_tree + a·φ_lin`, `base = (1-a)·base_tree + a·intercept`.
+ * Se compone además el reescalado de varianza afín que el wrapper del booster aplica DESPUÉS
+ * (olvidarlo daba un error de aditividad de 1e-2 en vez de 1e-17).
+ *
+ * Lo que hace confiable esta rama no es el argumento sino la comprobación: el productor
+ * verifica `additivity_max_abs_err` contra la predicción del híbrido **completo** y **se
+ * niega a publicar** si no cuadra, degradando a `InterpTreeUnavailableSummary`.
+ */
+export interface InterpHybridSummary extends Omit<InterpTreeSummary, 'model_type' | 'method'> {
+  model_type: 'hybrid';
+  method: 'hybrid_shap_convex_decomposition';
+  /** Peso del término LINEAL en la combinación convexa; `1 - hybrid_alpha` es el del booster. */
+  hybrid_alpha: number;
+}
+
 export type InterpSummary =
   | InterpLinearSummary
   | InterpTreeSummary
   | InterpTreeUnavailableSummary
+  | InterpHybridSummary
   | InterpRuleSummary;
 
 // ─────────────────────────────────────────────────────────── riesgo (GET /api/admin/risk)

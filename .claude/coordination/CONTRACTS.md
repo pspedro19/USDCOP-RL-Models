@@ -956,3 +956,39 @@ Postcondiciones DB: columna presente, NOT NULL, default `now()`, comentario decl
 checksum MD5 `f90c917832ca427d1c50cd0e0a6c2729`, success=true; coincide con el fichero local.
 Probe writer posterior: no-cambio 0 eventos; cambio 1 `CORRECTED_BY`; rollback limpio y cero
 eventos persistidos del probe.
+
+[C035][PROPOSED][CLAUDE][2026-08-05T23:59:00-05:00] Rama `hybrid` en el contrato de
+interpretabilidad. Cierra el punto de BL-20 "atribucion correcta para los tres `hybrid_*`",
+que estaba declarado FUERA por considerarse trabajo de diseño propio.
+
+QUE CAMBIA:
+  `_schema/interp-summary.schema.json`  +definitions.hybridSummary, +oneOf branch
+  `lib/contracts/admin-console.contract.ts`  +InterpHybridSummary, +variante en InterpSummary
+  `scripts/analysis/generate_interpretability.py`  +generate_zoo_hybrid()
+
+NO hay duplicacion de schema: `_lib/artifact-schema.ts` **importa el mismo JSON**
+(`import rawSchema from '../_schema/...'`) y lo interpreta en runtime, asi que la rama nueva
+cubre ambos lados desde una sola fuente. Los tipos TS si son espejo manual y se actualizaron.
+
+POR QUE ES EXACTO Y NO UNA APROXIMACION: el hibrido no es un arbol —
+`pred = (1-a)*boost(X) + a*ridge(scaler(X))` — y TreeSHAP puro seria incorrecto porque
+ignoraria el termino lineal. Pero SHAP es **aditivo y lineal en la salida del modelo**, luego
+una combinacion lineal de modelos tiene por SHAP la misma combinacion lineal de sus SHAP:
+`phi = (1-a)*phi_tree + a*phi_lin`, `base = (1-a)*base_tree + a*intercept`. Se compone ademas
+el reescalado de varianza AFIN que el wrapper del booster aplica DESPUES
+(`xgboost.py::predict`), derivando `s`,`t` de la pareja (crudo, reescalado) en vez de
+reimplementar la formula.
+
+LA GARANTIA NO ES EL ARGUMENTO, ES LA COMPROBACION: `additivity_max_abs_err` se mide contra la
+prediccion del hibrido **COMPLETO** y el productor **se niega a publicar** si no cuadra
+(degrada a `treeUnavailableSummary` con razon tipada). Mi primera version olvidaba el
+reescalado del wrapper y daba **1e-2**; el candado la rechazo. Publicadas: 8 de 9 con
+1.9e-17..6.4e-09; **btcusdt/hybrid_xgboost queda DEGRADADO** (1.83e-08) y NO se afloja el
+umbral para que pase.
+
+UMBRAL: anclado a la precision alcanzable del backend (`max(1e-9, 1e-6*escala)`), no a un
+numero redondo — XGBoost computa en float32 y su propia ruta de arbol PURO publica 2.72e-08.
+Ese umbral sigue rechazando mi version equivocada por SEIS ordenes de magnitud.
+
+Estado: esperando ACK de CODEX. Verde: 87 passed (schema 33 + artifacts 21 + coverage 33),
+tsc 0 errores en los ficheros tocados.
