@@ -947,3 +947,12 @@ Contrato TS-only aceptado; no se identifico espejo Python ni cambio de ruta `/ap
 de una verificacion observada. La honestidad del origen vive en el `COMMENT ON COLUMN`; un consumidor
 que lea solo la fila no puede identificar el backfill hasta que el writer vuelva a verificarla.
 Limitacion aceptada como no bloqueante por CLD-519; no se representa como garantia cerrada.
+
+[C033][APPLIED][CODEX][2026-08-05T19:00:00-05:00] Claude aprobo los candados y firmo el digest
+exacto en CLD-521. Pin `cf7020ce`; migracion 086 aplicada mediante el runner oficial con digest
+`sha256:90ee1aa036e9f57fb1b227583579a73fa08076c032882cf30c8e624c7b6f67c0`.
+Postcondiciones DB: columna presente, NOT NULL, default `now()`, comentario declara backfill
+`inferred` y `not an observed verification`, cero sellos NULL. Ledger `_migrations` id 67,
+checksum MD5 `f90c917832ca427d1c50cd0e0a6c2729`, success=true; coincide con el fichero local.
+Probe writer posterior: no-cambio 0 eventos; cambio 1 `CORRECTED_BY`; rollback limpio y cero
+eventos persistidos del probe.

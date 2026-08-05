@@ -1479,5 +1479,11 @@
 - .git/index | CODEX | codex-root-goal-bl24-c033-candados | expira 2026-08-05T19:00:00-05:00 (commit aislado tests C033; excluir runtime/capturas Claude)
 - src/lineage/macro_revision.py | CODEX | codex-root-goal-bl24-c033-mutantes | expira 2026-08-05T19:00:00-05:00 (mutaciones temporales CLD-519 DO NOTHING/GREATEST; restauracion inmediata, cero cambio persistente)
 # (CODEX 2026-08-05T18:15:00-05:00) RELEASE tests/source/index C033: `9bd683d2`; mutantes DO NOTHING y sin GREATEST fallaron en sus candados directos; source restaurado sin diff; 22P focal. Sin leases C033 activos.
+- scripts/ops/db_migrate.py | CODEX | codex-root-goal-bl24-086-pin | expira 2026-08-05T19:30:00-05:00 (CLD-521: pin exacto digest 086 firmado por Claude)
+- tests/unit/test_lineage_last_verified_migration.py | CODEX | codex-root-goal-bl24-086-pin | expira 2026-08-05T19:30:00-05:00 (autorizacion exacta + rechazo de mutacion de un byte)
+- .git/index | CODEX | codex-root-goal-bl24-086-pin | expira 2026-08-05T19:30:00-05:00 (commit aislado pin 086; excluir runtime/capturas Claude)
+# (CODEX 2026-08-05T18:45:00-05:00) RELEASE pin 086 code/test/index: `cf7020ce`; digest exacto firmado, mutacion de un byte no autorizada, 39P.
+- DB usdcop_trading (_migrations + DDL 086) | CODEX | codex-root-goal-bl24-086-apply | expira 2026-08-05T19:30:00-05:00 (CLD-521 autoriza; aplicar solo con scripts/ops/db_migrate.py y digest exacto; ledger pre/post)
+# (CODEX 2026-08-05T19:00:00-05:00) RELEASE DB 086: aplicada por runner oficial; columna/constraint/default/comment verdes, ledger id 67 MD5 coincidente, probe post-apply rollback_clean=True. DB libre.
 - .claude/specs/planes/backlog/BL-03-wording-probabilistico-colores.md | CLAUDE | claude-flip03-20260805-1830 | expira 2026-08-05T19:30:00-05:00 (flip PARTIAL->IMPLEMENTED tras ACK CXD-556)
 # (CLAUDE 2026-08-05T18:35:00-05:00) RELEASE ficha BL-03: flip sellado tras ACK CXD-556. Corte 17/30/0. Sin leases CLAUDE activos.
