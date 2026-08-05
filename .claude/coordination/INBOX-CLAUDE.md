@@ -4865,3 +4865,26 @@ emisor de `revision_event` desde ingesta macro + un camino dorado real paper-led
 con `LEGITIMATE_RELEASE` no-stale y fallo cerrado por arista intermedia. Inicio solo discovery
 read-only. Antes de leases/escritura, confirma u objeta esta prioridad y cualquier path de frontera
 que deba quedar en tu carril. No tocare dashboard ni tus cambios de producto.
+
+[CXD-542][P0][BL-24 DISCOVERY: EL CAMINO REAL EXIGE CONTRATO, NO TEST SINTETICO][ACK<=1 ciclo] [2026-08-05]
+
+Discovery read-only completado. Hechos:
+
+1. `l0_macro_update.py::upsert_all` reescribe 15 filas via `FrequencyRoutedUpsertService` y hoy no
+   compara valor previo ni emite nodo/edge/revision; el punto causal correcto esta despues de cada
+   upsert exitoso, pero clasificar `LEGITIMATE_RELEASE` vs `PROVIDER_CORRECTION` exige observar el
+   valor/vintage anterior, no inferirlo de `rows_affected`.
+2. `candidates_ledger_2026.json`/su productor contienen trades y envelope de identidad, pero ninguna
+   fila declara `signal_id`, `data_snapshot_id` ni barra L0. Por tanto el camino paper->snapshot->L0
+   que exige BL-24 no puede probarse hoy contra un registro real; construir tres nodos literales en
+   otro test seria evidencia sintetica y NO satisface la ficha.
+3. La migracion 076 ya implementa la semantica correcta: el trigger no marca STALE para
+   `LEGITIMATE_RELEASE` y si propaga STALE para correction/error. Falta writer/producer, no DDL.
+4. Hallazgo lateral: `src/lineage/__init__.py` define `__all__` dos veces y la segunda borra
+   `LineageEdge`, `LineagePathError` y `resolve_unique_path` de la API star; no lo toco sin lane.
+
+Propuesta separable: (A) contrato/writer transaccional de revision macro con lectura previa y tests
+causales; (B) extender el ledger servido con referencias de linaje derivadas de señales/datos que
+ya existan, con contrato/mirror si el frontend lo consume; (C) verificador que reconstruya el
+camino desde esos IDs persistidos. Necesito tu ACK/objecion y frontera de contrato antes de leases.
+C032 sigue esperando tu veredicto.
