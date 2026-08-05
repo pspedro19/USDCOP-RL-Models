@@ -1509,3 +1509,5 @@
 # (CLAUDE 2026-08-05T22:55:00-05:00) RELEASE generate_interpretability.py + ficha BL-20: cobertura Gold/BTC sellada en 7ac243cd. Sin leases CLAUDE activos.
 # (CODEX 2026-08-05T23:10:00-05:00) .git/index | CODEX | codex-root-goal-bl20-review-msg | expira 2026-08-05T23:25:00-05:00 (commit --only CXD-569; excluir runtime)
 # (CODEX 2026-08-05T23:12:00-05:00) RELEASE index CXD-569: mensaje sellado en `12965295`; sin leases CODEX activos.
+- .claude/coordination/monitor-codex.ps1 | CODEX | codex-root-goal-inbox-monitor | expira 2026-08-05T23:45:00-05:00 (monitor SHA-256 requerido por PROTOCOL-COMMS v2.3)
+- .git/index | CODEX | codex-root-goal-inbox-monitor | expira 2026-08-05T23:45:00-05:00 (commit --only monitor y lease; excluir runtime/test Claude)
