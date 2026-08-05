@@ -225,3 +225,32 @@ def test_ungoverned_gdelt_csv_cannot_override_unavailable_sentiment(monkeypatch)
 
     assert result["avg_sentiment"] is None
     assert result["sentiment_unavailable_reason"] == "feature.status_stale"
+
+
+def test_tracked_backup_supplies_headlines_but_never_ungoverned_tone(
+    monkeypatch, tmp_path
+) -> None:
+    backup = tmp_path / "data/backups/features/news_articles.parquet"
+    backup.parent.mkdir(parents=True)
+    pd.DataFrame([{
+        "published_at": datetime(2026, 8, 5, 12, tzinfo=UTC),
+        "title": "BanRep holds the policy rate",
+        "source_id": "backup",
+        "sentiment_score": 0.99,
+    }]).to_parquet(backup, index=False)
+    monkeypatch.setattr("src.analysis.weekly_generator.PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(
+        psycopg2, "connect", lambda *args, **kwargs: (_ for _ in ()).throw(OSError("offline"))
+    )
+    generator = _generator()
+    generator._all_articles_cache = None
+    generator._feature_cutoff = datetime(2026, 8, 7, 18, tzinfo=UTC)
+
+    frame = generator._get_all_articles()
+
+    assert frame.iloc[0]["title"] == "BanRep holds the policy rate"
+    assert frame.iloc[0]["tone"] is None
+    assert (
+        frame.iloc[0]["sentiment_unavailable_reason"]
+        == "feature.backup_without_status"
+    )

@@ -1843,8 +1843,15 @@ class WeeklyAnalysisGenerator:
                         df["language"] = "es"
                     if "url" not in df.columns:
                         df["url"] = ""
-                    df["tone"] = df["sentiment_score"] if "sentiment_score" in df.columns else None
-                    cols = ["date", "title", "source", "language", "news_source", "url", "tone"]
+                    # The tracked backup preserves headlines, not a current availability
+                    # measurement. Numeric sentiment remains fail-closed until a governed
+                    # feature_status exists at the analysis cutoff.
+                    df["tone"] = None
+                    df["sentiment_unavailable_reason"] = "feature.backup_without_status"
+                    cols = [
+                        "date", "title", "source", "language", "news_source", "url",
+                        "tone", "sentiment_unavailable_reason",
+                    ]
                     frames.append(df[[c for c in cols if c in df.columns]])
                     logger.info(f"News backup parquet: loaded {len(df)} articles (bootstrap fallback)")
                 except Exception as e:
