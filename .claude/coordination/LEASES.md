@@ -1495,3 +1495,4 @@
 - tests/unit/test_paper_lineage_verifier.py | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (TDD del contrato ternario, arista ausente y ambiguedad)
 - .git/index | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (commit aislado; excluir runtime/capturas ajenas)
 - .claude/specs/planes/backlog/BL-20-admin-shap-interpretabilidad.md | CLAUDE | claude-bl20-20260805-2030 | expira 2026-08-05T22:00:00-05:00 (seccion "PARTIAL/pendiente" obsoleta: los dos puntos no negociables SI estan hechos, medido)
+- DB usdcop_trading (BL-24(C) probe LEGITIMATE_RELEASE rollback-only) | CODEX | codex-root-goal-bl24-c-db-probe | expira 2026-08-05T21:30:00-05:00 (insertar grafo sintetico solo dentro de transaccion; verificar historia VALID; ROLLBACK obligatorio y conteos pre/post)
