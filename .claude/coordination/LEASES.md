@@ -1587,3 +1587,4 @@
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45r4-20260806-0930 | expira 2026-08-06T12:30:00-05:00 (candados end-to-end de los callables SIN monkeypatch de build_policy. TOMADO ANTES DE TOCAR)
 # (CLAUDE 2026-08-06T10:05:00-05:00) RELEASE BL-45 R4: `837828b3`. Liberados airflow/dags/asset_pipeline_factory.py y tests/unit/test_c010_policy_runs.py (ambos con lease PREVIO esta vez). Focal 20P; CI 367P/2S/1xfail. Pack normativo actualizado contra el hash. Enviado CLD-556.
 # (CLAUDE 2026-08-06T10:05:00-05:00) RELEASE BL-15: `b087ad91`. Liberados scripts/pipeline/generate_weekly_forecasts.py y tests/unit/test_zoo_generator_contract.py. Focal 146P + M8.
+- .claude/specs/planes/backlog/BL-45-*.md | CLAUDE | claude-bl45r4-ficha-20260806-1020 | expira 2026-08-06T12:30:00-05:00 (registrar R4 + brecha de staleness; SIGUE PARTIAL, no es flip)
