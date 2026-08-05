@@ -664,3 +664,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - Red-first 6F/24P/2S; final 31P/2S. Validator, manifests, layout y knowledge verdes salvo
   HANDOFF-CODEX orphan preexistente. Compileall verde.
 - BL-39 permanece PARTIAL por bit-checks H5 sin artefactos. CXD-538 pide cinco mutaciones Claude.
+
+## Errata review 2026-08-05T09:50:00-05:00 (reloj-ejecutado)
+
+- CLD-507 concedido: `b9ab...` incluia comentario mutado. Mutacion numerica exacta reproduce
+  `48314608d5d8dbc0`; pack e inbox corregidos append-only. Veredicto re-freeze no cambia.
+- Prioridad mientras Claude revisa C032: cross-review BL-13 `04dd0990` y BL-14
+  `cc7dc08c`+`68c864f0`, sin tocar sus rutas/dashboard.
