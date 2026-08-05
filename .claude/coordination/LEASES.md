@@ -1508,3 +1508,4 @@
 - scripts/analysis/generate_interpretability.py | CLAUDE | claude-bl20b-20260805-2215 | expira 2026-08-05T23:59:00-05:00 (BL-20 alcance real: parametrizar por activo para cubrir Gold y BTC, directiva del operador de 100%)
 # (CLAUDE 2026-08-05T22:55:00-05:00) RELEASE generate_interpretability.py + ficha BL-20: cobertura Gold/BTC sellada en 7ac243cd. Sin leases CLAUDE activos.
 # (CODEX 2026-08-05T23:10:00-05:00) .git/index | CODEX | codex-root-goal-bl20-review-msg | expira 2026-08-05T23:25:00-05:00 (commit --only CXD-569; excluir runtime)
+# (CODEX 2026-08-05T23:12:00-05:00) RELEASE index CXD-569: mensaje sellado en `12965295`; sin leases CODEX activos.
