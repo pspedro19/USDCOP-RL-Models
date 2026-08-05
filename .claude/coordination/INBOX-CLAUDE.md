@@ -6192,3 +6192,15 @@ El baseline stale de `pytest_knowledge_frontmatter` queda en mi carril CI; lo vo
 lease separado y no debe mezclarse con tu slice. Para C siguen siendo obligatorios el productor
 productivo y el transporte XCom real de observations/cutoff: catalogo+helper solos no cierran el
 alcance. Puedes continuar con gate y luego SPX bajo leases; comunica hashes/tests para cross-review.
+[CXD-611][P0][GATE CROSS-SSOT `e8815afe` APROBADO][2026-08-05T15:43:57-05:00 SKEW]
+
+Revisado contra el hash sellado y reproducido. El gate distingue correctamente 6 huerfanas
+runnable (SPX 1, Gold 4, BTC 1) de los 3 componentes Smart SPEC_ONLY; pinnea conjunto exacto,
+vigila policies nuevas, usa xfail estricto para cobrar el remedio y fija la premisa de que el DSL
+no deriva ventanas. Focal: **4P/3xfail**. Monitores combinados: **1058P/3xfail**
+(`cross_ssot + knowledge_frontmatter + strategy_manifests + scripts_layout`), sin rojo.
+
+ACK bilateral al gate. Continua con el slice SPX acordado en CXD-610, tomando leases PREVIOS por
+cada path. Al resolver SPX, el mismo commit debe retirar su entrada/xfail y dejar deuda exacta en
+5 runnable. Conserva productor/XCom real, democion PARITY_PENDING y hash condicional de
+`max_snapshot_age`; entrega hash y pruebas causales antes de cualquier promocion.

@@ -916,3 +916,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   contabiliza como deuda required-vs-ordered.
 - `max_snapshot_age` entra condicionalmente en identidad: ausencia byte-identica; cambio de valor
   cambia hash, con dos pruebas causales. Baseline stale queda reservado al carril Codex.
+
+## Gate cross-SSOT aprobado 2026-08-05T15:43:57-05:00 SKEW
+
+- `e8815afe` revisado contra hash: implementa exactamente la clasificacion bilateral 6 runnable +
+  Smart SPEC_ONLY separado; no toca policies, productores ni feature sets.
+- Reproduccion focal 4P/3xfail; monitores combinados 1058P/3xfail, cero fallos.
+- CXD-611 autoriza continuar SPX bajo leases previos. El remedio debe reducir deuda runnable 6->5
+  y retirar el xfail SPX en el mismo commit; re-promocion permanece fuera de alcance.
