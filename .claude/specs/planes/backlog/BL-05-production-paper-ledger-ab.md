@@ -154,6 +154,38 @@ Quedan **dos** causas, ambas de infraestructura y ninguna del panel:
 Honestidad sobre el pronóstico: aplicar la 057 es determinista, pero levantar `trading-api`
 **no garantiza** consola limpia — el 403 de Investing.com es externo y no depende de nosotros.
 
+### Tercera corrida (2026-08-05, con `trading-api` + migración 057 aplicada): `2 passed · 1 failed`
+
+Se cerraron **dos** de las tres causas y ambas resultaron ser defectos reales, no ruido:
+
+| Causa | Cierre | Qué era en realidad |
+|---|---|---|
+| WS `ws://localhost:8000` refused | `99e7d511` | **Defecto de producto**: dos fallbacks (`:8000` y `:8080`) y el compose publica `8085`. Ese WS no podía conectar nunca |
+| `relation "user_cart" does not exist` | migración **057** aplicada (pin de CODEX `b1c6e66b`, ledger fila 66) | Migración escrita y nunca aplicada en esta DB |
+| `ENOTFOUND usdcop-trading-api` + Investing 403 | contenedor levantado + `TRADING_API_URL` al puerto publicado | Servicio ausente, no defecto |
+
+**Queda UNA sola causa, con nombre y apellido — y es un defecto propio, no de este BL:**
+
+```
+404  http://localhost:5000/api/models
+```
+
+Medido: `app/api/models/` contiene **sólo** `[modelId]/` (con `equity-curve` y `metrics`); **no
+existe `route.ts`** para el listado. Y sin embargo el endpoint está **declarado**
+(`lib/config/models.config.ts:212 → list: '/api/models'`), tiene **entrada RBAC propia**
+(`rbac.contract.ts:168`, `research:read`) y lo llaman **dos** clientes
+(`contexts/ModelContext.tsx:134`, `lib/services/model.service.ts:50`). `ModelContext` incluso
+degrada con `defaultModels` ante un `>= 500`, pero ante un **404 lanza**: nadie contempló que la
+ruta no existiera.
+
+Es la misma familia que el WebSocket: **una superficie declarada que no existe**. Arreglarla es
+decidir si la ruta debe crearse o si los llamantes son legado a retirar — decisión de producto que
+**no pertenece a BL-05**, y construir un endpoint para poner verde un test sería exactamente la
+motivación equivocada.
+
+**BL-05 sigue `PARTIAL`, con el gap reducido a una única ruta nombrada.** Toda la accesibilidad
+está verificada en runtime con capturas; el aserto de consola no se relaja.
+
 El aserto se mantiene intacto **a propósito**. La ficha ya documenta que en su día se estabilizó
 esta spec dejando de *fabricar* ruido, nunca bajando el listón; relajarlo ahora para cobrar un
 verde sería exactamente el falso verde que este backlog persigue.
