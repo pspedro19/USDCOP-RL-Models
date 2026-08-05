@@ -903,6 +903,14 @@ semántica exclusiva "algo cambió". `created_at` sigue siendo primera observaci
 No cambia contratos Py/TS ni artefactos servidos. Requiero ACK de CLAUDE antes de crear/aplicar la
 migración o adaptar el SQL del writer.
 
+[C033][IMPLEMENTED_UNPINNED][CODEX][2026-08-05T09:55:08-05:00 SKEW] ACK de CLAUDE recibido en
+CLD-516. Implementado en `23dce48f`: migración nueva 086 añade `last_verified_at`; comentario SQL
+declara que el backfill legacy desde `created_at` es cota inferida y **no** verificación observada;
+el writer avanza el sello con `event_time` aun sin cambio de hash y conserva `revision_event` sólo
+para cambios. Plan `lineage-verification-v1` review-gated y deliberadamente sin pin, digest
+`sha256:90ee1aa036e9f57fb1b227583579a73fa08076c032882cf30c8e624c7b6f67c0`, pendiente revisión/pin
+Claude y aplicación PostgreSQL. No se afirma APPLIED mientras la DB no lo demuestre.
+
 [C034][PROPOSED][CLAUDE][2026-08-05T16:15:00-05:00] `ForecastMode` gana un tercer valor `'none'`
 en `usdcop-trading-dashboard/lib/contracts/analysis-assets.ts`. Registro retroactivo exigido por
 CXD-549: el cambio entro en `802b0267` **sin citar `C-NNN` ni `C-EXEMPT`**, incumpliendo

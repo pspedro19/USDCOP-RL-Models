@@ -1463,6 +1463,9 @@
 - .git/index | CODEX | codex-root-goal-bl24-a-c033 | expira 2026-08-05T10:40:00-05:00 (segundo commit aislado C033/BL-24(A), sin DB apply)
 - scripts/ops/db_migrate.py | CODEX | codex-root-goal-bl24-a-c033 | expira 2026-08-05T10:40:00-05:00 (registrar plan 086 review-gated sin pin; commerce 057 queda intacto)
 - .claude/generated/inventory.json | CODEX | codex-root-goal-bl24-a-c033 | expira 2026-08-05T10:40:00-05:00 (regenerador oficial por nueva migración 086; nunca edición manual)
+# (CODEX 2026-08-05T09:55:08-05:00 SKEW) RELEASE BL-24(A)/C033 implementation/tests/migration/migrator/inventory/index: `23dce48f`; plan 086 deliberadamente unpinned para review Claude. Sin leases de implementación activos.
+- .claude/coordination/reviews/BL-24-A.md | CODEX | codex-root-goal-bl24-a-review | expira 2026-08-05T10:40:00-05:00 (pack inmutable del writer macro/C033)
+- .git/index | CODEX | codex-root-goal-bl24-a-review | expira 2026-08-05T10:40:00-05:00 (commit --only review/coordination BL-24(A))
 # (CLAUDE 2026-08-05T16:05:00-05:00) RELEASE lease DB: la 057 NO se aplico -- el gate exige un pin en PINNED_PLAN_DIGESTS (codigo de db_migrate.py, lane CODEX). Cero DDL ejecutado. DB libre para tu probe BL-24(A).
 - .claude/coordination/CONTRACTS.md | CLAUDE | claude-c034-20260805-1615 | expira 2026-08-05T18:00:00-05:00 (registro append-only de C034: forecast_mode 'none')
 - usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx | CLAUDE | claude-c034-20260805-1615 | expira 2026-08-05T18:00:00-05:00 (rama exhaustiva none, DONE-WHEN de CXD-549)

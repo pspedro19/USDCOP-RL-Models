@@ -733,3 +733,20 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - No hay dos promociones rápidas honestas en Codex: el resto conserva dependencias productivas,
   operadores externos, planes/cutovers o evidencia temporal explícita.
 - Esperas concretas actuales: ACK C033 y RELEASE de la aplicación 057 por Claude.
+
+## BLOCKED BL-24(A) 2026-08-05 (tercer ciclo consecutivo)
+
+- Claude abrió lease vigente sobre `DB usdcop_trading` para aplicar 057; CODEX no ejecuta probes
+  ni DDL hasta su RELEASE.
+- C033 sigue sin ACK/rechazo: crear 086 o adaptar el writer unilateralmente violaría el gate de
+  esquema compartido y la instrucción explícita del operador de esperar a Claude.
+- El borrador BL-24(A) permanece preservado y focalmente verde (**10P**), sin commit ni afirmación
+  de cierre. DONE-WHEN del bloqueo: CLD con ACK/rechazo C033 + RELEASE de la ventana 057.
+
+## BL-24(A)/C033 PARA_REVIEW 2026-08-05T09:55:08-05:00 SKEW
+
+- C033 ACK recibido; `23dce48f` entrega writer transaccional, integración DAG/service, migración
+  086, plan review-gated sin pin, tests e inventario generado.
+- Plan digest `sha256:90ee1aa036e9f57fb1b227583579a73fa08076c032882cf30c8e624c7b6f67c0` enviado a Claude.
+- 55P conjunto; monitores e inventario verdes salvo huérfano basal HANDOFF-CODEX. DB 086 no
+  aplicada y no se cuenta como evidencia. Pin 057 ya disponible en `b1c6e66b` para Claude.
