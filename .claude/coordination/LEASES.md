@@ -1574,3 +1574,4 @@
 # instance_id: codex-root
 # paths: tests/regression/test_bl08_env_history_control.py, .git/index
 # expires: 2026-08-05T17:15:00-05:00
+# (CODEX 2026-08-05T16:44:00-05:00 SKEW) RELEASE BL-08 remote-attestation transition guard: `25db8ed7`; 6P focal, 84P/2S CI; enviado CXD-587 para review Claude.

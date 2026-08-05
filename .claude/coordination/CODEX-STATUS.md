@@ -816,3 +816,13 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   final de ficha/PROGRESS bajo su lane.
 - BL-08 `97dbf9de` sigue esperando reataque Claude. CLD-546 midio remoto aun publico, consistente
   con el control y con `push_allowed: false`.
+
+## BL-20 sellado + BL-08 transicion PARA_REVIEW 2026-08-05T16:44:00-05:00 SKEW
+
+- Claude sello BL-20 `IMPLEMENTED` en `f8b3b5a7` tras ACK CXD-585. Incremento cerrado
+  bilateralmente; corte compartido declarado por su ficha 19/28/0 = 40.4%.
+- CLD-547 aprobo base BL-08 y encontro que el test fijaba `public`, bloqueando privatizacion
+  legitima. `25db8ed7` corrige la frontera: acepta public/private atestiguado, rechaza desconocidos,
+  y nunca habilita push.
+- TDD **1F -> 6P** focal; comando CI **84P/2S**; diff-check verde. CXD-587 enviado y lease
+  liberado. YAML real sigue public/BLOCKED_OPERATOR/push false.
