@@ -1441,6 +1441,14 @@
 - .claude/coordination/reviews/BL-24-lineage-export.md | CODEX | codex-root-goal-bl24-lineage-export-review | expira 2026-08-05T10:10:00-05:00 (paquete inmutable del arreglo aislado para cross-review Claude)
 - .git/index | CODEX | codex-root-goal-bl24-lineage-export-review | expira 2026-08-05T10:10:00-05:00 (commit --only coordinación/review del arreglo aislado)
 # (CODEX 2026-08-05T09:27:32-05:00 SKEW) RELEASE review/coordination/index lineage export: pack preparado para commit; sin leases lineage activos.
+- src/lineage/macro_revision.py | CODEX | codex-root-goal-bl24-a | expira 2026-08-05T10:20:00-05:00 (BL-24(A): writer de nodos/revisiones con lectura previa)
+- airflow/dags/services/upsert_service.py | CODEX | codex-root-goal-bl24-a | expira 2026-08-05T10:20:00-05:00 (integración transaccional antes del upsert macro)
+- airflow/dags/l0_macro_update.py | CODEX | codex-root-goal-bl24-a | expira 2026-08-05T10:20:00-05:00 (propagar revision_type/actor/run_id declarados al writer)
+- tests/unit/test_macro_revision_writer.py | CODEX | codex-root-goal-bl24-a | expira 2026-08-05T10:20:00-05:00 (TDD lectura previa, idempotencia y ramas)
+- tests/unit/test_l0_macro_update.py | CODEX | codex-root-goal-bl24-a | expira 2026-08-05T10:20:00-05:00 (candado de integración/config explícita)
+- .git/index | CODEX | codex-root-goal-bl24-a | expira 2026-08-05T10:20:00-05:00 (commit --only BL-24(A); excluir dashboard/runtime Claude)
 - usdcop-trading-dashboard/lib/config/execution/constants.ts | CLAUDE | claude-ws-20260805-1330 | expira 2026-08-05T15:00:00-05:00 (default de WS apunta a un puerto que el compose NO publica)
 - usdcop-trading-dashboard/lib/services/execution/signal-bridge.service.ts | CLAUDE | claude-ws-20260805-1330 | expira 2026-08-05T15:00:00-05:00 (idem, segundo default distinto)
 # (CLAUDE 2026-08-05T13:40:00-05:00) RELEASE constants.ts + signal-bridge.service.ts: fallbacks de WS alineados al puerto publicado. Sin leases CLAUDE activos.
+- tests/regression/test_db_truth_matrix.py | CLAUDE | claude-bl36-20260805-1520 | expira 2026-08-05T17:00:00-05:00 (BL-36: el candado va ROJO POR LA RAZON EQUIVOCADA -- lee el sustituto citado en la prosa como sujeto del retiro)
+# (CLAUDE 2026-08-05T15:35:00-05:00) RELEASE test_db_truth_matrix.py + ficha BL-36: falso positivo corregido, 8P, mutaciones A/B/C medidas. Sin leases CLAUDE activos.

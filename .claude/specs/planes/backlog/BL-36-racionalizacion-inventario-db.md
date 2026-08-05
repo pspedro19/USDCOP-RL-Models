@@ -109,12 +109,43 @@ muta:    .claude/specs/platform/db-truth-matrix.md — invertir la decisión sob
          a  "AUTORITATIVA (escritor único) / 0 ficheros"
          — o sea, una afirmación de autoría exclusiva sobre un atributo que YA tiene cinco
          escritores medidos, más un conteo de referencias errado en siete
-espera:  rojo en los muros de conteo medido y de escritor único
+espera:  **3 failed, 5 passed** — medido y registrado el 2026-08-05; caen los tres muros
          (test_prose_reference_counts_match_the_measured_inventory,
           test_no_table_is_declared_sole_writer_of_an_attribute_it_shares,
           test_deprecated_tables_disclose_the_readers_that_still_exist)
-         <conteo exacto de failed sin registrar — pendiente de re-ejecutar>
+
+muta-2:  borrar SOLO `7 ficheros referencian \`bi.fact_forecasts\`` de esa fila
+         (el retiro se propone sin decir a quién rompe)
+espera-2: **1 failed, 7 passed** — únicamente
+          test_deprecated_tables_disclose_the_readers_that_still_exist
+
+control: citar un sustituto CON lectores vivos en la prosa de la decisión
+         (`autoridad = \`control.metric_event\` y \`bi.fact_forecasts\``)
+espera-3: **8 passed** — citar a quién se CONSERVA no es proponer su retiro
 ```
+
+**El candado iba ROJO POR LA RAZÓN EQUIVOCADA, y eso corroe igual que un verde falso
+(2026-08-05).** Esta ficha declaraba `verde: 8 passed`; la corrida real daba **1 failed**:
+
+```
+L185: propone Eliminar para ['control.metric_event'] pero la fila no declara ningún
+      conteo de referencias; lectores reales: control.metric_event <-
+      ['airflow/dags/control_system_health.py']
+```
+
+La fila acusada es `| metrics.model_performance | … | Eliminar; autoridad =
+control.metric_event |` — o sea, propone eliminar `metrics.model_performance` y cita
+`control.metric_event` como la autoridad que **se conserva**. El test recogía los backticks
+de **todas** las celdas, así que trataba al sustituto como si fuera el objeto del retiro.
+
+Por qué apareció ahora y no en julio: el test sólo se queja si la tabla tiene **lectores
+vivos**, y `control.metric_event` ganó el suyo el 2026-08-05 (`control_system_health.py`,
+el consumidor de C031 que entregó CODEX). O sea: **un cambio correcto y ajeno puso rojo un
+candado mío por un defecto de parsing mío.** Arreglado tomando el sujeto de la **primera
+columna**, nunca de la prosa; el control de arriba fija la regresión para que no vuelva.
+
+Un rojo por la razón equivocada es tan caro como un verde por la razón equivocada: enseña
+a ignorar el candado, y el día que grite de verdad ya nadie lo mira.
 
 **Historial honesto**: hasta el 2026-07-28 este BL tenía **CERO cobertura**. Se podía invertir
 cualquier decisión de la matriz de verdad —incluido declarar dos escritores para el mismo
