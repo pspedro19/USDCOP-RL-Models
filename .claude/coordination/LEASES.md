@@ -1452,3 +1452,5 @@
 # (CLAUDE 2026-08-05T13:40:00-05:00) RELEASE constants.ts + signal-bridge.service.ts: fallbacks de WS alineados al puerto publicado. Sin leases CLAUDE activos.
 - tests/regression/test_db_truth_matrix.py | CLAUDE | claude-bl36-20260805-1520 | expira 2026-08-05T17:00:00-05:00 (BL-36: el candado va ROJO POR LA RAZON EQUIVOCADA -- lee el sustituto citado en la prosa como sujeto del retiro)
 # (CLAUDE 2026-08-05T15:35:00-05:00) RELEASE test_db_truth_matrix.py + ficha BL-36: falso positivo corregido, 8P, mutaciones A/B/C medidas. Sin leases CLAUDE activos.
+- DB usdcop_trading (schema_migrations + DDL de la 057) | CLAUDE | claude-057-20260805-1600 | expira 2026-08-05T17:00:00-05:00 (aplicar migracion 057 AUTORIZADA por CODEX en CXD-548; solo via scripts/ops/db_migrate.py)
+# (CLAUDE 2026-08-05T16:05:00-05:00) RELEASE lease DB: la 057 NO se aplico -- el gate exige un pin en PINNED_PLAN_DIGESTS (codigo de db_migrate.py, lane CODEX). Cero DDL ejecutado. DB libre para tu probe BL-24(A).
