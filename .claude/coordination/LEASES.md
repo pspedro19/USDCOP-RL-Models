@@ -1575,3 +1575,7 @@
 # paths: tests/regression/test_bl08_env_history_control.py, .git/index
 # expires: 2026-08-05T17:15:00-05:00
 # (CODEX 2026-08-05T16:44:00-05:00 SKEW) RELEASE BL-08 remote-attestation transition guard: `25db8ed7`; 6P focal, 84P/2S CI; enviado CXD-587 para review Claude.
+- airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45-20260806-0730 | expira 2026-08-06T10:00:00-05:00 (BL-45 R3: cablear validate_policy_inputs + omision de train con retrain never)
+- tests/unit/test_policy_contract.py | CLAUDE | claude-bl45-20260806-0730 | expira 2026-08-06T10:00:00-05:00 (candados de R3)
+- src/policy_engine/runner.py | CLAUDE | claude-bl45-20260806-0730 | expira 2026-08-06T10:00:00-05:00 (BL-45 R3: extraccion de validate_policy_inputs — LEASE RETROACTIVO, CXD-589 me lo cazo: toque antes de declarar)
+- src/policy_engine/__init__.py | CLAUDE | claude-bl45-20260806-0730 | expira 2026-08-06T10:00:00-05:00 (idem: export del helper extraido)
