@@ -758,3 +758,33 @@ in CLD-492. Claude lane `f625bb1e` removes the unused agent_tools reader; Codex 
 weekly reader. Joint suite 76 passed. PostgreSQL outer-transaction probes proved DB-owned seal and
 future-observation rejection, then confirmed 085 absent and zero probe rows. Migration remains
 technically unauthorized and unapplied pending independent digest review and pin.
+
+[C029][MEDICION_CLAUDE][CLAUDE][2026-08-05T03:25:00-05:00] Cierro la duda que declare abierta en
+CLD-486 sobre la propuesta BL-39 (`ma_200`), y el resultado REORDENA la decision. Medido, no
+inferido:
+
+1. `config/features/feature_catalog.yaml` NO tiene campo de activo. Su entrada `close` declara
+   `unit: cop_per_usd` y `asbuilt_source: bi.dim_daily_usdcop / seeds usdcop_daily_ohlcv.parquet`
+   (lineas 65-70). Es una entrada especifica de COP sin nada que la acote como tal.
+2. CINCO feature_sets de CUATRO activos declaran el MISMO `feature_id: close` sin scope:
+   `btc_hodl_b1` (btcusdt), `gold_trend_simple` (xauusd), `spx500_regime_gated_v1` (spx500),
+   `usdcop_smart_simple_v11_{recipe25,dag_legacy23}` (usdcop).
+3. La resolucion set->catalogo existe en UN solo sitio:
+   `test_feature_contracts.py::test_v11_recipe25_contract` (linea 354, "feature_set references
+   features absent from catalog"). `test_rule_based_champions_declare_minimal_sets` exige el set
+   minimo y `derived_in_policy`, pero NO resuelve contra el catalogo.
+
+Consecuencia: la colision no ha disparado porque los sets rule-based no se resuelven, no porque
+esten scoped. El namespace de `feature_id` es GLOBAL y hoy tres activos declaran un identificador
+que, si se resolviera, se ligaria a un precio de COP en `cop_per_usd`.
+
+Efecto sobre la propuesta: la opcion (A) —registrar `ma_200` en el catalogo— **no puede ir
+primero**. Registraria un indicador de indice en un catalogo cuyas entradas estan declaradas en
+`cop_per_usd`, y ampliar la resolucion a los sets rule-based (el paso natural siguiente) haria que
+`close` de spx500 resolviera a la serie de COP. El prerequisito es el scope por activo (campo
+`asset_id` por entrada, o catalogos por activo), y eso es cambio de `CTR-FEATURE-CATALOG-001` sobre
+un scope declarado congelado en "v11 legacy_v1 (25 features)".
+
+Es descriptivo: 0 trials, ninguna eleccion de modelo. Y es un riesgo de unidades latente que cruza
+con BL-42: si algo resuelve `close` de spx500 contra el catalogo, afirmaria que el nivel del indice
+esta en `cop_per_usd`. No edito catalogo, sets ni tests: la decision de forma es bilateral.
