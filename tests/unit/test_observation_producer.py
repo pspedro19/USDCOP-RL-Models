@@ -322,7 +322,12 @@ def test_a_live_status_cannot_be_backed_by_reconstructed_evidence(spec, bars) ->
     # PARITY_GREEN reclama investigación validada: la evidencia reconstruida basta.
     assert_observations_support_status(obs, migration_status="PARITY_GREEN")
 
-    with pytest.raises(ObservationError, match="RECONSTRUIDO"):
+    # Se afirma sobre "no sostiene una via viva" y no sobre la palabra RECONSTRUIDO:
+    # desde C2d el mensaje habla del techo MINIMO y de quien lo impone, porque el
+    # gate ya no compara contra una constante sino que pregunta al techo por cada
+    # sello. Anclar un candado a una palabra concreta del mensaje lo vuelve fragil
+    # ante mejoras del propio mensaje.
+    with pytest.raises(ObservationError, match="no sostiene una via viva"):
         assert_observations_support_status(obs, migration_status="CUTOVER")
 
 
@@ -338,3 +343,66 @@ def test_an_unmapped_migration_status_is_rejected_not_waved_through(spec, bars) 
     obs = build_observations(spec, bars, decision_cutoff=CUTOFF)
     with pytest.raises(ObservationError, match="sin reclamo declarado"):
         assert_observations_support_status(obs, migration_status="ESTADO_INVENTADO")
+
+
+def test_an_invented_provenance_cannot_sail_through_a_live_status() -> None:
+    """El bypass que encontró CODEX (CXD-622), cerrado y con candado.
+
+    El gate comparaba contra la constante reconstruida
+    (`if provenance == PROVENANCE_RECONSTRUCTED`), así que **cualquier sello
+    inventado atravesaba `CUTOVER`**: bastaba escribir `provenance:
+    "vintage_proveedor"` y la señal salía. Reproducido: devolvía `None`.
+
+    Lo hiriente es que `status_ceiling` ya era fail-closed ante un sello desconocido
+    —escrita en C2b— y el gate, que nació para APLICAR el techo, no la llamaba.
+    Tercera vez en esta serie que escribo el mecanismo y no lo consulto. Ahora la
+    autoridad es la función: una segunda forma de decidir lo mismo es una segunda
+    forma de equivocarse.
+
+    Rojo con: volver a comparar contra la constante en vez de preguntar al techo.
+    """
+    from src.features.observations import assert_observations_support_status
+
+    inventado = {"close": {"value": 1.0, "available_at": "2026-07-28T20:00:00+00:00",
+                           "provenance": "vintage_proveedor"}}
+    # Ni siquiera para el estatus benigno: un sello que nadie registró no se juzga.
+    for estado in ("CUTOVER", "PARITY_GREEN"):
+        with pytest.raises(ObservationError, match="sin techo declarado"):
+            assert_observations_support_status(inventado, migration_status=estado)
+
+
+def test_mixed_provenances_take_the_WORST_ceiling_not_the_best(monkeypatch) -> None:
+    """Con sellos mezclados manda el PEOR techo.
+
+    Sin esto, una feature bien sellada legitimaría a las demás: bastaría con que UNA
+    tuviera vintage real para que el conjunto —reconstruidas incluidas— pasara a
+    `production`. El techo de un snapshot es el de su evidencia más débil, igual que
+    su frescura es la de su observación más vieja (CXD-603).
+
+    El segundo sello se inyecta en la AUTORIDAD por monkeypatch en vez de añadir una
+    constante `PROVENANCE_OBSERVED` al código productivo: hoy nada produce vintage
+    real, y meter una constante que nadie produce sería otra vez un mecanismo sin
+    llamador — justo el patrón que este fichero lleva tres rondas corrigiendo.
+    """
+    import src.features.observations as mod
+
+    real = mod.status_ceiling
+
+    def _con_vintage(prov: str) -> str:
+        return "production" if prov == "vintage_de_prueba" else real(prov)
+
+    monkeypatch.setattr(mod, "status_ceiling", _con_vintage)
+
+    mezcla = {
+        "close": {"value": 1.0, "available_at": "2026-07-28T20:00:00+00:00",
+                  "provenance": "vintage_de_prueba"},          # techo production
+        "ma_200": {"value": 1.0, "available_at": "2026-07-28T20:00:00+00:00",
+                   "provenance": PROVENANCE_RECONSTRUCTED},    # techo research_validated
+    }
+    # Sólo-vintage sí sostiene una vía viva…
+    mod.assert_observations_support_status(
+        {"close": mezcla["close"]}, migration_status="CUTOVER"
+    )
+    # …pero en cuanto entra una reconstruida, el conjunto no.
+    with pytest.raises(ObservationError, match="MINIMO"):
+        mod.assert_observations_support_status(mezcla, migration_status="CUTOVER")

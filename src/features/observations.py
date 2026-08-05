@@ -255,6 +255,11 @@ def build_observations(
     return observations
 
 
+#: Orden de exigencia de los estatus. Hace falta un ORDEN, no un conjunto, para poder
+#: hablar del techo MINIMO cuando conviven sellos distintos: sin orden, "el más bajo"
+#: no significa nada y la mezcla acabaría heredando el mejor.
+STATUS_RANK = {"research_validated": 1, "production": 2, "promoted": 2, "live": 2}
+
 #: Qué estatus RECLAMA cada `migration.status`. `CUTOVER` es el único que significa
 #: "esta ES la vía viva" —el legacy ya está apagado—, así que reclama `production`.
 #: `PARITY_GREEN` significa "reproduce al legacy", que es investigación validada.
@@ -295,18 +300,39 @@ def assert_observations_support_status(
             f"que decir qué nivel de evidencia reclama"
         )
     reclamado = STATUS_CLAIMED_BY_MIGRATION[migration_status]
-    if reclamado not in FORBIDDEN_STATUSES_RECONSTRUCTED:
-        return
-    culpables = {
-        fid: o.get("provenance")
-        for fid, o in observations.items()
-        if o.get("provenance") == PROVENANCE_RECONSTRUCTED
-    }
-    if culpables:
+    if reclamado not in STATUS_RANK:
         raise ObservationError(
-            f"migration.status={migration_status} reclama {reclamado!r}, pero "
-            f"{sorted(culpables)} llegan con sello RECONSTRUIDO "
-            f"({PROVENANCE_RECONSTRUCTED}). El techo de ese sello es "
-            f"{MAX_STATUS_RECONSTRUCTED}: hasta que exista `available_at` OBSERVADO, "
-            f"esta evidencia no sostiene una vía viva"
+            f"el estatus reclamado {reclamado!r} no tiene rango declarado; sin orden "
+            f"no se puede decidir si la evidencia lo sostiene"
+        )
+
+    # Se pregunta a la AUTORIDAD DEL TECHO por CADA sello, en vez de comparar contra
+    # la constante reconstruida. La version anterior hacia
+    # `if o["provenance"] == PROVENANCE_RECONSTRUCTED`, asi que **cualquier sello
+    # inventado atravesaba CUTOVER**: bastaba escribir `provenance:
+    # "vintage_proveedor"` y la señal salia (CXD-622, reproducido: devolvia None).
+    #
+    # Lo hiriente es que `status_ceiling` YA era fail-closed ante un sello
+    # desconocido — escrita en C2b— y este gate, que nacio para APLICAR el techo,
+    # **no la llamaba**. Tercera vez en esta serie que escribo el mecanismo y no lo
+    # consulto (`window`, `status_ceiling`, y ahora el gate del propio
+    # `status_ceiling`). Por eso ahora la autoridad es la funcion y no una
+    # comparacion local: una segunda forma de decidir lo mismo es una segunda forma
+    # de equivocarse.
+    techos = {fid: status_ceiling(o.get("provenance")) for fid, o in observations.items()}
+    desconocidos = [t for t in techos.values() if t not in STATUS_RANK]
+    if desconocidos:
+        raise ObservationError(f"techos sin rango declarado: {sorted(set(desconocidos))}")
+
+    # MINIMO, no maximo: con sellos mezclados manda el peor. Heredar el mejor seria
+    # dejar que una feature bien sellada legitime a las demas.
+    fid_minimo = min(techos, key=lambda k: STATUS_RANK[techos[k]])
+    techo_min = techos[fid_minimo]
+    if STATUS_RANK[reclamado] > STATUS_RANK[techo_min]:
+        raise ObservationError(
+            f"migration.status={migration_status} reclama {reclamado!r}, pero el techo "
+            f"MINIMO de la evidencia es {techo_min!r} (lo impone "
+            f"{fid_minimo!r}, provenance={observations[fid_minimo].get('provenance')!r}). "
+            f"Techos por feature: {techos}. Hasta que exista `available_at` OBSERVADO, "
+            f"esta evidencia no sostiene una via viva"
         )
