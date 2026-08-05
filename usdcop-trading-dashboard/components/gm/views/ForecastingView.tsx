@@ -1028,7 +1028,13 @@ export function ForecastingView() {
   // ── estado en la URL (querystring) ──
   const asset = resolveAnalysisAsset(sp.get('asset'));
   const assetMeta = ANALYSIS_ASSETS.find((a) => a.asset_id === asset) ?? ANALYSIS_ASSETS[0];
-  // Model-zoo assets (USD/COP + BTC) share the 9-model ML surface; Gold = weekly inference.
+  // Model-zoo assets share the 9-model ML surface. The branch is `forecast_mode`, never a
+  // hardcoded asset list — and the comment used to name USD/COP + BTC and call Gold
+  // "weekly inference" while the very next line sent Gold to the zoo (analysis-assets.ts
+  // declares xauusd as model_zoo). Measured 2026-08-05: xauusd and btcusdt each publish
+  // 459 zoo artifacts (bi_dashboard_unified.csv + per-model PNGs), so the DATA agrees with
+  // `forecast_mode` and the prose was the thing that was wrong. Assets also carrying
+  // weekly_inference_*.json keep it as a secondary surface, not as this branch's input.
   const isModelZoo = assetMeta.forecast_mode === 'model_zoo';
   // USD/COP keeps root paths (470 files unmoved); other zoo assets are namespaced by asset_id.
   const csvPath = isModelZoo
@@ -1109,7 +1115,11 @@ export function ForecastingView() {
     : (index.data?.primary_strategy_id || strategies[0]?.strategy_id || '');
 
   // ── opciones de los 4 dropdowns del prototipo ──
-  const assetOptions = ANALYSIS_ASSETS.map((a) => ({ value: a.asset_id, label: a.display_name }));
+  // El selector sólo ofrece activos con superficie publicada: `forecast_mode: 'none'` fuera.
+  // spx500 estaba declarado `model_zoo` con CERO artefactos y su csvPath apuntaba a un fichero
+  // inexistente (medido 2026-08-05). Se filtra AQUÍ y no con un export ya filtrado del contrato
+  // a propósito: ese módulo lo sustituye `vi.mock` entero en los tests.
+  const assetOptions = ANALYSIS_ASSETS.filter((a) => a.forecast_mode !== 'none').map((a) => ({ value: a.asset_id, label: a.display_name }));
 
   const periodOptions = isModelZoo
     ? [
