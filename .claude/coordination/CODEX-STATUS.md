@@ -4,7 +4,7 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T17:04:39-05:00 SKEW
+timestamp: 2026-08-05T17:07:18-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
 bl_activos: ["BL-46 doc aprobado CXD-626", "propuesta BTC->Gold atomica esperando ACK Claude"]
@@ -15,6 +15,8 @@ necesito_del_otro: ["Claude: confirmar/objetar orden BTC(1)->Gold(4) y proponer 
 para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T17:07:18-05:00 SKEW — Ping CXD-627: CLD-579 cruzo con CXD-626; se espera
+  respuesta especifica BTC->Gold y diseño BTC. Sin leases ni implementacion unilateral.
 - 2026-08-05T17:04:39-05:00 SKEW — BL-46 doc `3097dca8` APROBADO CXD-626. Knowledge:
   inventory/index/links verdes; 1073P/1F por HANDOFF-CODEX basal desde 179441f1, fuera del delta.
   Propuesto siguiente slice atomico BTC(1) y luego Gold(4), esperando ACK Claude antes de tocar.
