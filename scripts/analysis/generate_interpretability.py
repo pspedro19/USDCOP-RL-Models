@@ -71,6 +71,41 @@ OUT_ROOT = REPO / "data" / "interpretability"  # FUERA de public/ (CXD-040: publ
 HORIZON = 5          # mismo H y purga que meta01_zoo_ledger.py
 ZOO_LINEAR_MODELS = ("ridge", "bayesian_ridge", "ard")   # SHAP lineal cerrado (coef_)
 ZOO_TREE_MODELS = ("xgboost", "lightgbm", "catboost")   # TreeSHAP nativo exacto
+
+# ── Cobertura por ACTIVO (BL-20; alcance original restaurado por el operador 2026-08-05) ──
+# El generador nacio cableado a `usdcop`: `_write(...)` YA recibia `asset`, pero los siete
+# call-sites pasaban el literal. Gold y BTC declaran su PROPIO zoo de 9 modelos en
+# `config/assets/*_forecasting.yaml`, con otro vocabulario para los arboles
+# (`xgboost_pure` en vez de `xgboost`). `usdcop` sigue siendo el defecto: sin `--asset`
+# el comportamiento es byte a byte el de antes.
+ASSET_CONFIGS: dict[str, str | None] = {
+    "usdcop": None,                                   # config raiz (forecasting_ssot.yaml)
+    "xauusd": "config/assets/xauusd_forecasting.yaml",
+    "btcusdt": "config/assets/btcusdt_forecasting.yaml",
+}
+
+
+def _models_for_asset(asset: str, kind: str) -> tuple[str, ...]:
+    """`model_id`s DECLARADOS por el activo, jamas una lista fija.
+
+    Inventar un nombre aqui produciria un artefacto que dice explicar un modelo que ese
+    activo no tiene — exactamente la clase de afirmacion falsa que BL-20 existe para
+    impedir. Los `hybrid_*` quedan FUERA de la ruta de arbol a proposito: mezclan lineal
+    y arbol, y TreeSHAP no es correcto sobre ellos (decision declarada en la ficha).
+    """
+    if asset == "usdcop":
+        return ZOO_LINEAR_MODELS if kind == "linear" else ZOO_TREE_MODELS
+    cfg_rel = ASSET_CONFIGS.get(asset)
+    if cfg_rel is None:
+        raise ValueError(f"activo sin config de forecasting declarada: {asset!r}")
+    import yaml
+    declared = list((yaml.safe_load((REPO / cfg_rel).read_text(encoding="utf-8"))
+                     .get("models") or {}).keys())
+    if kind == "linear":
+        return tuple(m for m in declared if m in ZOO_LINEAR_MODELS)
+    return tuple(m for m in declared if m.endswith("_pure"))
+
+
 MIN_TRAIN = 400      # misma guarda que meta01_zoo_ledger.py (años con menos train se SALTAN)
 
 # Header OBLIGATORIO en cada JSON (BL-20 / A.7).
@@ -569,14 +604,16 @@ def _linear_contributions(mdl, Z: np.ndarray) -> tuple[np.ndarray, float, np.nda
 # (a) Zoo COP — SHAP lineal cerrado (ridge / bayesian_ridge / ard), SOLO test-folds
 # ---------------------------------------------------------------------------
 
-def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS,
-                        *, supersede: bool = False) -> list[Path]:
+def generate_zoo_linear(model_ids: tuple[str, ...] | None = None,
+                        *, supersede: bool = False, asset: str = "usdcop") -> list[Path]:
     from sklearn.preprocessing import StandardScaler
     from src.forecasting.models.factory import ModelFactory
     from src.forecasting.ssot_config import ForecastingSSOTConfig
     from src.forecasting.dataset_loader import ForecastingDatasetLoader
 
-    cfg = ForecastingSSOTConfig.load()
+    if model_ids is None:
+        model_ids = _models_for_asset(asset, "linear")
+    cfg = ForecastingSSOTConfig.load(ASSET_CONFIGS[asset])
     loader = ForecastingDatasetLoader(cfg, project_root=REPO)
     df, _ = loader.load_dataset()
     feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
@@ -670,7 +707,7 @@ def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS,
         payload = {
             "nota": NOTA,
             "surface": "zoo",
-            "asset": "usdcop",
+            "asset": asset,
             "model_id": mid,
             "model_type": "linear",
             "method": "linear_shap_closed_form",
@@ -719,7 +756,7 @@ def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS,
             "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
             "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
         }
-        p = _write("zoo", "usdcop", mid, version, payload, supersede=supersede)
+        p = _write("zoo", asset, mid, version, payload, supersede=supersede)
         paths.append(p)
         print(f"[zoo] {mid}: {_rel(p)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
               f"add_err={add_err:.2e})", flush=True)
@@ -737,6 +774,16 @@ def _tree_shap_backend(model_id: str):
     última columna que devuelven es el valor base. No se requiere el paquete `shap`
     (que aquí ni siquiera importa: su `_tree.py` arrastra pyspark, roto en py3.12).
     """
+    # Gold/BTC declaran los MISMOS boosters con el sufijo `_pure`
+    # (`config/assets/*_forecasting.yaml`), y el `ModelFactory` ya los registra bajo
+    # ambos nombres. El backend TreeSHAP es el del booster, no el del alias: sin esta
+    # normalizacion los tres arboles de cada activo salian `tree_shap_unavailable`
+    # — degradacion honesta, pero cobertura CERO por un detalle de vocabulario.
+    # Se normaliza SOLO el sufijo declarado; cualquier otro nombre sigue cayendo al
+    # `raise` del final, que es lo que impide inventar un backend.
+    if model_id.endswith("_pure"):
+        model_id = model_id[: -len("_pure")]
+
     if model_id == "xgboost":
         import xgboost as xgb  # noqa: F401 — falla ⇒ backend no disponible
 
@@ -770,7 +817,8 @@ def _tree_shap_backend(model_id: str):
 
 
 def _unavailable_payload(model_id: str, version: str, reason: str, detail: str,
-                         *, provenance: dict | None = None) -> dict:
+                         *, provenance: dict | None = None,
+                         asset: str = "usdcop") -> dict:
     """Estado TIPADO de degradación — jamás valores de atribución fabricados.
 
     Lleva las MISMAS huellas que un artefacto con datos (el modelo se declara
@@ -780,7 +828,7 @@ def _unavailable_payload(model_id: str, version: str, reason: str, detail: str,
     return {
         "nota": NOTA,
         "surface": "zoo",
-        "asset": "usdcop",
+        "asset": asset,
         "model_id": model_id,
         "model_type": "tree",
         "method": "tree_shap_unavailable",
@@ -803,14 +851,16 @@ def _unavailable_payload(model_id: str, version: str, reason: str, detail: str,
     }
 
 
-def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
-                      *, supersede: bool = False) -> list[Path]:
+def generate_zoo_tree(model_ids: tuple[str, ...] | None = None,
+                      *, supersede: bool = False, asset: str = "usdcop") -> list[Path]:
     from sklearn.preprocessing import StandardScaler
     from src.forecasting.models.factory import ModelFactory
     from src.forecasting.ssot_config import ForecastingSSOTConfig
     from src.forecasting.dataset_loader import ForecastingDatasetLoader
 
-    cfg = ForecastingSSOTConfig.load()
+    if model_ids is None:
+        model_ids = _models_for_asset(asset, "tree")
+    cfg = ForecastingSSOTConfig.load(ASSET_CONFIGS[asset])
     loader = ForecastingDatasetLoader(cfg, project_root=REPO)
     df, _ = loader.load_dataset()
     feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
@@ -833,12 +883,12 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
         try:
             backend_name, shap_fn = _tree_shap_backend(mid)
         except Exception as exc:   # backend/librería ausente ⇒ degradación explícita
-            p = _write("zoo", "usdcop", mid, version, _unavailable_payload(
+            p = _write("zoo", asset, mid, version, _unavailable_payload(
                 mid, version, "backend_import_failed", f"{type(exc).__name__}: {exc}",
                 provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
                             "config_fingerprint": _sha(b"<no backend>"),
                             "model_fingerprint": _sha(b"<no backend>"),
-                            "model_fingerprint_basis": "unavailable"}),
+                            "model_fingerprint_basis": "unavailable"}, asset=asset),
                 supersede=supersede)
             paths.append(p)
             print(f"[tree] {mid}: DEGRADADO (backend_import_failed) -> {_rel(p)}",
@@ -871,12 +921,12 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
             meta = pd.concat(dates, ignore_index=True)
             base_value = float(np.nanmean(np.concatenate(base_parts)))
         except Exception as exc:   # fit/predict/SHAP falló ⇒ degradación explícita
-            p = _write("zoo", "usdcop", mid, version, _unavailable_payload(
+            p = _write("zoo", asset, mid, version, _unavailable_payload(
                 mid, version, "shap_computation_failed", f"{type(exc).__name__}: {exc}",
                 provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
                             "config_fingerprint": _sha(b"<shap failed>"),
                             "model_fingerprint": _sha(b"<shap failed>"),
-                            "model_fingerprint_basis": "unavailable"}),
+                            "model_fingerprint_basis": "unavailable"}, asset=asset),
                 supersede=supersede)
             paths.append(p)
             print(f"[tree] {mid}: DEGRADADO (shap_computation_failed) -> {_rel(p)}",
@@ -917,7 +967,7 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
         payload = {
             "nota": NOTA,
             "surface": "zoo",
-            "asset": "usdcop",
+            "asset": asset,
             "model_id": mid,
             "model_type": "tree",
             "method": "tree_shap",
@@ -967,7 +1017,7 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
             "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
             "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
         }
-        p = _write("zoo", "usdcop", mid, version, payload, supersede=supersede)
+        p = _write("zoo", asset, mid, version, payload, supersede=supersede)
         paths.append(p)
         print(f"[tree] {mid}: {_rel(p)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
               f"add_err={add_err:.2e})", flush=True)
@@ -1086,10 +1136,17 @@ def generate_rule_attribution(rule_ids: tuple[str, ...] = ("spx500",),
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--zoo-models", default=",".join(ZOO_LINEAR_MODELS),
-                    help="modelos LINEALES del zoo (SHAP cerrado): ridge,bayesian_ridge,ard")
-    ap.add_argument("--tree-models", default=",".join(ZOO_TREE_MODELS),
-                    help="modelos de ARBOL del zoo (TreeSHAP nativo): xgboost,lightgbm,catboost")
+    ap.add_argument("--asset", default="usdcop", choices=sorted(ASSET_CONFIGS),
+                    help="activo del zoo. Sin este flag: usdcop, comportamiento previo "
+                         "intacto. Con xauusd/btcusdt se carga SU config y SUS model_id "
+                         "declarados (los hybrid_* quedan fuera: TreeSHAP no es correcto "
+                         "sobre un modelo mitad lineal mitad arbol)")
+    ap.add_argument("--zoo-models", default=None,
+                    help="modelos LINEALES del zoo (SHAP cerrado). Por defecto, los que "
+                         "DECLARA el activo — nunca una lista fija")
+    ap.add_argument("--tree-models", default=None,
+                    help="modelos de ARBOL del zoo (TreeSHAP nativo). Por defecto, los que "
+                         "DECLARA el activo — nunca una lista fija")
     ap.add_argument("--rules", default="spx500",
                     help="adapters rule-based (profitability_adapters.ADAPTERS)")
     ap.add_argument("--skip-zoo", action="store_true")
@@ -1121,19 +1178,27 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     paths: list[Path] = []
+    # Los model_id permitidos los DECLARA el activo: validar contra una lista fija
+    # rechazaria `xgboost_pure` (el nombre real de Gold/BTC) y aceptaria `xgboost`
+    # para un activo que no lo tiene.
+    allowed_lin = _models_for_asset(args.asset, "linear")
+    allowed_tree = _models_for_asset(args.asset, "tree")
     if not args.skip_zoo:
-        mids = tuple(m.strip() for m in args.zoo_models.split(",") if m.strip())
-        bad = [m for m in mids if m not in ZOO_LINEAR_MODELS]
+        mids = (tuple(m.strip() for m in args.zoo_models.split(",") if m.strip())
+                if args.zoo_models else None)
+        bad = [m for m in (mids or ()) if m not in allowed_lin]
         if bad:
-            raise SystemExit(f"--zoo-models solo admite lineales (SHAP cerrado): {bad} "
-                             f"no permitido — usa --tree-models para arboles")
-        paths += generate_zoo_linear(mids, supersede=args.supersede)
+            raise SystemExit(f"--zoo-models: {bad} no son lineales declarados por "
+                             f"{args.asset!r} (declarados: {list(allowed_lin)})")
+        paths += generate_zoo_linear(mids, supersede=args.supersede, asset=args.asset)
     if not args.skip_trees:
-        tids = tuple(m.strip() for m in args.tree_models.split(",") if m.strip())
-        bad = [m for m in tids if m not in ZOO_TREE_MODELS]
+        tids = (tuple(m.strip() for m in args.tree_models.split(",") if m.strip())
+                if args.tree_models else None)
+        bad = [m for m in (tids or ()) if m not in allowed_tree]
         if bad:
-            raise SystemExit(f"--tree-models solo admite arboles del zoo: {bad} no permitido")
-        paths += generate_zoo_tree(tids, supersede=args.supersede)
+            raise SystemExit(f"--tree-models: {bad} no son arboles declarados por "
+                             f"{args.asset!r} (declarados: {list(allowed_tree)})")
+        paths += generate_zoo_tree(tids, supersede=args.supersede, asset=args.asset)
     if not args.skip_rules:
         rids = tuple(r.strip() for r in args.rules.split(",") if r.strip())
         paths += generate_rule_attribution(rids, supersede=args.supersede)
