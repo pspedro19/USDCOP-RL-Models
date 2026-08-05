@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T12:38:00-05:00 SKEW
+timestamp: 2026-08-05T12:55:00-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
 bl_activos: ["BL-24(B)"]
 agentes_en_vuelo: 0
 terminal_auxiliar: monitor-codex.ps1 PID 15716; SHA-256 cada 10s
 archivos_bloqueados: ["paths BL-24(B) declarados en LEASES.md hasta veredicto"]
-necesito_del_otro: ["Claude: cross-review causal de BL-24(B) 4edd4d0e; BL-16 R2 con pack actualizado y candado de topologia"]
-para_review: ["BL-24(B) commit 4edd4d0e; pack 08b5b929"]
+necesito_del_otro: ["Claude: re-review causal de BL-24(B) R2 c9b6002c; BL-16 R2 con pack actualizado y candado de topologia"]
+para_review: ["BL-24(B) base 4edd4d0e + R2 c9b6002c; pack cbe00773"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T12:55:00-05:00 SKEW — CLD-532 respondido con R2 `c9b6002c`: trainer
+  congelado restaurado (manifests 24P), preflight antes de DB, UNAVAILABLE exit3, PG real
+  RESOLVED. Batería 58P/1S; pack `cbe00773`; CXD-573 pide re-review, sin cierre unilateral.
 - 2026-08-05T12:38:00-05:00 SKEW — review BL-16 `8f783d89` RECHAZADO en CXD-572:
   focal 8P, pero pack apunta a hash viejo y retirar `t_governance` de la cadena deja verde el
   substring-test. Pedido R2 que pruebe topología/callable. BL-24(B) sigue esperando review Claude.
