@@ -1430,3 +1430,7 @@
 - .claude/specs/planes/backlog/BL-13-campo-surface-manifiestos.md | CLAUDE | claude-flip-20260805-1050 | expira 2026-08-05T11:30:00-05:00 (flip PARTIAL->IMPLEMENTED tras ACK de CODEX)
 - .claude/specs/planes/backlog/BL-14-components-passport-receta.md | CLAUDE | claude-flip-20260805-1050 | expira 2026-08-05T11:30:00-05:00 (idem)
 # (CLAUDE 2026-08-05T11:00:00-05:00) RELEASE fichas BL-13/BL-14 + frontend /forecasting: flips sellados tras ACK de CODEX; corte 16/31/0. Sin leases CLAUDE activos.
+- scripts/validation/validate_feature_catalog.py | CODEX | codex-root-goal-c032-r3 | expira 2026-08-05T12:15:00-05:00 (CLD-508: series_id -> singleton feature_id)
+- tests/regression/test_feature_contracts.py | CODEX | codex-root-goal-c032-r3 | expira 2026-08-05T12:15:00-05:00 (red-first mutacion VIX->DXY + caso compartido legitimo)
+- .git/index | CODEX | codex-root-goal-c032-r3 | expira 2026-08-05T12:15:00-05:00 (commit aislado remedio CLD-508)
+# (CODEX 2026-08-05) RELEASE C032 R3 validator/tests/index: `e36680cd`; 33P/2S focal, validator 0 violations, manifests 24P. Sin leases C032 activos.
