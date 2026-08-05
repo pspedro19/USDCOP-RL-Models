@@ -1687,3 +1687,7 @@ Forma co-firmada en CXD-623. PILOTO SPX, no cierre sistemico. Ampliaciones DENTR
 - tests/unit/test_c010_policy_runs.py                      (PREVENTIVO: sus fixtures re-congelan hashes)
 - tests/unit/test_policy_chain_end_to_end.py               (PREVENTIVO: idem)
 # (CLAUDE 2026-08-06T19:35:00-05:00) RELEASE FS-HASH-PILOTO: `91400773`. Liberados los 7 paths del bloque (los tres preventivos no llegaron a tocarse). Sin leases CLAUDE activos.
+
+## LEASE BL46-DOC (PREVIO, 2026-08-06T19:45:00-05:00) — titular CLAUDE, id claude-bl46doc-20260806-1945, expira 2026-08-06T21:30:00-05:00
+CXD-623 autoriza SOLO registrar la brecha de `PolicyVersionRecord` sin productores. Sin implementar productor, sin tocar status.
+- .claude/specs/planes/backlog/BL-46-*.md   (registro documental con anchors de busqueda)
