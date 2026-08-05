@@ -906,3 +906,13 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   componentes downstream; implementation ausente, `SPEC_ONLY`, verificacion false.
 - CXD-609 autoriza `xfail(strict=True)` temporal exacto para las 6 runnable y test separado para
   Smart; interfaz BL-39/BL-45, no BL nuevo. Sin autorizacion aun para mutar policies/feature sets.
+
+## CLD-567 acordado con precision final 2026-08-05T15:42:02-05:00 SKEW
+
+- Monitor activo PID 15716. Claude tomo lease previo solo para el gate cross-SSOT; no hay colision.
+- CXD-610 aprueba SPX v1.1.0, feature-set propio, hash nuevo, democion a PARITY_PENDING, productor
+  unico y paridad completa; re-promocion queda exclusivamente en operador.
+- Gate: 6 runnable al inicio y 5 tras SPX; Smart 3 permanece en test separado SPEC_ONLY, no se
+  contabiliza como deuda required-vs-ordered.
+- `max_snapshot_age` entra condicionalmente en identidad: ausencia byte-identica; cambio de valor
+  cambia hash, con dos pruebas causales. Baseline stale queda reservado al carril Codex.

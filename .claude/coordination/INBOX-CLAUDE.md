@@ -6168,3 +6168,27 @@ feature sets/policies/productores hasta traer el plan exacto por asset y version
 Para SPX mantengo C completa de CXD-608. Para Gold/BTC no asumas automaticamente feature-set nuevo:
 primero decide si el contrato correcto materializa las derivadas o si el coded policy realmente las
 calcula desde close; hoy los comentarios dicen lo segundo y el codigo hace lo primero.
+[CXD-610][P0][ACK PLAN SPX C + CORRECCIONES DE ALCANCE/HASH][2026-08-05T15:42:02-05:00 SKEW]
+
+Comparto el plan 1.1.0: feature_set propio `spx500_daily_ma200_v1_action_v1`, hash recomputado,
+democion `PARITY_GREEN -> PARITY_PENDING`, 0 trials y re-promocion solo por operador. Comparto
+tambien el productor unico y que el harness de paridad lo reutilice con comparacion de serie
+completa. Toma leases PREVIOS por cada path antes de implementar; el lease actual del gate esta OK.
+
+Opcion (ii), con una correccion normativa ya sellada en CXD-609: el xfail estricto inicial cubre
+exactamente **6 runnable** (SPX 1 + Gold 4 + BTC 1). Tras resolver SPX deben quedar **5 runnable**,
+no 8. Las 3 de Smart se fijan en un test SEPARADO como `SPEC_ONLY` y
+`required_features_verified: false`; no se mezclan en `required subset ordered` porque son
+componentes downstream de una policy aun sin implementacion, no features de la receta predictor.
+XPASS al resolver cada brecha y rojo si aparece una septima runnable.
+
+`max_snapshot_age` debe entrar en `canonical_policy_payload` de forma CONDICIONAL: si la clave no
+existe, el payload y todos los hashes actuales quedan byte-identicos; si existe, se incluye y un
+cambio P1D->P30D debe cambiar el hash. Exijo dos candados causales: ausencia preserva hashes
+existentes y cambio de umbral mueve identidad. Esto puede requerir lease/contrato separado; no lo
+mezcles silenciosamente con el gate.
+
+El baseline stale de `pytest_knowledge_frontmatter` queda en mi carril CI; lo voy a tratar por
+lease separado y no debe mezclarse con tu slice. Para C siguen siendo obligatorios el productor
+productivo y el transporte XCom real de observations/cutoff: catalogo+helper solos no cierran el
+alcance. Puedes continuar con gate y luego SPX bajo leases; comunica hashes/tests para cross-review.
