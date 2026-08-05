@@ -472,3 +472,78 @@ coincidencia. Añadidos dos que ejercen el contrato del runner de frente.
     selección CI (9 ficheros)                                 -> 380P / 2S / 1xfail
 
 **BL-45 sigue `PARTIAL`.** Las tres brechas productivas siguen abiertas.
+
+## Decisión C — la feature que decidía la señal no tenía productor (2026-08-06)
+
+Al ir a cerrar la brecha del productor de `observations::` apareció que **los dos SSOT se
+contradecían sobre qué es un input**: la policy exigía `ma_200` y su feature-set declaraba sólo
+`close`, listando `ma200` como `derived_in_policy` — cierto para la estrategia *coded*, que sí la
+deriva, pero **el DSL no tiene operador de ventana** (medido), así que una policy declarativa no
+puede. Un productor construido desde el feature-set habría entregado 1 feature y la policy habría
+fallado por `missing` en toda corrida: **la cadena no se podía atravesar por contrato, no por bug**.
+
+Shape co-firmado en CXD-608 (opción C: feature-set propio, no ampliar el de la *gated*, cuyo
+manifiesto está congelado y pertenece a otra estrategia).
+
+### C1 + C1b (`97ebb4c9` + `76423175`)
+
+- `src/features/spx500_ma200.py::compute_ma_200` — la **única** definición; el harness de paridad
+  deja de tener la suya (dos fórmulas idénticas *por casualidad* pueden divergir mañana).
+- catálogo `spx500.ma_200` con `code_reference` + `sha256_16`, ventana dura `P200D`
+  (200 **sesiones**, declarado en `lookback_note` porque el schema sólo admite `P<n>D`).
+- feature-set propio `spx500_daily_ma200_v1_action_v1` = `{close, ma_200}`, `derived_in_policy: []`.
+- **Democión**: `feature_set_id` entra en el payload ⇒ identidad nueva ⇒ `1.0.0 → 1.1.0`,
+  `PARITY_GREEN → PARITY_PENDING`. v1.1.0 **no hereda** el veredicto de paridad. Re-promoción =
+  acto exclusivo del operador.
+- **0 trials**, probado con paridad exacta sobre **todas** las filas del snapshot contra la fórmula
+  legacy reescrita a mano en el test (importarla para ambos lados sería comparar una función
+  consigo misma). Sin `approx`: una tolerancia escondería justo lo que se descarta.
+
+**C1b corrigió tres cosas mías** (CXD-618): `compute_ma_200` aceptaba `window`, así que un llamador
+podía publicar una **MA50** bajo `feature_id: ma_200`, mismo `series_id` y mismo hash — el catálogo
+congela el **código**, no el argumento en runtime, y yo había escrito la garantía en el docstring
+sin implementarla. Además retiré una cifra volátil (7943 filas de seed vs 7743 barras del harness
+vs 7744 MA válidas: tres magnitudes, y puse una junto a la afirmación de otra) y un comentario del
+spec que era falso en las dos mitades.
+
+### C2 → C2d — el productor de `observations::` (`6844ff4e`, `87713934`, `7ddfa383`, `a5597f09`)
+
+`src/features/observations.py::build_observations`, función **pura** sobre un DataFrame. La lista
+de qué materializar **no se escribe ahí**: sale del `feature_set_id` declarado, y cada feature se
+resuelve contra el catálogo **importando el productor por la ruta que el catálogo declara**.
+
+Tres rechazos consecutivos, y el patrón importa más que cada bug:
+
+| | Defecto | Quién |
+|---|---|---|
+| CXD-620 §1 | `serie = close` para todo passthrough ⇒ publicaba el cierre bajo `open/high/low` (catalogadas hoy) | CODEX |
+| CXD-620 §2 | `status_ceiling` escrita fail-closed y **sin ningún consumidor** | CODEX |
+| CXD-622 | el gate del techo **no consultaba a `status_ceiling`** ⇒ un sello inventado atravesaba `CUTOVER` | CODEX |
+
+Tres veces escribí el mecanismo y no lo consulté. El remedio final no fue añadir el caso que
+faltaba sino **quitar la segunda forma de decidir**: la autoridad es `status_ceiling`, se le
+pregunta por cada sello, y con sellos mezclados manda el techo **mínimo** — el techo de un snapshot
+es el de su evidencia más débil, igual que su frescura es la de su observación más vieja.
+
+### LÍMITE DECLARADO, que viaja con el dato
+
+`available_at` es **RECONSTRUIDO** (`cierre + P1D`), no vintage del proveedor — lo declara ya
+`load_real.py` para esta serie. Cada observación lleva
+`provenance: available_at_reconstructed:close+P1D`, y el techo `research_validated` **se aplica**
+en `make_publish_signal`: `CUTOVER` (la única vía viva) reclama `production` y queda bloqueado.
+Sostiene el corte causal; **no** sostiene point-in-time.
+
+### Brechas que SIGUEN abiertas (no simuladas)
+
+1. **Nada ha corrido en Airflow real** — no hay contenedor (sí `postgres`, `redis`, `trading-api`,
+   `signalbridge`). Es lo que le falta al DONE de esta ficha.
+2. **`publish` no se ha recorrido extremo a extremo** contra `reference.instrument`.
+3. `spx500` está en `PARITY_PENDING` por la democión: **no emite cadena** hasta que el operador
+   re-promueva. Es el estado correcto, no un bloqueo a saltar.
+
+Cadena end-to-end con datos reales en `tests/unit/test_policy_chain_end_to_end.py`
+(`produce → resolve → validate → evaluate`), cada eslabón consumiendo lo que produjo el anterior —
+los candados por-eslabón no podían ver el defecto de R3 porque cada uno recibía justo lo que
+necesitaba.
+
+**BL-45 sigue `PARTIAL`.**
