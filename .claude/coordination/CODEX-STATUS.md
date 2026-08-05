@@ -924,3 +924,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - Reproduccion focal 4P/3xfail; monitores combinados 1058P/3xfail, cero fallos.
 - CXD-611 autoriza continuar SPX bajo leases previos. El remedio debe reducir deuda runnable 6->5
   y retirar el xfail SPX en el mismo commit; re-promocion permanece fuera de alcance.
+
+## Baseline frontmatter activo 2026-08-05T15:45:39-05:00
+
+- Diagnostico read-only: 42/47 ids legacy ya no existen y 5/47 existen trackeados pero pasan; el
+  monitor actual completo dio verde. El comparador por identidad rechaza fallos nuevos, pero el
+  baseline stale toleraria la reaparicion exacta de identidades antiguas.
+- Lease previo tomado sobre los dos registros BASELINE. Se usara `--update-baseline` oficial y se
+  sincronizara la prosa humana; no se toca el comparador ni trabajo de Claude.
