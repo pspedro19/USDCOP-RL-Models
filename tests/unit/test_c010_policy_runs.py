@@ -337,6 +337,131 @@ def test_validate_link_is_not_decorative_evaluate_honours_its_degraded_decision(
     )
 
 
+#: Probe END-TO-END (CXD-598). Los candados de R3 miraban las ARISTAS del grafo y
+#: mi test de `validate` tomaba la salida temprana de `evaluate`, asi que **ningun
+#: test ejecutaba el callable real por el camino sano**. Resultado: tres eslabones
+#: que no podian correr —`build_policy(policy_id)` recibia un id donde espera un
+#: spec, `context.get("ctx")` era siempre None, y publish llamaba `load_policy_spec`
+#: con un id donde espera una ruta— con 14 tests en verde. Estructura observable no
+#: es ejecucion observable, y solo lo demuestra invocar el callable de verdad.
+PID = "spx500_daily_ma200_v1"
+CTX_INTERVALO = {"data_interval_end": "2026-07-24T00:00:00+00:00"}
+
+
+class _TIProbe:
+    """`ti` real: devuelve el snapshot de resolve y, opcionalmente, el de validate."""
+
+    def __init__(self, snapshot, degradada=None, decision=None):
+        self._snapshot, self._degradada, self._decision = snapshot, degradada, decision
+
+    def xcom_pull(self, key=None, task_ids=None):
+        if task_ids and task_ids.endswith("_resolve_snapshot"):
+            return self._snapshot
+        if task_ids and task_ids.endswith("_validate_inputs"):
+            return self._degradada
+        if task_ids and task_ids.endswith("_evaluate"):
+            return self._decision
+        return None
+
+
+SNAPSHOT_SANO = {"close": 5200.0, "ma_200": 5000.0}
+
+
+def test_validate_link_actually_runs_end_to_end_without_monkeypatching_build_policy(factory):
+    """El camino SANO atraviesa `validate` con spec y contexto REALES.
+
+    Sin monkeypatch de `build_policy` ni `ctx` magico: si el resolver id->spec o la
+    construccion del `PolicyContext` estan mal, esto revienta. Antes reventaba.
+    """
+    salida = factory.make_validate_inputs(PID)(
+        ti=_TIProbe(SNAPSHOT_SANO), **CTX_INTERVALO
+    )
+    assert salida is None, (
+        f"inputs validos deben dejar seguir la cadena (None), se devolvio {salida!r}"
+    )
+
+
+def test_evaluate_link_actually_produces_a_decision_end_to_end(factory):
+    """El camino sano llega a una decision REAL, no a un AttributeError."""
+    decision = factory.make_evaluate_policy(PID)(
+        ti=_TIProbe(SNAPSHOT_SANO), **CTX_INTERVALO
+    )
+    assert decision is not None
+    assert getattr(decision, "direction", None) in {"LONG", "FLAT", "SHORT"}, (
+        f"la evaluacion no produjo una decision con direccion: {decision!r}"
+    )
+
+
+def test_stale_snapshot_honours_the_DECLARED_flat_not_the_runner_default(factory):
+    """`stale_input_policy: FLAT` del spec manda sobre el default del runner.
+
+    La cadena no pasaba ningun fallback, asi que aplicaba `FAIL_CLOSED` por defecto:
+    un snapshot stale habria **cerrado la tarea** en vez de emitir el FLAT explicito
+    que la policy declara. El invariante 9 es "sin default, sin freeze" y la cadena
+    estaba corriendo justo el default (CXD-598, evidencia 3).
+
+    Rojo con: dejar de pasar `**_declared_fallbacks(spec)` en `make_validate_inputs`.
+    """
+    degradada = factory.make_validate_inputs(PID)(
+        ti=_TIProbe(SNAPSHOT_SANO), snapshot_is_stale=True, **CTX_INTERVALO
+    )
+    assert degradada is not None, "un snapshot stale no puede pasar como valido"
+    assert degradada.direction == "FLAT"
+    assert "INPUT_STALE" in degradada.reason_codes
+
+
+def test_missing_feature_honours_the_DECLARED_fail_closed(factory):
+    """El otro fallback declarado (`missing_input_policy: FAIL_CLOSED`) tambien se aplica.
+
+    Se comprueba el par completo a proposito: si alguien pasara ambos como `FLAT`
+    "para que no falle", este test lo caza — el spec declara valores DISTINTOS para
+    los dos, y esa asimetria es justamente lo que un default uniforme borra.
+    """
+    with pytest.raises(ValueError):
+        factory.make_validate_inputs(PID)(
+            ti=_TIProbe({"close": 5200.0}), **CTX_INTERVALO  # falta `ma_200`
+        )
+
+
+def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factory):
+    """El TERCER eslabon roto, que el rechazo no llego a nombrar.
+
+    `make_publish_signal` llamaba `load_policy_spec(policy_id)`, y ese recibe una
+    RUTA: habria muerto con FileNotFoundError. Y detras habia un cuarto crash:
+    `_canonical_instrument_id` leia `spec["asset"]` como mapping cuando en los
+    CUATRO specs vigentes es una cadena, asi que `(spec.get("asset") or {}).get("id")`
+    reventaba siempre y el `or spec.get("asset")` de detras era codigo inalcanzable.
+
+    LIMITE DECLARADO de este candado: no publica de verdad, porque
+    `_canonical_instrument_id` necesita `reference.instrument` en una DB viva y aqui
+    no hay stack. Lo que fija es que el fallo ocurra en la FRONTERA DE DB y no antes:
+    si vuelve a romperse la resolucion de spec o de activo, el error deja de ser el
+    del acceso a datos y esto cae. Cubrir la publicacion completa exige el stack y
+    queda declarado como pendiente, no simulado aqui.
+    """
+    ti = _TIProbe(SNAPSHOT_SANO, decision=object())
+    with pytest.raises(Exception) as exc:
+        factory.make_publish_signal(PID)(
+            ti=ti, data_interval_start="2026-07-17T00:00:00+00:00", **CTX_INTERVALO
+        )
+    tipo, mensaje = type(exc.value).__name__, str(exc.value)
+    assert tipo == "ModuleNotFoundError" and "utils" in mensaje, (
+        f"publish fallo ANTES de la frontera de DB: {tipo}: {mensaje[:200]}. Si el "
+        f"error es AttributeError('str' object...) o FileNotFoundError, la resolucion "
+        f"de spec/activo volvio a romperse."
+    )
+
+
+def test_context_without_data_interval_fails_closed_instead_of_dating_a_decision_now(factory):
+    """Sin `data_interval_*` no hay `as_of`: no se inventa con `now()`.
+
+    Fechar la decision con la hora de ejecucion haria que dos re-ejecuciones de la
+    misma fecha produjeran registros distintos y el replay dejaria de ser replay.
+    """
+    with pytest.raises(factory.PolicyRunConfigError, match="data_interval"):
+        factory.make_validate_inputs(PID)(ti=_TIProbe(SNAPSHOT_SANO))
+
+
 def _spec_con(**cambios_engine):
     """Clonar los specs reales cambiando SOLO `engine.*` de spx500.
 

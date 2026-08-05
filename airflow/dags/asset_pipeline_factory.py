@@ -237,6 +237,81 @@ def make_resolve_snapshot(policy_id: str):
     return _resolve
 
 
+def _spec_for(policy_id: str) -> dict:
+    """Resolver `policy_id` -> spec. UNA implementacion para los tres eslabones.
+
+    Los tres lo hacian mal y de dos formas distintas (CXD-598 encontro dos, la
+    tercera es de la misma raiz):
+      * validate y evaluate llamaban `build_policy(policy_id)`, pero `build_policy`
+        recibe el **spec** (`Mapping`), no un id: `AttributeError: 'str' object has
+        no attribute 'get'`;
+      * publish llamaba `load_policy_spec(policy_id)`, pero ese recibe una **ruta**:
+        habria muerto con FileNotFoundError.
+    Es decir: la cadena se veia entera en el grafo y **ninguno de sus tres ultimos
+    eslabones podia ejecutarse**. Estructura verde, ejecucion imposible — justo lo
+    que R3 decia cerrar.
+
+    El loader no expone lookup por id, asi que se indexa aqui, en un solo sitio.
+    """
+    from src.strategies.policies.loader import load_all_policy_specs
+
+    by_id = {str(spec["id"]): spec for spec in load_all_policy_specs()}
+    if policy_id not in by_id:
+        raise PolicyRunConfigError(
+            f"{policy_id}: el loader SSOT no conoce esta policy (conocidas: "
+            f"{sorted(by_id)})"
+        )
+    return by_id[policy_id]
+
+
+def _declared_fallbacks(spec: dict) -> dict:
+    """Los fallbacks DECLARADOS por la policy, no los defaults del runner.
+
+    `spx500_daily_ma200_v1` declara `stale_input_policy: FLAT`; la cadena no pasaba
+    ninguno y el runner aplicaba su default `FAIL_CLOSED`. O sea: un snapshot stale
+    habria **cerrado la tarea** en vez de emitir el FLAT explicito que la policy
+    declara. El invariante 9 dice "sin default, sin freeze" y la cadena estaba
+    ejecutando el default. Ausente en el spec => FAIL_CLOSED, que es la direccion
+    segura y ademas la que el propio runner ya toma.
+    """
+    bloque = spec.get("policy") or {}
+    return {
+        "missing_input_policy": bloque.get("missing_input_policy", "FAIL_CLOSED"),
+        "stale_input_policy": bloque.get("stale_input_policy", "FAIL_CLOSED"),
+    }
+
+
+def _policy_context(policy_id: str, context: dict):
+    """`PolicyContext` DETERMINISTA, compartido por validate y evaluate.
+
+    Antes se leia `context.get("ctx")`, una clave que **Airflow no inyecta jamas**
+    y que ningun `op_kwargs` producia: siempre `None`, y `None.extras` reventaba.
+    Ahora se construye del intervalo logico de la corrida — no de `now()` — para que
+    dos re-ejecuciones de la misma fecha produzcan el mismo contexto; si no, el
+    replay dejaria de ser replay.
+
+    `snapshot_is_stale` es un hecho que el llamador DECLARA (`extras`, bool estricto).
+    La cadena aun no tiene un medidor de staleness propio, asi que declara `False`
+    explicitamente en vez de omitirlo: omitirlo dejaria el fallback stale sin
+    ejercicio posible y el eslabon `FLAT` seria inalcanzable por construccion.
+    """
+    from src.contracts.policy import PolicyContext
+
+    inicio = context.get("data_interval_end") or context.get("data_interval_start")
+    if inicio is None:
+        raise PolicyRunConfigError(
+            f"{policy_id}: la corrida no expone `data_interval_*`; un contexto sin "
+            f"`as_of` publicaria una decision sin fecha logica"
+        )
+    as_of = inicio.isoformat() if hasattr(inicio, "isoformat") else str(inicio)
+    stale = context.get("snapshot_is_stale", False)
+    if not isinstance(stale, bool):
+        raise PolicyRunConfigError(
+            f"{policy_id}: `snapshot_is_stale` debe ser bool declarado, no {stale!r}"
+        )
+    return PolicyContext(as_of=as_of, mode="DECISION", extras={"snapshot_is_stale": stale})
+
+
 def make_validate_inputs(policy_id: str):
     """Tarea 2: aplicar los fallbacks DECLARADOS a los inputs, ANTES de evaluar.
 
@@ -255,8 +330,12 @@ def make_validate_inputs(policy_id: str):
         snapshot = ti.xcom_pull(task_ids=f"policy_{policy_id}_resolve_snapshot")
         if snapshot is None:
             raise PolicyRunConfigError(f"{policy_id}: sin snapshot resuelto; no se valida")
+        spec = _spec_for(policy_id)
         return validate_policy_inputs(
-            build_policy(policy_id), snapshot, context.get("ctx")
+            build_policy(spec),
+            snapshot,
+            _policy_context(policy_id, context),
+            **_declared_fallbacks(spec),
         )
 
     return _validate
@@ -278,7 +357,13 @@ def make_evaluate_policy(policy_id: str):
         degraded = ti.xcom_pull(task_ids=f"policy_{policy_id}_validate_inputs")
         if degraded is not None:
             return degraded
-        return evaluate_policy(build_policy(policy_id), snapshot, context.get("ctx"))
+        spec = _spec_for(policy_id)
+        return evaluate_policy(
+            build_policy(spec),
+            snapshot,
+            _policy_context(policy_id, context),
+            **_declared_fallbacks(spec),
+        )
 
     return _evaluate
 
@@ -290,7 +375,15 @@ def _canonical_instrument_id(spec: dict) -> str:
     de nombres: `asset_id` y `canonical_symbol` son cosas distintas, y adivinar cual toca
     es como se rompieron los joins que BL-37 existe para arreglar.
     """
-    asset_id = (spec.get("asset") or {}).get("id") or spec.get("asset")
+    # `asset` es una CADENA en los cuatro specs vigentes (medido). La version
+    # anterior hacia `(spec.get("asset") or {}).get("id") or spec.get("asset")`:
+    # el primer termino levanta `AttributeError: 'str' object has no attribute
+    # 'get'` para el 100% de los specs reales, y el fallback tras el `or` era
+    # codigo muerto que no se alcanzaba nunca. Cuarto crash de la misma familia
+    # que los tres de CXD-598: la cadena entera se escribio contra formas
+    # supuestas en vez de contra los specs que existen.
+    declarado = spec.get("asset")
+    asset_id = declarado.get("id") if isinstance(declarado, dict) else declarado
     if not isinstance(asset_id, str) or not asset_id:
         raise PolicyRunConfigError(
             f"{spec.get('id')}: no declara `asset`; sin activo no hay instrumento canonico"
@@ -340,14 +433,16 @@ def make_publish_signal(policy_id: str):
             replay dejaria de ser replay.
         """
         from src.policy_engine import publish_signal
-        from src.strategies.policies.loader import load_policy_spec
 
         ti = context["ti"]
         decision = ti.xcom_pull(task_ids=f"policy_{policy_id}_evaluate")
         if decision is None:
             raise PolicyRunConfigError(f"{policy_id}: sin decision; no se publica")
 
-        spec = load_policy_spec(policy_id)
+        # `load_policy_spec` recibe una RUTA, no un id: llamarlo con el id habria
+        # muerto con FileNotFoundError. Mismo defecto que CXD-598 encontro en
+        # validate/evaluate, tercer eslabon incluido. Un solo resolver: `_spec_for`.
+        spec = _spec_for(policy_id)
         version_id = (spec.get("governance") or {}).get("policy_hash") or spec.get("version")
         if not version_id:
             raise PolicyRunConfigError(
