@@ -388,7 +388,7 @@ def _un_401(*_a, **_k):
 def test_every_rejected_fetch_fails_the_task_instead_of_reporting_success():
     """Log real del run codex_bl40_usdmxn_20260805T0110: dos 401 y `status: ok` + SUCCESS."""
     ns = _gap_namespace(_un_401)
-    with pytest.raises(RuntimeError, match="el backfill no ocurrio"):
+    with pytest.raises(RuntimeError, match="SIN examinar"):
         ns["process_symbol"](**_context(["USD/MXN"], symbol="USD/MXN"))
 
 
@@ -407,9 +407,15 @@ def test_a_gap_the_api_serves_empty_is_a_legitimate_zero_and_stays_ok():
     assert resultado["fetch_errors"] == 0
 
 
-def test_partial_success_is_not_punished():
-    """Si entro aunque sea una barra, un fetch roto no tumba la tarea."""
+def test_a_partial_backfill_also_fails_and_persists_what_it_got():
+    """Concedido a CXD-530: mi semantica anterior devolvia SUCCESS con un rango sin examinar.
+
+    Con un hueco fallido y otro insertado, `status: ok` dejaba el rango fallido invisible: ningun
+    estado de Airflow lo declaraba y export/validate corrian igual. Como los inserts son
+    idempotentes, levantar DESPUES de persistir es gratis y el retry recupera lo que falta.
+    """
     llamadas = {"n": 0}
+    insertadas = []
 
     def fetch_mixto(*_a, **_k):
         llamadas["n"] += 1
@@ -417,11 +423,27 @@ def test_partial_success_is_not_punished():
             raise RuntimeError("401 Client Error: Unauthorized")
         return pd.DataFrame([{"time": pd.Timestamp("2026-07-29", tz="UTC"), "close": 1.0}])
 
-    ns = _gap_namespace(fetch_mixto, inserta=7)
-    resultado = ns["process_symbol"](**_context(["USD/MXN"], symbol="USD/MXN"))
-    assert resultado["status"] == "ok"
-    assert resultado["bars_backfilled"] == 7
-    assert resultado["fetch_errors"] == 1
+    ns = _gap_namespace(fetch_mixto)
+    ns["insert_ohlcv_batch"] = lambda conn, df: insertadas.append(len(df)) or 7
+
+    with pytest.raises(RuntimeError, match="SIN examinar"):
+        ns["process_symbol"](**_context(["USD/MXN"], symbol="USD/MXN"))
+
+    # Lo que si se pudo traer quedo PERSISTIDO antes de levantar: el retry no repite trabajo.
+    assert insertadas == [1], "las barras del hueco que si respondio deben persistirse"
+
+
+def test_the_partial_failure_message_carries_count_and_first_cause():
+    ns = _gap_namespace(_un_401)
+    with pytest.raises(RuntimeError, match=r"2 de 2 fetch fallaron"):
+        ns["process_symbol"](**_context(["USD/MXN"], symbol="USD/MXN"))
+
+
+def test_the_log_does_not_say_complete_when_a_fetch_failed():
+    """`Backfill complete` con errores dentro es la misma mentira en el log."""
+    cuerpo = DAG_SOURCE.split("def process_symbol")[1].split("\ndef ")[0]
+    assert "Backfill {veredicto}" in cuerpo
+    assert "'complete' if not fetch_errors" in cuerpo
 
 
 def test_an_internal_error_status_no_longer_returns_as_success():

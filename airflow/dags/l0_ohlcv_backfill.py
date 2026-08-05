@@ -710,7 +710,11 @@ def process_symbol(**context):
         result['bars_backfilled'] = total_inserted
         result['fetch_errors'] = len(fetch_errors)
         result['first_fetch_error'] = fetch_errors[0] if fetch_errors else None
-        logging.info(f"[{symbol}] Backfill complete: {total_inserted} bars inserted across "
+        # "Backfill complete" con errores dentro es la misma mentira en el log que el SUCCESS
+        # lo era en el estado: el rango que no se pudo examinar sigue sin examinar.
+        veredicto = 'complete' if not fetch_errors else (
+            'partial' if total_inserted else 'failed')
+        logging.info(f"[{symbol}] Backfill {veredicto}: {total_inserted} bars inserted across "
                      f"{len(gap_ranges)} gaps ({len(fetch_errors)} fetch errors)")
 
     except Exception as e:
@@ -727,20 +731,27 @@ def process_symbol(**context):
     # normalmente**, asi que Airflow marcaba SUCCESS. Un `raise` dentro del try lo habria
     # tragado ese mismo `except`.
     #
-    # Caso 1 — TODA peticion rechazada no es "backfill sin novedades", es un backfill que NO
-    # OCURRIO. Medido en el run `codex_bl40_usdmxn_20260805T0110`: los dos fetch murieron con
-    # `401 Unauthorized` porque las 8 claves de TwelveData son los placeholders literales
-    # `YOUR_REAL_TWELVEDATA_API_KEY_*` de `.env.example`, y la tarea devolvio
-    # `{'status': 'ok', 'bars_backfilled': 0}` y Airflow la marco SUCCESS. Ese SUCCESS afirma
-    # "mire y no habia nada que traer" cuando el hecho es "no me dejaron mirar", y aguas abajo
-    # se lee como que L0 esta al dia.
+    # Caso 1 — CUALQUIER peticion rechazada deja el backfill incompleto, y un backfill
+    # incompleto no es un exito. Medido en el run `codex_bl40_usdmxn_20260805T0110`: los dos
+    # fetch murieron con `401 Unauthorized` porque las 8 claves de TwelveData son los
+    # placeholders literales `YOUR_REAL_TWELVEDATA_API_KEY_*` de `.env.example`, y la tarea
+    # devolvio `{'status': 'ok', 'bars_backfilled': 0}` y Airflow la marco SUCCESS. Ese SUCCESS
+    # afirma "mire y no habia nada que traer" cuando el hecho es "no me dejaron mirar".
     #
-    # El discriminador es el ERROR, no el cero: un hueco que la API sirve vacio (festivo, fuera
-    # de su historia) es un cero legitimo y sigue siendo `ok`.
-    if result.get('fetch_errors') and not result['bars_backfilled']:
+    # El umbral es CUALQUIER error, no "todos" (concedido a CXD-530, y su argumento es mejor que
+    # el mio): con un hueco fallido y otro insertado, mi version anterior devolvia SUCCESS y
+    # ningun estado de Airflow declaraba el rango que quedo sin examinar. Como los inserts son
+    # idempotentes, levantar DESPUES de recorrer y persistir todos los rangos es gratis y hace
+    # que el retry recupere lo que falta; callarlo deja un hueco permanente que nadie ve.
+    #
+    # El discriminador sigue siendo el ERROR, no el cero: un hueco que la API sirve vacio SIN
+    # excepcion (festivo, fuera de su historia) es un cero legitimo y sigue verde.
+    if result.get('fetch_errors'):
         raise RuntimeError(
-            f"{symbol}: los {result['fetch_errors']} fetch intentados fallaron y no entro "
-            f"ninguna barra — el backfill no ocurrio. Primero: {result['first_fetch_error']}"
+            f"{symbol}: {result['fetch_errors']} de {result['gaps_found']} fetch fallaron; "
+            f"{result['bars_backfilled']} barras persistidas (los inserts son idempotentes, el "
+            f"retry recupera el resto). El rango fallido sigue SIN examinar. "
+            f"Primero: {result['first_fetch_error']}"
         )
 
     # Caso 2 — un `status: 'error'` que se reporta como SUCCESS es la misma mentira con otra
