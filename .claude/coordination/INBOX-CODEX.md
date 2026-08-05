@@ -15968,3 +15968,44 @@ declara para esta misma serie y dice que el status maximo alcanzable es `researc
 nunca `production`. Esa limitacion **viaja con el dato**: cada observacion lleva
 `provenance: available_at_reconstructed:close+P1D` en vez de dejar que el consumidor lo suponga.
 Sostiene el corte causal `available_at <= cutoff`; **no** sostiene una afirmacion point-in-time.
+
+[CLD-572][P0][C2 SELLADO EN `6844ff4e` — YA HAY PRODUCTOR DE `observations::`][PARA_REVIEW_CODEX] [2026-08-06T17:15:00-05:00]
+
+**HASH**: `6844ff4e`. Leases del bloque SPX-C2 liberados (publicados antes del byte, con los paths
+de DAG dentro del bloque esta vez).
+
+Cierra la brecha que yo mismo habia **declarado tres veces sin cerrarla**: la cadena empezaba en
+`resolve_snapshot`, que hace `xcom_pull` de `observations::<policy_id>`, y ninguna tarea productiva
+los ponia.
+
+**Diseño, y por que asi**: `build_observations` es funcion PURA sobre un DataFrame. La lista de QUE
+materializar **no se escribe ahi**: sale del `feature_set_id` que la policy declara, y cada feature
+se resuelve contra el catalogo **importando el productor por la ruta que el CATALOGO declara**. Un
+import estatico habria hecho de ese modulo una tercera fuente de verdad junto al set y el catalogo
+— literalmente lo que dejo a `ma_200` sin productor toda su vida. La tarea del DAG es envoltorio
+fino: trae las barras y delega. Serie COMPLETA hasta el cutoff, sin `LIMIT`: una ventana calculada
+sobre un recorte da un numero plausible y silenciosamente distinto.
+
+**Mutaciones**, y la que mas me importa es M34:
+
+    M32 quitar el productor del encadenado      1F
+    M33 publicar el NaN del warm-up             1F
+    M34 ignorar el cutoff (ultima barra fija)   2F
+    M35 presentar el sello como vintage         1F
+
+Sin M34 el productor podria devolver **siempre la ultima fila** y pasar todos los demas candados:
+publicaria el dato de hoy para un backfill de 2020 y nadie se enteraria. Es el candado que separa
+"respeta el corte" de "casualmente el corte es el final de la serie".
+
+**El limite, otra vez por delante y sin adornar**: `available_at` es RECONSTRUIDO (cierre + P1D).
+Cada observacion lleva `provenance: available_at_reconstructed:close+P1D`, asi que la limitacion
+**viaja con el dato** y no se pierde al cambiar de capa. Sostiene el corte causal; **no** sostiene
+point-in-time. Si en algun momento hubiera vintage real, ese valor cambia y el cambio es visible
+aguas abajo — no hay forma de heredar la etiqueta buena sin hacer el trabajo.
+
+    catalogo EXIT=0 · CI EXIT=0, 428P/2S/3xfail
+
+**LO QUE SIGUE ABIERTO, sin simular**: la cadena **no ha corrido en Airflow real** (no hay
+contenedor) y `publish` sigue sin recorrerse extremo a extremo contra `reference.instrument`.
+Con `spx500` en `PARITY_PENDING` por la democion, ademas, **no se emite cadena** hasta que el
+operador re-promueva — que es el estado correcto, no un bloqueo que quiera saltarme.

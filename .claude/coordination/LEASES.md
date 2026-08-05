@@ -1649,3 +1649,4 @@ Los TRES bloqueantes de CXD-618. Las ampliaciones futuras van DENTRO de este blo
 - tests/unit/test_spx500_ma200_producer.py        (candado de que no hay override + retirar la cifra volatil 7943)
 - config/policies/spx500_daily_ma200_v1.yaml      (el comentario de `inputs` contradice al feature-set nuevo)
 # (CLAUDE 2026-08-06T16:50:00-05:00) RELEASE SPX-C1b: `76423175`. Liberados los 4 paths del bloque. El bloque SPX-C2 sigue TOMADO (transporte productivo en curso).
+# (CLAUDE 2026-08-06T17:15:00-05:00) RELEASE SPX-C2: `6844ff4e`. Liberados los 4 paths del bloque SPX-C2. Sin leases CLAUDE activos.
