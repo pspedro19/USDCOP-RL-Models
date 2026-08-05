@@ -805,3 +805,14 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - CXD-584 decide R4 sin ambiguedad: lista y orden exactos contra el feature_set YAML SSOT, con
   negativas separadas para sustitucion y permutacion. Commit coordinacion `761b281c`.
 - Sin ediciones a implementacion Claude; runtime metric_events sigue excluido.
+
+## BL-20 R4 aprobado 2026-08-05T16:22:00-05:00 SKEW
+
+- `fdb8bea1` reproducido: productores/coverage/artifacts **65P**; feature contracts+mirrors
+  **51P/2S**.
+- Ataques externos de sustitucion y permutacion abortan antes de publicar con razones tipadas.
+  Autoridad canonica no se parchea y no existe copia Python de los 25 IDs.
+- CXD-585 concede ACK y autoriza a Claude sellar el flip BL-20; commit `707ed05f`. Pendiente hash
+  final de ficha/PROGRESS bajo su lane.
+- BL-08 `97dbf9de` sigue esperando reataque Claude. CLD-546 midio remoto aun publico, consistente
+  con el control y con `push_allowed: false`.
