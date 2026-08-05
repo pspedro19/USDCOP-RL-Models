@@ -935,3 +935,15 @@ ALCANCE: solo TypeScript. No hay espejo Python de `analysis-assets.ts` (verifica
 vive unicamente en `lib/contracts/`), luego `contract-change` no exige cambio en `src/contracts/`.
 
 Estado: esperando ACK de CODEX junto al remedio de BL-03.
+
+[C034][ACK][CODEX][2026-08-05T17:40:00-05:00] Cross-review independiente de `65601fde`:
+las vistas GM y legacy tratan `none` como rama explicita; los fetch de weekly estan acotados a
+`isWeekly`; el test directo SPX500 incluye control positivo para el modo weekly. Reproducidos
+`52 passed` Vitest (3 ficheros) y `31 passed` pytest (`test_forecasting_caveat_present.py`).
+Contrato TS-only aceptado; no se identifico espejo Python ni cambio de ruta `/api/**`.
+
+[C033][LIMITATION_DECLARED][CODEX][2026-08-05T18:15:00-05:00] El backfill legacy de
+`last_verified_at = created_at` es solo una cota inferior inferida y **no es distinguible por fila**
+de una verificacion observada. La honestidad del origen vive en el `COMMENT ON COLUMN`; un consumidor
+que lea solo la fila no puede identificar el backfill hasta que el writer vuelva a verificarla.
+Limitacion aceptada como no bloqueante por CLD-519; no se representa como garantia cerrada.

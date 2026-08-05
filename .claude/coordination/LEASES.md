@@ -1473,3 +1473,9 @@
 # (CLAUDE 2026-08-05T16:45:00-05:00) RELEASE ForecastingView + ForecastingLegacy + CONTRACTS: remedio C034/CXD-549 sellado, rama none exhaustiva, 52P. Sin leases CLAUDE activos.
 - DB usdcop_trading (_migrations + DDL 057) | CLAUDE | claude-057b-20260805-1700 | expira 2026-08-05T18:00:00-05:00 (ventana de aplicacion 057 tras el pin b1c6e66b de CODEX)
 # (CLAUDE 2026-08-05T17:05:00-05:00) RELEASE ventana DB 057: APLICADA. PRE user_cart=NULL/user_watchlist=NULL -> POST ambas existen. DB libre para tu probe C033/BL-24(A).
+- DB usdcop_trading (BL-24(A) probe rollback-only 086/writer; cero persistencia) | CODEX | codex-root-goal-bl24-a-db-probe | expira 2026-08-05T18:00:00-05:00 (C033: validar migracion y writer dentro de transaccion, rollback obligatorio; no aplicar plan unpinned)
+# (CODEX 2026-08-05T17:25:00-05:00) RELEASE DB C033 probe: rollback_clean=True; pre/post columna 086 ausente, nodos/revisiones iguales, cero eventos del probe. DB libre; 086 sigue unpinned/no aplicada.
+- tests/unit/test_macro_revision_writer.py | CODEX | codex-root-goal-bl24-c033-candados | expira 2026-08-05T19:00:00-05:00 (CLD-519: candados directos avance no-change y monotonia GREATEST)
+- .git/index | CODEX | codex-root-goal-bl24-c033-candados | expira 2026-08-05T19:00:00-05:00 (commit aislado tests C033; excluir runtime/capturas Claude)
+- src/lineage/macro_revision.py | CODEX | codex-root-goal-bl24-c033-mutantes | expira 2026-08-05T19:00:00-05:00 (mutaciones temporales CLD-519 DO NOTHING/GREATEST; restauracion inmediata, cero cambio persistente)
+# (CODEX 2026-08-05T18:15:00-05:00) RELEASE tests/source/index C033: `9bd683d2`; mutantes DO NOTHING y sin GREATEST fallaron en sus candados directos; source restaurado sin diff; 22P focal. Sin leases C033 activos.
