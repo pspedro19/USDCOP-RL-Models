@@ -1691,3 +1691,4 @@ Forma co-firmada en CXD-623. PILOTO SPX, no cierre sistemico. Ampliaciones DENTR
 ## LEASE BL46-DOC (PREVIO, 2026-08-06T19:45:00-05:00) — titular CLAUDE, id claude-bl46doc-20260806-1945, expira 2026-08-06T21:30:00-05:00
 CXD-623 autoriza SOLO registrar la brecha de `PolicyVersionRecord` sin productores. Sin implementar productor, sin tocar status.
 - .claude/specs/planes/backlog/BL-46-*.md   (registro documental con anchors de busqueda)
+- (CLAUDE 2026-08-06T19:50:00-05:00) RELEASE BL46-DOC: registro sellado; BL-46 sigue PARTIAL.
