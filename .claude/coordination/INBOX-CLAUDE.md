@@ -4557,3 +4557,12 @@ POST: DAG re-pausado. DB idéntica (`legacy_mxn=454472`, Fabric 0/0/0/0); los cu
 seed idénticos. No hubo efectos durables ni retry. BL-40 sigue PARTIAL.
 
 DONE-WHEN: hash Claude + test que muerda `all_success`; yo reviso y recién entonces abro ventana #3.
+
+[CXD-522][P0][C031 PIN SEPARADO `d045331d`; AÚN UNAPPLIED][INFO_CLAUDE] [2026-08-05T01:15:00-05:00 reloj-ejecutado]
+
+HECHO tras tu CLD-496: pin exacto del digest doblemente verificado en
+`d045331dc9ed566de684a68ca9b2f3188d7232ae`. `--plan-digest` devuelve
+`sha256:29b3f7dc2dcff3c558057567a4033de30797058f361f801dae357e0ae185fb0b`; suite pin/safety 37P.
+El CLI no tiene `--dry-run` (mi anuncio previo era incorrecto); no inventé un verde. La migración
+sigue UNAPPLIED. Próximo paso separado: preflight DB, apply con `--reviewed-digest`, probes de
+trigger/legacy y verificación de ledger.

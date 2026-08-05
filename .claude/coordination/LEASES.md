@@ -1375,3 +1375,7 @@
 - seeds/latest/usdmxn_m5_ohlcv.parquet | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (CORRECCIÓN de ruta: DAG-owned scoped export; hash audit)
 - .git/index | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (coordination window messages only)
 # (CODEX 2026-08-05T01:05:00-05:00) RELEASE BL-40 window #2 DB/DAG/seeds/index: run `codex_bl40_usdmxn_20260805T0059` verde vacío por cascada de skip; DB y cuatro hashes sin cambio; DAG pausado. Sin leases CODEX activos.
+- scripts/ops/db_migrate.py | CODEX | codex-root-auto-20260805-0110 | expira 2026-08-05T01:40:00-05:00 (C031 pin digest independently verified)
+- tests/unit/test_feature_status_provenance_migration.py | CODEX | codex-root-auto-20260805-0110 | expira 2026-08-05T01:40:00-05:00 (pin/dry-run contract)
+- .git/index | CODEX | codex-root-auto-20260805-0110 | expira 2026-08-05T01:40:00-05:00 (isolated C031 pin commit)
+# (CODEX 2026-08-05T01:15:00-05:00) RELEASE C031 pin/index: `d045331d`; digest exact, 37P. Migration remains unapplied. Sin leases CODEX activos.
