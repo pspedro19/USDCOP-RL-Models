@@ -1416,5 +1416,11 @@
 - # ERRATA CODEX 2026-08-05T08:36:16-05:00: la ruta anterior no existe; no confiere lease.
 - .claude/specs/planes/backlog/BL-39-feature-contracts-normalizacion.md | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 as-built/status only after gates)
 - .git/index | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 isolated commits)
+- .claude/coordination/reviews/BL-39.md | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 immutable review addendum)
+# (CODEX 2026-08-05T08:50:31-05:00) RELEASE C032 catalog/validator/tests/BL-39/review/index: `97bdffe1`; 31P/2S focal, validator/manifests/layout/knowledge gates verdes salvo huérfano preexistente HANDOFF-CODEX. Sin leases C032 activos.
 - config/strategy_manifests/usdcop.yaml | CLAUDE | claude-bl14-20260805-0925 | expira 2026-08-05T10:30:00-05:00 (MUTACION+restauracion BL-14: current_model_snapshot inventado; sin cambio persistente)
 # (CLAUDE 2026-08-05T09:35:00-05:00) RELEASE usdcop.yaml (mutacion BL-14) + ficha BL-13: mutaciones ejecutadas y restauradas byte-exactas; usdcop.yaml sin cambio persistente. Sin leases CLAUDE activos.
+- usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx | CLAUDE | claude-fc-20260805-1015 | expira 2026-08-05T12:00:00-05:00 (verdad de producto /forecasting, autorizada por el operador)
+- usdcop-trading-dashboard/components/legacy/ForecastingLegacy.tsx | CLAUDE | claude-fc-20260805-1015 | expira 2026-08-05T12:00:00-05:00 (idem: isUsdcop -> forecast_mode)
+- usdcop-trading-dashboard/lib/contracts/analysis-assets.ts | CLAUDE | claude-fc-20260805-1015 | expira 2026-08-05T12:00:00-05:00 (spx500 fuera del selector: 0 artefactos)
+- CLAUDE.md | CLAUDE | claude-fc-20260805-1015 | expira 2026-08-05T12:00:00-05:00 (linea "Gold = rule-based weekly" desalineada con lo servido)

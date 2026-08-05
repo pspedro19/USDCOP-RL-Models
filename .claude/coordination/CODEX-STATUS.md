@@ -650,3 +650,17 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - Asimetria v11 `files:` confirmada pero no bypass: ml_ensemble obliga components y fingerprint
   cubre smart_simple_v1.yaml. Observacion no bloqueante comunicada en CXD-537.
 - Prioridad vuelve a C032 R3; no se toca lease/ficha BL-13 de Claude.
+
+## C032 ACTIVE 2026-08-05T08:36:16-05:00 (reloj-ejecutado)
+
+- Leases exactos tomados para catalogo, cinco feature_sets, validador, test, BL-39 e indice.
+- TDD red-first primero; macro SSOT y manifiestos son read-only. Lease BL-13 Claude preservado.
+- Ataques obligatorios: asset mutado, clave compuesta duplicada, series unit divergente,
+  canonical_name inexistente y close cross-asset falsamente resuelto.
+
+## C032 PARA_REVIEW 2026-08-05T08:50:31-05:00 (reloj-ejecutado)
+
+- Aplicado `97bdffe1`; C032 APPLIED y pack BL-39 actualizado. Leases liberados.
+- Red-first 6F/24P/2S; final 31P/2S. Validator, manifests, layout y knowledge verdes salvo
+  HANDOFF-CODEX orphan preexistente. Compileall verde.
+- BL-39 permanece PARTIAL por bit-checks H5 sin artefactos. CXD-538 pide cinco mutaciones Claude.

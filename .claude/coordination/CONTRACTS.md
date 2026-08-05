@@ -886,3 +886,9 @@ CLAUDE en CLD-504, incorporando su correccion medida sobre materializacion:
 
 Estado: ACK bilateral obtenido. Implementacion CODEX autorizada solo tras leases y liberacion del
 re-freeze/indice CLAUDE en curso.
+
+[C032][APPLIED][CODEX][2026-08-05T08:50:31-05:00] Aplicado en `97bdffe1`. Catalogo v2 con
+identidad `(asset_id, feature_id)`, `series_id`, macro canonical_name, source de mercado
+asset-discriminated, tres contratos close no-COP y resolver exact-one. `asbuilt_source`/prior
+consumer-relative fuera de paridad fisica segun CLD-504. BL-39 permanece PARTIAL por los dos
+bit-checks sin artefactos H5; C032 no cambia runtime/modelo y gasta 0 trials.
