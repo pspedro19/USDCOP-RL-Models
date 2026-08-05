@@ -28,14 +28,17 @@
 #     macro.observation); `asbuilt_source` documenta la tabla/archivo actual
 #     (§1.3 problema 3: no anclarse a tablas por renombrar).
 #
-# Version: 1.1.0 · Date: 2026-07-28 · Frozen scope: v11 legacy_v1 (25 features)
+# Version: 2.0.0 · Date: 2026-08-05 · Frozen scope preserved: v11 legacy_v1
 # Refreeze 1.1.0 (CXD-041/043, BL-39-r2): canonicalizacion LF del hash de
 # enhance_v2.py (13fc9f7864f0cc7a -> b601ae271c8e2b5f; dataset_loader.py ya era
 # LF y no cambia), 0 cambios de contenido de codigo; + correcciones de
 # documentacion contra el codigo real (causality de trend_slope_60d, memoria
 # EWM del RSI, staleness de las macro lag1) con cita de linea; 0 trials.
+# C032 2.0.0: identidad de consumo (asset_id, feature_id) + identidad fisica
+# series_id; resolucion exact-one de todos los feature_sets y source_contract de
+# mercado discriminado por activo. Declarativo, sin cambio de runtime/modelo, 0 trials.
 contract_id: CTR-FEATURE-CATALOG-001
-version: 1.1.0
+version: 2.0.0
 
 # ── Gates: que corre en CI y que es local-only (CXD-041 punto 7) ───────────
 ci_gates:
@@ -62,11 +65,13 @@ legacy_note: >-
 features:
 
 # ── Precio crudo (4) — niveles que Ridge consume directamente ──────────────
-- feature_id: close
+- asset_id: usdcop
+  feature_id: close
+  series_id: usdcop.close
   unit: cop_per_usd
   feature_group: price
   causality_policy: same_bar
-  source_contract: market.canonical_bar   # P1D provider_official
+  source_contract: market.canonical_bar[asset_id=usdcop]   # P1D provider_official
   asbuilt_source: bi.dim_daily_usdcop / seeds usdcop_daily_ohlcv.parquet
   transformation: identity
   lookback: P0D
@@ -76,11 +81,58 @@ features:
   sign_prior_note: nivel crudo como input del modelo lineal; sin prior direccional (legacy ex-post)
   is_active: true
 
-- feature_id: open
+- asset_id: xauusd
+  feature_id: close
+  series_id: xauusd.close
+  unit: usd_per_troy_ounce
+  feature_group: price
+  causality_policy: same_bar
+  source_contract: market.canonical_bar[asset_id=xauusd]
+  transformation: identity
+  lookback: P0D
+  compute_location: python
+  code_reference: null
+  sign_prior: ambiguous
+  sign_prior_note: nivel crudo de XAUUSD; sin prior direccional
+  is_active: true
+
+- asset_id: btcusdt
+  feature_id: close
+  series_id: btcusdt.close
+  unit: usdt_per_btc
+  feature_group: price
+  causality_policy: same_bar
+  source_contract: market.canonical_bar[asset_id=btcusdt]
+  transformation: identity
+  lookback: P0D
+  compute_location: python
+  code_reference: null
+  sign_prior: ambiguous
+  sign_prior_note: nivel crudo de BTCUSDT; USDT no se asume equivalente a USD
+  is_active: true
+
+- asset_id: spx500
+  feature_id: close
+  series_id: spx500.close
+  unit: index_level
+  feature_group: price
+  causality_policy: same_bar
+  source_contract: market.canonical_bar[asset_id=spx500]
+  transformation: identity
+  lookback: P0D
+  compute_location: python
+  code_reference: null
+  sign_prior: ambiguous
+  sign_prior_note: nivel price-return del indice; sin prior direccional
+  is_active: true
+
+- asset_id: usdcop
+  feature_id: open
+  series_id: usdcop.open
   unit: cop_per_usd
   feature_group: price
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   asbuilt_source: bi.dim_daily_usdcop / seeds usdcop_daily_ohlcv.parquet
   transformation: identity
   lookback: P0D
@@ -90,11 +142,13 @@ features:
   sign_prior_note: nivel crudo; sin prior direccional (legacy ex-post)
   is_active: true
 
-- feature_id: high
+- asset_id: usdcop
+  feature_id: high
+  series_id: usdcop.high
   unit: cop_per_usd
   feature_group: price
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   asbuilt_source: bi.dim_daily_usdcop / seeds usdcop_daily_ohlcv.parquet
   transformation: identity
   lookback: P0D
@@ -104,11 +158,13 @@ features:
   sign_prior_note: nivel crudo; sin prior direccional (legacy ex-post)
   is_active: true
 
-- feature_id: low
+- asset_id: usdcop
+  feature_id: low
+  series_id: usdcop.low
   unit: cop_per_usd
   feature_group: price
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   asbuilt_source: bi.dim_daily_usdcop / seeds usdcop_daily_ohlcv.parquet
   transformation: identity
   lookback: P0D
@@ -119,11 +175,13 @@ features:
   is_active: true
 
 # ── Retornos (4) — dataset_loader._build_features ──────────────────────────
-- feature_id: return_1d
+- asset_id: usdcop
+  feature_id: return_1d
+  series_id: usdcop.return_1d
   unit: decimal
   feature_group: returns
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: pct_change
   lookback: P1D
   compute_location: python
@@ -132,11 +190,13 @@ features:
   sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
 
-- feature_id: return_5d
+- asset_id: usdcop
+  feature_id: return_5d
+  series_id: usdcop.return_5d
   unit: decimal
   feature_group: returns
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: pct_change
   lookback: P5D
   compute_location: python
@@ -145,11 +205,13 @@ features:
   sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
 
-- feature_id: return_10d
+- asset_id: usdcop
+  feature_id: return_10d
+  series_id: usdcop.return_10d
   unit: decimal
   feature_group: returns
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: pct_change
   lookback: P10D
   compute_location: python
@@ -158,11 +220,13 @@ features:
   sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
 
-- feature_id: return_20d
+- asset_id: usdcop
+  feature_id: return_20d
+  series_id: usdcop.return_20d
   unit: decimal
   feature_group: returns
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: pct_change
   lookback: P20D
   compute_location: python
@@ -172,11 +236,13 @@ features:
   is_active: true
 
 # ── Volatilidad (3) ────────────────────────────────────────────────────────
-- feature_id: volatility_5d
+- asset_id: usdcop
+  feature_id: volatility_5d
+  series_id: usdcop.volatility_5d
   unit: decimal_daily
   feature_group: volatility
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: rolling_std(return_1d)
   lookback: P5D
   compute_location: python
@@ -185,11 +251,13 @@ features:
   sign_prior_note: la vol condiciona magnitud, no direccion (legacy ex-post)
   is_active: true
 
-- feature_id: volatility_10d
+- asset_id: usdcop
+  feature_id: volatility_10d
+  series_id: usdcop.volatility_10d
   unit: decimal_daily
   feature_group: volatility
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: rolling_std(return_1d)
   lookback: P10D
   compute_location: python
@@ -198,11 +266,13 @@ features:
   sign_prior_note: la vol condiciona magnitud, no direccion (legacy ex-post)
   is_active: true
 
-- feature_id: volatility_20d
+- asset_id: usdcop
+  feature_id: volatility_20d
+  series_id: usdcop.volatility_20d
   unit: decimal_daily
   feature_group: volatility
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: rolling_std(return_1d)
   lookback: P20D
   compute_location: python
@@ -212,11 +282,13 @@ features:
   is_active: true
 
 # ── Tecnicos (3) ───────────────────────────────────────────────────────────
-- feature_id: rsi_14d
+- asset_id: usdcop
+  feature_id: rsi_14d
+  series_id: usdcop.rsi_14d
   unit: index_0_100
   feature_group: momentum
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: rsi_wilder_ema   # alpha=1/14, JAMAS pandas ewm default (DO-NOT)
   lookback: P14D
   lookback_note: >-
@@ -230,11 +302,13 @@ features:
   sign_prior_note: sobrecompra/sobreventa con canal mixto en EM FX (legacy ex-post)
   is_active: true
 
-- feature_id: ma_ratio_20d
+- asset_id: usdcop
+  feature_id: ma_ratio_20d
+  series_id: usdcop.ma_ratio_20d
   unit: ratio
   feature_group: trend
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: close/sma
   lookback: P20D
   compute_location: python
@@ -243,11 +317,13 @@ features:
   sign_prior_note: tendencia vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
 
-- feature_id: ma_ratio_50d
+- asset_id: usdcop
+  feature_id: ma_ratio_50d
+  series_id: usdcop.ma_ratio_50d
   unit: ratio
   feature_group: trend
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: close/sma
   lookback: P50D
   compute_location: python
@@ -257,11 +333,13 @@ features:
   is_active: true
 
 # ── Calendario (3) ─────────────────────────────────────────────────────────
-- feature_id: day_of_week
+- asset_id: usdcop
+  feature_id: day_of_week
+  series_id: usdcop.day_of_week
   unit: categorical_0_6
   feature_group: calendar
   causality_policy: point_in_time
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: calendar_extract
   lookback: P0D
   compute_location: python
@@ -270,11 +348,13 @@ features:
   sign_prior_note: estacionalidad intra-semana sin direccion declarada (legacy ex-post)
   is_active: true
 
-- feature_id: month
+- asset_id: usdcop
+  feature_id: month
+  series_id: usdcop.month
   unit: categorical_1_12
   feature_group: calendar
   causality_policy: point_in_time
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: calendar_extract
   lookback: P0D
   compute_location: python
@@ -283,11 +363,13 @@ features:
   sign_prior_note: estacionalidad anual sin direccion declarada (legacy ex-post)
   is_active: true
 
-- feature_id: is_month_end
+- asset_id: usdcop
+  feature_id: is_month_end
+  series_id: usdcop.is_month_end
   unit: binary
   feature_group: calendar
   causality_policy: point_in_time
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: calendar_extract
   lookback: P0D
   compute_location: python
@@ -297,7 +379,9 @@ features:
   is_active: true
 
 # ── Macro T-1 (4) — shift(1) + merge_asof(backward), anti-leakage ──────────
-- feature_id: dxy_close_lag1
+- asset_id: usdcop
+  feature_id: dxy_close_lag1
+  series_id: fxrt_index_dxy_usa_d_dxy
   unit: index_level
   feature_group: macro
   causality_policy: lagged_1
@@ -316,7 +400,9 @@ features:
   sign_prior_note: DXY fuerte = USD fuerte => USDCOP sube (documentado ex-post, legacy_v1)
   is_active: true
 
-- feature_id: oil_close_lag1
+- asset_id: usdcop
+  feature_id: oil_close_lag1
+  series_id: comm_oil_wti_glb_d_wti
   unit: usd_per_barrel
   feature_group: macro
   causality_policy: lagged_1
@@ -335,7 +421,9 @@ features:
   sign_prior_note: petroleo alto fortalece al COP (exportador) => USDCOP baja (ex-post, legacy_v1)
   is_active: true
 
-- feature_id: vix_close_lag1
+- asset_id: usdcop
+  feature_id: vix_close_lag1
+  series_id: volt_vix_usa_d_vix
   unit: index_level
   feature_group: macro
   causality_policy: lagged_1
@@ -354,7 +442,9 @@ features:
   sign_prior_note: risk-off deprecia EM FX => USDCOP sube (ex-post, legacy_v1)
   is_active: true
 
-- feature_id: embi_close_lag1
+- asset_id: usdcop
+  feature_id: embi_close_lag1
+  series_id: crsk_spread_embi_col_d_embi
   unit: basis_points
   feature_group: macro
   causality_policy: lagged_1
@@ -374,11 +464,13 @@ features:
   is_active: true
 
 # ── Enhancement v2 (4) — src/forecasting/enhance_v2.py (SSOT compartido) ───
-- feature_id: vol_regime_ratio
+- asset_id: usdcop
+  feature_id: vol_regime_ratio
+  series_id: usdcop.vol_regime_ratio
   unit: ratio
   feature_group: regime
   causality_policy: same_bar
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: vol5/vol20 clip[-5,5] fillna(1.0)
   lookback: P20D
   compute_location: python
@@ -387,7 +479,9 @@ features:
   sign_prior_note: regimen de vol condiciona el gate, no la direccion (legacy ex-post)
   is_active: true
 
-- feature_id: trend_slope_60d
+- asset_id: usdcop
+  feature_id: trend_slope_60d
+  series_id: usdcop.trend_slope_60d
   unit: decimal_per_bar_normalized
   feature_group: trend
   causality_policy: lagged_1
@@ -397,7 +491,7 @@ features:
     series.iloc[i - window:i]` toma closes t-60..t-1; el valor en t no usa el
     close de t. Disponible con info de t-1 => lagged_1. Filas tempranas (<60
     barras) quedan 0.0 tras ffill().fillna(0.0) (enhance_v2.py L132-134).
-  source_contract: market.canonical_bar
+  source_contract: market.canonical_bar[asset_id=usdcop]
   transformation: polyfit_slope/mean sobre ventana t-60..t-1 (excluye barra actual)
   lookback: P60D
   compute_location: python
@@ -406,7 +500,9 @@ features:
   sign_prior_note: continuacion vs agotamiento de tendencia no declarado ex-ante (legacy ex-post)
   is_active: true
 
-- feature_id: rate_diff_ibr_ust2y
+- asset_id: usdcop
+  feature_id: rate_diff_ibr_ust2y
+  series_id: usdcop.rate_diff_ibr_ust2y
   unit: percentage_points
   feature_group: macro_derived
   causality_policy: lagged_1
@@ -426,7 +522,9 @@ features:
   sign_prior_note: carry alto atrae flujos => COP fuerte => USDCOP baja (ex-post, legacy_v1)
   is_active: true
 
-- feature_id: term_spread
+- asset_id: usdcop
+  feature_id: term_spread
+  series_id: finc_curve_t10y2y_usa_d_t10y2y
   unit: percentage_points
   feature_group: macro_derived
   causality_policy: lagged_1

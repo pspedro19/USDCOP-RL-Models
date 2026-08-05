@@ -1,10 +1,13 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.1
+version: 1.0.2
 last_verified: 2026-08-05
 supersedes: []
 code_anchors:
+  - config/features/feature_catalog.yaml
+  - scripts/validation/validate_feature_catalog.py
+  - tests/regression/test_feature_contracts.py
   - src/core/contracts/feature_contract.py
   - scripts/pipeline/train_and_export_smart_simple.py
   - src/forecasting/enhance_v2.py
@@ -63,6 +66,19 @@ causalidad, muros de hash y la mutación de look-ahead—, que sí corre. Lo que
 bit-check en evidencia es una corrida real de `train_and_export_smart_simple.py` que produzca los
 artefactos congelados; entonces se publica `26 passed` **medido**. Hasta entonces el skip se
 declara y no se cuenta como verde (`K-051`).
+
+### C032 — identidad por activo y serie física (2026-08-05)
+
+C032 cerró el falso verde medido por CLD-503: la resolución global por `feature_id` ligaba
+`close` de BTCUSDT, XAUUSD y SPX500 al contrato USDCOP en `cop_per_usd`. El catálogo v2 exige
+`(asset_id, feature_id)`, `series_id`, fuente de mercado discriminada por activo y resolución
+exact-one de todos los feature sets. DXY/WTI/VIX/UST10Y-2Y usan el `canonical_name` del SSOT macro;
+la paridad física cubre unidad/fuente/transformación/código, pero excluye correctamente el prior
+por consumidor y la materialización local `asbuilt_source`.
+
+TDD medido: antes de implementar, **6 failed / 24 passed / 2 skipped**. Después: suite focal
+**31 passed / 2 skipped** y validador CLI verde sobre el catálogo real. El estado sigue `PARTIAL`:
+C032 no fabrica los artefactos H5 ausentes y los dos bit-checks continúan en skip explícito.
 
 **Historial honesto**: hasta el 2026-07-28 el look-ahead **solo se detectaba por DRIFT DE
 HASH**. Quitar el `.shift(1)` de un feature macro daba rojos que decían *"drifted from the

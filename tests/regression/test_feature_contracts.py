@@ -24,6 +24,9 @@ What this file enforces (BL-39 Verificación + DATA-STRATEGY §40-48 + Plan Cons
 5. Bit-check: the v11 signal of the last artifact week is reproduced from the
    DECLARED feature_set + normalization_snapshot and must be bit-identical to the
    as-built H5-L5b pipeline path (scripts/validation/bitcheck_v11_signal.py).
+6. C032 scopes catalog identity by asset and ties repeated physical observables
+   with `series_id`; every feature set resolves exact-one and cannot silently
+   bind XAU/BTC/SPX `close` to the COP contract.
 
 HASH METHOD (CXD-041/043): hashes over SOURCE files use the canonical LF form
 (CRLF->LF normalized bytes == git blob under .gitattributes text eol=lf), so a
@@ -122,13 +125,15 @@ def _sha16_lf(path: Path) -> str:
 
 def _valid_entry(**overrides) -> dict:
     entry = {
+        "asset_id": "synthetic",
         "feature_id": "synthetic_ok",
+        "series_id": "synthetic.synthetic_ok",
         "unit": "decimal",
         "feature_group": "returns",
         "causality_policy": "same_bar",
-        "source_contract": "market.canonical_bar",
-        "transformation": "pct_change",
-        "lookback": "P1D",
+        "source_contract": "market.canonical_bar[asset_id=synthetic]",
+        "transformation": "identity",
+        "lookback": "P0D",
         "compute_location": "python",
         "code_reference": None,
         "sign_prior": "positive",
@@ -137,6 +142,93 @@ def _valid_entry(**overrides) -> dict:
     }
     entry.update(overrides)
     return entry
+
+
+def test_c032_requires_asset_and_physical_series_identity():
+    v = _load_validator()
+    for missing in ("asset_id", "series_id"):
+        entry = _valid_entry()
+        del entry[missing]
+        errors = v.validate_entries([entry])
+        assert any(missing in error for error in errors), errors
+
+
+def test_c032_identity_is_composite_and_duplicate_composites_fail():
+    v = _load_validator()
+    usdcop = _valid_entry(asset_id="usdcop", feature_id="close",
+                          series_id="usdcop.close",
+                          source_contract="market.canonical_bar[asset_id=usdcop]")
+    btc = _valid_entry(asset_id="btcusdt", feature_id="close",
+                       series_id="btcusdt.close",
+                       source_contract="market.canonical_bar[asset_id=btcusdt]")
+    assert v.validate_entries([usdcop, btc]) == []
+    errors = v.validate_entries([usdcop, dict(usdcop)])
+    assert any("duplicate" in error and "usdcop" in error for error in errors), errors
+
+
+def test_c032_same_series_cannot_diverge_physically():
+    v = _load_validator()
+    cop = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="fxrt_index_dxy_usa_d_dxy", unit="index_level",
+        source_contract="macro.observation", transformation="identity",
+    )
+    btc = dict(cop, asset_id="btcusdt", unit="cop_per_usd")
+    errors = v.validate_entries([cop, btc])
+    assert any("series_id" in error and "unit" in error for error in errors), errors
+
+
+def test_c032_materialization_and_consumer_prior_are_not_physical_identity():
+    v = _load_validator()
+    cop = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="fxrt_index_dxy_usa_d_dxy", unit="index_level",
+        source_contract="macro.observation", transformation="identity",
+        asbuilt_source="macro_indicators_daily", sign_prior="positive",
+    )
+    btc = dict(cop, asset_id="btcusdt", asbuilt_source="btc_macro_seed.parquet",
+               sign_prior="ambiguous", sign_prior_note="consumer-specific prior")
+    assert v.validate_entries([cop, btc]) == []
+
+
+def test_c032_macro_series_id_must_resolve_to_ssot_canonical_name():
+    v = _load_validator()
+    entry = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="macro.does_not_exist", source_contract="macro.observation",
+        transformation="level_lag1",
+    )
+    errors = v.validate_entries([entry])
+    assert any("canonical_name" in error and "series_id" in error for error in errors), errors
+
+
+def test_c032_market_source_contract_discriminates_asset():
+    v = _load_validator()
+    entry = _valid_entry(
+        asset_id="xauusd", feature_id="close", series_id="xauusd.close",
+        unit="usd_per_troy_ounce", source_contract="market.canonical_bar",
+        transformation="identity", lookback="P0D", code_reference=None,
+    )
+    errors = v.validate_entries([entry])
+    assert any("source_contract" in error and "xauusd" in error for error in errors), errors
+
+
+def test_c032_all_feature_sets_resolve_exactly_one_asset_contract():
+    v = _load_validator()
+    catalog = _catalog()["features"]
+    feature_sets = [
+        _feature_set(path.stem)
+        for path in sorted(SETS_DIR.glob("*.yaml"))
+    ]
+    errors = v.validate_feature_sets(catalog, feature_sets)
+    assert errors == [], errors
+
+    # CLD-503: the old global resolver falsely bound XAU close to COP close.
+    xau = next(fs for fs in feature_sets if fs["asset_id"] == "xauusd")
+    forged = [entry for entry in catalog
+              if not (entry["asset_id"] == "xauusd" and entry["feature_id"] == "close")]
+    errors = v.validate_feature_sets(forged, [xau])
+    assert any("xauusd" in error and "close" in error for error in errors), errors
 
 
 def test_gate_rejects_feature_without_causality_policy():
@@ -351,8 +443,11 @@ def test_v11_recipe25_contract():
     assert orders == list(range(25)), "order must be dense 0..24"
     assert all(f["required"] is True for f in fs["ordered_features"])
 
-    cat_ids = {f["feature_id"] for f in _catalog()["features"]}
-    missing = [f for f in ordered if f not in cat_ids]
+    cat_ids = {
+        (f["asset_id"], f["feature_id"])
+        for f in _catalog()["features"]
+    }
+    missing = [f for f in ordered if (fs["asset_id"], f) not in cat_ids]
     assert not missing, f"feature_set references features absent from catalog: {missing}"
 
     # §42.5: v12/v14 share v11's decision input — declared, so comparison is paired.
