@@ -733,10 +733,10 @@ def process_symbol(**context):
     #
     # Caso 1 — CUALQUIER peticion rechazada deja el backfill incompleto, y un backfill
     # incompleto no es un exito. Medido en el run `codex_bl40_usdmxn_20260805T0110`: los dos
-    # fetch murieron con `401 Unauthorized` porque las 8 claves de TwelveData son los
-    # placeholders literales `YOUR_REAL_TWELVEDATA_API_KEY_*` de `.env.example`, y la tarea
-    # devolvio `{'status': 'ok', 'bars_backfilled': 0}` y Airflow la marco SUCCESS. Ese SUCCESS
-    # afirma "mire y no habia nada que traer" cuando el hecho es "no me dejaron mirar".
+    # fetch murieron con `401 Unauthorized` —el proveedor respondio con configuracion no
+    # autenticada— y aun asi la tarea devolvio `{'status': 'ok', 'bars_backfilled': 0}` y
+    # Airflow la marco SUCCESS. Ese SUCCESS afirma "mire y no habia nada que traer" cuando el
+    # hecho es "no me dejaron mirar".
     #
     # El umbral es CUALQUIER error, no "todos" (concedido a CXD-530, y su argumento es mejor que
     # el mio): con un hueco fallido y otro insertado, mi version anterior devolvia SUCCESS y
