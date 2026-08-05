@@ -116,6 +116,51 @@ descendente (trivial con constantes), finitud y provenance, pero **nunca** que �
 relación con el modelo. `grep additivity tests/` daba **0 aserciones**: la aditividad se
 persistía como campo y no se recomputaba (K-041). La ruta TreeSHAP no la ejecutaba ningún test.
 
+## Las DOS condiciones del operador quedan CUMPLIDAS (2026-08-05/06)
+
+El operador revocó el recorte y fijó qué faltaba: **(a)** generador por
+`(surface, asset, model_id, version)` para **v11 composite, Gold y BTC**, y **(b)** una
+**atribución correcta para los tres híbridos**. Ambas están hechas, y ninguna por recorte.
+
+**(a) Cobertura por activo y superficie — COMPLETA.**
+
+| Superficie | Activo | Modelos con artefacto |
+|---|---|---|
+| `zoo` | usdcop | ridge · bayesian_ridge · ard · xgboost · lightgbm · catboost · 3 híbridos |
+| `zoo` | xauusd | ridge · bayesian_ridge · ard · 3 `_pure` · 3 híbridos |
+| `zoo` | btcusdt | ridge · bayesian_ridge · ard · 3 `_pure` · 3 híbridos |
+| `composite` | usdcop | **`usdcop_ridge_br`** — el componente `decision_input` de v11 |
+| `rule_based` | spx500 | atribución de reglas (etiquetada «atribución, no SHAP») |
+
+**(b) Híbridos — atribución EXACTA, no aproximada (`e207c33e`).** La ficha los dejaba fuera
+diciendo que TreeSHAP no es correcto sobre un modelo mitad lineal mitad árbol. **Eso es cierto**
+—y por eso publicar TreeSHAP puro habría sido peor que no publicar— pero la atribución correcta
+no requería diseño nuevo: `HybridBaseModel.predict` es una **combinación convexa**
+`(1-a)·boost(X) + a·ridge(scaler(X))`, y SHAP es aditivo y lineal en la salida del modelo, luego
+`φ = (1-a)·φ_tree + a·φ_lin`. Se compone además el reescalado de varianza **afín** que el wrapper
+aplica después. **8 de 9 publicados** (1.9e-17 … 6.4e-09); `btcusdt/hybrid_xgboost` queda
+degradado (1.83e-08) y **no se aflojó el umbral para que pasara**.
+
+**v11 composite (`da4ae932`) — lo valioso es lo que se NIEGA a afirmar.** `add_err = 5.55e-17`
+sobre las **25 features de la receta** (no las 21 del zoo: reutilizarlas y llamarlo v11 habría
+atribuido otro modelo). Sus dos negativas son criterio duro con candado propio: **no explica lo
+que la estrategia opera** (gate de régimen, sizing y TP/HS son REGLAS, no el modelo) y **no
+explica el snapshot de 23 que persiste el DAG** (divergencia `declared_not_resolved`; faltan allí
+`rate_diff_ibr_ust2y` y `term_spread`).
+
+**Lo que queda, y por qué NO bloquea:** la kill-rule «contradice el prior». Su propia ficha ya la
+declaraba **DECISIÓN PENDIENTE DEL OPERADOR** desde julio, y sigue bloqueada de raíz: exige una
+tabla de signos por feature firmada **ex-ante**, y quien ya vio los artefactos no puede proponerla
+sin contaminarla (`quant-constitution` §1). CODEX lo confirmó al rechazar el recorte:
+*«la kill-rule de priors permanece correctamente bloqueada por decisión ex-ante; no la uso para
+negar el valor del incremento»*. Es un bloqueo declarado con dueño, no un criterio incumplido.
+
+**Candados de completitud (`84970548`, ampliados):** la matriz esperada se **deriva** de las
+configs por activo — 3 activos × (3 lineales + 3 árboles + 3 híbridos) — y el artefacto composite
+tiene test propio que además exige que su `scope` nombre **ambos** feature sets y niegue
+explícitamente explicar la decisión operada. Borrar cualquier artefacto pone rojo; antes de estos
+candados, borrarlos dejaba la suite entera verde (hallazgo de CXD-569).
+
 ## DECISIÓN DEL OPERADOR (2026-08-05): el recorte de 2026-07-28 queda REVOCADO
 
 **El alcance original se mantiene.** Preguntado explícitamente y con el conflicto de interés

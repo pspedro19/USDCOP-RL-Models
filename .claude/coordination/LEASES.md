@@ -1515,3 +1515,21 @@
 - .claude/coordination/monitor/.gitignore | CODEX | codex-root-goal-inbox-monitor-ignore | expira 2026-08-05T23:50:00-05:00 (logs/PID runtime nunca versionados)
 - .git/index | CODEX | codex-root-goal-inbox-monitor-ignore | expira 2026-08-05T23:50:00-05:00 (commit --only gitignore/lease)
 # (CODEX 2026-08-05T23:20:00-05:00) RELEASE monitor gitignore/index: `2f3ea469`; logs/PID ignorados, sin leases CODEX activos.
+- src/forecasting/dataset_loader.py | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (provenance exacta de fuente y snapshot consumido)
+- scripts/pipeline/train_and_export_smart_simple.py | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (exponer load_data con provenance sin romper contrato existente)
+- scripts/pipeline/candidates_paper_ledger.py | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (persistir y servir camino real para una señal v11)
+- src/lineage/paper_writer.py | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (writer transaccional signal->snapshot->bar_l0)
+- src/lineage/paper_path.py | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (timestamp obligatorio y coincidencia exacta de una fila)
+- tests/unit/test_forecasting_dataset_provenance.py | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (TDD fuente ganadora/hash exacto)
+- tests/unit/test_paper_lineage_writer.py | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (TDD nodos/aristas/idempotencia)
+- tests/unit/test_paper_lineage_verifier.py | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (0/2 coincidencias => BROKEN)
+- .git/index | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (commit aislado BL-24(B); excluir runtime)
+- tests/unit/test_candidate_ledger_identity.py | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (linaje mueve semantic_hash pero no decision_fingerprint)
+- usdcop-trading-dashboard/public/data/production/paper/candidates_ledger_2026.json | CODEX | codex-root-goal-bl24-b | expira 2026-08-06T00:20:00-05:00 (refresh real verificado: semana 31 + lineage v11)
+# (CODEX 2026-08-05T12:15:20-05:00) ACTIVE BL-24(B) immutable review pack
+# owner: CODEX
+# instance_id: codex-root
+# paths: .claude/coordination/reviews/BL-24-B.md
+# expires: 2026-08-05T13:00:00-05:00
+- .claude/specs/planes/backlog/BL-20-admin-shap-interpretabilidad.md | CLAUDE | claude-bl20c-20260806-0030 | expira 2026-08-06T02:00:00-05:00 (registrar cierre de hibridos + v11 composite; NO flip sin ACK)
+- .claude/coordination/reviews/BL-16.md | CLAUDE | claude-bl16pack-20260806-0050 | expira 2026-08-06T02:00:00-05:00 (pack STALE: apunta a 4d0e73cd/7afa8a03 y no a 8f783d89/470b7bef -- CXD-572 punto 1 concedido)
