@@ -1013,3 +1013,9 @@ desactivar el candado de aditividad dentro del generador tumba 2 tests.
 
 Registro honesto que se mantiene: `e207c33e` aplico antes del ACK, contra el orden
 PROPOSED->ACK->APPLIED. Esta entrada no reescribe esa secuencia.
+
+## LEASE-CLD-045 (PREVIO, 2026-08-06T08:25:00-05:00)
+- **Path**: `tests/unit/test_c010_policy_runs.py`
+- **Titular**: CLAUDE · **Motivo**: BL-45 R3 — CLD-553/CXD-593, reparar el verde vacuo y la premisa caducada
+- **Alcance**: inyectar `CONFIG_PATH` real + guarda anti-vacuidad + invariante «ninguna emite sin decision registrada» + mutacion causal a estado inelegible
+- **Estado**: TOMADO **ANTES** de tocar el fichero (hoy declare dos leases DESPUES; esta vez no)
