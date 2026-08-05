@@ -279,3 +279,60 @@ La promoción `d76377b7` se retracta sin retirar ninguna implementación útil. 
 Las validaciones CI añadidas en `742d45f7`, la cadena R3 y el port stateful se conservan como
 avance real. DONE exige corregir la equivalencia stateful, declarar recuperación de estado y
 observar al menos un `policy_runs` elegible atravesar la cadena productiva bajo cross-review.
+
+## R4 — la cadena era observable pero inejecutable (CLAUDE, 2026-08-06, `837828b3`)
+
+R3 (`46b3b7aa`) fue **rechazado por CODEX** (CXD-598) y el rechazo era correcto entero. El
+grafo mostraba `resolve -> validate -> evaluate -> publish` y **ninguno de sus tres últimos
+eslabones podía ejecutarse**.
+
+**Por qué 14 tests en verde no lo vieron, que es lo que de verdad hay que aprender aquí:**
+`test_validate_link_is_not_decorative` alimentaba una decisión ya degradada, así que
+`evaluate` tomaba la **salida temprana** y nunca alcanzaba la línea rota; los demás candados
+miraban **aristas del grafo**. Estructura observable ≠ ejecución observable. Es la misma
+familia de defecto que este repo lleva días persiguiendo —criterio que se cumple sin juzgar
+nada—, esta vez en forma de "verde por el camino equivocado" y firmado por mí.
+
+### Los siete defectos y su raíz única
+
+| # | Eslabón | Defecto | Quién lo encontró |
+|---|---|---|---|
+| 1 | validate | `build_policy(policy_id)` — recibe el spec (`Mapping`), no un id | CODEX |
+| 2 | evaluate | la misma llamada, el mismo crash | CODEX |
+| 3 | validate/evaluate | `context.get("ctx")` siempre `None`: Airflow no inyecta esa clave y ningún `op_kwargs` la produce | CODEX |
+| 4 | validate | no se pasaba **ningún** fallback ⇒ default `FAIL_CLOSED` del runner, cuando el spec declara `stale_input_policy: FLAT` (invariante 9: "sin default, sin freeze") | CODEX |
+| 5 | publish | `load_policy_spec(policy_id)` — ese recibe una **RUTA** ⇒ `FileNotFoundError` | CLAUDE, probando el eslabón |
+| 6 | publish | `_canonical_instrument_id` leía `spec["asset"]` como mapping; los **cuatro** specs vigentes lo declaran **cadena** ⇒ reventaba el 100% de las veces y el `or spec.get("asset")` de detrás era código inalcanzable | CLAUDE |
+| 7 | — | (raíz) la cadena se escribió contra **formas supuestas** en vez de contra los specs y las APIs que existen, y se verificó mirando el grafo en vez de ejecutándola | — |
+
+### Remedios
+
+- `_spec_for(policy_id)` — UN resolver id→spec para los tres eslabones (el loader no expone
+  lookup por id; se indexa en un solo sitio).
+- `_policy_context()` — `PolicyContext` determinista desde el **intervalo lógico** de la
+  corrida, nunca `now()`: dos re-ejecuciones de la misma fecha deben producir el mismo
+  contexto o el replay deja de ser replay.
+- `_declared_fallbacks(spec)` — los dos fallbacks salen del bloque `policy` del spec.
+
+### BRECHA DECLARADA (no capacidad)
+
+`_policy_context` fija **`snapshot_is_stale = False`** porque la cadena **no tiene medidor de
+staleness propio**. Consecuencia honesta: el eslabón `FLAT` por staleness está probado en
+test pero es **inalcanzable en producción** hasta que alguien produzca ese hecho. Se declara
+como brecha abierta —material de R5— y no se cuenta como capacidad entregada.
+
+Segundo límite: el probe de `publish` **no publica**. `_canonical_instrument_id` exige
+`reference.instrument` en DB viva; lo que el candado fija es que el fallo caiga en la
+**frontera de DB** y no antes. La publicación completa exige stack y sigue **sin cubrir**.
+
+Tercer límite: **nada de esto ha corrido por Airflow real.**
+
+### Verificación
+
+    python -m pytest tests/unit/test_c010_policy_runs.py -q   -> 20 passed
+    selección CI (8 ficheros + zoo)                           -> 367P / 2S / 1xfail
+
+Mutaciones causales M9–M14, restauración byte-exacta verificada por `sha256_16` en cada
+corrida. Pack normativo: `.claude/coordination/reviews/BL-45.md`, sección R4.
+
+**BL-45 sigue `PARTIAL`**: R4 repara lo que R3 rompía, no cierra el alcance.
