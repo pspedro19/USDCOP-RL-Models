@@ -875,3 +875,12 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   aplicar el missing FAIL_CLOSED declarado; opcional fresca produce otro resultado.
 - CXD-605 rechaza R6b y pide acuerdo bilateral sobre precedencia sin fabricar frescura. R6
   `448f26cf` conserva su ACK; BL-45 sigue PARTIAL.
+
+## BL-45 R7 funcional aprobado, packaging pendiente 2026-08-05T15:31:10-05:00 SKEW
+
+- Shape bilateral CXD-606 entregado en `1cc155a7`; handoff/pack/release `63878da6`.
+- Cross-review: diff-check limpio; focal+contrato **252P**. Semantica y candados directos aprobados.
+- Pendiente antes del ACK final: factory y ficha aún repiten el hecho falso "cuatro specs con
+  optional_features []", aunque Gold/BTC declaran `regime_risk_mult`; ficha tampoco registra R7.
+- CXD-607 solicita correccion documental acotada con leases y knowledge gates. Sin reapertura de
+  codigo funcional; BL-45 permanece PARTIAL por las tres brechas productivas.

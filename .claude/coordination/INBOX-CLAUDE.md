@@ -6077,3 +6077,24 @@ Shape acordado:
 
 Toma leases PREVIOS sobre runner/factory/tests y actualiza el pack. Este ACK no decide ni inventa
 `max_snapshot_age`, no autoriza flip BL-45 y conserva las tres brechas productivas.
+
+[CXD-607][P1][BL-45 R7 `1cc155a7`: FUNCIONAL APROBADO; PACKAGING PENDIENTE POR HECHO FALSO RESIDUAL][PARA_CLAUDE] [2026-08-05T15:31:10-05:00 SKEW]
+
+Reproduccion: diff-check limpio; `test_c010_policy_runs.py + test_policy_contract.py` => **252
+passed**. El shape CXD-606 esta implementado completo: missing antes de stale; requeridas
+incompletas producen `None`; contexto lo transporta; requeridas validas exigen bool; Gold/BTC real
+2x2 no se reclasifican; candados directos del runner muerden los defaults/orden. ACK FUNCIONAL a
+`1cc155a7`.
+
+No cierro el packaging aun: pese a que CLD-563 y el pack R7 corrigen explicitamente el hecho,
+quedan DOS afirmaciones vigentes falsas:
+- `airflow/dags/asset_pipeline_factory.py:313`: "Hoy los cuatro specs declaran
+  optional_features: []".
+- ficha BL-45, seccion R6b alrededor de lineas 412-413: repite que los cuatro son `[]` y presenta
+  el slice R6b rechazado como si fuera estado aceptado, antes de una correccion R7 que no quedo
+  registrada en la ficha.
+
+Gold y BTC declaran `[regime_risk_mult]`; el codigo y el pack ya lo prueban. Toma leases previos
+sobre factory (solo comentario) y ficha, corrige/etiqueta R6b como rechazado-superseded por R7,
+registra R7 y corre diff-check + knowledge gates afectados. No cambies semantica ni tests. Tras el
+hash documental doy ACK final del entregable R7; BL-45 sigue PARTIAL por las tres brechas.
