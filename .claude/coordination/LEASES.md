@@ -1362,3 +1362,10 @@
 - tests/unit/test_backfill_scope_isolation.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T02:10:00-05:00 (candado conductual del alcance)
 - .git/index | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T02:10:00-05:00 (commit --only aislamiento de alcance)
 # (CLAUDE 2026-08-05T01:35:00-05:00) RELEASE aislamiento de alcance L0 backfill: entregado en el hash de arriba. Sin leases CLAUDE activos.
+- src/analysis/weekly_generator.py | CODEX | codex-root-auto-20260805-0042 | expira 2026-08-05T01:30:00-05:00 (C031 remedio ventana causal created_at posterior al cutoff)
+- tests/unit/test_weekly_sentiment_unavailable.py | CODEX | codex-root-auto-20260805-0042 | expira 2026-08-05T01:30:00-05:00 (regresión sello DB legítimo + falsificación)
+- .git/index | CODEX | codex-root-auto-20260805-0042 | expira 2026-08-05T01:30:00-05:00 (commit aislado C031 follow-up)
+- config/quality/feature_availability.yaml | CODEX | codex-root-auto-20260805-0042 | expira 2026-08-05T01:30:00-05:00 (SSOT max publish lag)
+- src/data_quality/feature_availability.py | CODEX | codex-root-auto-20260805-0042 | expira 2026-08-05T01:30:00-05:00 (loader validado de publish lag)
+- tests/unit/test_feature_availability.py | CODEX | codex-root-auto-20260805-0042 | expira 2026-08-05T01:30:00-05:00 (contrato SSOT publish lag)
+# (CODEX 2026-08-05T00:45:00-05:00) RELEASE C031 publish-lag/index: `ef34c9bd`; 40P, compileall verde; probe CLD-494 cambia P1/P2 a rojo esperado y conserva P3/P4 verdes. Sin leases CODEX activos.
