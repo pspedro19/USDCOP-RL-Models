@@ -58,6 +58,21 @@ muta-2:  linaje FT — el placeholder `pending-BL-10` YA no existe (BL-10 cerró
              -> 2 failed: + test_component_declares_forecast_lineage_key
 ```
 
+**`registered_in` de v12/v14: era DISEÑO, no deuda (medido 2026-08-05).** BL-13 lo pasó a
+esta ficha como deuda («`usdcop_v12/v14` declaran un `current_model_snapshot` rotativo SIN
+`registered_in`»), y la sospecha razonable era un criterio verde **por ausencia** — la clase
+de falso verde que más caro sale. Medido: la cláusula es **condicional a propósito** y las
+DOS ramas muerden:
+
+    campeona (v11) SIN registered_in                 -> 1 failed, 23 passed
+    candidata paper (v12) CON registered_in inventado -> 1 failed, 23 passed
+    (ambas en test_current_model_snapshot_is_resolvable; restauración byte-exacta)
+
+La regla es «quien SIRVE los pesos debe declarar dónde queda registrada cada corrida»: la
+campeona está obligada, una candidata paper no; pero si la declara, tiene que nombrar un DAG
+real de `dag_registry.py`. Omitirla no es un agujero — declararla en falso sí, y eso cae.
+**Deuda cerrada por medición, no por decreto.**
+
 **El conteo que faltaba escondía algo (2026-08-05).** Esta ficha declaraba que las cuatro
 cláusulas caían «POR SEPARADO» pero dejaba el conteo sin registrar. Al medirlo aparece el
 matiz: mutar **las cuatro a la vez** da **1 failed**, no cuatro — los asserts son secuenciales
