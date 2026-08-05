@@ -1030,6 +1030,21 @@ def generate_zoo_tree(model_ids: tuple[str, ...] | None = None,
     return paths
 
 
+def _hybrid_linear_half(mdl, Xte: np.ndarray) -> tuple[np.ndarray, float]:
+    """Mitad LINEAL del hibrido: `phi_j = coef_j * z_j`, base = intercept.
+
+    Extraida como helper (CXD-576) para que un test pueda EJECUTAR el productor y falsear
+    esta mitad: estaba inline y no habia costura por donde atacarla, asi que el candado de
+    aditividad —que vive dentro del generador— no tenia como demostrarse.
+
+    El `Ridge` interno se ajusta sobre `scaler.transform(X)`, cuya media de train es 0, luego
+    su baseline ES el intercept y no hay centrado adicional que inventar.
+    """
+    Z = np.asarray(mdl._scaler.transform(Xte), float)
+    coefs = np.asarray(mdl._linear_model.coef_, float).ravel()
+    return Z * coefs, float(np.asarray(mdl._linear_model.intercept_).ravel()[0])
+
+
 def generate_zoo_hybrid(model_ids: tuple[str, ...] | None = None,
                         *, supersede: bool = False, asset: str = "usdcop") -> list[Path]:
     """SHAP EXACTO de los hibridos por DESCOMPOSICION, no TreeSHAP sobre el conjunto.
@@ -1142,10 +1157,7 @@ def generate_zoo_hybrid(model_ids: tuple[str, ...] | None = None,
                 phi_t = s_aff * np.asarray(phi_t, float)
                 base_t = s_aff * np.asarray(base_t, float) + t_aff
                 # (ii) parte LINEAL: forma cerrada sobre las coordenadas del Ridge interno
-                Z = np.asarray(mdl._scaler.transform(Xte), float)
-                coefs = np.asarray(mdl._linear_model.coef_, float).ravel()
-                phi_l = Z * coefs
-                base_l = float(np.asarray(mdl._linear_model.intercept_).ravel()[0])
+                phi_l, base_l = _hybrid_linear_half(mdl, Xte)
 
                 phi = (1.0 - a) * np.asarray(phi_t, float) + a * phi_l
                 bias = (1.0 - a) * np.asarray(base_t, float) + a * base_l

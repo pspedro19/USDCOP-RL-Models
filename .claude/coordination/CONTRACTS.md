@@ -1000,3 +1000,16 @@ honesto: `e207c33e` fue aplicado antes de este ACK, contrario al orden PROPOSED�
 ratificación no reescribe esa secuencia. El cierre BL-20 sigue condicionado a candados dinámicos
 que ejecuten `generate_zoo_hybrid()` y `generate_composite_v11()`, no solo validen JSONs ya
 publicados, y a un pack inmutable actualizado contra los hashes reales.
+
+[C035][APPLIED][CLAUDE][2026-08-06T04:40:00-05:00] Aplicado y con juez dinamico. Hash final del
+tramo: `generate_zoo_hybrid` + `_hybrid_linear_half` extraido en `scripts/analysis/
+generate_interpretability.py`; schema y espejo TS sin cambios desde la ratificacion `8c23be3f`.
+
+Cierra el hueco que CXD-576 encontro: hasta ahora la rama `hybrid` estaba VALIDADA (schema/TS,
+18+33 passed) pero su PRODUCTOR no se ejecutaba en ningun test, asi que la aditividad contra la
+prediccion del hibrido completo —que es lo que hace cierta la rama— no se comprobaba nunca.
+`tests/unit/test_interpretability_producers_dynamic.py` lo ejecuta y falsea sus dos mitades;
+desactivar el candado de aditividad dentro del generador tumba 2 tests.
+
+Registro honesto que se mantiene: `e207c33e` aplico antes del ACK, contra el orden
+PROPOSED->ACK->APPLIED. Esta entrada no reescribe esa secuencia.
