@@ -69,6 +69,9 @@ MIGRATION_PLANS = {
             "083_h5_strategy_performance_view.sql",
         )
     ),
+    "feature-status-provenance-v1": (
+        PROJECT_ROOT / "database" / "migrations" / "085_feature_status_provenance.sql",
+    ),
     # Fresh-clone platform schema.  This deliberately uses the consolidated H5
     # migration (050) instead of replaying its superseded 043/044 path, and
     # keeps optional extensions such as pgvector (047) out of the baseline.
@@ -107,6 +110,7 @@ REVIEW_GATED_PLANS = frozenset(
     {
         "commerce-v1",
         "commerce-surface-v1",
+        "feature-status-provenance-v1",
         "h5-identity-v1",
         "identity-admin-v1",
         "platform-bootstrap-v1",
@@ -115,6 +119,7 @@ REVIEW_GATED_PLANS = frozenset(
 )
 PLAN_PREREQUISITE_TABLES = {
     "commerce-surface-v1": ("public.sb_users",),
+    "feature-status-provenance-v1": ("quality.feature_status",),
     "h5-identity-v1": (
         "public.forecast_h5_signals",
         "public.forecast_h5_executions",
@@ -253,6 +258,11 @@ REQUIRED_TABLES_BY_PLAN = {
     "fabric-v1": FABRIC_REQUIRED_TABLES,
 }
 REQUIRED_COLUMNS_BY_PLAN = {
+    "feature-status-provenance-v1": {
+        "quality.feature_status": {
+            "created_at": "Database-owned feature-status creation seal",
+        },
+    },
     "commerce-surface-v1": {
         "public.user_watchlist": {
             "user_id": "User ownership",

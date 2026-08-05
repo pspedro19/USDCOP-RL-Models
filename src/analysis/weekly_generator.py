@@ -1273,18 +1273,10 @@ class WeeklyAnalysisGenerator:
                             f"News sentiment: {len(measured_tones)}/{len(week_articles)} "
                             f"articles with non-zero tone, avg={result['avg_sentiment']}"
                         )
-
-                # Fallback to GDELT sentiment CSV if article tones are all zero
-                if result["avg_sentiment"] is None:
-                    sentiment_df = self._get_gdelt_sentiment()
-                    if not sentiment_df.empty:
-                        smask = (sentiment_df.index >= pd.Timestamp(start)) & (
-                            sentiment_df.index <= pd.Timestamp(end)
-                        )
-                        week_sent = sentiment_df[smask]
-                        if not week_sent.empty:
-                            result["avg_sentiment"] = round(float(week_sent["tone_avg"].mean()), 3)
-                            result["sentiment_unavailable_reason"] = None
+                    elif "sentiment_unavailable_reason" in week_articles.columns:
+                        reasons = week_articles["sentiment_unavailable_reason"].dropna()
+                        if not reasons.empty:
+                            result["sentiment_unavailable_reason"] = str(reasons.iloc[0])
 
                 # Source breakdown for context
                 result["source_breakdown"] = (
@@ -1778,23 +1770,35 @@ class WeeklyAnalysisGenerator:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
                     """SELECT DISTINCT ON (feature_id)
-                              feature_id, status, reason_code, observed_at
+                              feature_id, status, reason_code, observed_at, created_at
                        FROM quality.feature_status
                        WHERE feature_id IN (
                            'news_articles.sentiment_score',
                            'news_articles.sentiment_label',
                            'news_articles.gdelt_tone'
                        ) AND observed_at <= %s
+                         AND created_at IS NOT NULL
+                         AND created_at <= %s
                        ORDER BY feature_id, observed_at DESC""",
-                    (self._feature_cutoff,),
+                    (self._feature_cutoff, self._feature_cutoff),
                 )
                 feature_statuses = {}
                 for row in cur.fetchall():
                     observed_at = row.get("observed_at")
+                    created_at = row.get("created_at")
                     if not isinstance(observed_at, datetime) or observed_at.tzinfo is None:
                         row = dict(row)
                         row["status"] = "UNAVAILABLE"
                         row["reason_code"] = "feature.status_timestamp_invalid"
+                    elif (
+                        not isinstance(created_at, datetime)
+                        or created_at.tzinfo is None
+                        or observed_at > created_at
+                        or created_at > self._feature_cutoff
+                    ):
+                        row = dict(row)
+                        row["status"] = "UNAVAILABLE"
+                        row["reason_code"] = "feature.status_provenance_invalid"
                     elif self._feature_cutoff - observed_at > feature_max_age:
                         row = dict(row)
                         row["status"] = "UNAVAILABLE"

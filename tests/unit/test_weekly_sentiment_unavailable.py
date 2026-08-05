@@ -128,6 +128,7 @@ def test_stale_available_status_degrades_to_explicit_unavailable(monkeypatch) ->
             "status": "AVAILABLE",
             "reason_code": "feature.available",
             "observed_at": datetime(2026, 8, 5, 18, tzinfo=UTC),
+            "created_at": datetime(2026, 8, 5, 18, tzinfo=UTC),
         }]),
     )
     monkeypatch.setattr(
@@ -144,6 +145,55 @@ def test_stale_available_status_degrades_to_explicit_unavailable(monkeypatch) ->
     assert frame.iloc[0]["sentiment_unavailable_reason"] == "feature.status_stale"
 
 
+def test_exact_24h_status_with_valid_creation_seal_remains_fresh(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 7, 18, tzinfo=UTC)
+    observed_at = datetime(2026, 8, 6, 18, tzinfo=UTC)
+    monkeypatch.setattr(
+        psycopg2,
+        "connect",
+        lambda *args, **kwargs: _StatusConnection([{
+            "feature_id": "news_articles.sentiment_score",
+            "status": "AVAILABLE",
+            "reason_code": "feature.available",
+            "observed_at": observed_at,
+            "created_at": observed_at,
+        }]),
+    )
+    generator = _generator()
+    generator._all_articles_cache = None
+    generator._feature_cutoff = cutoff
+
+    frame = generator._get_all_articles()
+
+    assert frame.iloc[0]["tone"] == pytest.approx(0.42)
+    assert frame.iloc[0]["sentiment_unavailable_reason"] is None
+
+
+def test_status_without_creation_seal_is_not_authoritative(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 7, 18, tzinfo=UTC)
+    monkeypatch.setattr(
+        psycopg2,
+        "connect",
+        lambda *args, **kwargs: _StatusConnection([{
+            "feature_id": "news_articles.sentiment_score",
+            "status": "AVAILABLE",
+            "reason_code": "feature.available",
+            "observed_at": datetime(2026, 8, 7, 17, tzinfo=UTC),
+        }]),
+    )
+    generator = _generator()
+    generator._all_articles_cache = None
+    generator._feature_cutoff = cutoff
+
+    frame = generator._get_all_articles()
+
+    assert frame.iloc[0]["tone"] is None
+    assert (
+        frame.iloc[0]["sentiment_unavailable_reason"]
+        == "feature.status_provenance_invalid"
+    )
+
+
 def test_missing_feature_cutoff_fails_closed_before_db_fallback(monkeypatch) -> None:
     monkeypatch.setattr(
         psycopg2,
@@ -156,3 +206,29 @@ def test_missing_feature_cutoff_fails_closed_before_db_fallback(monkeypatch) -> 
 
     with pytest.raises(RuntimeError, match="feature cutoff must be set"):
         generator._get_all_articles()
+
+
+def test_ungoverned_gdelt_csv_cannot_override_unavailable_sentiment(monkeypatch) -> None:
+    generator = _generator()
+    generator._all_articles_cache = None
+    generator._feature_cutoff = datetime(2026, 8, 7, 18, tzinfo=UTC)
+    governed_null = pd.DataFrame([{
+        "date": pd.Timestamp("2026-08-05"),
+        "title": "BanRep holds the policy rate",
+        "source": "investing",
+        "news_source": "investing",
+        "url": "https://example.invalid/stale",
+        "tone": None,
+        "sentiment_unavailable_reason": "feature.status_stale",
+    }])
+    ungoverned_csv = pd.DataFrame(
+        {"tone_avg": [-3.1, -2.9]},
+        index=pd.to_datetime(["2026-08-05", "2026-08-06"]),
+    )
+    monkeypatch.setattr(generator, "_get_all_articles", lambda: governed_null)
+    monkeypatch.setattr(generator, "_get_gdelt_sentiment", lambda: ungoverned_csv)
+
+    result = generator._load_news_context(date(2026, 8, 3), date(2026, 8, 7))
+
+    assert result["avg_sentiment"] is None
+    assert result["sentiment_unavailable_reason"] == "feature.status_stale"

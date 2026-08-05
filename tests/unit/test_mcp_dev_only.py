@@ -70,9 +70,11 @@ def _plan_sql(migrador, plan: str) -> str:
 
 def _ddl_declares_column(sql: str, table_name: str, column_name: str) -> bool:
     """Recognize the column declaration forms used by governed plans."""
-    table = re.escape(table_name.split(".")[-1])
+    parts = table_name.split(".")
+    schema = re.escape(parts[-2]) if len(parts) > 1 else "public"
+    table = re.escape(parts[-1])
     column = re.escape(column_name)
-    qualified_table = rf'(?:public\.)?"?{table}"?'
+    qualified_table = rf'(?:"?{schema}"?\.)?"?{table}"?'
 
     for match in re.finditer(
         rf"CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?{qualified_table}\s*\((.*?)\)\s*;",
