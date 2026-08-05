@@ -1659,3 +1659,9 @@ CXD-620: declarar el techo `research_validated` de forma explicita y ejecutable.
 
 ## LEASE CHAIN-E2E (PREVIO, 2026-08-06T17:50:00-05:00) — titular CLAUDE, id claude-e2e-20260806-1750, expira 2026-08-06T20:00:00-05:00
 - tests/unit/test_policy_chain_end_to_end.py   (NUEVO: atravesar produce->resolve->validate->evaluate con el seed REAL, sin Airflow ni DB)
+
+## LEASE SPX-C2c (PREVIO, 2026-08-06T18:00:00-05:00) — titular CLAUDE, id claude-spxc2c-20260806-1800, expira 2026-08-06T20:30:00-05:00
+Los DOS bloqueantes de CXD-620. Ampliaciones DENTRO del bloque.
+- src/features/observations.py                  (passthrough por feature_id, no `close` fijo + gate del techo)
+- airflow/dags/asset_pipeline_factory.py        (query con las columnas raw requeridas + cablear el gate antes de publish)
+- tests/unit/test_observation_producer.py       (probe con OHLC DISTINTOS + candados del gate)
