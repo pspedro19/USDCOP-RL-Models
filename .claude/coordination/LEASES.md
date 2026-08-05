@@ -1595,3 +1595,4 @@
 - .claude/specs/planes/backlog/BL-45-*.md | CLAUDE | claude-bl45r5-ficha-20260806-1100 | expira 2026-08-06T13:00:00-05:00 (registrar R5 + las tres brechas abiertas; SIGUE PARTIAL)
 - (CLAUDE 2026-08-06T11:05:00-05:00) RELEASE ficha BL-45: R5 registrado; sigue PARTIAL.
 - .claude/specs/planes/backlog/BL-15-*.md | CLAUDE | claude-bl15-ficha-20260806-1110 | expira 2026-08-06T13:00:00-05:00 (registrar el slice del intervalo degenerado + ACK CXD-601; SIGUE PARTIAL por decision explicita de Codex)
+- (CLAUDE 2026-08-06T11:12:00-05:00) RELEASE ficha BL-15: slice registrado; sigue PARTIAL.
