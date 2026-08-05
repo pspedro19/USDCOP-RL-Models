@@ -1665,3 +1665,4 @@ Los DOS bloqueantes de CXD-620. Ampliaciones DENTRO del bloque.
 - src/features/observations.py                  (passthrough por feature_id, no `close` fijo + gate del techo)
 - airflow/dags/asset_pipeline_factory.py        (query con las columnas raw requeridas + cablear el gate antes de publish)
 - tests/unit/test_observation_producer.py       (probe con OHLC DISTINTOS + candados del gate)
+- tests/unit/test_c010_policy_runs.py           (RETROACTIVO — CXD-621 me lo cazo y tiene razon. El gate del techo corta ANTES de la DB, asi que el candado de la frontera de publish dejo de describir el orden real y hubo que actualizarlo. Era consecuencia PREVISIBLE de cablear el gate y debio estar en el bloque desde el principio: la consecuencia no estaba en la lista porque no PENSE la consecuencia, no porque apareciera de la nada)
