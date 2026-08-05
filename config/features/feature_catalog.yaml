@@ -28,7 +28,7 @@
 #     macro.observation); `asbuilt_source` documenta la tabla/archivo actual
 #     (§1.3 problema 3: no anclarse a tablas por renombrar).
 #
-# Version: 2.0.0 · Date: 2026-08-05 · Frozen scope preserved: v11 legacy_v1
+# Version: 2.0.1 · Date: 2026-08-05 · Frozen scope preserved: v11 legacy_v1
 # Refreeze 1.1.0 (CXD-041/043, BL-39-r2): canonicalizacion LF del hash de
 # enhance_v2.py (13fc9f7864f0cc7a -> b601ae271c8e2b5f; dataset_loader.py ya era
 # LF y no cambia), 0 cambios de contenido de codigo; + correcciones de
@@ -37,8 +37,12 @@
 # C032 2.0.0: identidad de consumo (asset_id, feature_id) + identidad fisica
 # series_id; resolucion exact-one de todos los feature_sets y source_contract de
 # mercado discriminado por activo. Declarativo, sin cambio de runtime/modelo, 0 trials.
+# Refreeze 2.0.1 (BL-24(B)/CLD-534): dataset_loader.py añade exclusivamente
+# provenance content-addressed y selección observable de fuente; no cambia fórmulas,
+# ventanas, causalidad, orden ni valores de ninguna feature. Re-registro no semántico,
+# sin observación de resultados ni selección económica: 0 trials.
 contract_id: CTR-FEATURE-CATALOG-001
-version: 2.0.0
+version: 2.0.1
 
 # ── Gates: que corre en CI y que es local-only (CXD-041 punto 7) ───────────
 ci_gates:
@@ -185,7 +189,7 @@ features:
   transformation: pct_change
   lookback: P1D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
@@ -200,7 +204,7 @@ features:
   transformation: pct_change
   lookback: P5D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
@@ -215,7 +219,7 @@ features:
   transformation: pct_change
   lookback: P10D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
@@ -230,7 +234,7 @@ features:
   transformation: pct_change
   lookback: P20D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: momentum vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
@@ -246,7 +250,7 @@ features:
   transformation: rolling_std(return_1d)
   lookback: P5D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: la vol condiciona magnitud, no direccion (legacy ex-post)
   is_active: true
@@ -261,7 +265,7 @@ features:
   transformation: rolling_std(return_1d)
   lookback: P10D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: la vol condiciona magnitud, no direccion (legacy ex-post)
   is_active: true
@@ -276,7 +280,7 @@ features:
   transformation: rolling_std(return_1d)
   lookback: P20D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: la vol condiciona magnitud, no direccion (legacy ex-post)
   is_active: true
@@ -297,7 +301,7 @@ features:
     exponencial NO acotada — cada valor depende de todo el historial previo.
     Declarar P14D como ventana total seria un lookback falso (CXD-041).
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: sobrecompra/sobreventa con canal mixto en EM FX (legacy ex-post)
   is_active: true
@@ -312,7 +316,7 @@ features:
   transformation: close/sma
   lookback: P20D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: tendencia vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
@@ -327,7 +331,7 @@ features:
   transformation: close/sma
   lookback: P50D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: tendencia vs reversion no declarado ex-ante (legacy ex-post)
   is_active: true
@@ -343,7 +347,7 @@ features:
   transformation: calendar_extract
   lookback: P0D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: estacionalidad intra-semana sin direccion declarada (legacy ex-post)
   is_active: true
@@ -358,7 +362,7 @@ features:
   transformation: calendar_extract
   lookback: P0D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: estacionalidad anual sin direccion declarada (legacy ex-post)
   is_active: true
@@ -373,7 +377,7 @@ features:
   transformation: calendar_extract
   lookback: P0D
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._build_features, sha256_16: 5856fbed53ee7762}
   sign_prior: ambiguous
   sign_prior_note: flujos de fin de mes (rebalanceo) sin direccion neta declarada (legacy ex-post)
   is_active: true
@@ -395,7 +399,7 @@ features:
     (L329-333) => en fines de semana/festivos/huecos del proveedor el valor
     servido puede ser mas viejo que T-1. lagged_1 declara el minimo (CXD-041).
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 5856fbed53ee7762}
   sign_prior: positive
   sign_prior_note: DXY fuerte = USD fuerte => USDCOP sube (documentado ex-post, legacy_v1)
   is_active: true
@@ -416,7 +420,7 @@ features:
     (L329-333) => en fines de semana/festivos/huecos del proveedor el valor
     servido puede ser mas viejo que T-1. lagged_1 declara el minimo (CXD-041).
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 5856fbed53ee7762}
   sign_prior: negative
   sign_prior_note: petroleo alto fortalece al COP (exportador) => USDCOP baja (ex-post, legacy_v1)
   is_active: true
@@ -437,7 +441,7 @@ features:
     (L329-333) => en fines de semana/festivos/huecos del proveedor el valor
     servido puede ser mas viejo que T-1. lagged_1 declara el minimo (CXD-041).
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 5856fbed53ee7762}
   sign_prior: positive
   sign_prior_note: risk-off deprecia EM FX => USDCOP sube (ex-post, legacy_v1)
   is_active: true
@@ -458,7 +462,7 @@ features:
     (L329-333) => en fines de semana/festivos/huecos del proveedor el valor
     servido puede ser mas viejo que T-1. lagged_1 declara el minimo (CXD-041).
   compute_location: python
-  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 937624aba7cd4f18}
+  code_reference: {file: src/forecasting/dataset_loader.py, symbol: DatasetLoader._merge_macro, sha256_16: 5856fbed53ee7762}
   sign_prior: positive
   sign_prior_note: riesgo pais alto => COP debil => USDCOP sube (ex-post, legacy_v1)
   is_active: true
