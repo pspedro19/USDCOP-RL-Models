@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import ast
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
@@ -35,6 +35,32 @@ class RecordingCursor:
         digest = str(params[1])
         node_id = self._node_ids.setdefault(digest, f"node-{len(self._node_ids) + 1}")
         return (node_id,)
+
+
+class SealTrackingCursor(RecordingCursor):
+    """Minimal node-upsert model used to lock C033's timestamp semantics."""
+
+    def __init__(self, prior_rows: list[tuple[object, ...]]) -> None:
+        super().__init__(prior_rows)
+        self.last_verified_by_hash: dict[str, datetime] = {}
+
+    def execute(self, query: str, params: object = None) -> None:
+        super().execute(query, params)
+        if "INSERT INTO lineage.node" not in self._last_query:
+            return
+        assert isinstance(params, tuple)
+        digest = str(params[1])
+        verified_at = params[-1]
+        assert isinstance(verified_at, datetime)
+        previous = self.last_verified_by_hash.get(digest)
+        if previous is None:
+            self.last_verified_by_hash[digest] = verified_at
+        elif "DO NOTHING" in self._last_query:
+            return
+        elif "GREATEST" in self._last_query:
+            self.last_verified_by_hash[digest] = max(previous, verified_at)
+        else:
+            self.last_verified_by_hash[digest] = verified_at
 
 
 def _writer() -> MacroRevisionWriter:
@@ -128,6 +154,79 @@ def test_unchanged_rerun_is_idempotent_and_emits_no_revision() -> None:
     assert result.revisions_recorded == 0
     assert result.nodes_recorded == 1
     assert not any("lineage.revision_event" in q for q, _ in cursor.executions)
+
+
+def test_unchanged_rerun_advances_last_verified_without_revision() -> None:
+    observed_on = date(2026, 8, 4)
+    value = Decimal("100.25")
+    cursor = SealTrackingCursor([(observed_on, value)])
+    writer = _writer()
+    first_time = _event_time()
+    later_time = first_time + timedelta(hours=2)
+
+    first = writer.record_before_upsert(
+        cursor,
+        table="macro_indicators_daily",
+        date_column="fecha",
+        rows=[(observed_on, value)],
+        columns=["dxy"],
+        revision_type=RevisionType.PROVIDER_CORRECTION,
+        actor="core_l0_04_macro_update",
+        run_id="scheduled__first",
+        event_time=first_time,
+    )
+    second = writer.record_before_upsert(
+        cursor,
+        table="macro_indicators_daily",
+        date_column="fecha",
+        rows=[(observed_on, value)],
+        columns=["dxy"],
+        revision_type=RevisionType.PROVIDER_CORRECTION,
+        actor="core_l0_04_macro_update",
+        run_id="scheduled__later",
+        event_time=later_time,
+    )
+
+    assert first.revisions_recorded == second.revisions_recorded == 0
+    assert len(cursor.last_verified_by_hash) == 1
+    assert next(iter(cursor.last_verified_by_hash.values())) == later_time
+    assert not any("lineage.revision_event" in q for q, _ in cursor.executions)
+
+
+def test_out_of_order_verification_never_moves_last_verified_backwards() -> None:
+    observed_on = date(2026, 8, 4)
+    value = Decimal("100.25")
+    cursor = SealTrackingCursor([(observed_on, value)])
+    writer = _writer()
+    latest_time = _event_time() + timedelta(hours=2)
+    stale_time = _event_time()
+
+    writer.record_before_upsert(
+        cursor,
+        table="macro_indicators_daily",
+        date_column="fecha",
+        rows=[(observed_on, value)],
+        columns=["dxy"],
+        revision_type=RevisionType.PROVIDER_CORRECTION,
+        actor="core_l0_04_macro_update",
+        run_id="scheduled__latest",
+        event_time=latest_time,
+    )
+    stale = writer.record_before_upsert(
+        cursor,
+        table="macro_indicators_daily",
+        date_column="fecha",
+        rows=[(observed_on, value)],
+        columns=["dxy"],
+        revision_type=RevisionType.PROVIDER_CORRECTION,
+        actor="core_l0_04_macro_update",
+        run_id="scheduled__stale",
+        event_time=stale_time,
+    )
+
+    assert stale.revisions_recorded == 0
+    assert len(cursor.last_verified_by_hash) == 1
+    assert next(iter(cursor.last_verified_by_hash.values())) == latest_time
 
 
 def test_new_observation_creates_a_real_node_but_not_a_revision_event() -> None:
