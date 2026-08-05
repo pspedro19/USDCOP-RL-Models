@@ -115,6 +115,37 @@ features:
   sign_prior_note: nivel crudo de BTCUSDT; USDT no se asume equivalente a USD
   is_active: true
 
+
+# realized_vol_20: la EXIGE `btc_hodl_b1` (`required = ("realized_vol_20",)`) y su
+# feature-set la listaba como `derived_in_policy` — pero `BtcHodlB1Policy` la CONSUME,
+# no la deriva. A diferencia de `spx500.ma_200`, aqui la formula canonica YA EXISTE y
+# esta congelada, asi que el catalogo apunta a ELLA y no a una copia (decision A, CXD-628).
+- asset_id: btcusdt
+  feature_id: realized_vol_20
+  series_id: btcusdt.realized_vol_20
+  unit: annualized_stdev
+  feature_group: volatility
+  causality_policy: same_bar
+  source_contract: market.canonical_bar[asset_id=btcusdt]
+  transformation: realized_vol_20d_ann365
+  lookback: P20D
+  lookback_note: >-
+    Ventana DURA de 20 barras diarias con `min_periods=20`: sin 20 dias no hay vol y
+    el valor es NaN. Anualizacion sqrt(365) — cripto es 24/7 (§46.4 del feature-set),
+    NO sqrt(252): usar el reloj de renta variable aqui inflaria la vol un 20% y
+    encogeria la exposicion del vol-targeting sin que nada fallara.
+  compute_location: python
+  # Apunta al productor CONGELADO real (manifiesto btcusdt.yaml, code_hash
+  # 3b9b3c6dd1b9a70d). `build_daily_features` calcula ~10 features de golpe, asi que
+  # el contrato de invocacion se DECLARA en vez de inferirse por firma.
+  code_reference: {file: src/btc_strategy/indicators.py, symbol: build_daily_features, sha256_16: 699456a82123b44f}
+  producer_contract: ohlcv_frame_v1
+  output_column: realized_vol_20
+  sign_prior: ambiguous
+  sign_prior_note: >-
+    La volatilidad no tiene prior direccional: no predice signo. Su prior economico
+    es de SIZING (mas vol => menos exposicion) y vive en la politica, no en la feature.
+  is_active: true
 - asset_id: spx500
   feature_id: close
   series_id: spx500.close

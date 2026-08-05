@@ -60,8 +60,12 @@ FEATURE_SET_DIR = REPO / "config" / "features" / "feature_sets"
 #: las 3 de `smart_simple_v11` nunca fueron de esta clase (SPEC_ONLY, test aparte).
 DEUDA_EJECUTABLE: dict[str, frozenset[str]] = {
     "gold_trend_simple": frozenset({"sma_63", "sma_126", "sma_252", "realized_vol_20"}),
-    "btc_hodl_b1": frozenset({"realized_vol_20"}),
 }
+#: `btc_hodl_b1` SALIO el 2026-08-06 (slice BTC, decision A): `realized_vol_20` es
+#: ahora feature ORDENADA de su set, catalogada como `btcusdt.realized_vol_20`, y su
+#: `code_reference` apunta al productor CONGELADO real (`build_daily_features`), no a
+#: una copia. Queda SOLO Gold con 4 -- y las 3 de `smart_simple_v11` siguen sin ser
+#: de esta clase (SPEC_ONLY, test aparte).
 
 #: `SPEC_ONLY`, otra clase: ver el docstring.
 POLICY_SPEC_ONLY = "smart_simple_v11"

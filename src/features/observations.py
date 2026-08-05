@@ -116,6 +116,18 @@ def _feature_set(feature_set_id: str) -> dict:
     )
 
 
+#: Contratos de INVOCACION soportados. Espejo de `PRODUCER_CONTRACTS` del validador
+#: (`scripts/validation/validate_feature_catalog.py`): el catalogo declara cual usa
+#: cada feature y aqui se bifurca por ESE valor. No se infiere por firma — renombrar
+#: un argumento de un productor congelado no puede cambiar como se le invoca.
+CONTRATO_SERIES = "series_close_v1"
+CONTRATO_FRAME = "ohlcv_frame_v1"
+CONTRATOS_SOPORTADOS = (CONTRATO_SERIES, CONTRATO_FRAME)
+
+#: Columnas que el contrato de frame promete entregar al productor.
+COLUMNAS_FRAME = ("time", "open", "high", "low", "close")
+
+
 def _resolve_producer(entry: Mapping[str, Any]) -> Callable[[pd.Series], pd.Series] | None:
     """Cargar el productor DECLARADO en `code_reference`, o `None` si es passthrough.
 
@@ -223,10 +235,54 @@ def build_observations(
                 )
             serie = df[feature_id].astype(float)
         else:
-            # Los productores computados reciben la serie de cierres: es el contrato
-            # del único que existe (`compute_ma_200`). Si mañana uno necesitara otra
-            # entrada, esto debe fallar al añadirlo — no adivinarse aquí.
-            serie = productor(close)
+            contrato = entrada.get("producer_contract", CONTRATO_SERIES)
+            if contrato not in CONTRATOS_SOPORTADOS:
+                raise ObservationError(
+                    f"{asset_id}.{feature_id}: producer_contract {contrato!r} no "
+                    f"soportado (soportados: {CONTRATOS_SOPORTADOS}). Un contrato sin "
+                    f"declarar NO se degrada al de por defecto"
+                )
+            if contrato == CONTRATO_SERIES:
+                # `fn(close) -> Series` — el contrato historico (`compute_ma_200`).
+                serie = productor(close)
+            else:
+                # `fn(df) -> df` — productor de FRAME. Es el caso de
+                # `build_daily_features`, el codigo CONGELADO del track BTC que
+                # calcula ~10 features de golpe: se le entrega el frame REAL completo
+                # y se toma la columna que el catalogo declara. Apuntar al congelado
+                # en vez de reescribir su formula es lo que impide que exista una
+                # segunda definicion de una feature ya congelada (CXD-628, decision A).
+                faltan = [c for c in COLUMNAS_FRAME if c not in df.columns]
+                if faltan:
+                    raise ObservationError(
+                        f"{asset_id}.{feature_id}: el contrato {contrato!r} entrega "
+                        f"{list(COLUMNAS_FRAME)} y `bars` no trae {faltan}"
+                    )
+                columna = entrada.get("output_column")
+                if not isinstance(columna, str) or not columna:
+                    raise ObservationError(
+                        f"{asset_id}.{feature_id}: contrato de frame sin "
+                        f"`output_column` declarada; no se adivina cual de las "
+                        f"salidas es esta feature"
+                    )
+                salida = productor(df[list(COLUMNAS_FRAME)])
+                if not isinstance(salida, pd.DataFrame):
+                    raise ObservationError(
+                        f"{asset_id}.{feature_id}: el productor de frame devolvio "
+                        f"{type(salida).__name__}, no un DataFrame"
+                    )
+                if columna not in salida.columns:
+                    raise ObservationError(
+                        f"{asset_id}.{feature_id}: el productor no emitio la columna "
+                        f"declarada {columna!r} (emitio: {sorted(salida.columns)[:12]})"
+                    )
+                if len(salida) != len(df):
+                    raise ObservationError(
+                        f"{asset_id}.{feature_id}: el productor devolvio {len(salida)} "
+                        f"filas para {len(df)} barras; alinear por posicion series de "
+                        f"distinta longitud desplazaria la barra de decision"
+                    )
+                serie = salida[columna].astype(float).reset_index(drop=True)
 
         # La barra de decisión es la ÚLTIMA cuyo available_at no excede el cutoff.
         disponibles = tiempos + RECONSTRUCTION_LAG

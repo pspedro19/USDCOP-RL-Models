@@ -82,10 +82,22 @@ FEATURE_COLS_JSON_SHA16 = "c3393242ef998896"
 SCALER_SHA16 = "3302221e2b9dee39"
 
 RULE_BASED_MINIMAL = {
-    # asset -> (strategy_id, minimal ordered input features)  — §45-47: "MA200 solo close"
-    "xauusd": ("gold_trend_simple", ["close"]),
-    "btcusdt": ("btc_hodl_b1", ["close"]),
-    "spx500": ("spx500_regime_gated_v1", ["close"]),
+    # asset -> (strategy_id, minimal ordered input features)
+    #
+    # La premisa original —§45-47, "MA200 solo close": los indicadores se derivan
+    # dentro del codigo congelado— resulto FALSA para las policies que CONSUMEN esos
+    # indicadores en vez de derivarlos. El cruce `required_features` x
+    # `ordered_features` (gate `test_cross_ssot_feature_declarations.py`) lo midio:
+    # `BtcHodlB1Policy` declara `required = ("realized_vol_20",)` y
+    # `GoldTrendSimplePolicy` consume sus tres SMA — ninguna las deriva.
+    #
+    # `btcusdt` ya esta corregido (slice BTC, decision A CXD-628): su set ordena la
+    # vol y el catalogo apunta al productor CONGELADO real. Gold sigue con el hueco,
+    # con deuda declarada y xfail en el gate; su entrada aqui documenta el estado
+    # ACTUAL, no el correcto.
+    "xauusd": ("gold_trend_simple", ["close"]),          # DEUDA: faltan sus 4
+    "btcusdt": ("btc_hodl_b1", ["close", "realized_vol_20"]),
+    "spx500": ("spx500_regime_gated_v1", ["close"]),     # la CODED: si deriva dentro
 }
 
 
@@ -535,8 +547,18 @@ def test_v11_dag_legacy23_contract_locked_not_resolved():
 
 
 def test_rule_based_champions_declare_minimal_sets():
-    """§45-47 fixture: rule-based strategies declare their minimal input set
-    (MA200 solo close); indicators are derived inside frozen policy code."""
+    """Cada estrategia rule-based ordena EXACTAMENTE los inputs que consume.
+
+    El docstring decia "MA200 solo close; indicators are derived inside frozen policy
+    code" como si fuera universal. **No lo es**: sólo vale para las policies que de
+    verdad derivan dentro (la SPX *coded*). Las que CONSUMEN el indicador deben
+    ordenarlo, o ningun productor lo materializa y la policy falla por `missing` en
+    toda corrida — que es lo que el gate cross-SSOT destapo.
+
+    Este candado fija el estado ACTUAL declarado; el invariante de que lo requerido
+    este declarado como input vive en `test_cross_ssot_feature_declarations.py`, con
+    la deuda de Gold en xfail estricto.
+    """
     for asset, (sid, minimal) in RULE_BASED_MINIMAL.items():
         fs = _feature_set(sid)
         assert fs["strategy_id"] == sid

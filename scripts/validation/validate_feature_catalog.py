@@ -81,6 +81,16 @@ REQUIRED_STR_KEYS = (
 # code_reference sub-schema (recursive validation, CXD-041).
 CODE_REF_REQUIRED = ("file", "sha256_16")
 CODE_REF_OPTIONAL = ("symbol",)
+# Contratos de INVOCACION del productor (CXD-628, decision A). Se DECLARAN en el
+# catalogo y el resolver bifurca por ellos; NO se infieren por firma. Motivo: el
+# productor canonico de `btcusdt.realized_vol_20` es `build_daily_features(df) -> df`,
+# que calcula ~10 features de golpe, mientras que el de `spx500.ma_200` es
+# `compute_ma_200(close) -> Series`. Adivinar cual toca leyendo la firma haria que
+# renombrar un argumento cambiara como se invoca a un productor congelado.
+PRODUCER_CONTRACTS = (
+    "series_close_v1",   # fn(close: Series) -> Series      (defecto historico)
+    "ohlcv_frame_v1",    # fn(df[time,open,high,low,close]) -> df, se toma output_column
+)
 SHA16_RE = re.compile(r"^[0-9a-f]{16}$")
 LOOKBACK_RE = re.compile(r"^P(\d+)D$")
 # Transformations that legitimately need zero bars of history.
@@ -229,6 +239,31 @@ def validate_entries(features: list[dict]) -> list[str]:
             errors.append(
                 f"{fid}: unknown causality_policy {cp!r} "
                 f"(allowed: {CAUSALITY_POLICIES})")
+
+        # --- contrato de invocacion del productor, fail-closed ------------------
+        pc = f.get("producer_contract")
+        oc = f.get("output_column")
+        if pc is not None:
+            if pc not in PRODUCER_CONTRACTS:
+                errors.append(
+                    f"{fid}: producer_contract {pc!r} desconocido "
+                    f"(permitidos: {PRODUCER_CONTRACTS}). Un contrato sin declarar no "
+                    f"se degrada al de por defecto: el resolver no debe adivinar como "
+                    f"invocar un productor congelado")
+            if f.get("code_reference") is None:
+                errors.append(
+                    f"{fid}: declara producer_contract sin `code_reference`; un "
+                    f"passthrough no se invoca, asi que el contrato sobra o falta el "
+                    f"productor")
+            if pc == "ohlcv_frame_v1" and not (isinstance(oc, str) and oc):
+                errors.append(
+                    f"{fid}: producer_contract 'ohlcv_frame_v1' exige `output_column` "
+                    f"(cual de las columnas devueltas ES esta feature). Sin ella el "
+                    f"resolver tendria que adivinar entre ~10 salidas")
+        elif oc is not None:
+            errors.append(
+                f"{fid}: declara `output_column` sin `producer_contract`; una columna "
+                f"de salida sin contrato de invocacion no se puede usar")
 
         sp = f.get("sign_prior")
         if isinstance(sp, str) and sp and sp not in SIGN_PRIORS:

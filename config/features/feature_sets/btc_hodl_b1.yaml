@@ -13,9 +13,15 @@ macro_bundle: []
 
 ordered_features:
 - {feature_id: close, order: 0, required: true}
+- {feature_id: realized_vol_20, order: 1, required: true}
 
+# `realized_vol_20` SALE de `derived_in_policy` (2026-08-06, slice BTC): la cabecera
+# de este fichero decia que "returns/vol realizada se derivan dentro de la politica
+# congelada", pero `BtcHodlB1Policy` declara `required = ("realized_vol_20",)` — la
+# CONSUME, no la deriva. Mientras estuvo aqui, ningun productor la materializaba y la
+# policy habria fallado por `missing` en toda corrida.
+# `return_1d` SI se queda: es intermedia del calculo, no un input de la decision.
 derived_in_policy:
 - return_1d (serie de retornos)                    # src/btc_strategy/strategies.py
-- realized_vol_20d (vol_target 0.30 / rv20, clip[0.30, 1.0] spot ADR-0008)
 retrain: never
 normalization_snapshot_id: null

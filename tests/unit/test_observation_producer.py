@@ -406,3 +406,42 @@ def test_mixed_provenances_take_the_WORST_ceiling_not_the_best(monkeypatch) -> N
     # …pero en cuanto entra una reconstruida, el conjunto no.
     with pytest.raises(ObservationError, match="MINIMO"):
         mod.assert_observations_support_status(mezcla, migration_status="CUTOVER")
+
+
+def test_an_unknown_producer_contract_fails_closed_at_the_resolver(monkeypatch) -> None:
+    """Un contrato de invocación desconocido NO se degrada al de por defecto.
+
+    Lo encontré midiendo mis propias mutaciones: quitar la guarda de
+    `CONTRATOS_SOPORTADOS` dejaba **toda la suite verde**, porque con un contrato
+    válido declarado la guarda nunca se ejerce. Era una guarda sin candado — el mismo
+    patrón (mecanismo escrito, nadie lo prueba) que ya costó tres rechazos en este
+    fichero, esta vez en forma de rama no cubierta.
+
+    El validador del catálogo también lo rechaza, pero eso protege el YAML; esto
+    protege el RESOLVER, que es quien acabaría invocando al productor de la forma
+    equivocada si alguien construyera una entrada en memoria.
+
+    Rojo con: quitar la guarda, o hacer que caiga al contrato de Series por defecto.
+    """
+    import src.features.observations as mod
+
+    real = mod._catalog_index
+
+    def _con_contrato_raro():
+        idx = dict(real())
+        fila = dict(idx[("spx500", "ma_200")])
+        fila["producer_contract"] = "convencion_inventada_v9"
+        idx[("spx500", "ma_200")] = fila
+        return idx
+
+    monkeypatch.setattr(mod, "_catalog_index", _con_contrato_raro)
+    spec = {
+        "id": "spx500_daily_ma200_v1", "asset": "spx500",
+        "inputs": {"feature_set_id": "spx500_daily_ma200_v1_action_v1"},
+    }
+    bars = pd.DataFrame({
+        "time": pd.to_datetime(["2026-07-20", "2026-07-21"], utc=True),
+        "open": [1.0, 2.0], "high": [3.0, 4.0], "low": [0.5, 0.6], "close": [2.0, 3.0],
+    })
+    with pytest.raises(ObservationError, match="no soportado"):
+        build_observations(spec, bars, decision_cutoff=CUTOFF)

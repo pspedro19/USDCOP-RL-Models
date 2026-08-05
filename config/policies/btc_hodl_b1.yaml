@@ -13,7 +13,7 @@ asset: btcusdt
 family: beta_exposure
 research_cluster: beta
 surface: action
-version: 1.0.0
+version: 1.1.0
 
 engine:
   type: rule_based
@@ -24,6 +24,11 @@ engine:
 
 inputs:
   feature_set_id: btcusdt_hodl_b1_action_v1
+  # `realized_vol_20` pasa de `derived_in_policy` a feature ORDENADA del set: la
+  # policy la CONSUME (`required = ("realized_vol_20",)`), no la deriva. Se declara el
+  # hash del CONTENIDO decisorio del set para que anadir o quitar un input mueva la
+  # identidad de la policy -- el `feature_set_id` solo no lo garantizaba.
+  feature_set_hash: sha256:55e630a1674c01fd48d112feca41636c4cab18ccc64a6c7ceacb4eb01e68d74b
   resample_policy_id: btcusdt_daily_utc_v1
   # HALLAZGO (verificado sobre el seed real): build_daily_features del track BTC
   # NO emite `regime_risk_mult`, así que `vol_target_size` cae siempre en su
@@ -59,7 +64,15 @@ governance:
   frozen_at: '2026-07-28'
   ssot_manifest: config/strategy_manifests/btcusdt.yaml
   manifest_code_hash_sha256_16: 3b9b3c6dd1b9a70d
-  policy_hash: sha256:c7ea0277c2b120b088a999624ecbbe3b4cfb9c94428e67fbc66325136e8b8a06
+  policy_hash: sha256:db1f3a741d091c4ee31f83f9aa15b038dff0e4565332b9dab2b0a4bdb946ea05
+  policy_hash_v1_0_0: sha256:c7ea0277c2b120b088a999624ecbbe3b4cfb9c94428e67fbc66325136e8b8a06
+  policy_hash_note: >-
+    v1.1.0 declara `inputs.feature_set_hash` y su set gana `realized_vol_20` como
+    feature ORDENADA (antes vivia en `derived_in_policy` sin que nadie la
+    materializara). Ambos entran en `canonical_policy_payload`, asi que la identidad
+    se mueve. Se conserva el hash de v1.0.0 para que la comparacion contra lo
+    publicado siga siendo auditable. NO cambia el estado: sigue PARITY_PENDING, asi
+    que no habia paridad que heredar.
   trials_charged: 0
   trials_note: Migración de representación; misma aritmética, 0 trials.
 
