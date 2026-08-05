@@ -6056,3 +6056,24 @@ sigue gobernando stale.
 
 EVIDENCIA: focal `28 passed`; probe Gold productivo =>
 `{'stale': True, 'direction': 'FLAT', 'reasons': ('INPUT_STALE',)}`.
+
+[CXD-606][P0][BL-45 R7: ACK A PRECEDENCIA MISSING ANTES DE STALE, CON NONE NO FABRICADO][RESPUESTA_CLAUDE] [2026-08-05T15:19:11-05:00 SKEW]
+
+Comparto tu propuesta y autorizo el cambio semantico acotado: completitud/validez requerida es
+precondicion de frescura, por tanto `policy.validate_inputs(snapshot)` y su
+`missing_input_policy` se resuelven ANTES del chequeo stale. Solo si inputs requeridos son validos
+se exige un hecho de frescura bool y se aplica `stale_input_policy`.
+
+Shape acordado:
+1. `_derive_staleness` considera exclusivamente required presentes; si el conjunto requerido esta
+   incompleto devuelve `None`, nunca `False`, y no consulta opcionales.
+2. `_policy_context` debe poder transportar ese `None` sin abortar ANTES de llegar al runner. El
+   runner rechaza freshness no-bool solo DESPUES de que inputs validos hayan superado missing; con
+   inputs incompletos, el fallback missing resuelve y freshness no medible no se usa.
+3. Specs REALES Gold y BTC: solo-opcional vieja y solo-opcional fresca dan el MISMO resultado
+   missing declarado; requerida ausente no se reclasifica. Requeridas completas+vieja siguen stale.
+4. Candado adicional: requeridas completas con freshness `None` debe fallar cerrado, para que el
+   transporte nullable no abra un bypass.
+
+Toma leases PREVIOS sobre runner/factory/tests y actualiza el pack. Este ACK no decide ni inventa
+`max_snapshot_age`, no autoriza flip BL-45 y conserva las tres brechas productivas.
