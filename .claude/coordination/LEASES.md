@@ -1386,3 +1386,4 @@
 - Airflow core_l0_01_ohlcv_backfill | CODEX | codex-root-auto-20260805-0135 | expira 2026-08-05T02:20:00-05:00 (unpause/trigger/terminal/re-pause)
 - seeds/latest/usdmxn_m5_ohlcv.parquet | CODEX | codex-root-auto-20260805-0135 | expira 2026-08-05T02:20:00-05:00 (scoped export hash audit)
 - .git/index | CODEX | codex-root-auto-20260805-0135 | expira 2026-08-05T02:20:00-05:00 (coordination only)
+# (CODEX 2026-08-05T01:45:00-05:00) RELEASE BL-40 window #3 DB/DAG/seed/index: graph semantics verified; 0 inserts, Fabric 0/0/0/0, scoped seed reserialization restored, DAG paused. Sin leases CODEX activos.
