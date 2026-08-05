@@ -48,14 +48,20 @@ def test_086_is_additive_and_does_not_redefine_revision_semantics() -> None:
     assert "create or replace function lineage.apply_revision_semantics" not in sql
 
 
-def test_086_has_a_scoped_review_gated_unpinned_plan() -> None:
+def test_086_has_an_exact_reviewed_pin_and_rejects_changed_sql(
+    tmp_path: Path, monkeypatch
+) -> None:
     migrator = _migrator()
     plan = "lineage-verification-v1"
+    reviewed_digest = (
+        "sha256:90ee1aa036e9f57fb1b227583579a73fa08076c032882cf30c8e624c7b6f67c0"
+    )
     assert [path.name for path in migrator.get_migration_files(plan)] == [
         "086_lineage_last_verified_at.sql"
     ]
     assert plan in migrator.REVIEW_GATED_PLANS
-    assert plan not in migrator.PINNED_PLAN_DIGESTS
+    assert migrator.PINNED_PLAN_DIGESTS[plan] == reviewed_digest
+    assert migrator.get_plan_digest(plan) == reviewed_digest
     assert migrator.PLAN_PREREQUISITE_TABLES[plan] == ("lineage.node",)
     assert migrator.REQUIRED_TABLES_BY_PLAN[plan] == {
         "lineage.node": "Lineage nodes with producer verification clock"
@@ -66,4 +72,12 @@ def test_086_has_a_scoped_review_gated_unpinned_plan() -> None:
         }
     }
     assert not migrator.plan_is_authorized(plan, None)
-    assert not migrator.plan_is_authorized(plan, migrator.get_plan_digest(plan))
+    assert migrator.plan_is_authorized(plan, reviewed_digest)
+
+    changed = tmp_path / MIGRATION.name
+    changed.write_bytes(MIGRATION.read_bytes() + b"\n")
+    monkeypatch.setitem(migrator.MIGRATION_PLANS, plan, (changed,))
+    changed_digest = migrator.get_plan_digest(plan)
+    assert changed_digest != reviewed_digest
+    assert not migrator.plan_is_authorized(plan, reviewed_digest)
+    assert not migrator.plan_is_authorized(plan, changed_digest)
