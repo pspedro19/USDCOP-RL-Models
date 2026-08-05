@@ -43,7 +43,6 @@ def test_weekly_context_reports_unavailable_instead_of_neutral(monkeypatch) -> N
         }]
     )
     monkeypatch.setattr(generator, "_get_all_articles", lambda: articles)
-    monkeypatch.setattr(generator, "_get_gdelt_sentiment", lambda: pd.DataFrame())
 
     result = generator._load_news_context(date(2026, 8, 3), date(2026, 8, 7))
 
@@ -221,13 +220,7 @@ def test_ungoverned_gdelt_csv_cannot_override_unavailable_sentiment(monkeypatch)
         "tone": None,
         "sentiment_unavailable_reason": "feature.status_stale",
     }])
-    ungoverned_csv = pd.DataFrame(
-        {"tone_avg": [-3.1, -2.9]},
-        index=pd.to_datetime(["2026-08-05", "2026-08-06"]),
-    )
     monkeypatch.setattr(generator, "_get_all_articles", lambda: governed_null)
-    monkeypatch.setattr(generator, "_get_gdelt_sentiment", lambda: ungoverned_csv)
-
     result = generator._load_news_context(date(2026, 8, 3), date(2026, 8, 7))
 
     assert result["avg_sentiment"] is None

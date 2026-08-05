@@ -1647,22 +1647,6 @@ class WeeklyAnalysisGenerator:
     # Cached data accessors (lazy-loaded)
     # ------------------------------------------------------------------
 
-    def _get_gdelt_sentiment(self) -> pd.DataFrame:
-        """Load and cache GDELT daily sentiment CSV."""
-        if self._gdelt_sentiment_cache is None:
-            path = PROJECT_ROOT / "data/news/gdelt_daily_sentiment.csv"
-            if path.exists():
-                try:
-                    df = pd.read_csv(path, parse_dates=["date"])
-                    df = df.set_index("date").sort_index()
-                    self._gdelt_sentiment_cache = df
-                except Exception as e:
-                    logger.warning(f"Failed to load GDELT sentiment: {e}")
-                    self._gdelt_sentiment_cache = pd.DataFrame()
-            else:
-                self._gdelt_sentiment_cache = pd.DataFrame()
-        return self._gdelt_sentiment_cache
-
     def _get_all_articles(self) -> pd.DataFrame:
         """Load and cache articles from ALL news sources (GDELT + Google News + Investing.com + Colombia news).
 

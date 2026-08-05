@@ -9,10 +9,8 @@ columnas `tone_*` directamente, sin un solo llamador. Un bypass cargado y sin ga
 Decisión de gobierno (CXD-513): el CSV no se declara disponible sin productor/cutoff/
 provenance; el fallback numérico muere y la superficie permanece `UNAVAILABLE`.
 
-Estos candados son de `src/analysis/agent_tools.py` únicamente. El gemelo de
-`weekly_generator._load_news_context` pertenece al carril CODEX de C-031; cuando caiga,
-`test_no_module_under_analysis_reads_the_ungoverned_csv` se puede ampliar a todo
-`src/analysis/` borrando la excepción declarada abajo.
+El candado conductual de `weekly_generator._load_news_context` vive en el carril CODEX
+de C-031; este candado estructural cubre ahora todos los módulos de `src/analysis/`.
 """
 
 from __future__ import annotations
@@ -66,14 +64,11 @@ def test_the_article_loader_that_remains_carries_no_sentiment_number() -> None:
 
 
 def test_no_module_under_analysis_reads_the_ungoverned_csv() -> None:
-    """Candado repo-parcial: hoy solo `weekly_generator` queda, y es el carril CODEX."""
-    pendiente_codex = {"weekly_generator.py"}
+    """Ningún módulo de análisis puede revivir el CSV numérico sin gobierno."""
     culpables = {
         path.name for path in ANALYSIS_DIR.glob("*.py") if UNGOVERNED_CSV in _code(path)
     }
-    assert culpables <= pendiente_codex, (
-        f"lectores nuevos del CSV sin gobierno: {sorted(culpables - pendiente_codex)}"
-    )
+    assert not culpables, f"lectores del CSV sin gobierno: {sorted(culpables)}"
 
 
 def test_removing_the_loader_did_not_break_its_importers() -> None:
