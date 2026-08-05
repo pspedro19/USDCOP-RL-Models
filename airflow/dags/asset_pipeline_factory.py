@@ -219,8 +219,92 @@ def resolve_policy_runs(spec: dict) -> list[dict]:
     return eligible
 
 
+#: Clave XCom del HECHO de frescura. No es un default: si no esta, la cadena
+#: falla cerrado (ver `_declared_max_snapshot_age` y `_policy_context`).
+STALENESS_XCOM_KEY = "snapshot_is_stale"
+
+
+def _declared_max_snapshot_age(spec: dict):
+    """La edad maxima DECLARADA por la policy, o `None` si no la declara.
+
+    Se lee de `inputs.max_snapshot_age` como duracion ISO-8601 (`P1D`, `PT4H`).
+    **Ninguno de los cuatro specs vigentes la declara** (medido), y por eso la
+    cadena falla cerrado: un umbral de frescura decide CUANDO opera la estrategia,
+    asi que inventarlo aqui seria fijar un parametro economico por conveniencia de
+    fontaneria. Es una declaracion que le toca al spec, no al orquestador
+    (`quant-constitution.md` §1: priors declarados ex-ante, nunca deducidos para
+    que algo pase).
+    """
+    declarado = (spec.get("inputs") or {}).get("max_snapshot_age")
+    if declarado is None:
+        return None
+    if not isinstance(declarado, str) or not declarado.startswith("P"):
+        raise PolicyRunConfigError(
+            f"{spec.get('id')}: `inputs.max_snapshot_age` debe ser una duracion "
+            f"ISO-8601 (p.ej. P1D), no {declarado!r}"
+        )
+    from datetime import timedelta
+
+    texto = declarado[1:]
+    dias = horas = minutos = 0
+    if "T" in texto:
+        fecha, _, hora = texto.partition("T")
+    else:
+        fecha, hora = texto, ""
+    if fecha.endswith("D"):
+        dias = int(fecha[:-1])
+    elif fecha:
+        raise PolicyRunConfigError(
+            f"{spec.get('id')}: solo se soportan dias/horas/minutos en "
+            f"`max_snapshot_age`, no {declarado!r}"
+        )
+    if hora.endswith("H"):
+        horas = int(hora[:-1])
+    elif hora.endswith("M"):
+        minutos = int(hora[:-1])
+    elif hora:
+        raise PolicyRunConfigError(
+            f"{spec.get('id')}: componente horario no soportado en {declarado!r}"
+        )
+    return timedelta(days=dias, hours=horas, minutes=minutos)
+
+
+def _derive_staleness(policy_id: str, observations: dict, decision_cutoff, spec: dict) -> bool:
+    """DERIVAR el hecho de frescura de la evidencia, o fallar cerrado.
+
+    Vive en la frontera de LECTURA porque es el unico sitio donde existe: 
+    `resolve_feature_snapshot` proyecta solo `{feature: valor}` y **descarta la
+    metadata a proposito** ("Metadata stays at the read boundary"), asi que
+    aguas abajo la frescura ya no es derivable — solo inventable. Eso es
+    exactamente lo que hacia R4 con `snapshot_is_stale=False` por defecto, y
+    CXD-600 tenia razon en que no es un limite pasivo: **fabrica** un hecho de
+    frescura y deja evaluar un snapshot viejo como si fuera nuevo.
+
+    Regla: stale := (decision_cutoff - max(available_at)) > max_snapshot_age.
+    Sin `max_snapshot_age` declarado no hay criterio, y sin criterio no se decide.
+    """
+    from src.orchestration.feature_snapshot import _aware_datetime
+
+    limite = _declared_max_snapshot_age(spec)
+    if limite is None:
+        raise PolicyRunConfigError(
+            f"{policy_id}: la policy no declara `inputs.max_snapshot_age`, asi que la "
+            f"frescura del snapshot NO es derivable. La cadena falla cerrado en vez de "
+            f"asumir que el dato esta fresco: `stale_input_policy` "
+            f"({(spec.get('policy') or {}).get('stale_input_policy')!r}) seria "
+            f"inalcanzable y se evaluaria un snapshot viejo sin saberlo. Declarar el "
+            f"umbral es decision de la policy, no del orquestador"
+        )
+    cutoff = _aware_datetime(decision_cutoff, field="decision_cutoff")
+    mas_nuevo = max(
+        _aware_datetime(obs["available_at"], field=f"feature {name!r} available_at")
+        for name, obs in observations.items()
+    )
+    return (cutoff - mas_nuevo) > limite
+
+
 def make_resolve_snapshot(policy_id: str):
-    """Tarea 1: materializar el snapshot causal. Aqui vive el cutoff."""
+    """Tarea 1: materializar el snapshot causal. Aqui viven el cutoff Y la frescura."""
 
     def _resolve(**context):
         from src.orchestration.feature_snapshot import resolve_feature_snapshot
@@ -232,7 +316,16 @@ def make_resolve_snapshot(policy_id: str):
             raise PolicyRunConfigError(
                 f"{policy_id}: faltan observations/decision_cutoff; no se evalua a ciegas"
             )
-        return resolve_feature_snapshot(observations, decision_cutoff=decision_cutoff)
+        resuelto = resolve_feature_snapshot(observations, decision_cutoff=decision_cutoff)
+        # El hecho de frescura se PRODUCE aqui, con la evidencia delante, y viaja por
+        # XCom. `_policy_context` lo consume; si no llega, falla cerrado.
+        ti.xcom_push(
+            key=f"{STALENESS_XCOM_KEY}::{policy_id}",
+            value=_derive_staleness(
+                policy_id, observations, decision_cutoff, _spec_for(policy_id)
+            ),
+        )
+        return resuelto
 
     return _resolve
 
@@ -304,10 +397,20 @@ def _policy_context(policy_id: str, context: dict):
             f"`as_of` publicaria una decision sin fecha logica"
         )
     as_of = inicio.isoformat() if hasattr(inicio, "isoformat") else str(inicio)
-    stale = context.get("snapshot_is_stale", False)
+    # El hecho de frescura se CONSUME, no se inventa. R4 hacia
+    # `context.get("snapshot_is_stale", False)`: ningun productor entregaba esa
+    # clave, asi que toda corrida productiva declaraba "fresco" sin medir nada y
+    # el fallback FLAT era inalcanzable (CXD-600). Ahora lo produce `resolve` con
+    # la evidencia delante y su ausencia es error, no un "no".
+    ti = context.get("ti")
+    stale = (
+        ti.xcom_pull(key=f"{STALENESS_XCOM_KEY}::{policy_id}") if ti is not None else None
+    )
     if not isinstance(stale, bool):
         raise PolicyRunConfigError(
-            f"{policy_id}: `snapshot_is_stale` debe ser bool declarado, no {stale!r}"
+            f"{policy_id}: sin hecho de frescura derivado por `resolve_snapshot` "
+            f"(recibido {stale!r}). No se asume fresco: un snapshot cuya frescura no "
+            f"se ha medido no se evalua"
         )
     return PolicyContext(as_of=as_of, mode="DECISION", extras={"snapshot_is_stale": stale})
 

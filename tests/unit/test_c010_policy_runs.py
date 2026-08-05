@@ -348,15 +348,30 @@ PID = "spx500_daily_ma200_v1"
 CTX_INTERVALO = {"data_interval_end": "2026-07-24T00:00:00+00:00"}
 
 
-class _TIProbe:
-    """`ti` real: devuelve el snapshot de resolve y, opcionalmente, el de validate."""
+CUTOFF = "2026-07-24T21:00:00+00:00"
 
-    def __init__(self, snapshot, degradada=None, decision=None):
-        self._snapshot, self._degradada, self._decision = snapshot, degradada, decision
+
+class _TIProbe:
+    """`ti` REAL: xcom_push/pull de verdad, para que el hecho de frescura viaje
+    por el mismo canal que en Airflow en vez de entrar por una clave magica."""
+
+    def __init__(self, observations, cutoff=CUTOFF, degradada=None, decision=None):
+        self._obs, self._cutoff = observations, cutoff
+        self._degradada, self._decision = degradada, decision
+        self.pushed: dict = {}
+
+    def xcom_push(self, key=None, value=None):
+        self.pushed[key] = value
 
     def xcom_pull(self, key=None, task_ids=None):
+        if key and key.startswith("observations"):
+            return self._obs
+        if key and key.startswith("decision_cutoff"):
+            return self._cutoff
+        if key in self.pushed:
+            return self.pushed[key]
         if task_ids and task_ids.endswith("_resolve_snapshot"):
-            return self._snapshot
+            return {n: o["value"] for n, o in self._obs.items()}
         if task_ids and task_ids.endswith("_validate_inputs"):
             return self._degradada
         if task_ids and task_ids.endswith("_evaluate"):
@@ -364,35 +379,67 @@ class _TIProbe:
         return None
 
 
+def _obs(available_at: str) -> dict:
+    """Observaciones con `available_at` REAL: de ahi sale la frescura."""
+    return {
+        "close": {"value": 5200.0, "available_at": available_at},
+        "ma_200": {"value": 5000.0, "available_at": available_at},
+    }
+
+
+OBS_FRESCAS = _obs("2026-07-24T20:00:00+00:00")   # 1h antes del cutoff
+OBS_VIEJAS = _obs("2026-07-18T20:00:00+00:00")    # 6 dias antes
 SNAPSHOT_SANO = {"close": 5200.0, "ma_200": 5000.0}
 
 
-def test_validate_link_actually_runs_end_to_end_without_monkeypatching_build_policy(factory):
+def _con_umbral(factory, monkeypatch, edad="P1D", policy_id=None):
+    """Declarar `inputs.max_snapshot_age` SOLO en memoria.
+
+    No se escribe en el spec real a proposito: un umbral de frescura decide CUANDO
+    opera la estrategia, asi que fijarlo es una declaracion economica de la policy
+    y no un detalle de fontaneria que yo pueda elegir para que un test pase
+    (`quant-constitution.md` §1). Aqui se declara para demostrar que el MECANISMO
+    funciona; que el spec no lo declare es un hecho aparte, y tiene su propio test.
+    """
+    import copy
+
+    import src.strategies.policies.loader as loader
+
+    specs = copy.deepcopy(list(loader.load_all_policy_specs()))
+    for spec in specs:
+        if str(spec.get("id")) == (policy_id or PID):
+            spec.setdefault("inputs", {})["max_snapshot_age"] = edad
+    monkeypatch.setattr(loader, "load_all_policy_specs", lambda: specs)
+
+
+def test_validate_link_actually_runs_end_to_end_without_monkeypatching_build_policy(factory, monkeypatch):
     """El camino SANO atraviesa `validate` con spec y contexto REALES.
 
     Sin monkeypatch de `build_policy` ni `ctx` magico: si el resolver id->spec o la
     construccion del `PolicyContext` estan mal, esto revienta. Antes reventaba.
     """
-    salida = factory.make_validate_inputs(PID)(
-        ti=_TIProbe(SNAPSHOT_SANO), **CTX_INTERVALO
-    )
+    _con_umbral(factory, monkeypatch)
+    ti = _TIProbe(OBS_FRESCAS)
+    factory.make_resolve_snapshot(PID)(ti=ti, **CTX_INTERVALO)   # produce la frescura
+    salida = factory.make_validate_inputs(PID)(ti=ti, **CTX_INTERVALO)
     assert salida is None, (
         f"inputs validos deben dejar seguir la cadena (None), se devolvio {salida!r}"
     )
 
 
-def test_evaluate_link_actually_produces_a_decision_end_to_end(factory):
+def test_evaluate_link_actually_produces_a_decision_end_to_end(factory, monkeypatch):
     """El camino sano llega a una decision REAL, no a un AttributeError."""
-    decision = factory.make_evaluate_policy(PID)(
-        ti=_TIProbe(SNAPSHOT_SANO), **CTX_INTERVALO
-    )
+    _con_umbral(factory, monkeypatch)
+    ti = _TIProbe(OBS_FRESCAS)
+    factory.make_resolve_snapshot(PID)(ti=ti, **CTX_INTERVALO)
+    decision = factory.make_evaluate_policy(PID)(ti=ti, **CTX_INTERVALO)
     assert decision is not None
     assert getattr(decision, "direction", None) in {"LONG", "FLAT", "SHORT"}, (
         f"la evaluacion no produjo una decision con direccion: {decision!r}"
     )
 
 
-def test_stale_snapshot_honours_the_DECLARED_flat_not_the_runner_default(factory):
+def test_stale_snapshot_honours_the_DECLARED_flat_not_the_runner_default(factory, monkeypatch):
     """`stale_input_policy: FLAT` del spec manda sobre el default del runner.
 
     La cadena no pasaba ningun fallback, asi que aplicaba `FAIL_CLOSED` por defecto:
@@ -402,15 +449,19 @@ def test_stale_snapshot_honours_the_DECLARED_flat_not_the_runner_default(factory
 
     Rojo con: dejar de pasar `**_declared_fallbacks(spec)` en `make_validate_inputs`.
     """
-    degradada = factory.make_validate_inputs(PID)(
-        ti=_TIProbe(SNAPSHOT_SANO), snapshot_is_stale=True, **CTX_INTERVALO
+    _con_umbral(factory, monkeypatch, edad="P1D")
+    ti = _TIProbe(OBS_VIEJAS)                       # 6 dias > P1D declarado
+    factory.make_resolve_snapshot(PID)(ti=ti, **CTX_INTERVALO)
+    assert ti.pushed[f"{factory.STALENESS_XCOM_KEY}::{PID}"] is True, (
+        "la frescura no se derivo de la evidencia; el resto del test seria teatro"
     )
+    degradada = factory.make_validate_inputs(PID)(ti=ti, **CTX_INTERVALO)
     assert degradada is not None, "un snapshot stale no puede pasar como valido"
     assert degradada.direction == "FLAT"
     assert "INPUT_STALE" in degradada.reason_codes
 
 
-def test_missing_feature_honours_the_DECLARED_fail_closed(factory):
+def test_missing_feature_honours_the_DECLARED_fail_closed(factory, monkeypatch):
     """El otro fallback declarado (`missing_input_policy: FAIL_CLOSED`) tambien se aplica.
 
     Se comprueba el par completo a proposito: si alguien pasara ambos como `FLAT`
@@ -418,9 +469,59 @@ def test_missing_feature_honours_the_DECLARED_fail_closed(factory):
     los dos, y esa asimetria es justamente lo que un default uniforme borra.
     """
     with pytest.raises(ValueError):
-        factory.make_validate_inputs(PID)(
-            ti=_TIProbe({"close": 5200.0}), **CTX_INTERVALO  # falta `ma_200`
-        )
+        _con_umbral(factory, monkeypatch)
+        ti = _TIProbe({"close": {"value": 5200.0,
+                                 "available_at": "2026-07-24T20:00:00+00:00"}})
+        factory.make_resolve_snapshot(PID)(ti=ti, **CTX_INTERVALO)
+        factory.make_validate_inputs(PID)(ti=ti, **CTX_INTERVALO)  # falta `ma_200`
+
+
+def test_no_spec_declares_a_freshness_threshold_so_the_chain_fails_closed(factory):
+    """ESTADO DE PRODUCCION HOY: nadie declara `inputs.max_snapshot_age`.
+
+    R4 resolvia esto con `snapshot_is_stale=False` por defecto y yo lo describi
+    como "limite declarado". CXD-600 lo rechazo y tenia razon: **no es un limite
+    pasivo, fabrica un hecho de frescura**. Toda corrida productiva afirmaba "el
+    dato esta fresco" sin medir nada, el `stale_input_policy: FLAT` del spec era
+    inalcanzable, y un snapshot viejo se habria evaluado como nuevo.
+
+    Este test fija las DOS mitades de la verdad:
+      1. ninguno de los cuatro specs declara umbral -- leido del YAML, aparte;
+      2. por tanto la cadena FALLA CERRADA, que es lo correcto: sin criterio de
+         frescura no se decide. Declarar el umbral es una decision de la policy
+         (cambia CUANDO opera) y no del orquestador, asi que no me lo invento.
+
+    Rojo con: reponer cualquier default de frescura en `_policy_context` o en
+    `_derive_staleness`.
+    """
+    import yaml
+
+    declaran = [
+        doc["id"]
+        for path in sorted(POLICY_SPEC_DIR.glob("*.yaml"))
+        for doc in [yaml.safe_load(path.read_text(encoding="utf-8")) or {}]
+        if (doc.get("inputs") or {}).get("max_snapshot_age") is not None
+    ]
+    assert not declaran, (
+        f"{declaran} ya declara(n) `max_snapshot_age`: actualiza este candado y "
+        f"comprueba que la derivacion de frescura se ejercita de verdad en produccion"
+    )
+
+    ti = _TIProbe(OBS_FRESCAS)
+    with pytest.raises(factory.PolicyRunConfigError, match="max_snapshot_age"):
+        factory.make_resolve_snapshot(PID)(ti=ti, **CTX_INTERVALO)
+
+
+def test_validate_without_a_derived_freshness_fact_refuses_to_assume_fresh(factory, monkeypatch):
+    """Si `resolve` no produjo el hecho, `validate` no lo suple con un `False`.
+
+    Es el candado directo contra la regresion de R4: la ausencia del hecho es un
+    error, nunca un "no esta stale".
+    """
+    _con_umbral(factory, monkeypatch)
+    ti = _TIProbe(OBS_FRESCAS)          # NO se corre `resolve`: no hay hecho
+    with pytest.raises(factory.PolicyRunConfigError, match="frescura"):
+        factory.make_validate_inputs(PID)(ti=ti, **CTX_INTERVALO)
 
 
 def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factory):
@@ -439,7 +540,7 @@ def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factor
     del acceso a datos y esto cae. Cubrir la publicacion completa exige el stack y
     queda declarado como pendiente, no simulado aqui.
     """
-    ti = _TIProbe(SNAPSHOT_SANO, decision=object())
+    ti = _TIProbe(OBS_FRESCAS, decision=object())
     with pytest.raises(Exception) as exc:
         factory.make_publish_signal(PID)(
             ti=ti, data_interval_start="2026-07-17T00:00:00+00:00", **CTX_INTERVALO
@@ -459,7 +560,7 @@ def test_context_without_data_interval_fails_closed_instead_of_dating_a_decision
     misma fecha produjeran registros distintos y el replay dejaria de ser replay.
     """
     with pytest.raises(factory.PolicyRunConfigError, match="data_interval"):
-        factory.make_validate_inputs(PID)(ti=_TIProbe(SNAPSHOT_SANO))
+        factory.make_validate_inputs(PID)(ti=_TIProbe(OBS_FRESCAS))
 
 
 def _spec_con(**cambios_engine):
@@ -561,13 +662,21 @@ def test_chain_actually_calls_resolve_feature_snapshot(factory, monkeypatch):
     monkeypatch.setattr(snap, "resolve_feature_snapshot", _spy)
 
     class _TI:
+        def __init__(self):
+            self.pushed = {}
+
+        def xcom_push(self, key=None, value=None):
+            self.pushed[key] = value
+
         def xcom_pull(self, key=None, task_ids=None):
             if key and key.startswith("observations"):
                 return {"rsi_9": {"value": 1.0, "available_at": "2026-01-01T00:00:00+00:00"}}
             if key and key.startswith("decision_cutoff"):
                 return "2026-01-02T00:00:00+00:00"
-            return None
+            return self.pushed.get(key)
 
+    # R5: la tarea ademas DERIVA la frescura, y eso exige umbral declarado.
+    _con_umbral(factory, monkeypatch, edad="P7D", policy_id="btc_hodl_b1")
     result = factory.make_resolve_snapshot("btc_hodl_b1")(ti=_TI())
     assert called, "la tarea no invoco resolve_feature_snapshot"
     assert result == {"rsi_9": 1.0}
