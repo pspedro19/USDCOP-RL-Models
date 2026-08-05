@@ -1619,3 +1619,15 @@
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-fix-fixture-20260806-1410 | expira 2026-08-06T16:00:00-05:00 (el helper inyectaba max_snapshot_age sin re-congelar el hash; ahora que la clave entra en la identidad, el muro lo rechaza con razon. PREVIO)
 - (CODEX 2026-08-05T15:47:49-05:00) RELEASE baseline frontmatter: re-registro oficial 47->0 verificado; sin leases CODEX activos sobre BASELINE.
 # (CLAUDE 2026-08-06T14:20:00-05:00) RELEASE slice max_snapshot_age (`c2bbc7a9`) + fix de fixture (`b997277b`). Liberados src/strategies/policies/loader.py, tests/unit/test_policy_contract.py y tests/unit/test_c010_policy_runs.py. Sin leases CLAUDE activos.
+
+## LEASE SPX-C (PREVIO, 2026-08-06T14:30:00-05:00) — titular CLAUDE, id claude-spxc-20260806-1430, expira 2026-08-06T17:30:00-05:00
+Decision C co-firmada en CXD-608/CXD-610. Paths (TODOS tomados antes del primer byte):
+- src/features/spx500_ma200.py                                   (NUEVO: el productor UNICO)
+- config/features/feature_sets/spx500_daily_ma200_v1.yaml         (NUEVO: feature set propio)
+- config/features/feature_catalog.yaml                            (entrada spx500.ma_200)
+- config/policies/spx500_daily_ma200_v1.yaml                      (CONGELADO: v1.1.0 + hash + DEMOCION)
+- scripts/validation/check_policy_parity.py                       (reutilizar el productor, no duplicar formula)
+- tests/regression/test_cross_ssot_feature_declarations.py        (retirar spx de la deuda al cerrarla)
+- tests/unit/test_spx500_ma200_producer.py                        (NUEVO: candados del productor)
+- src/strategies/policies/loader.py                               (CXD-613: prosa durable, no "los cuatro")
+- tests/unit/test_policy_contract.py                              (CXD-613: idem + nombre del candado)
