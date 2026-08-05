@@ -388,8 +388,13 @@ def make_produce_observations(policy_id: str):
                 # Serie COMPLETA hasta el cutoff: las features con ventana no se
                 # pueden calcular sobre un recorte. Un LIMIT aqui daria un numero
                 # plausible y silenciosamente distinto -- el peor error, porque no falla.
+                # TODAS las columnas raw del bar canonico, no solo `close`
+                # (CXD-620 §1): `open/high/low` estan catalogadas como passthrough
+                # para usdcop y las ordenan los sets de smart_simple. Traer solo
+                # `close` obligaria al productor a sustituirlas -- que es justo el
+                # defecto que este commit arregla.
                 cur.execute(
-                    "SELECT time, close FROM public.asset_daily_ohlcv "
+                    "SELECT time, open, high, low, close FROM public.asset_daily_ohlcv "
                     "WHERE symbol = %s ORDER BY time",
                     (fila[0],),
                 )
@@ -401,7 +406,7 @@ def make_produce_observations(policy_id: str):
             raise PolicyRunConfigError(
                 f"{asset_id}: cero barras para {fila[0]!r}; no se decide sin evidencia"
             )
-        bars = pd.DataFrame(filas, columns=["time", "close"])
+        bars = pd.DataFrame(filas, columns=["time", "open", "high", "low", "close"])
         observations = build_observations(spec, bars, decision_cutoff=cutoff)
 
         ti = context["ti"]
@@ -649,12 +654,29 @@ def make_publish_signal(policy_id: str):
             re-ejecuciones de la misma fecha deben producir el mismo registro, o el
             replay dejaria de ser replay.
         """
+        from src.features.observations import assert_observations_support_status
         from src.policy_engine import publish_signal
 
         ti = context["ti"]
         decision = ti.xcom_pull(task_ids=f"policy_{policy_id}_evaluate")
         if decision is None:
             raise PolicyRunConfigError(f"{policy_id}: sin decision; no se publica")
+
+        # GATE DEL TECHO DE EVIDENCIA, aqui y no antes: publicar es por donde la señal
+        # ESCAPA. C2b declaro el techo en codigo y no lo cableo -- una funcion
+        # consultable que nadie consulta no prohibe nada (CXD-620 §2). Si el
+        # `migration.status` reclama una via viva y las observaciones traen sello
+        # RECONSTRUIDO, no se publica.
+        observations = ti.xcom_pull(key=f"observations::{policy_id}")
+        if not observations:
+            raise PolicyRunConfigError(
+                f"{policy_id}: sin observaciones que respalden la decision; no se "
+                f"publica una señal cuya evidencia no se puede juzgar"
+            )
+        assert_observations_support_status(
+            observations,
+            migration_status=(_spec_for(policy_id).get("migration") or {}).get("status"),
+        )
 
         # `load_policy_spec` recibe una RUTA, no un id: llamarlo con el id habria
         # muerto con FileNotFoundError. Mismo defecto que CXD-598 encontro en

@@ -813,7 +813,26 @@ def test_runner_refuses_an_absent_freshness_key_instead_of_defaulting_to_fresh()
         validate_policy_inputs(_Valida(), {"close": 1.0}, ctx)
 
 
-def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factory):
+def test_publish_refuses_to_publish_without_evidence_backing_the_decision(factory):
+    """Antes de la DB, el gate del techo de evidencia (CXD-620 §2).
+
+    `publish` es por donde la señal ESCAPA, asi que ahi se comprueba que la evidencia
+    sostiene lo que el estado reclama. Sin observaciones no hay nada que juzgar, y una
+    señal cuya evidencia no se puede juzgar no se publica.
+    """
+    class _SinObs:
+        def xcom_pull(self, key=None, task_ids=None):
+            if task_ids and task_ids.endswith("_evaluate"):
+                return object()
+            return None
+
+    with pytest.raises(factory.PolicyRunConfigError, match="sin observaciones"):
+        factory.make_publish_signal(PID)(
+            ti=_SinObs(), data_interval_start="2026-07-17T00:00:00+00:00", **CTX_INTERVALO
+        )
+
+
+def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factory, monkeypatch):
     """El TERCER eslabon roto, que el rechazo no llego a nombrar.
 
     `make_publish_signal` llamaba `load_policy_spec(policy_id)`, y ese recibe una
@@ -829,7 +848,14 @@ def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factor
     del acceso a datos y esto cae. Cubrir la publicacion completa exige el stack y
     queda declarado como pendiente, no simulado aqui.
     """
-    ti = _TIProbe(OBS_FRESCAS, decision=object())
+    # Promovida en memoria: con `PARITY_PENDING` el gate del techo corta antes (su
+    # estado no declara que evidencia reclama), y este candado mira la frontera de DB.
+    _elegible_en_memoria(factory, monkeypatch)
+    obs_con_sello = {
+        k: {**v, "provenance": "available_at_reconstructed:close+P1D"}
+        for k, v in OBS_FRESCAS.items()
+    }
+    ti = _TIProbe(obs_con_sello, decision=object())
     with pytest.raises(Exception) as exc:
         factory.make_publish_signal(PID)(
             ti=ti, data_interval_start="2026-07-17T00:00:00+00:00", **CTX_INTERVALO

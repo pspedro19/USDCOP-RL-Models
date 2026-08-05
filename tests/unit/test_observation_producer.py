@@ -231,3 +231,110 @@ def test_an_unknown_stamp_is_rejected_instead_of_degraded_to_the_best_ceiling() 
 
     with pytest.raises(ObservationError, match="sin techo declarado"):
         status_ceiling("vintage_proveedor")
+
+
+def test_passthrough_publishes_the_column_named_by_the_feature_not_close(monkeypatch) -> None:
+    """OHLC DISTINTOS: cada passthrough publica LO SUYO (CXD-620 §1).
+
+    El productor hacía `serie = close` para todo `code_reference: null`. El catálogo
+    declara `open`, `high` y `low` como passthrough para usdcop y los sets de
+    smart_simple los ordenan, así que habría publicado el CIERRE bajo las identidades
+    `open/high/low` — con su `series_id` propio, sin fallar, y sin forma de notarlo
+    aguas abajo. No era un riesgo futuro: esas entradas existen hoy.
+
+    La fixture usa cuatro valores DISTINTOS a propósito. Con OHLC iguales —que es lo
+    que suele salir de un generador perezoso— este test pasaría con el bug puesto.
+
+    Rojo con: volver a `serie = close` en la rama passthrough.
+    """
+    import src.features.observations as mod
+
+    real = mod._feature_set
+
+    def _ohlc(fsid):
+        fs = dict(real("spx500_daily_ma200_v1_action_v1"))
+        fs["ordered_features"] = [
+            {"feature_id": f, "order": i, "required": True}
+            for i, f in enumerate(("open", "high", "low", "close"))
+        ]
+        return fs
+
+    monkeypatch.setattr(mod, "_feature_set", _ohlc)
+    spec = {
+        "id": "x",
+        "asset": "usdcop",          # el único activo con open/high/low catalogados
+        "inputs": {"feature_set_id": "usdcop_smart_simple_v11_recipe25"},
+    }
+    bars = pd.DataFrame(
+        {
+            "time": pd.to_datetime(["2026-07-20", "2026-07-21"], utc=True),
+            "open": [10.0, 11.0],
+            "high": [30.0, 31.0],
+            "low": [1.0, 2.0],
+            "close": [20.0, 21.0],
+        }
+    )
+    obs = build_observations(spec, bars, decision_cutoff=CUTOFF)
+    assert {k: v["value"] for k, v in obs.items()} == {
+        "open": 11.0, "high": 31.0, "low": 2.0, "close": 21.0
+    }, f"un passthrough publicó el valor de otra columna: {obs}"
+
+
+def test_a_passthrough_without_its_column_fails_closed(monkeypatch) -> None:
+    """Y si la columna no llega, es error — nunca una sustitución silenciosa."""
+    import src.features.observations as mod
+
+    real = mod._feature_set
+
+    def _solo_open(fsid):
+        fs = dict(real("spx500_daily_ma200_v1_action_v1"))
+        fs["ordered_features"] = [{"feature_id": "open", "order": 0, "required": True}]
+        return fs
+
+    monkeypatch.setattr(mod, "_feature_set", _solo_open)
+    spec = {"id": "x", "asset": "usdcop",
+            "inputs": {"feature_set_id": "usdcop_smart_simple_v11_recipe25"}}
+    bars = pd.DataFrame(
+        {"time": pd.to_datetime(["2026-07-21"], utc=True), "close": [20.0]}
+    )
+    with pytest.raises(ObservationError, match="no trae la columna"):
+        build_observations(spec, bars, decision_cutoff=CUTOFF)
+
+
+def test_a_live_status_cannot_be_backed_by_reconstructed_evidence(spec, bars) -> None:
+    """El techo se APLICA, no sólo se declara (CXD-620 §2).
+
+    C2b puso constantes y una función consultable, y **nadie la consultaba**: la misma
+    observación reconstruida seguía atravesando `publish` si la policy se volvía
+    elegible. Una función que puede preguntarse pero no se pregunta no prohíbe nada —
+    es la forma exacta del error del parámetro `window`.
+
+    `CUTOVER` es el único `migration.status` que significa "esta ES la vía viva", así
+    que reclama `production`; con sello reconstruido, se bloquea.
+
+    Rojo con: quitar la llamada del eslabón `publish`, o mapear `CUTOVER` a
+    `research_validated` para que deje de doler.
+    """
+    from src.features.observations import assert_observations_support_status
+
+    obs = build_observations(spec, bars, decision_cutoff=CUTOFF)
+
+    # PARITY_GREEN reclama investigación validada: la evidencia reconstruida basta.
+    assert_observations_support_status(obs, migration_status="PARITY_GREEN")
+
+    with pytest.raises(ObservationError, match="RECONSTRUIDO"):
+        assert_observations_support_status(obs, migration_status="CUTOVER")
+
+
+def test_an_unmapped_migration_status_is_rejected_not_waved_through(spec, bars) -> None:
+    """Un estado nuevo no pasa por defecto: hay que declarar qué evidencia reclama.
+
+    "Por defecto lo permisivo" es como se cuelan los estados nuevos sin revisar; y el
+    coste de equivocarse aquí es publicar una señal viva sobre evidencia que no la
+    sostiene.
+    """
+    from src.features.observations import assert_observations_support_status
+
+    obs = build_observations(spec, bars, decision_cutoff=CUTOFF)
+    with pytest.raises(ObservationError, match="sin reclamo declarado"):
+        assert_observations_support_status(obs, migration_status="ESTADO_INVENTADO")

@@ -126,7 +126,7 @@ def _resolve_producer(entry: Mapping[str, Any]) -> Callable[[pd.Series], pd.Seri
     """
     ref = entry.get("code_reference")
     if ref is None:
-        return None  # passthrough: la feature ES una columna del bar canónico
+        return None  # passthrough: la feature ES la columna HOMONIMA del bar canónico
     file_rel, symbol = ref.get("file"), ref.get("symbol")
     if not file_rel or not symbol:
         raise ObservationError(
@@ -205,7 +205,28 @@ def build_observations(
                 f"catálogo: no hay productor ni contrato de causalidad declarados"
             )
         productor = _resolve_producer(entrada)
-        serie = close if productor is None else productor(close)
+        if productor is None:
+            # PASSTHROUGH: la columna que se llama COMO LA FEATURE, no `close`.
+            #
+            # Aquí ponía `serie = close` para todo passthrough. El catálogo declara
+            # `open`, `high` y `low` como passthrough para usdcop, y los sets de
+            # smart_simple los ordenan — así que este productor genérico habría
+            # publicado el CIERRE bajo las identidades `open/high/low`, con el
+            # `series_id` de cada una y sin fallar (CXD-620 §1). No era un riesgo
+            # futuro: esas entradas existen hoy. Un valor plausible bajo la identidad
+            # equivocada es indistinguible de un dato bueno aguas abajo.
+            if feature_id not in df.columns:
+                raise ObservationError(
+                    f"{asset_id}.{feature_id} es passthrough (sin `code_reference`) "
+                    f"pero `bars` no trae la columna {feature_id!r}. Columnas: "
+                    f"{sorted(df.columns)}. No se sustituye por otra"
+                )
+            serie = df[feature_id].astype(float)
+        else:
+            # Los productores computados reciben la serie de cierres: es el contrato
+            # del único que existe (`compute_ma_200`). Si mañana uno necesitara otra
+            # entrada, esto debe fallar al añadirlo — no adivinarse aquí.
+            serie = productor(close)
 
         # La barra de decisión es la ÚLTIMA cuyo available_at no excede el cutoff.
         disponibles = tiempos + RECONSTRUCTION_LAG
@@ -232,3 +253,60 @@ def build_observations(
             "provenance": PROVENANCE_RECONSTRUCTED,
         }
     return observations
+
+
+#: Qué estatus RECLAMA cada `migration.status`. `CUTOVER` es el único que significa
+#: "esta ES la vía viva" —el legacy ya está apagado—, así que reclama `production`.
+#: `PARITY_GREEN` significa "reproduce al legacy", que es investigación validada.
+STATUS_CLAIMED_BY_MIGRATION = {
+    "CUTOVER": "production",
+    "PARITY_GREEN": "research_validated",
+}
+
+
+def assert_observations_support_status(
+    observations: Mapping[str, Mapping[str, Any]], *, migration_status: str
+) -> None:
+    """GATE fail-closed: la evidencia debe sostener lo que el estado reclama.
+
+    POR QUÉ EXISTE ESTA FUNCIÓN Y NO BASTA `status_ceiling`. C2b declaró el techo en
+    código —constantes y una función consultable— y **nadie la consultaba** (CXD-620
+    §2). Una función que puede preguntarse pero no se pregunta no prohíbe nada; es la
+    misma forma exacta del error que ya cometí con el parámetro `window`: escribir el
+    mecanismo y no cablearlo. Aquí el techo se **aplica** en la frontera por la que
+    una señal escapa.
+
+    La regla: si el `migration.status` de la policy reclama `production` —hoy sólo
+    `CUTOVER`— y alguna observación viene con sello RECONSTRUIDO, se bloquea. Un
+    `available_at` derivado del cierre demuestra transporte y causalidad declarada;
+    no demuestra que el dato estuviera observado en ese instante, y una vía viva no
+    puede apoyarse en eso.
+
+    Fail-closed también ante lo desconocido: un `migration.status` sin entrada en
+    `STATUS_CLAIMED_BY_MIGRATION` no se degrada al caso benigno — se rechaza. Ese
+    "por defecto lo permisivo" es como se cuelan los estados nuevos sin revisar.
+    """
+    if not observations:
+        raise ObservationError("sin observaciones no hay evidencia que juzgar")
+    if migration_status not in STATUS_CLAIMED_BY_MIGRATION:
+        raise ObservationError(
+            f"migration.status {migration_status!r} sin reclamo declarado en "
+            f"STATUS_CLAIMED_BY_MIGRATION: antes de dejar pasar un estado nuevo hay "
+            f"que decir qué nivel de evidencia reclama"
+        )
+    reclamado = STATUS_CLAIMED_BY_MIGRATION[migration_status]
+    if reclamado not in FORBIDDEN_STATUSES_RECONSTRUCTED:
+        return
+    culpables = {
+        fid: o.get("provenance")
+        for fid, o in observations.items()
+        if o.get("provenance") == PROVENANCE_RECONSTRUCTED
+    }
+    if culpables:
+        raise ObservationError(
+            f"migration.status={migration_status} reclama {reclamado!r}, pero "
+            f"{sorted(culpables)} llegan con sello RECONSTRUIDO "
+            f"({PROVENANCE_RECONSTRUCTED}). El techo de ese sello es "
+            f"{MAX_STATUS_RECONSTRUCTED}: hasta que exista `available_at` OBSERVADO, "
+            f"esta evidencia no sostiene una vía viva"
+        )
