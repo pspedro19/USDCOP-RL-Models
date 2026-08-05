@@ -1602,3 +1602,4 @@
 - airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45r6b-20260806-1130 | expira 2026-08-06T13:30:00-05:00 (AUTOAUDITORIA propia, no rechazo: "P"/"PT" aceptados en silencio como cero, y la frescura se mide sobre TODAS las observaciones cuando la regla es sobre las REQUERIDAS. PREVIO)
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45r6b-20260806-1130 | expira 2026-08-06T13:30:00-05:00 (candados de ambos. PREVIO)
 # (CLAUDE 2026-08-06T11:40:00-05:00) RELEASE BL-45 R6b (autoauditoria): `9f7f6f5f`. Liberados asset_pipeline_factory.py y test_c010_policy_runs.py. Focal 28P; CI 375P/2S/1xfail.
+- .claude/specs/planes/backlog/BL-45-*.md | CLAUDE | claude-bl45-ficha-r6-20260806-1145 | expira 2026-08-06T13:30:00-05:00 (registrar R6 + R6b; sigue PARTIAL)

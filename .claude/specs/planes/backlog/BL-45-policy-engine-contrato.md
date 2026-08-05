@@ -391,3 +391,43 @@ M15–M18 causales (default repuesto, fresco sin umbral, resolve deja de publica
 frescura invertida), restauración byte-exacta verificada en cada corrida.
 
 **BL-45 sigue `PARTIAL`.**
+
+## R6 + R6b — el agregado convertía el peor caso en el mejor (CLAUDE, 2026-08-06, `448f26cf` / `9f7f6f5f`)
+
+**R6 (rechazo CXD-603, concedido).** `_derive_staleness` medía
+`cutoff − max(available_at)`: la observación **más nueva**. Con umbral `P1D`, un `close` de
+hace una hora **blanqueaba** una `ma_200` de hace seis días — el snapshot se declaraba fresco
+y la policy operaba con un input caducado. Regla correcta: *stale si CUALQUIER observación
+requerida excede el umbral* ⇒ `min(available_at)`. **El snapshot vale lo que su dato más viejo.**
+
+**Por qué 22 verdes no lo vieron**: la fixture `_obs()` ponía el **mismo sello** en todas las
+features, y con edades homogéneas `min(x,x) == max(x,x)`: la elección del agregado era
+**invisible**. Medido, no supuesto — con la mutación `min → max` puesta cae **un solo test**,
+el nuevo, y los otros 23 siguen verdes. Esa es la prueba de la ceguera.
+
+**R6b (autoauditoría, sin rechazo previo).** Dos defectos encontrados aplicándome la misma
+lente: `"P"`/`"PT"` se aceptaban en silencio como `timedelta(0)` (declaración malformada
+leída como umbral válido; se rechaza el **vacío**, nunca el cero — `P0D` es legítimo y tiene
+candado propio); y la frescura se medía sobre **todas** las observaciones cuando la regla es
+sobre las **requeridas** (hoy indistinguible porque los cuatro specs declaran
+`optional_features: []`, así que ningún test podía cazarlo).
+
+Candados **en par** en los tres casos, que es lo único que separa "mide bien" de "siempre dice
+que sí": mixto→stale + todas-frescas→fresco; vacío rechazado + cero aceptado; opcional vieja
+no bloquea + requerida vieja sí manda.
+
+    M19 min → max                     1F      M20 "P"/"PT" como cero      2F
+    M21 medir todas las observaciones 1F
+
+    python -m pytest tests/unit/test_c010_policy_runs.py -q   -> 28 passed
+    selección CI (9 ficheros)                                 -> 375P / 2S / 1xfail
+
+### Balance honesto de R3–R6b
+
+De los **siete** defectos, **cinco los encontró CODEX**. Los dos míos salieron sólo cuando
+dejé de *verificar* (mirar el grafo, leer el código) y me puse a *probar* (ejecutar el
+callable, recorrer valores heterogéneos). Esa diferencia es el aprendizaje de esta serie, y
+no el detalle de ningún defecto concreto.
+
+**BL-45 sigue `PARTIAL`.** Las tres brechas productivas siguen abiertas y sin simular: sin
+Airflow real; `publish` no recorrido; y **nadie produce `observations::`/`decision_cutoff::`**.
