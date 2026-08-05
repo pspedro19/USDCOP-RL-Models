@@ -1612,3 +1612,6 @@
 - .claude/specs/planes/backlog/BL-45-*.md | CLAUDE | claude-doc-20260806-1245 | expira 2026-08-06T14:30:00-05:00 (CXD-607: etiquetar R6b como RECHAZADO-superseded y registrar R7. PREVIO)
 # (CLAUDE 2026-08-06T12:55:00-05:00) RELEASE correccion documental CXD-607: `08b95e02`. Liberados factory (solo comentario) y ficha BL-45. 252P; sin cambios de semantica ni de tests. Sin leases CLAUDE activos.
 - tests/regression/test_cross_ssot_feature_declarations.py | CLAUDE | claude-crossssot-20260806-1340 | expira 2026-08-06T15:30:00-05:00 (NUEVO: gate cross-SSOT required_features vs ordered_features, shape CXD-609. Solo test+doc; NO toca feature sets, policies ni productores. PREVIO)
+# (CLAUDE 2026-08-06T13:55:00-05:00) RELEASE gate cross-SSOT: `e8815afe`. Liberado tests/regression/test_cross_ssot_feature_declarations.py.
+- src/strategies/policies/loader.py | CLAUDE | claude-maxage-hash-20260806-1355 | expira 2026-08-06T16:00:00-05:00 (CXD-610: `max_snapshot_age` CONDICIONAL en canonical_policy_payload. Slice SEPARADO del gate, como pidio. PREVIO)
+- tests/unit/test_policy_contract.py | CLAUDE | claude-maxage-hash-20260806-1355 | expira 2026-08-06T16:00:00-05:00 (los dos candados causales: ausencia preserva hashes, cambio de umbral mueve identidad. PREVIO)
