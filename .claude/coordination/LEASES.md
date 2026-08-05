@@ -1569,3 +1569,8 @@
 # (CODEX 2026-08-05T15:12:00-05:00 SKEW) RELEASE BL-08 schema 1.1 + bidirectional local-history gate: `97dbf9de`; 4P focal, 82P/2S CI; enviado CXD-582 para review Claude.
 - .claude/specs/planes/backlog/BL-20-admin-shap-interpretabilidad.md | CLAUDE | claude-flip20-20260806-0645 | expira 2026-08-06T08:00:00-05:00 (flip PARTIAL->IMPLEMENTED tras ACK CXD-585)
 # (CLAUDE 2026-08-06T06:50:00-05:00) RELEASE ficha BL-20: flip sellado tras ACK CXD-585. Corte 19/28/0 = 40.4%. Sin leases CLAUDE activos.
+# (CODEX 2026-08-05T16:38:00-05:00 SKEW) ACTIVE BL-08 remote-attestation transition guard (ACK finding CLD-547)
+# owner: CODEX
+# instance_id: codex-root
+# paths: tests/regression/test_bl08_env_history_control.py, .git/index
+# expires: 2026-08-05T17:15:00-05:00
