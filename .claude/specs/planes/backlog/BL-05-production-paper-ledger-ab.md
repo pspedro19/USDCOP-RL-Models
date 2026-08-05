@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PARTIAL
+status: IMPLEMENTED
 version: 1.1.0
-last_verified: 2026-07-28
+last_verified: 2026-08-05
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/components/gm/views/ProductionView.tsx
@@ -65,7 +65,7 @@ CXD-022 rechazó `624465c` por cuatro gaps. Estado tras el remedio:
 | Falta `<th scope="row">` (row headers) | **HECHO** | `PaperCandidatesPanel.tsx` — la celda de nombre de cada fila es `th scope="row"` (`font-normal`/`text-left` preservan el aspecto) |
 | Tipografía fija `12.5px` | **HECHO** | `text-[12.5px]` → `text-[0.78125rem]`; el resto de tokens (`GMT.*`) ya eran rem. Los únicos `px` que quedan son de layout (`min-w-[760px]`, `-mx-[18px]`), no de fuente |
 | Significado por símbolo/color sin equivalente textual | **HECHO** | `NoData()` (guión `aria-hidden` + `sr-only "sin dato"`) y texto `sr-only` **`En producción: Sí/No · Juez sellado: Sí/No`** en el row header (el tono del badge era canal cromático) |
-| Prueba real 375px / landscape / teclado / consola | **PENDIENTE DE EJECUCIÓN** | spec escrito y listo en `tests/e2e/paper-candidates-a11y.spec.ts`; **no ejecutado** por orden del operador (2026-07-28: no levantar Docker ni el dashboard). No hay evidencia E2E asociada y no debe darse por verde |
+| Prueba real 375px / landscape / teclado / consola | **EJECUTADA 2026-08-05** — a11y **verificada en runtime** con capturas; el aserto de consola sigue rojo por un 404 **transversal** (`/api/models`, dueño BL-36/D-02), NUNCA por el panel. Ver «CORRIDA REAL» y «Recorte formal» abajo. Se reporta `2 passed / 1 failed`, jamás como verde | `tests/e2e/paper-candidates-a11y.spec.ts` + `tests/e2e/__screenshots__/` |
 
 **Cobertura unit actual**: `PaperCandidatesPanel.test.tsx` **13 passed** (2 asserts nuevos
 verificados fail-first: 2 failed antes del fix → 13 passed después). `tsc --noEmit`: 0 errores
