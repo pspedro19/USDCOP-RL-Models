@@ -131,3 +131,59 @@ porque los `.pkl` están gitignored: es evidencia local-only, no de integración
 
 ## Notas constitución
 Cambiar UNA constante de normalización tras reentrenar sin snapshot versionado = leakage silencioso — exactamente lo que este BL elimina.
+
+## Hallazgo: `required_features` y `ordered_features` nunca se habían cruzado (2026-08-06)
+
+**Registrado aquí por petición de CXD-609** (el hallazgo es interfaz BL-39 × BL-45 y debe constar
+en ambas fichas; el gate ejecutable vive en
+`tests/regression/test_cross_ssot_feature_declarations.py`, sellado en `e8815afe`).
+
+### Qué se midió
+
+Cada policy declara `inputs.required_features` (lo que EXIGE) y su feature-set declara
+`ordered_features` (lo que ALGUIEN materializa). **Nadie los había cruzado nunca**:
+
+| policy | req | ordenadas | exigidas que su set NO declara |
+|---|---|---|---|
+| `btc_hodl_b1` | 1 | 1 | `realized_vol_20` |
+| `gold_trend_simple` | 5 | 1 | `sma_63`, `sma_126`, `sma_252`, `realized_vol_20` |
+| `smart_simple_v11` | 3 | **25** | `predictor_return_5d`, `hurst_exponent`, `realized_vol_20d` |
+| `spx500_daily_ma200_v1` | 2 | 1 | `ma_200` → **cerrado** (decisión C, `97ebb4c9`+`76423175`) |
+
+`smart_simple_v11` descarta la explicación fácil: declara **25** features ordenadas y aun así
+ninguna de sus tres requeridas está entre ellas. `required_features` y `ordered_features` hablaban
+de cosas distintas.
+
+**No se puede alegar `derived_in_policy`**: el DSL no tiene ningún operador de ventana (medido), y
+las dos policies *coded* lo dicen en su propio código — `gold.py`: *"the policy only consumes
+them"*; `btc.py`: `required = ("realized_vol_20",)`. La prosa no exime; sólo eximiría un contrato
+estructurado más código que demuestre derivación interna.
+
+### Un verde por vacuidad de mi propia auditoría, declarado
+
+La primera pasada midió *"¿toda `ordered_feature` está en el catálogo?"* y dio **0 sin catalogar** —
+verde perfecto. Es verde **porque el denominador es diminuto**: los tres feature-sets rule-based
+declaran UNA feature ordenada cada uno y empujan el resto a `derived_in_policy`. Medí la dirección
+que no importaba. La que importa da **6 huérfanas ejecutables** (tras cerrar SPX quedan **5**).
+
+### Clasificación (corregida por CXD-609)
+
+Mi conteo inicial de "9 huérfanas homogéneas" era impreciso. Son **dos clases**:
+1. **ejecutables** — la policy corre y le falta el input (SPX 1 cerrado, Gold 4, BTC 1);
+2. **componentes de `smart_simple_v11`**, que es `SPEC_ONLY`, sin implementación y con
+   `governance.required_features_verified: false`. Sus 25 ordenadas son la receta *upstream* del
+   predictor y sus 3 requeridas son componentes de decisión *downstream*: exigir subconjunto ahí
+   mezclaría capas y daría un **rojo falso**, que gasta la misma credibilidad que un verde falso.
+   Tiene test separado que fija su estado declarado.
+
+## `inputs.feature_set_hash` — PILOTO SPX (`91400773`), deuda 3/4 viva
+
+`canonical_policy_payload` incluía el `feature_set_id` pero **no su contenido**: un set podía ganar
+o perder features bajo una policy congelada sin que el `policy_hash` se moviera un bit. Peor que el
+caso de `max_snapshot_age`, porque el `feature_set_id` **sí** viajaba y daba impresión de cobertura.
+
+Cerrado **sólo para `spx500_daily_ma200_v1`**. `gold_trend_simple`, `btc_hodl_b1` y
+`smart_simple_v11` **conservan el hueco a propósito**, con candado que enrojece si esa deuda cambia
+sin declararlo. **Esto no es cierre sistémico de la identidad de feature-set** y no debe leerse así.
+
+**BL-39 sigue `PARTIAL`.**
