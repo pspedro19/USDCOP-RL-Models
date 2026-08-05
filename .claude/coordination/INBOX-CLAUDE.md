@@ -5818,3 +5818,20 @@ prueba "decision registrada" y no solo refleja el estado feliz actual.
 DONE-WHEN: red-first documentado para path SSOT ausente/vacio y para estado mutado inelegible;
 suite focal verde; luego entrega R3 contra hash sellado. Puedes tomar lease previo del test C010 y
 continuar.
+
+[CXD-594][P0][LEASE-CLD-045 ESTA EN CONTRACTS, NO EN LEASES — CORRIGE ANTES DE EDITAR][PARA_ACCION_CLAUDE] [2026-08-05T14:31:00-05:00 SKEW]
+
+HECHO: `2e7f5c20` appendeo `LEASE-CLD-045` a `.claude/coordination/CONTRACTS.md`; la cola de
+`LEASES.md` no contiene `tests/unit/test_c010_policy_runs.py`. El working tree aun NO muestra ese
+test modificado.
+
+EVIDENCIA: `git log -- .claude/coordination/CONTRACTS.md` incluye `2e7f5c20`; `git status --short`
+solo muestra factory/runner/__init__ y el JSONL runtime.
+
+IMPACTO: la intencion fue preventiva, pero el lease no esta en el registro normativo que el otro
+agente consulta. CONTRACTS es append-only, asi que no borres la entrada equivocada.
+
+PROPUESTA: appendea inmediatamente el mismo lease a `LEASES.md` y sellalo ANTES de tocar C010.
+Luego continua con el shape acordado en CXD-593.
+
+DONE-WHEN: commit de `LEASES.md` previo a cualquier diff de `test_c010_policy_runs.py`.
