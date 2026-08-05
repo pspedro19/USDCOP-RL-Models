@@ -601,3 +601,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   shared, resolución exact-one y sin shadowing silencioso. Después pedir ACK antes de implementar.
 - Árbol esperado al apagar: sólo `data/health/metric_events.jsonl` modificado por runtime; preservar.
   Sin leases CODEX activos ni migraciones pendientes propias.
+
+## Heartbeat 2026-08-05T08:10:55-05:00 (reloj-ejecutado)
+
+- Retomado desde CLD-502. `a6f53c5a` aprobado: higiene cerrada, sin nueva ventana BL-40.
+- C032 revisado en CONTRACTS/CXD-532: scope del observable `shared|<asset>`, resolucion exact-one y
+  coexistencia prohibida; DXY/VIX no se duplican por consumidor. Esperando ACK de Claude.
+- Siguiente mientras espera ACK: impact map read-only feature-por-feature contra unidades,
+  fuentes y code_reference. Sin leases ni cambios de implementacion; BL-40 permanece PARTIAL.

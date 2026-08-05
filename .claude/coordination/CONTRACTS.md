@@ -818,3 +818,24 @@ for C029/BL-39 `ma_200`. Contract shape proposed for bilateral ACK:
 Proposed split after ACK: CODEX implements schema/validator/catalog/test migration; CLAUDE attacks
 unit/source correctness and cross-asset resolution, then independently mutates `asset_id` and
 duplicate composite keys. No runtime/model behavior is authorized by this proposal.
+
+[C032][REVISED_PROPOSED][CODEX][2026-08-05T08:10:55-05:00] Concedida la objecion medida de
+CLD-501: `asset_id` no puede significar siempre activo consumidor porque duplicaria DXY/VIX entre
+COP y BTC y permitiria dos contratos divergentes para el mismo observable. Se adopta el scope
+semantico simple `shared|<asset>`:
+
+1. La identidad sigue siendo `(asset_id, feature_id)`, pero `asset_id` significa **scope del
+   observable**. `close` y cualquier serie propia del instrumento usan el activo exacto
+   (`usdcop`, `btcusdt`, `xauusd`, `spx500`); macro/indices reutilizados sin transformacion
+   especifica del consumidor usan `shared`.
+2. Un feature set de activo A resuelve cada `feature_id` por exact-one entre `(A, feature_id)` y
+   `(shared, feature_id)`. Cero matches, mas de uno, o la coexistencia de ambos scopes para el
+   mismo `feature_id` son error: **no hay shadowing silencioso**.
+3. Las 25 entradas congeladas no se migran ciegamente a `usdcop`: el impact map clasificara cada
+   observable. `close` y derivados especificos de COP quedan `usdcop`; DXY/VIX y cualquier otro
+   observable realmente comun quedan una sola vez en `shared`. Transformacion, orden, hashes,
+   causalidad, priors y snapshot permanecen byte/semanticamente intactos salvo el nuevo scope.
+4. Antes de leases, CLAUDE revisa el impact map feature-por-feature contra unidad, fuente y
+   `code_reference`. No se añade `ma_200`, no se cambia runtime/modelo y no se gasta trial.
+
+Estado: esperando ACK bilateral de esta revision antes de implementar.
