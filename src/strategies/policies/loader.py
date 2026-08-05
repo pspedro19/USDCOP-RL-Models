@@ -96,6 +96,21 @@ def canonical_policy_payload(spec: Mapping[str, Any]) -> dict[str, Any]:
             "optional_features": list(inputs.get("optional_features", [])),
             "decision_point": inputs.get("decision_point"),
             "execution_ref": inputs.get("execution_ref"),
+            # `max_snapshot_age` entra CONDICIONALMENTE (CXD-610). Razon de fondo:
+            # el umbral de frescura decide CUANDO opera la policy -- con `P1D` una
+            # serie de ayer bloquea y con `P30D` pasa-- asi que pertenece al
+            # subconjunto que decide, igual que la ventana o el umbral de la regla.
+            # Dejarlo fuera permitiria mover el comportamiento sin que el
+            # `policy_hash` se moviera un bit, que es congelar la receta y dejar el
+            # gatillo suelto.
+            #
+            # Condicional y no incondicional porque incluir la clave con `None`
+            # cambiaria el payload de los CUATRO specs vigentes -- ninguno la
+            # declara-- y con el sus `policy_hash` ya publicados y congelados. Un
+            # re-freeze masivo por una mejora de contrato es exactamente el tipo de
+            # ruido que hace que los muros de congelacion dejen de creerse.
+            **({"max_snapshot_age": inputs["max_snapshot_age"]}
+               if "max_snapshot_age" in inputs else {}),
         },
         "policy": {
             "params": policy.get("params", {}),

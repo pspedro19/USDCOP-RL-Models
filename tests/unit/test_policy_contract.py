@@ -1294,3 +1294,94 @@ class TestRemedy4ClosedJson:
                 f"src/contracts/{rel}: default=str would serialize "
                 "numpy.inf/Decimal('NaN') as text — forbidden"
             )
+
+
+class TestMaxSnapshotAgeEntersIdentityConditionally:
+    """`inputs.max_snapshot_age` en `canonical_policy_payload` (CXD-610).
+
+    POR QUE ENTRA. El umbral de frescura decide **cuando opera** la policy: con
+    `P1D` una serie de ayer bloquea y con `P30D` pasa. Eso pertenece al subconjunto
+    que decide, igual que la ventana o el umbral de una regla. Dejarlo fuera
+    permitiria mover el comportamiento sin que `policy_hash` se moviera un bit —
+    congelar la receta y dejar el gatillo suelto.
+
+    POR QUE CONDICIONAL Y NO SIEMPRE. Incluir la clave con `None` cambiaria el
+    payload de los cuatro specs vigentes —ninguno la declara— y con el sus
+    `policy_hash` ya publicados. Un re-freeze masivo por una mejora de contrato es
+    justo el ruido que hace que los muros de congelacion dejen de creerse.
+    """
+
+    def _spec(self, **inputs_extra):
+        return {
+            "id": "x",
+            "version": "1.0.0",
+            "engine": {"type": "rule_based", "retrain": "never", "implementation": {}},
+            "inputs": {
+                "feature_set_id": "fs",
+                "resample_policy_id": "rp",
+                "required_features": ["close"],
+                "optional_features": [],
+                "decision_point": "session_close",
+                "execution_ref": "next_open",
+                **inputs_extra,
+            },
+            "policy": {
+                "params": {},
+                "resolution": {},
+                "rules": [],
+                "missing_input_policy": "FAIL_CLOSED",
+                "stale_input_policy": "FLAT",
+            },
+        }
+
+    def test_absence_leaves_every_live_spec_hash_byte_identical(self):
+        """Candado 1: sin la clave, los hashes YA PUBLICADOS no se mueven.
+
+        Se comprueba contra los CUATRO specs reales y su `governance.policy_hash`
+        congelado, no contra un fixture: el riesgo que se vigila es exactamente
+        romper una congelacion en produccion.
+        """
+        import glob
+
+        import yaml
+
+        from src.strategies.policies.loader import canonical_policy_hash
+
+        desviados = []
+        for path in sorted(glob.glob("config/policies/*.yaml")):
+            doc = yaml.safe_load(open(path, encoding="utf-8"))
+            declarado = (doc.get("governance") or {}).get("policy_hash")
+            if declarado and declarado != canonical_policy_hash(doc):
+                desviados.append(doc["id"])
+        assert not desviados, (
+            f"anadir `max_snapshot_age` al payload movio el hash congelado de "
+            f"{desviados}. Ningun spec vigente la declara, asi que la ausencia debe "
+            f"dejar el payload byte-identico"
+        )
+
+    def test_absence_does_not_inject_the_key_into_the_payload(self):
+        """Y no basta con que el hash coincida: la clave NO debe estar.
+
+        Un `None` inyectado podria dar el mismo hash por casualidad de
+        serializacion; lo que se fija es la forma del payload, no solo su digest.
+        """
+        from src.strategies.policies.loader import canonical_policy_payload
+
+        assert "max_snapshot_age" not in canonical_policy_payload(self._spec())["inputs"]
+
+    def test_changing_the_threshold_moves_the_identity(self):
+        """Candado 2: `P1D -> P30D` cambia el hash. Sin esto el slice es decorativo."""
+        from src.strategies.policies.loader import canonical_policy_hash
+
+        p1d = canonical_policy_hash(self._spec(max_snapshot_age="P1D"))
+        p30d = canonical_policy_hash(self._spec(max_snapshot_age="P30D"))
+        sin = canonical_policy_hash(self._spec())
+        assert p1d != p30d, (
+            "cambiar el umbral de frescura no movio la identidad: se podria pasar de "
+            "bloquear con datos de ayer a operar con datos de hace un mes sin que el "
+            "`policy_hash` lo registrara"
+        )
+        assert sin not in (p1d, p30d), (
+            "declarar un umbral debe distinguirse de no declararlo: son politicas "
+            "distintas, no la misma con adorno"
+        )
