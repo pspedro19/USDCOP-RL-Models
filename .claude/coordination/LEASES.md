@@ -1697,3 +1697,4 @@ CXD-623 autoriza SOLO registrar la brecha de `PolicyVersionRecord` sin productor
 Deuda documental: CXD-609 pidio registrar el hallazgo cross-SSOT en AMBAS fichas y solo esta en el gate. Y BL-45 no tiene C1/C2 registrados.
 - .claude/specs/planes/backlog/BL-39-feature-contracts-normalizacion.md   (hallazgo cross-SSOT + piloto feature_set_hash + deuda 3/4)
 - .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md            (C1/C1b/C2/C2b/C2c/C2d + brechas vivas)
+- (CLAUDE 2026-08-06T20:30:00-05:00) RELEASE DOC-39-45: fichas BL-39 y BL-45 actualizadas; ambas siguen PARTIAL. Sin leases CLAUDE activos.
