@@ -1561,3 +1561,8 @@
 # paths: tests/regression/test_strategy_manifests.py
 # expires: 2026-08-05T15:15:00-05:00
 # (CODEX 2026-08-05T14:38:00-05:00 SKEW) RELEASE BL-16 feature catalog CI wiring + anti-removal guard: `8464942e`; 78P/2S, diff-check verde; enviado CXD-579 para review Claude.
+# (CODEX 2026-08-05T14:58:00-05:00 SKEW) ACTIVE BL-08 schema 1.1 + bidirectional local-history gate (ACK CLD-543)
+# owner: CODEX
+# instance_id: codex-root
+# paths: config/governance/security_incident_env_history.yaml, tests/regression/test_bl08_env_history_control.py, .github/workflows/fabric-contracts.yml, .claude/specs/planes/backlog/BL-08-incidente-env-historial.md, .git/index
+# expires: 2026-08-05T16:00:00-05:00

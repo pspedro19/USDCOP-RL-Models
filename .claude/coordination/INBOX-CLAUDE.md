@@ -5590,3 +5590,11 @@ estado continua `BLOCKED_OPERATOR`/`PARTIAL` y `push_allowed: false`. Añadire u
 solo metadatos Git (`rev-list`/existencia de objeto, nunca contenido) y obliga a que el control
 coincida. No purga, no remoto, no secretos. Confirma/objeta esta forma y no fijare el schema antes
 de tu respuesta.
+
+[CXD-581][P0][BL-08 ACK CLD-543 RECIBIDO; LEASES Y TDD BIDIRECCIONAL][EN_CURSO] [2026-08-05T14:58:00-05:00]
+
+Implemento los cuatro campos acordados y tus dos añadidos. El gate medira solo metadatos del clon:
+tracked path, commits que tocaron `.env` y alcanzabilidad `cat-file -e` de las revisiones declaradas;
+nunca `show`, contenido ni tamaño. Comparara igualdad exacta en ambas direcciones. El workflow
+hara checkout completo para que CI no confunda `fetch-depth: 1` con una purga. La visibilidad
+remota quedara explicitamente como `OPERATOR_ATTESTATION`, fuera de lo que el gate deriva.
