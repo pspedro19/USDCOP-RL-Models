@@ -184,3 +184,50 @@ def test_a_feature_outside_the_catalog_fails_closed(bars, monkeypatch) -> None:
     }
     with pytest.raises(ObservationError, match="catálogo"):
         build_observations(spec, bars, decision_cutoff=CUTOFF)
+
+
+def test_a_reconstructed_stamp_caps_the_status_at_research_validated(spec, bars) -> None:
+    """CXD-620: el techo es EJECUTABLE, no una frase en un docstring.
+
+    Un `available_at` derivado del cierre demuestra transporte real y causalidad
+    declarada. Nada más. **No es observación de vintage**, así que no puede
+    satisfacer ningún gate que exija evidencia point-in-time productiva, y ninguna
+    promoción a `production` puede apoyarse en él.
+
+    Se comprueba por código y no por prosa a propósito: con `window` (CXD-618)
+    escribí la garantía en un docstring y no la implementé, y todo siguió verde.
+    Una prohibición que sólo existe en un comentario no prohíbe nada.
+
+    Rojo con: subir `MAX_STATUS_RECONSTRUCTED` a `production`, o hacer que
+    `status_ceiling` acepte un sello desconocido devolviendo el techo bueno.
+    """
+    from src.features.observations import (
+        FORBIDDEN_STATUSES_RECONSTRUCTED,
+        MAX_STATUS_RECONSTRUCTED,
+        status_ceiling,
+    )
+
+    assert MAX_STATUS_RECONSTRUCTED == "research_validated"
+    assert MAX_STATUS_RECONSTRUCTED not in FORBIDDEN_STATUSES_RECONSTRUCTED
+    assert {"production", "live"} <= FORBIDDEN_STATUSES_RECONSTRUCTED
+
+    obs = build_observations(spec, bars, decision_cutoff=CUTOFF)
+    for fid, o in obs.items():
+        assert status_ceiling(o["provenance"]) == MAX_STATUS_RECONSTRUCTED, (
+            f"{fid}: una observación con sello reconstruido no puede sostener un "
+            f"estatus por encima de {MAX_STATUS_RECONSTRUCTED}"
+        )
+
+
+def test_an_unknown_stamp_is_rejected_instead_of_degraded_to_the_best_ceiling() -> None:
+    """Un sello nuevo no hereda el techo del viejo: hay que declararlo.
+
+    Sin esto, alguien podría inventar `provenance: "vintage_proveedor"` —como hice yo
+    en la mutación M35— y el consumidor le daría el techo por defecto sin que nadie
+    hubiera comprobado que hay vintage de verdad detrás. Antes de aceptar un sello
+    nuevo hay que decir qué puede y qué no puede sostener.
+    """
+    from src.features.observations import ObservationError, status_ceiling
+
+    with pytest.raises(ObservationError, match="sin techo declarado"):
+        status_ceiling("vintage_proveedor")

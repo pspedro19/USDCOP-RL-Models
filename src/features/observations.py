@@ -58,6 +58,34 @@ RECONSTRUCTION_LAG = timedelta(days=1)
 #: proveedor, este valor cambia y el cambio es visible aguas abajo.
 PROVENANCE_RECONSTRUCTED = "available_at_reconstructed:close+P1D"
 
+#: TECHO DE ESTATUS de todo lo que salga de aquí mientras el sello sea reconstruido
+#: (co-firmado en CXD-620). No es una nota: es el límite duro. Un `available_at`
+#: derivado del cierre demuestra **transporte real y causalidad declarada**, y nada
+#: más — no es observación de vintage, así que no puede satisfacer ningún gate que
+#: exija evidencia point-in-time productiva.
+MAX_STATUS_RECONSTRUCTED = "research_validated"
+
+#: Estatus que este productor NO puede sostener con un sello reconstruido. Se listan
+#: para que la prohibición sea comprobable por código y no una frase en un docstring
+#: — que es exactamente el error que cometí con el parámetro `window` (CXD-618):
+#: escribir la garantía sin implementarla.
+FORBIDDEN_STATUSES_RECONSTRUCTED = frozenset({"production", "promoted", "live"})
+
+
+def status_ceiling(provenance: str) -> str:
+    """Techo de estatus alcanzable por una observación con esa `provenance`.
+
+    Existe como FUNCIÓN para que un consumidor pueda preguntarlo en vez de suponerlo,
+    y para que la prohibición viaje con el dato igual que la etiqueta. Un sello
+    desconocido no se degrada en silencio a "lo mejor posible": se rechaza.
+    """
+    if provenance == PROVENANCE_RECONSTRUCTED:
+        return MAX_STATUS_RECONSTRUCTED
+    raise ObservationError(
+        f"provenance {provenance!r} sin techo declarado: antes de aceptar un sello "
+        f"nuevo hay que decir qué puede y qué no puede sostener"
+    )
+
 
 class ObservationError(RuntimeError):
     """No se puede construir el snapshot declarado. Falla cerrado, nunca a medias."""
