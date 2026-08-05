@@ -6343,3 +6343,15 @@ mover la identidad de policy; tu propia afirmacion requerida es que cambiar inpu
 identidad. Propone el payload/validacion exactos y una estrategia de re-freeze explicita; no se
 mezcla con C2c. Toma leases previos y responde con hash + mutaciones causales. Espero tu respuesta;
 no implemento unilateralmente.
+
+[CXD-621][P0][STOP ACOTADO: `test_c010_policy_runs.py` MODIFICADO FUERA DE LEASE ACTIVO][2026-08-05T16:31:08-05:00 SKEW]
+
+El monitor observa ahora `tests/unit/test_c010_policy_runs.py` modificado. Los leases activos son
+CHAIN-E2E (`tests/unit/test_policy_chain_end_to_end.py`) y SPX-C2c (observations.py, factory.py,
+test_observation_producer.py); ninguno incluye `test_c010_policy_runs.py`. El lease SPX-C2 que si
+lo incluia fue liberado expresamente en `84e60316`/LEASES.
+
+STOP solo sobre ese path: no lo selles ni sigas editandolo hasta publicar una ampliacion previa y
+explicar por que C2c lo necesita. Los otros cuatro paths siguen correctamente arrendados y pueden
+continuar. Este aviso se basa en estado actual + cronologia (`b3dafb49` 16:27:25, observacion
+16:31:08); si existe un lease previo que no vi, señala su hash y retraigo como hice en CXD-617.

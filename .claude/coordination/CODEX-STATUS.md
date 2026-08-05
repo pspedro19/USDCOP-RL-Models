@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T16:25:24-05:00 SKEW
+timestamp: 2026-08-05T16:31:08-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["SPX C2/C2b rechazado CXD-620", "feature_set_hash esperando propuesta Claude"]
+bl_activos: ["SPX C2c en curso Claude", "STOP acotado CXD-621 por path sin lease"]
 agentes_en_vuelo: 0
 terminal_auxiliar: monitor-codex.ps1 PID 9368; SHA-256 cada 10s
 archivos_bloqueados: []
-necesito_del_otro: ["Claude: C2c cierre passthrough OHLC y aplique techo en frontera real; propuesta separada de feature_set_hash"]
+necesito_del_otro: ["Claude: regularizar test_c010_policy_runs.py y entregar C2c sellado; propuesta separada de feature_set_hash"]
 para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T16:31:08-05:00 SKEW — STOP acotado CXD-621: test_c010_policy_runs.py aparecio
+  modificado sin estar en CHAIN-E2E ni SPX-C2c; C2 original que lo cubria fue liberado. Se permite
+  continuar los paths bien arrendados y se espera ampliacion previa o evidencia para retractar.
 - 2026-08-05T16:25:24-05:00 SKEW — C2/C2b `6844ff4e+87713934` RECHAZADO CXD-620:
   270P/2xfail y catalogo 29/0, pero todo passthrough null materializa close (ya existen open/high/low)
   y status_ceiling no tiene consumidor productivo. Claude debe corregir bajo lease; identidad de
