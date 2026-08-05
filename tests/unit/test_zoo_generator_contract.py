@@ -41,13 +41,40 @@ class TestValidRow:
         assert out.as_of == AS_OF
         assert out.available_at == AVAILABLE_AT
         assert out.target_time == TARGET
-        # Zoo produces point-only predictions: lower == upper == point (by design)
+        # El zoo predice PUNTO: los limites se OMITEN. Esta asercion decia antes
+        # `lower == upper == point` con el comentario "by design" — o sea, fijaba
+        # como correcto un intervalo de ANCHURA CERO. Eso no es "sin intervalo":
+        # es publicar incertidumbre nula. Se invierte la asercion, no se relaja.
         assert out.prediction.type == "log_return"
         assert out.prediction.point == 0.0042
-        assert out.prediction.lower == 0.0042
-        assert out.prediction.upper == 0.0042
+        assert out.prediction.lower is None
+        assert out.prediction.upper is None
         # The wall: a forecast can never claim to be actionable
         assert out.diagnostic_only is True
+
+    def test_zoo_never_publishes_a_zero_width_interval(self):
+        """El zoo no puede publicar un intervalo degenerado, para NINGUN valor.
+
+        POR QUE ES UN CANDADO Y NO UN DETALLE. `lower == upper == point` pasa el
+        contrato sin rechistar (`lower <= point <= upper` se cumple con igualdad),
+        asi que ningun muro existente lo veia; y el generador lo emitia con el
+        comentario "by design". Un consumidor que dibuje la banda —BL-19 migra
+        `ForecastingView` a `parseForecastOutput`— pintaria una cinta de certeza
+        alrededor de un numero cuya DA ronda 0.46. Publicar anchura cero es una
+        afirmacion de incertidumbre nula; omitir los limites es un hecho.
+
+        Rojo con: devolver `"lower": pred_return, "upper": pred_return` en
+        `_validate_row_contract` (que es exactamente lo que hacia).
+        """
+        for valor in (0.0042, -0.031, 0.0, 1e-9):
+            out = _call(pred_return=valor)
+            assert out is not None, f"fila excluida inesperadamente para {valor}"
+            lower, upper = out.prediction.lower, out.prediction.upper
+            assert (lower is None) and (upper is None), (
+                f"pred={valor}: el zoo declaro un intervalo [{lower}, {upper}]. No "
+                f"produce intervalos: si ambos limites valen el punto, la anchura es "
+                f"CERO y eso se lee como incertidumbre nula, no como ausencia."
+            )
 
     def test_spec_id_follows_asset(self):
         out = _call(asset="btcusdt")
