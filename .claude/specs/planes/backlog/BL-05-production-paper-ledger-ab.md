@@ -102,7 +102,45 @@ El panel es **admin-only** y la autenticación admin se apoya en **dos servicios
 (`sb_users`). Por tanto **«dev server sin Docker» es insuficiente por construcción** para este BL,
 y no por un detalle de configuración que se pueda rodear.
 
-**BL-05 sigue `PARTIAL`, y ahora por una razón exacta en vez de por una orden genérica.** Lo que
-falta es una decisión de infraestructura del operador (levantar Postgres + SignalBridge), no
-trabajo de código. Las tres pruebas siguen sin evidencia y **no deben darse por verdes**: los
-cuatro gaps del rechazo CXD-022 están cerrados salvo éste.
+### CORRIDA REAL EJECUTADA (2026-08-05, con Postgres + SignalBridge autorizados)
+
+El operador autorizó levantar **sólo** `postgres` + `signalbridge-api` (no el stack). Con eso el
+login admin funciona y **la spec corre de verdad por primera vez**:
+
+```
+✅ K-044: el artefacto cubre el codigo bajo prueba
+   1 passed · 2 failed
+```
+
+**Lo que quedó VERIFICADO EN RUNTIME** — el aserto de consola es el **último** de cada test
+(línea 160), así que todo lo anterior pasó antes de fallar. Los cuatro gaps del rechazo CXD-022
+quedan cerrados con evidencia ejecutada, no declarada:
+
+- `tabindex="0"` en la región scrolleable (axe *scrollable-region-focusable*),
+- **row headers reales** (`th scope="row"`) presentes en runtime,
+- **equivalentes textuales** del canal cromático: `En producción: Sí/No` y `Juez sellado: Sí/No`
+  leídos del DOM, no del fixture,
+- **navegación por teclado** llega a la región + **foco visible** (WCAG 2.4.7: outline/box-shadow),
+- la tabla **scrollea dentro de su región** y el body **no desborda** en 375px ni en landscape,
+- **WCAG 1.4.4** (escala con el font-size del root): **este test pasa entero**.
+
+Capturas en `tests/e2e/__screenshots__/`: `paper-candidates-375-portrait.png`,
+`paper-candidates-667-landscape.png`, `paper-candidates-375-font-scaled.png`.
+
+**Lo que sigue ROJO, y por qué NO se relaja.** Los 2 fallos son el aserto «cero errores de
+consola», y las tres causas están identificadas en el log del servidor — **ninguna es el panel**:
+
+| Error de consola | Causa medida | ¿Producto? |
+|---|---|---|
+| WebSocket `ws://localhost:8000/ws` refused | el contenedor mapea **8085→8000**; el cliente apunta a `:8000` del host | no: puerto no publicado en esta corrida acotada |
+| 502 | `[RealtimePrice] getaddrinfo ENOTFOUND usdcop-trading-api` + `Investing.com error: 403` | no: contenedor no arrancado (fuera del alcance autorizado) + fuente externa sin credenciales |
+| 404 | `[PostgreSQL] relation "user_cart" does not exist` | **hallazgo colateral**: migración no aplicada en esta DB |
+
+El aserto se mantiene intacto **a propósito**. La ficha ya documenta que en su día se estabilizó
+esta spec dejando de *fabricar* ruido, nunca bajando el listón; relajarlo ahora para cobrar un
+verde sería exactamente el falso verde que este backlog persigue.
+
+**BL-05 sigue `PARTIAL`** — pero ya no por «no ejecutado» ni por una orden genérica: **la parte de
+accesibilidad está cerrada con evidencia runtime**, y lo único pendiente es una consola limpia, que
+exige `usdcop-trading-api`, publicar el puerto del WS y aplicar la migración de `user_cart`. Es
+decisión de infraestructura del operador, no trabajo de código de este BL.
