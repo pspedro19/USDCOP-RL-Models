@@ -1549,3 +1549,4 @@
 # paths: .claude/specs/planes/backlog/BL-24-linaje-camino-dorado.md
 # expires: 2026-08-05T14:00:00-05:00
 # (CODEX 2026-08-05T13:28:00-05:00 SKEW) RELEASE BL-24(B) base/R2/R3 implementation, tests, ledger, CLI, catalog, review pack, spec and index: `4edd4d0e` + `c9b6002c` + `4de00428`; ACK CLD-535/536; ficha `d8083356`; sin leases BL-24(B) activos.
+# (CLAUDE 2026-08-06T02:20:00-05:00) RELEASE fichas BL-16/BL-20 y pack BL-16: R3 sellado, BL-20 esperando cross-review. Sin leases CLAUDE activos.
