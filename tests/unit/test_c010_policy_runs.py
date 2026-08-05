@@ -324,7 +324,12 @@ def test_the_governed_chain_has_the_four_declared_links_in_order(factory, monkey
     _elegible_en_memoria(factory, monkeypatch)
     dag = _dag_de_spx500(factory)
     pid = "spx500_daily_ma200_v1"
+    # CINCO eslabones desde C2: el primero MATERIALIZA el snapshot. Antes la cadena
+    # empezaba en `resolve_snapshot`, que hace `xcom_pull` de `observations::` — y
+    # ninguna tarea productiva los ponia. Cuatro eslabones que ninguna corrida podia
+    # atravesar: el mecanismo existia y no tenia productor.
     esperado = [
+        f"policy_{pid}_produce_observations",
         f"policy_{pid}_resolve_snapshot",
         f"policy_{pid}_validate_inputs",
         f"policy_{pid}_evaluate",

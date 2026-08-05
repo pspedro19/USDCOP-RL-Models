@@ -345,6 +345,73 @@ def _derive_staleness(
     return (cutoff - mas_vieja) > limite
 
 
+def make_produce_observations(policy_id: str):
+    """Tarea 0: MATERIALIZAR el snapshot. El eslabon que faltaba (BL-45 C2).
+
+    Hasta ahora la cadena empezaba en `resolve_snapshot`, que hace `xcom_pull` de
+    `observations::<policy_id>` y `decision_cutoff::<policy_id>` — y **ninguna tarea
+    productiva los ponia**. El grafo mostraba cuatro eslabones que ninguna corrida
+    podia atravesar: el mecanismo existia y no tenia productor, igual que
+    `resolve_feature_snapshot` antes de C-010.
+
+    Trae las barras canonicas y delega en `build_observations`, que es funcion PURA
+    sobre un DataFrame: una implementacion, dos consumidores (esta tarea y los tests),
+    el mismo patron que `validate_policy_inputs`. La consulta vive aqui porque es
+    efecto de borde; la logica de QUE materializar vive en el feature-set y el
+    catalogo, nunca en este fichero.
+    """
+
+    def _produce(**context):
+        import pandas as pd
+
+        from src.features.observations import build_observations
+
+        spec = _spec_for(policy_id)
+        asset_id = spec.get("asset")
+        cutoff = _policy_context(policy_id, context).as_of
+
+        from utils.dag_common import get_db_connection
+
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT canonical_symbol FROM reference.instrument WHERE asset_id = %s",
+                    (asset_id,),
+                )
+                fila = cur.fetchone()
+                if not fila:
+                    raise PolicyRunConfigError(
+                        f"{asset_id}: sin fila en reference.instrument; sin simbolo "
+                        f"canonico no se sabe QUE serie materializar"
+                    )
+                # Serie COMPLETA hasta el cutoff: las features con ventana no se
+                # pueden calcular sobre un recorte. Un LIMIT aqui daria un numero
+                # plausible y silenciosamente distinto -- el peor error, porque no falla.
+                cur.execute(
+                    "SELECT time, close FROM public.asset_daily_ohlcv "
+                    "WHERE symbol = %s ORDER BY time",
+                    (fila[0],),
+                )
+                filas = cur.fetchall()
+        finally:
+            conn.close()
+
+        if not filas:
+            raise PolicyRunConfigError(
+                f"{asset_id}: cero barras para {fila[0]!r}; no se decide sin evidencia"
+            )
+        bars = pd.DataFrame(filas, columns=["time", "close"])
+        observations = build_observations(spec, bars, decision_cutoff=cutoff)
+
+        ti = context["ti"]
+        ti.xcom_push(key=f"observations::{policy_id}", value=observations)
+        ti.xcom_push(key=f"decision_cutoff::{policy_id}", value=cutoff)
+        return {"features": sorted(observations), "decision_cutoff": cutoff}
+
+    return _produce
+
+
 def make_resolve_snapshot(policy_id: str):
     """Tarea 1: materializar el snapshot causal. Aqui viven el cutoff Y la frescura."""
 
@@ -680,6 +747,10 @@ def _build_asset_dag(asset_id: str, spec: dict, registry_root: str) -> DAG:
             policy_id = run["policy_id"]
             chain = [
                 PythonOperator(
+                    task_id=f"policy_{policy_id}_produce_observations",
+                    python_callable=make_produce_observations(policy_id),
+                ),
+                PythonOperator(
                     task_id=f"policy_{policy_id}_resolve_snapshot",
                     python_callable=make_resolve_snapshot(policy_id),
                 ),
@@ -696,7 +767,7 @@ def _build_asset_dag(asset_id: str, spec: dict, registry_root: str) -> DAG:
                     python_callable=make_publish_signal(policy_id),
                 ),
             ]
-            verify >> chain[0] >> chain[1] >> chain[2] >> chain[3]
+            verify >> chain[0] >> chain[1] >> chain[2] >> chain[3] >> chain[4]
 
     return dag
 
