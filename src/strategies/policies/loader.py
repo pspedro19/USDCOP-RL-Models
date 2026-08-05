@@ -105,10 +105,16 @@ def canonical_policy_payload(spec: Mapping[str, Any]) -> dict[str, Any]:
             # gatillo suelto.
             #
             # Condicional y no incondicional porque incluir la clave con `None`
-            # cambiaria el payload de los CUATRO specs vigentes -- ninguno la
-            # declara-- y con el sus `policy_hash` ya publicados y congelados. Un
-            # re-freeze masivo por una mejora de contrato es exactamente el tipo de
-            # ruido que hace que los muros de congelacion dejen de creerse.
+            # cambiaria el payload de TODO spec que la OMITA -- y con el sus
+            # `policy_hash` ya publicados y congelados. Un re-freeze masivo por una
+            # mejora de contrato es exactamente el tipo de ruido que hace que los
+            # muros de congelacion dejen de creerse.
+            #
+            # (Redactado asi a proposito, CXD-613: la version anterior decia "los
+            # CUATRO specs vigentes, ninguno la declara". Esa frase caduca en cuanto
+            # UNO la declare, y caducaria en SILENCIO: el candado seguiria verde
+            # porque compara cada hash con su propio governance. Una afirmacion sobre
+            # el censo de hoy no es un invariante.)
             **({"max_snapshot_age": inputs["max_snapshot_age"]}
                if "max_snapshot_age" in inputs else {}),
         },

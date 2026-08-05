@@ -54,8 +54,11 @@ FEATURE_SET_DIR = REPO / "config" / "features" / "feature_sets"
 #: Las 6 huerfanas EJECUTABLES, pinneadas por policy. Pinnear el conjunto exacto
 #: —y no solo el conteo— es lo que hace que aparezca una septima ponga rojo: un
 #: `len(...) == 6` pasaria igual si se arreglara una y se rompiera otra.
+#: `spx500_daily_ma200_v1` SALIO de aqui el 2026-08-06 (decision C): su `ma_200`
+#: ya esta declarada en `spx500_daily_ma200_v1_action_v1`, catalogada como
+#: `spx500.ma_200` y producida por `src/features/spx500_ma200.py`. Quedan 5, no 8:
+#: las 3 de `smart_simple_v11` nunca fueron de esta clase (SPEC_ONLY, test aparte).
 DEUDA_EJECUTABLE: dict[str, frozenset[str]] = {
-    "spx500_daily_ma200_v1": frozenset({"ma_200"}),
     "gold_trend_simple": frozenset({"sma_63", "sma_126", "sma_252", "realized_vol_20"}),
     "btc_hodl_b1": frozenset({"realized_vol_20"}),
 }

@@ -130,6 +130,36 @@ features:
   sign_prior_note: nivel price-return del indice; sin prior direccional
   is_active: true
 
+# ma_200: la feature que DECIDE la señal de `spx500_daily_ma200_v1` y que hasta
+# 2026-08-06 no estaba catalogada. Se calculaba inline en el harness de paridad y
+# el feature-set al que la policy apuntaba la listaba como `derived_in_policy` —
+# prosa de la estrategia CODED, que si la deriva dentro. Una policy DECLARATIVA no
+# puede: el DSL no tiene operador de ventana. Decision C, CXD-608.
+- asset_id: spx500
+  feature_id: ma_200
+  series_id: spx500.ma_200
+  unit: index_level
+  feature_group: trend
+  causality_policy: same_bar
+  source_contract: market.canonical_bar[asset_id=spx500]
+  transformation: sma_200
+  lookback: P200D
+  lookback_note: >-
+    P200D expresa 200 SESIONES, no 200 dias naturales: la ventana es de barras del
+    calendario de negociacion del indice (`resample_policy: P1D indice oficial`), y
+    el schema del catalogo solo admite `P<n>D`. Es ventana DURA con
+    `min_periods=200` — no un warm-up blando como el de `rsi_14d`: sin 200 sesiones
+    el valor es NaN y no hay decision, que es lo que el spec expresa con
+    `warmup_bars: 200`.
+  compute_location: python
+  code_reference: {file: src/features/spx500_ma200.py, symbol: compute_ma_200, sha256_16: 59208e248b935c7a}
+  sign_prior: ambiguous
+  sign_prior_note: >-
+    La MEDIA no tiene prior de signo por si misma; el prior direccional vive en la
+    REGLA (`close > ma_200` => LONG), no en la feature. Declararlo aqui como
+    `positive` seria mover un prior economico a la capa de datos.
+  is_active: true
+
 - asset_id: usdcop
   feature_id: open
   series_id: usdcop.open

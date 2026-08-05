@@ -14,7 +14,7 @@ asset: spx500
 family: trend
 research_cluster: trend
 surface: action
-version: 1.0.0
+version: 1.1.0
 
 engine:
   type: rule_based
@@ -27,7 +27,7 @@ inputs:
   # El set del activo (BL-39, catálogo 1.1.0) ya declara "MA200 solo close":
   # esta política consume el MISMO snapshot diario, subconjunto {close}, y la
   # media se registra como feature derivada del mismo código congelado.
-  feature_set_id: spx500_regime_gated_v1_action_v1
+  feature_set_id: spx500_daily_ma200_v1_action_v1
   resample_policy_id: spx500_daily_official_v1
   required_features: [close, ma_200]
   optional_features: []
@@ -72,15 +72,34 @@ governance:
   ssot_manifest: config/strategy_manifests/spx500.yaml
   manifest_code_hash_sha256_16: ea76413e60621521
   feature_set_hash: null       # lo publica el catálogo de features (BL-39)
-  policy_hash: sha256:c00e63c676f2c96e0f32972f4b6c3d9f65d34cf4bbef2135774802ce41864d19
+  policy_hash: sha256:2d8638ed90a6ca5d8b18b0aed86ecad0812133745c80a4b0a4e7993f80de80f7
+  policy_hash_v1_0_0: sha256:c00e63c676f2c96e0f32972f4b6c3d9f65d34cf4bbef2135774802ce41864d19
+  policy_hash_note: >-
+    v1.1.0 cambia `inputs.feature_set_id` (spx500_regime_gated_v1_action_v1 ->
+    spx500_daily_ma200_v1_action_v1), que ENTRA en `canonical_policy_payload`, asi
+    que la identidad se mueve. Se conserva el hash de v1.0.0 para que la paridad
+    contra lo publicado siga siendo auditable: un hash que desaparece no deja
+    comparar.
   trials_charged: 0
   trials_note: >-
     Migración de representación (publisher -> motor de políticas). No cambia
     ventana, umbral, salida ni sizing => 0 trials (§10 "no cobra trial:
-    reejecutar una política congelada").
+    reejecutar una política congelada"). v1.1.0 mantiene 0 trials por la MISMA
+    razón: cambia quién DECLARA `ma_200` (feature-set propio + catálogo +
+    productor único), no cuánto vale ni cuándo dispara. La paridad se demuestra
+    sobre la serie completa; si no reprodujera bit a bit lo publicado, sería un
+    cambio económico disfrazado de fontanería y NO sería 0 trials.
 
 migration:
-  status: PARITY_GREEN
+  # DEMOCION DELIBERADA (decision C, CXD-608 §5). v1.0.0 alcanzó PARITY_GREEN con el
+  # harness oficial (7743 barras, exposición idéntica en float64). v1.1.0 es OTRA
+  # identidad —`policy_hash` distinto—, así que NO hereda ese veredicto: heredarlo
+  # por inercia sería exactamente el tipo de verde que este repo lleva días cazando.
+  # Efecto inmediato y buscado: `resolve_policy_runs` deja de emitir cadena para
+  # spx500 (PARITY_PENDING no es elegible). Se apaga sola mientras se revalida.
+  # La RE-PROMOCION es acto EXCLUSIVO del operador; ningún agente la ejecuta.
+  status: PARITY_PENDING
+  status_v1_0_0: PARITY_GREEN
   legacy_producer: scripts/pipeline/publish_spx500_bundles.py (arm MA200_ID)
   legacy_reference: scripts/analysis/profitability_adapters.py::spx500 (dumb_position)
   # Promovido a PARITY_GREEN con el HARNESS OFICIAL, no por inferencia:

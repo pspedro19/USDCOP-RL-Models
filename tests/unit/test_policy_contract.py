@@ -1306,9 +1306,9 @@ class TestMaxSnapshotAgeEntersIdentityConditionally:
     congelar la receta y dejar el gatillo suelto.
 
     POR QUE CONDICIONAL Y NO SIEMPRE. Incluir la clave con `None` cambiaria el
-    payload de los cuatro specs vigentes —ninguno la declara— y con el sus
-    `policy_hash` ya publicados. Un re-freeze masivo por una mejora de contrato es
-    justo el ruido que hace que los muros de congelacion dejen de creerse.
+    payload de todo spec que la OMITA, y con el sus `policy_hash` ya publicados. Un
+    re-freeze masivo por una mejora de contrato es justo el ruido que hace que los
+    muros de congelacion dejen de creerse.
     """
 
     def _spec(self, **inputs_extra):
@@ -1334,12 +1334,18 @@ class TestMaxSnapshotAgeEntersIdentityConditionally:
             },
         }
 
-    def test_absence_leaves_every_live_spec_hash_byte_identical(self):
-        """Candado 1: sin la clave, los hashes YA PUBLICADOS no se mueven.
+    def test_specs_that_omit_the_key_keep_their_frozen_hash(self):
+        """Candado 1: todo spec que OMITA la clave conserva su hash publicado.
 
-        Se comprueba contra los CUATRO specs reales y su `governance.policy_hash`
+        Se comprueba contra los specs REALES y su `governance.policy_hash`
         congelado, no contra un fixture: el riesgo que se vigila es exactamente
         romper una congelacion en produccion.
+
+        Redactado sobre "los que la omiten" y no sobre "los cuatro" (CXD-613): en
+        cuanto un spec declare el umbral, una frase sobre el censo de hoy quedaria
+        falsa **en silencio** —el test seguiria verde, porque compara cada hash con
+        su propio governance— y una prosa falsa junto a un candado verde es peor que
+        no tener prosa.
         """
         import glob
 

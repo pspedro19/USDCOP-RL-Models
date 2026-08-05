@@ -196,14 +196,32 @@ def test_every_declared_policy_run_has_a_registered_eligible_decision(factory, m
         assert policy_id in statuses, (
             f"{asset_id} declara `{policy_id}`, que no existe en {POLICY_SPEC_DIR.name}/"
         )
-        assert statuses[policy_id] in factory.ELIGIBLE_MIGRATION_STATES, (
-            f"{asset_id} declara `{policy_id}` para ejecucion con "
-            f"migration.status={statuses[policy_id]!r}: seria activar una policy sin "
-            f"decision del operador. Elegibles: {sorted(factory.ELIGIBLE_MIGRATION_STATES)}"
+
+    # CORRECCION DE ESTE CANDADO (2026-08-06, democion de spx500 a PARITY_PENDING).
+    # Antes exigia que TODA referencia declarada tuviera estado elegible. Era MAS
+    # ESTRICTO QUE EL DISENO: `resolve_policy_runs` acepta a proposito una referencia
+    # inelegible y la deja INERTE ("cero tareas, nunca un skip verde"), porque
+    # declarar es apuntar a una policy, no activarla. Con aquella version, demover
+    # una policy —el acto de gobierno correcto mientras se revalida— obligaba ademas
+    # a editar el SSOT de pipelines, o el candado se ponia rojo por hacer lo debido.
+    #
+    # El invariante que SI protege, y que se conserva entero: nada se EJECUTA sin
+    # decision elegible registrada. Se comprueba contra el resolver, que es quien
+    # decide, en vez de contra la declaracion, que solo referencia.
+    for asset_id, policy_id in declarados:
+        emitidas = factory.resolve_policy_runs(
+            {"policy_runs": [{"policy_id": policy_id}]}
+        )
+        elegible = statuses[policy_id] in factory.ELIGIBLE_MIGRATION_STATES
+        assert bool(emitidas) is elegible, (
+            f"{asset_id}/{policy_id}: status={statuses[policy_id]!r} (elegible="
+            f"{elegible}) pero el resolver emitio {emitidas}. Una policy no elegible "
+            f"debe quedar INERTE, y una elegible debe emitir: cualquiera de las dos "
+            f"al reves activa o apaga una estrategia sin decision registrada"
         )
 
 
-def test_resolution_obeys_the_registered_status_not_the_declaration(factory):
+def test_resolution_obeys_the_registered_status_not_the_declaration(factory, monkeypatch):
     """Invariante 2: declarar no es activar; lo que activa es el estado registrado.
 
     Se le pasan al resolver **todas** las policies del repo y se exige que devuelva
@@ -212,7 +230,21 @@ def test_resolution_obeys_the_registered_status_not_the_declaration(factory):
     inertes", que caduco cuando spx500 llego a PARITY_GREEN: llevaba en rojo sin que
     nadie lo mirara, y el rojo era correcto.
     """
-    statuses = _statuses_read_independently()
+    # Tras la democion de spx500 (decision C) NO queda ninguna policy elegible en el
+    # repo, asi que sobre el estado real este test se quedaria con una sola particion
+    # y su propia guarda anti-vacuidad lo dice: no distinguiria "filtra bien" de
+    # "no devuelve nada". Se promueve UNA en memoria para tener las dos pobladas.
+    #
+    # Lo esperado se sigue leyendo del `migration.status` del corpus, NO de
+    # `resolve_policy_runs`: la independencia que importa es respecto a la funcion
+    # bajo prueba, y esa se conserva entera.
+    _elegible_en_memoria(factory, monkeypatch)
+    from src.strategies.policies.loader import load_all_policy_specs
+
+    statuses = {
+        str(s["id"]): (s.get("migration") or {}).get("status")
+        for s in load_all_policy_specs()
+    }
     elegibles = sorted(
         pid for pid, st in statuses.items() if st in factory.ELIGIBLE_MIGRATION_STATES
     )
@@ -235,7 +267,7 @@ def test_resolution_obeys_the_registered_status_not_the_declaration(factory):
     )
 
 
-def test_demoting_the_eligible_policy_yields_zero_tasks_not_a_green_skip(factory, monkeypatch):
+def test_demoting_the_eligible_policy_yields_zero_tasks_not_a_green_skip(factory, monkeypatch):  # noqa: E501
     """Mutacion causal (CXD-593 c): la MISMA policy, degradada, emite CERO tareas.
 
     Sin mutacion resuelve; con `PARITY_PENDING` no resuelve. Ese delta es lo que
@@ -248,12 +280,13 @@ def test_demoting_the_eligible_policy_yields_zero_tasks_not_a_green_skip(factory
 
     declarado = {"policy_runs": [{"policy_id": "spx500_daily_ma200_v1"}]}
 
+    _elegible_en_memoria(factory, monkeypatch)   # sujeto: ver la nota del helper
     base = factory.resolve_policy_runs(declarado)
     assert [r["policy_id"] for r in base] == ["spx500_daily_ma200_v1"], (
         "la mutacion no probaria nada si el estado sano ya diera cero tareas"
     )
 
-    original = loader.load_all_policy_specs
+    original = loader.load_all_policy_specs   # ya es la version promovida en memoria
 
     def _degradada():
         specs = copy.deepcopy(list(original()))
@@ -278,7 +311,7 @@ def _dag_de_spx500(factory):
     return factory._build_asset_dag("spx500", spec, "usdcop-trading-dashboard/public/data")
 
 
-def test_the_governed_chain_has_the_four_declared_links_in_order(factory):
+def test_the_governed_chain_has_the_four_declared_links_in_order(factory, monkeypatch):
     """R3: `resolve -> validate -> evaluate -> publish` es OBSERVABLE en el grafo.
 
     Hasta R3 el segundo eslabon vivia DENTRO del tercero: una validacion fallida no
@@ -288,6 +321,7 @@ def test_the_governed_chain_has_the_four_declared_links_in_order(factory):
 
     Rojo con: quitar `chain[1]` del encadenado, o reordenar validate y evaluate.
     """
+    _elegible_en_memoria(factory, monkeypatch)
     dag = _dag_de_spx500(factory)
     pid = "spx500_daily_ma200_v1"
     esperado = [
@@ -401,6 +435,34 @@ OBS_MIXTAS = _obs("2026-07-24T20:00:00+00:00", "2026-07-18T20:00:00+00:00")
 SNAPSHOT_SANO = {"close": 5200.0, "ma_200": 5000.0}
 
 
+def _elegible_en_memoria(factory, monkeypatch, policy_id=None):
+    """Promover una policy a `PARITY_GREEN` **solo en memoria**, para tener sujeto.
+
+    Desde la democion de `spx500_daily_ma200_v1` a `PARITY_PENDING` (decision C) NO
+    HAY NINGUNA policy elegible en el repo, asi que las pruebas de la cadena se
+    quedaron sin nada que ejercitar. La alternativa —re-promover el spec real para
+    que los tests tengan sujeto— seria exactamente lo prohibido: la promocion es
+    acto EXCLUSIVO del operador, y hacerla desde un test para poner verde una suite
+    es la peor version posible de tocar un candado.
+
+    Asi que se promueve una COPIA en memoria y se re-congela su hash, igual que hace
+    `_con_umbral`. El fichero del repo no se toca; lo que se prueba es el mecanismo
+    de la cadena, no el estado de gobierno de esa policy.
+    """
+    import copy
+
+    import src.strategies.policies.loader as loader
+
+    specs = copy.deepcopy(list(loader.load_all_policy_specs()))
+    for spec in specs:
+        if str(spec.get("id")) == (policy_id or PID):
+            spec.setdefault("migration", {})["status"] = "PARITY_GREEN"
+            spec.setdefault("governance", {})["policy_hash"] = (
+                loader.canonical_policy_hash(spec)
+            )
+    monkeypatch.setattr(loader, "load_all_policy_specs", lambda: specs)
+
+
 def _con_umbral(factory, monkeypatch, edad="P1D", policy_id=None):
     """Declarar `inputs.max_snapshot_age` SOLO en memoria.
 
@@ -418,6 +480,9 @@ def _con_umbral(factory, monkeypatch, edad="P1D", policy_id=None):
     for spec in specs:
         if str(spec.get("id")) == (policy_id or PID):
             spec.setdefault("inputs", {})["max_snapshot_age"] = edad
+            # Elegible en memoria: ver `_elegible_en_memoria`. Sin esto, tras la
+            # democion no queda ninguna policy que la cadena pueda ejercitar.
+            spec.setdefault("migration", {})["status"] = "PARITY_GREEN"
             # RE-CONGELAR. `max_snapshot_age` entra en `canonical_policy_payload`
             # (CXD-610), asi que declararlo CAMBIA la identidad de la policy y el
             # muro de congelacion rechaza el spec si el hash declarado se queda
@@ -796,6 +861,9 @@ def _spec_con(**cambios_engine):
     for spec in specs:
         if str(spec.get("id")) == "spx500_daily_ma200_v1":
             spec.setdefault("engine", {}).update(cambios_engine)
+            # Elegible SOLO en memoria (ver `_elegible_en_memoria`): tras la democion
+            # no queda ninguna policy elegible con la que ejercitar el resolver.
+            spec.setdefault("migration", {})["status"] = "PARITY_GREEN"
     return specs
 
 

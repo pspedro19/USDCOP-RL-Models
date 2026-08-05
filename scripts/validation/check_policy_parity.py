@@ -96,10 +96,20 @@ def parity_spx500_ma200(spec: dict):
     except Exception as exc:  # noqa: BLE001
         raise DataUnavailable(f"snapshot SPX no disponible: {exc}") from exc
 
+    from src.features.spx500_ma200 import compute_ma_200
+
     close = df["close"].astype(float)
     # Legacy (profitability_adapters.spx500 / publish_spx500_bundles, ANTES del
     # np.roll de ejecución): la exposición decidida en t.
-    ma200 = close.rolling(200, min_periods=200).mean()
+    #
+    # La media YA NO se calcula aquí. Antes esta línea era
+    # `close.rolling(200, min_periods=200).mean()` — idéntica a la del publisher
+    # legacy, pero por casualidad y no por contrato: dos definiciones que coinciden
+    # hoy pueden divergir mañana sin que nada lo note, y `ma_200` no estaba
+    # catalogada ni tenía productor declarado. Ahora el harness CONSUME el productor
+    # único (`spx500.ma_200`, catálogo BL-39) — que es lo que hace de esta paridad
+    # una prueba de la feature publicada y no de una copia local suya.
+    ma200 = compute_ma_200(close)
     legacy = (close > ma200).astype(float).to_numpy()
 
     frame = pd.DataFrame({"close": close.to_numpy(float), "ma_200": ma200.to_numpy(float)})
