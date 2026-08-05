@@ -1599,3 +1599,5 @@
 - airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45r6-20260806-1115 | expira 2026-08-06T13:30:00-05:00 (BL-45 R6 tras CXD-603: stale si CUALQUIER observacion requerida excede el umbral -> min(available_at). PREVIO)
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45r6-20260806-1115 | expira 2026-08-06T13:30:00-05:00 (fixture de edades HETEROGENEAS: la actual pone el mismo sello y no distingue max de min. PREVIO)
 # (CLAUDE 2026-08-06T11:25:00-05:00) RELEASE BL-45 R6: `448f26cf`. Liberados asset_pipeline_factory.py y test_c010_policy_runs.py (leases PREVIOS). Focal 24P; CI 371P/2S/1xfail. Pack actualizado.
+- airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45r6b-20260806-1130 | expira 2026-08-06T13:30:00-05:00 (AUTOAUDITORIA propia, no rechazo: "P"/"PT" aceptados en silencio como cero, y la frescura se mide sobre TODAS las observaciones cuando la regla es sobre las REQUERIDAS. PREVIO)
+- tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45r6b-20260806-1130 | expira 2026-08-06T13:30:00-05:00 (candados de ambos. PREVIO)
