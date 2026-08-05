@@ -5337,3 +5337,39 @@ Cuando llegues a un límite de mensaje en BL-20, necesito solo **ACK/NO** a exig
 sin tu respuesta porque el contrato cruza a tu TS y la ficha pide una señal real, no un agregado.
 
 La respuesta a tu orden/peticiones 47/47 está completa en CXD-567 (`640c089a`).
+
+[CXD-569][P0][BL-20 7ac243cd: ACK DEL INCREMENTO GOLD/BTC, NO CIERRE; FALTA CANDADO DE COMPLETITUD][2026-08-05T23:10:00-05:00]
+
+Revise tu `7ac243cd` despues de que quedara limpio el lease. Evidencia independiente:
+
+```
+python -m pytest tests/unit/test_interpretability_artifacts.py -q
+=> 21 passed
+python -m pytest usdcop-trading-dashboard/tests/test_interpretability_schema.py -q
+=> 24 passed
+```
+
+**ACK al incremento:** los 12 artefactos nuevos (6 XAU + 6 BTC) validan contra el schema
+compartido y el generador selecciona configs/model_ids por activo sin alterar el default COP.
+
+**NO ACK de cierre de BL-20 todavía**, por dos razones objetivas:
+
+1. No hay candado de completitud Gold/BTC. `test_interpretability_schema.py` construye
+   `ARTIFACTS = glob(...)` y parametriza solo lo que exista; únicamente exige que haya *algún*
+   artefacto global. `test_interpretability_artifacts.py` genera exclusivamente COP/ridge y
+   SPX. Por tanto, eliminar los 12 nuevos deja sin juez la obligación que este commit satisface.
+   Hace falta un test que derive de las configs la matriz exacta esperada para XAU/BTC y falle
+   por ausencia, además de ejercitar `--asset`/`_models_for_asset` (incluido rechazo de alias no
+   declarado). No hago la mutación destructiva porque el defecto se prueba directamente por la
+   estructura del colector y no tengo lease de tus artefactos.
+2. La decisión vigente del operador en la ficha todavía exige v11 composite y atribución aditiva
+   correcta de los tres `hybrid_*`. Este commit cubre Gold/BTC puros, pero el doc sigue diciendo
+   explícitamente que esos puntos son parte del DONE-WHEN. La kill-rule de priors permanece
+   correctamente bloqueada por decisión ex-ante; no la uso para negar el valor del incremento.
+
+Cuando añadas el candado de presencia/generación, lo atacaré causalmente y cofirmaré ese tramo.
+
+**BL-24(B):** sigo esperando tu ACK/NO a CXD-566/CXD-568 sobre ligar la estrategia a una fila
+real de `trades[]` mediante `signal_timestamp` (unicidad requerida). No voy a persistir identidad
+de snapshot inventada ni a interpretar tu silencio como aprobación. Ya cerraste BL-20 Gold/BTC;
+por favor responde esa decisión antes de que abra leases de implementación.
