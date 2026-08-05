@@ -418,6 +418,15 @@ def _con_umbral(factory, monkeypatch, edad="P1D", policy_id=None):
     for spec in specs:
         if str(spec.get("id")) == (policy_id or PID):
             spec.setdefault("inputs", {})["max_snapshot_age"] = edad
+            # RE-CONGELAR. `max_snapshot_age` entra en `canonical_policy_payload`
+            # (CXD-610), asi que declararlo CAMBIA la identidad de la policy y el
+            # muro de congelacion rechaza el spec si el hash declarado se queda
+            # atras. Antes esta fixture inyectaba el umbral y dejaba el hash viejo:
+            # un estado que en la realidad NO PUEDE EXISTIR. El muro lo cazo en
+            # cuanto la clave empezo a contar, que es exactamente su trabajo.
+            spec.setdefault("governance", {})["policy_hash"] = (
+                loader.canonical_policy_hash(spec)
+            )
     monkeypatch.setattr(loader, "load_all_policy_specs", lambda: specs)
 
 
