@@ -66,6 +66,21 @@ def test_code_change_breaks_derivation_even_when_payload_is_unchanged() -> None:
         )
 
 
+def test_lineage_changes_semantic_identity_but_not_decision_fingerprint() -> None:
+    before = seal_candidate_ledger(_ledger(), producer_code_hash=CODE_HASH)
+    with_lineage = _ledger()
+    with_lineage["strategies"]["s1"]["lineage"] = {
+        "timestamp": "2026-01-05",
+        "signal_node_id": "10000000-0000-0000-0000-000000000001",
+        "snapshot_node_id": "20000000-0000-0000-0000-000000000002",
+        "bar_l0_node_id": "30000000-0000-0000-0000-000000000003",
+    }
+    after = seal_candidate_ledger(with_lineage, producer_code_hash=CODE_HASH)
+
+    assert before["identity"]["semantic_hash"] != after["identity"]["semantic_hash"]
+    assert before["identity"]["decision_fingerprint"] == after["identity"]["decision_fingerprint"]
+
+
 def test_identity_envelope_is_exact_not_extensible_by_accident() -> None:
     sealed = seal_candidate_ledger(_ledger(), producer_code_hash=CODE_HASH)
     sealed["identity"]["generated_at"] = "forbidden"
@@ -110,3 +125,34 @@ def test_real_producer_seals_the_same_ledger_that_it_writes() -> None:
     assert len(seal_assignments) == 1
     assert len(writes) == 1
     assert seal_assignments[0].lineno < writes[0].lineno
+
+
+def test_real_producer_commits_lineage_before_atomic_publication() -> None:
+    source = PRODUCER.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    main = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "main"
+    )
+
+    def call_line(name: str, *, attribute: bool = False) -> int:
+        matches = [
+            node.lineno
+            for node in ast.walk(main)
+            if isinstance(node, ast.Call)
+            and (
+                (attribute and isinstance(node.func, ast.Attribute) and node.func.attr == name)
+                or (not attribute and isinstance(node.func, ast.Name) and node.func.id == name)
+            )
+        ]
+        assert len(matches) == 1
+        return matches[0]
+
+    staged_write = call_line("safe_json_dump")
+    commit = call_line("commit", attribute=True)
+    publication = call_line("replace", attribute=True)
+    rollback = call_line("rollback", attribute=True)
+
+    assert staged_write < commit < publication
+    assert rollback > publication

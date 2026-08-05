@@ -60,7 +60,7 @@ from src.forecasting.adaptive_stops import (
 from src.contracts.approval_store import approval_path as _approval_path
 from src.contracts.strategy_schema import safe_json_dump
 from src.forecasting.ssot_config import ForecastingSSOTConfig
-from src.forecasting.dataset_loader import ForecastingDatasetLoader
+from src.forecasting.dataset_loader import DatasetProvenance, ForecastingDatasetLoader
 from src.forecasting.dynamic_leverage import DynamicLeverageConfig, compute_leverage_adjustment
 from src.forecasting.regime_gate import RegimeGateConfig, classify_regime, RegimeState
 from src.forecasting.momentum_signal import compute_momentum_signal, SignalConfidence
@@ -166,14 +166,20 @@ def load_config(config_path=None, version_override=None, strategy_id=None):
     }
 
 
+def load_data_with_provenance() -> tuple[pd.DataFrame, list[str], DatasetProvenance]:
+    """Load the production frame and retain its content-addressed provenance."""
+    cfg = ForecastingSSOTConfig.load()
+    loader = ForecastingDatasetLoader(cfg, project_root=PROJECT_ROOT)
+    df, feature_cols = loader.load_dataset(target_horizon=5)
+    return df, feature_cols, loader.provenance
+
+
 def load_data():
     """Load OHLCV + macro, build 21 features, compute H=5 target.
 
     Uses shared ForecastingDatasetLoader (DB-first with parquet fallback).
     """
-    cfg = ForecastingSSOTConfig.load()
-    loader = ForecastingDatasetLoader(cfg, project_root=PROJECT_ROOT)
-    df, feature_cols = loader.load_dataset(target_horizon=5)
+    df, feature_cols, _ = load_data_with_provenance()
     return df, feature_cols
 
 

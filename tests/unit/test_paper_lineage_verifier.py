@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 
+from src.identity.canonical import semantic_hash
 from src.lineage.paper_path import PaperPathStatus, verify_paper_path
 
 
@@ -15,11 +16,18 @@ IDS = (
 )
 
 
-def _node(node_id: str, node_type: str, fill: str) -> tuple:
+TIMESTAMP = "2026-01-05T09:00:00-05:00"
+SIDE = "SHORT"
+SIGNAL_HASH = semantic_hash(
+    {"strategy_id": "smart_simple_v11", "timestamp": TIMESTAMP, "side": SIDE}
+)
+
+
+def _node(node_id: str, node_type: str, fill: str, *, digest: str | None = None) -> tuple:
     return (
         node_id,
         node_type,
-        "sha256:" + fill * 64,
+        digest or "sha256:" + fill * 64,
         "1",
         "PASS",
         "VALID",
@@ -33,7 +41,7 @@ def _node(node_id: str, node_type: str, fill: str) -> tuple:
 
 
 NODES = [
-    _node(IDS[0], "paper_signal", "1"),
+    _node(IDS[0], "paper_signal", "1", digest=SIGNAL_HASH),
     _node(IDS[1], "data_snapshot", "2"),
     _node(IDS[2], "bar_l0", "3"),
 ]
@@ -72,15 +80,20 @@ class BrokenConnection:
         raise RuntimeError("database unavailable")
 
 
-def _ledger(lineage: object = ...) -> dict:
-    strategy: dict = {}
+def _ledger(lineage: object = ..., *, trades: list[dict] | None = None) -> dict:
+    strategy: dict = {"trades": trades if trades is not None else [
+        {"timestamp": TIMESTAMP, "side": SIDE}
+    ]}
     if lineage is not ...:
         strategy["lineage"] = lineage
     return {"strategies": {"smart_simple_v11": strategy}}
 
 
 def _ids() -> dict[str, str]:
-    return dict(zip(("signal_node_id", "snapshot_node_id", "bar_l0_node_id"), IDS, strict=True))
+    return {
+        "timestamp": TIMESTAMP,
+        **dict(zip(("signal_node_id", "snapshot_node_id", "bar_l0_node_id"), IDS, strict=True)),
+    }
 
 
 def test_real_ledger_without_lineage_ids_is_absent_not_resolved() -> None:
@@ -98,6 +111,36 @@ def test_partial_declaration_is_broken_not_absent() -> None:
     result = verify_paper_path(Connection(), _ledger(declaration), strategy_id="smart_simple_v11")
     assert result.status is PaperPathStatus.BROKEN
     assert "snapshot_node_id" in result.detail
+
+
+def test_lineage_timestamp_matching_zero_trade_rows_is_broken() -> None:
+    result = verify_paper_path(
+        Connection(), _ledger(_ids(), trades=[]), strategy_id="smart_simple_v11"
+    )
+    assert result.status is PaperPathStatus.BROKEN
+    assert "exactly one trade row; got 0" in result.detail
+
+
+def test_lineage_timestamp_matching_two_trade_rows_is_broken() -> None:
+    duplicate = {"timestamp": TIMESTAMP, "side": SIDE}
+    result = verify_paper_path(
+        Connection(),
+        _ledger(_ids(), trades=[duplicate, dict(duplicate)]),
+        strategy_id="smart_simple_v11",
+    )
+    assert result.status is PaperPathStatus.BROKEN
+    assert "exactly one trade row; got 2" in result.detail
+
+
+def test_signal_node_hash_must_bind_strategy_timestamp_and_side() -> None:
+    wrong_signal = _node(IDS[0], "paper_signal", "f")
+    result = verify_paper_path(
+        Connection(nodes=[wrong_signal, *NODES[1:]]),
+        _ledger(_ids()),
+        strategy_id="smart_simple_v11",
+    )
+    assert result.status is PaperPathStatus.BROKEN
+    assert "does not identify the declared trade row" in result.detail
 
 
 def test_unique_persisted_golden_path_resolves() -> None:

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Mapping
 
+from src.identity.canonical import semantic_hash
 from src.lineage.graph import (
     EdgeType,
     LineageEdge,
@@ -41,33 +42,58 @@ _EXPECTED_TYPES = ("paper_signal", "data_snapshot", "bar_l0")
 
 def _declared_ids(
     ledger: Mapping[str, Any], strategy_id: str
-) -> tuple[PaperPathStatus | None, tuple[str, str, str] | None, str]:
+) -> tuple[PaperPathStatus | None, tuple[str, str, str] | None, str | None, str]:
     strategies = ledger.get("strategies")
     strategy = strategies.get(strategy_id) if isinstance(strategies, Mapping) else None
     if not isinstance(strategy, Mapping):
-        return PaperPathStatus.ABSENT, None, f"strategy {strategy_id!r} is absent from ledger"
+        return PaperPathStatus.ABSENT, None, None, f"strategy {strategy_id!r} is absent from ledger"
 
     lineage = strategy.get("lineage")
     if lineage is None:
         return (
             PaperPathStatus.ABSENT,
             None,
+            None,
             f"strategy {strategy_id!r} declares no persisted lineage ids",
         )
     if not isinstance(lineage, Mapping):
-        return PaperPathStatus.BROKEN, None, "lineage declaration must be an object"
+        return PaperPathStatus.BROKEN, None, None, "lineage declaration must be an object"
 
-    missing = [field for field in _ID_FIELDS if not lineage.get(field)]
+    missing = [field for field in ("timestamp", *_ID_FIELDS) if not lineage.get(field)]
     if missing:
         return (
             PaperPathStatus.BROKEN,
+            None,
             None,
             "incomplete lineage declaration; missing " + ", ".join(missing),
         )
     ids = tuple(str(lineage[field]) for field in _ID_FIELDS)
     if len(set(ids)) != len(ids):
-        return PaperPathStatus.BROKEN, None, "lineage node ids must be distinct"
-    return None, ids, ""
+        return PaperPathStatus.BROKEN, None, None, "lineage node ids must be distinct"
+
+    timestamp = str(lineage["timestamp"])
+    trades = strategy.get("trades")
+    if not isinstance(trades, list):
+        return PaperPathStatus.BROKEN, None, None, "strategy trades must be an array"
+    matches = [
+        trade
+        for trade in trades
+        if isinstance(trade, Mapping) and str(trade.get("timestamp")) == timestamp
+    ]
+    if len(matches) != 1:
+        return (
+            PaperPathStatus.BROKEN,
+            None,
+            None,
+            f"lineage timestamp must identify exactly one trade row; got {len(matches)}",
+        )
+    side = matches[0].get("side")
+    if not side:
+        return PaperPathStatus.BROKEN, None, None, "matched trade row has no side"
+    expected_signal_hash = semantic_hash(
+        {"strategy_id": strategy_id, "timestamp": timestamp, "side": str(side)}
+    )
+    return None, ids, expected_signal_hash, ""
 
 
 def _load_subgraph(connection: Any, node_ids: tuple[str, str, str]) -> tuple[list[LineageNode], list[LineageEdge]]:
@@ -112,10 +138,11 @@ def verify_paper_path(
     ``BROKEN``.
     """
 
-    preliminary, node_ids, detail = _declared_ids(ledger, strategy_id)
+    preliminary, node_ids, expected_signal_hash, detail = _declared_ids(ledger, strategy_id)
     if preliminary is not None:
         return PaperPathResult(preliminary, strategy_id, detail)
     assert node_ids is not None
+    assert expected_signal_hash is not None
 
     try:
         nodes, edges = _load_subgraph(connection, node_ids)
@@ -128,6 +155,8 @@ def verify_paper_path(
             raise LineagePathError(
                 f"wrong lineage node types: expected {_EXPECTED_TYPES!r}, got {actual_types!r}"
             )
+        if nodes_by_id[node_ids[0]].semantic_hash != expected_signal_hash:
+            raise LineagePathError("paper signal node does not identify the declared trade row")
         path = resolve_unique_path(
             nodes,
             edges,

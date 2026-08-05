@@ -8,16 +8,10 @@
     "v13": "EXCLUIDA hasta freeze (abrir 2026 = +1 trial, decisi\u00f3n del operador)"
   },
   "judge_note": "el juez sellado de v12/v14 consume SOLO judge_window (post-freeze); la serie completa es monitoreo, no evidencia confirmatoria",
-  "generated_at": "2026-07-27",
-  "identity": {
-    "schema_version": "1.0.0",
-    "semantic_hash": "sha256:060251c04f3468e3e4e7e81ab5ff121778a0a932cb5483b5583065d2a3ed4cb7",
-    "decision_fingerprint": "sha256:40dc856dd78334987bd37a741a9ab9aa13bb6e786fa888532de1250fdf26612e",
-    "derivation_id": "sha256:ade796f40fe36f0d58d5641b427a10860a00b2627720dc30193375c9b0ef2e1b"
-  },
+  "generated_at": "2026-08-05",
   "strategies": {
     "smart_simple_v11": {
-      "ret_2026_ytd_pct": 3.36,
+      "ret_2026_ytd_pct": 2.9,
       "n_trades": 11,
       "note_n": "N<20 => solo conteo y PnL",
       "judge_window": null,
@@ -103,23 +97,29 @@
           "equity": 10290.52
         },
         {
-          "timestamp": "2026-07-13T09:00:00-05:00",
+          "timestamp": "2026-07-27T09:00:00-05:00",
           "side": "LONG",
-          "pnl_pct": 0.4402,
+          "pnl_pct": -0.004,
           "exit_reason": "week_end",
           "leverage": 0.705,
-          "equity": 10335.82
+          "equity": 10290.11
         }
-      ]
+      ],
+      "lineage": {
+        "timestamp": "2026-01-05T09:00:00-05:00",
+        "signal_node_id": "ab0abbcd-bc64-48ba-b1f2-04cbb98132ab",
+        "snapshot_node_id": "e78640b4-a739-450e-8eb3-96cb958cc721",
+        "bar_l0_node_id": "3eaee4a4-04d8-467e-bd58-ec5edb8829b9"
+      }
     },
     "smart_simple_v12": {
-      "ret_2026_ytd_pct": 3.12,
+      "ret_2026_ytd_pct": 2.67,
       "n_trades": 11,
       "note_n": "N<20 => solo conteo y PnL",
       "judge_window": {
         "starts_after": "2026-07-21",
-        "n_trades": 0,
-        "pnl_pct_compound": 0.0,
+        "n_trades": 1,
+        "pnl_pct_compound": -0.004,
         "note": "N<20 => solo conteo y PnL"
       },
       "trades": [
@@ -204,23 +204,23 @@
           "equity": 10266.98
         },
         {
-          "timestamp": "2026-07-13T09:00:00-05:00",
+          "timestamp": "2026-07-27T09:00:00-05:00",
           "side": "LONG",
-          "pnl_pct": 0.4402,
+          "pnl_pct": -0.004,
           "exit_reason": "week_end",
           "leverage": 0.705,
-          "equity": 10312.17
+          "equity": 10266.57
         }
       ]
     },
     "smart_simple_v14": {
-      "ret_2026_ytd_pct": 3.09,
+      "ret_2026_ytd_pct": 2.63,
       "n_trades": 11,
       "note_n": "N<20 => solo conteo y PnL",
       "judge_window": {
         "starts_after": "2026-07-21",
-        "n_trades": 0,
-        "pnl_pct_compound": 0.0,
+        "n_trades": 1,
+        "pnl_pct_compound": -0.004,
         "note": "N<20 => solo conteo y PnL"
       },
       "trades": [
@@ -305,12 +305,12 @@
           "equity": 10263.54
         },
         {
-          "timestamp": "2026-07-13T09:00:00-05:00",
+          "timestamp": "2026-07-27T09:00:00-05:00",
           "side": "LONG",
-          "pnl_pct": 0.4402,
+          "pnl_pct": -0.004,
           "exit_reason": "week_end",
           "leverage": 0.705,
-          "equity": 10308.72
+          "equity": 10263.13
         }
       ]
     }
@@ -405,13 +405,19 @@
         "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
       },
       {
-        "iso_week": "2026-W29",
-        "cop_component_pct": 0.4402,
+        "iso_week": "2026-W31",
+        "cop_component_pct": -0.004,
         "xau_component_pct": null,
         "btc_component_pct": null,
         "book_ret_pct": null,
         "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
       }
     ]
+  },
+  "identity": {
+    "schema_version": "1.0.0",
+    "semantic_hash": "sha256:04d4153ddea8b4f6827a37339a3d3e3738c67b02c3a150a4b7c306e10e95f6bd",
+    "decision_fingerprint": "sha256:cfcd88c01d057e4db187f9a66bfd4e95a73c60c326e3280ff2b9472de167b796",
+    "derivation_id": "sha256:9a78f5a3823682f89f856c986bb4b5d8c6fa5db7bf6c25f2082db53d30c6186f"
   }
 }
