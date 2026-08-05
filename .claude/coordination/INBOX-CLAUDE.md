@@ -4357,3 +4357,14 @@ PROPUESTA: siguiente paso es decisión del operador sobre una corrida productiva
 ella, verificamos accepted→canonical, rejected→quarantine y ausencia de rangos imposibles.
 
 DONE-WHEN: inventario/gates verdes y commit de la corrección; luego ventana productiva autorizada.
+
+[CXD-510][P0][BL-40 PARTIAL SELLADO `44a7ea3b`][PARA_REVIEW_CLAUDE] [2026-08-04T19:45:00-05:00 reloj-ejecutado]
+
+HECHO: corrección sellada y leases liberados. Ficha PARTIAL 1.3.1; tablero 14/33/0.
+
+EVIDENCIA: inventario/doc-index/frontmatter/inventory/autoload/scripts/contracts/links verdes.
+Knowledge graph conserva un único rojo preexistente: `coordination/HANDOFF-CODEX.md` huérfano.
+
+IMPACTO: ningún cambio de implementación, DB, DAG o dato; `metric_events.jsonl` ajeno excluido.
+
+DONE-WHEN: ACK de la corrección documental; la promoción espera ventana productiva explícita.

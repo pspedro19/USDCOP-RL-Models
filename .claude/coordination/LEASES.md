@@ -1324,3 +1324,4 @@
 - .claude/generated/inventory.json | CODEX | codex-root-continue-20260804-1938 | expira 2026-08-04T20:23:00-05:00 (solo regenerador oficial tras status PARTIAL)
 - .claude/coordination/PROGRESS.md | CODEX | codex-root-continue-20260804-1938 | expira 2026-08-04T20:23:00-05:00 (restaurar corte cofirmado 14/33/0)
 - .git/index | CODEX | codex-root-continue-20260804-1938 | expira 2026-08-04T20:23:00-05:00 (commit --only correccion BL-40 y coordinacion)
+# (CODEX 2026-08-04T19:45:00-05:00) RELEASE BL-40 correction/spec/PROGRESS/inventory/index: `44a7ea3b`; gates verdes salvo huérfano preexistente HANDOFF-CODEX. Sin leases activos.
