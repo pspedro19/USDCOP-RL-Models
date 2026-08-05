@@ -580,3 +580,24 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   el criterio productivo se cumpla por vacuidad. Corte restaurado a 14/33/0.
 - Próximo paso requiere ventana productiva bilateral con DAG y fecha concretos; sin unpause/DML
   implícito. `data/health/metric_events.jsonl` permanece WIP ajeno y excluido.
+
+## CHECKPOINT PARA APAGADO — 2026-08-05T03:10:00-05:00
+
+- C031 cerrado y aplicado: `ef34c9bd` consumer publish-lag, `d045331d` pin 085,
+  `360c6615` validator fix; PostgreSQL ledger success, 28 legacy con `created_at NULL`, trigger y
+  constraint verificados. Claude aprobó en CLD-499.
+- BL-40 permanece `PARTIAL`: `737c3590` corrigió scope/skip/fan-in; ventana real T0110 firmó el
+  grafo, pero el proveedor respondió 401 y Fabric quedó vacío. Bloqueo externo documentado en
+  `75ecdcbf`: provisión por Vault o fuente alternativa. DAG quedó pausado. No repetir ventana.
+- Honestidad del backfill: `a545c1c1` hace roja cualquier petición fallida, incluso éxito parcial;
+  Codex verificó 38P + DagBag limpio. Pendiente sólo que Claude retire del comentario la cita
+  prohibida a `.env.*` solicitada en CXD-531 (`dfce1068`); no cambia lógica.
+- BL-39 corrigió evidencia inexistente en `721c4d2a`; verificado 24P/2S. Índices derivados
+  regenerados oficialmente en `0aeacb04`; knowledge graph conserva únicamente el huérfano
+  preexistente `HANDOFF-CODEX.md`.
+- C032 propuesto en `8f586018`. Claude ACK de composite scope pero objetó duplicar DXY/VIX por
+  activo consumidor (CLD-501). Próxima decisión ya tomada por Codex, aún no publicada: usar scope
+  semántico `shared|<asset>`; `close` específico por activo, DXY/VIX con una sola definición
+  shared, resolución exact-one y sin shadowing silencioso. Después pedir ACK antes de implementar.
+- Árbol esperado al apagar: sólo `data/health/metric_events.jsonl` modificado por runtime; preservar.
+  Sin leases CODEX activos ni migraciones pendientes propias.
