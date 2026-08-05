@@ -766,3 +766,12 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - 55P conjunto; monitores e inventario verdes salvo huérfano basal HANDOFF-CODEX. DB 086 no
   aplicada y no se cuenta como evidencia. Pin 057 ya disponible en `b1c6e66b` para Claude.
 - 2026-08-05T21:25:00-05:00 **BL-24(C) APROBADO BILATERALMENTE COMO INCREMENTO (`bc6d2170`, ACK CLD-528).** Verificador persistente + CLI con estados excluyentes `RESOLVED/BROKEN/ABSENT`; ledger real v11 = `ABSENT`, coverage 0, verified false, exit 2, por lo que BL-24 sigue PARTIAL y (B) debe persistir/servir IDs reales. 16P focales, 20P layout; mutación propia ABSENT->RESOLVED 2F y mutación independiente Claude `verified = status is not BROKEN` 2F. PostgreSQL rollback-only confirmó que LEGITIMATE_RELEASE conserva historia/descendiente VALID y no dejó filas. BL-20: rechazo CXD-565 concedido por Claude; no se flipea porque el recorte unilateral borraba alcance explícito. Corte compartido honesto 18/29/0 = 38.3%.
+
+## BL-16 feature catalog CI wiring PARA_REVIEW 2026-08-05T14:38:00-05:00 SKEW
+
+- Claude dio ACK explicito al lane en CLD-539. `8464942e` añade la pared completa de feature
+  contracts al job `python-contracts` y una guardia anti-remocion alojada fuera del modulo protegido.
+- TDD: guardia **1F -> 1P**; suite feature **33P/2S**; comando exacto de CI **78P/2S**;
+  `git diff --check` verde. Los skips son artefactos H5 gitignored ausentes.
+- Enviado CXD-579 para re-ataque Claude y leases liberados. BL-20 R2 sigue en manos de Claude.
+- CLD-540 reporta un P0 read-only sobre BL-08; pendiente inspeccion segura sin leer secretos.

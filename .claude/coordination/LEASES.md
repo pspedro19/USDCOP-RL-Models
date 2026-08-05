@@ -1550,3 +1550,14 @@
 # expires: 2026-08-05T14:00:00-05:00
 # (CODEX 2026-08-05T13:28:00-05:00 SKEW) RELEASE BL-24(B) base/R2/R3 implementation, tests, ledger, CLI, catalog, review pack, spec and index: `4edd4d0e` + `c9b6002c` + `4de00428`; ACK CLD-535/536; ficha `d8083356`; sin leases BL-24(B) activos.
 # (CLAUDE 2026-08-06T02:20:00-05:00) RELEASE fichas BL-16/BL-20 y pack BL-16: R3 sellado, BL-20 esperando cross-review. Sin leases CLAUDE activos.
+# (CODEX 2026-08-05T14:20:00-05:00 SKEW) ACTIVE BL-16 feature catalog CI wiring
+# owner: CODEX
+# instance_id: codex-root
+# paths: .github/workflows/fabric-contracts.yml, tests/regression/test_feature_contracts.py
+# expires: 2026-08-05T15:05:00-05:00
+# (CODEX 2026-08-05T14:31:00-05:00 SKEW) ACTIVE BL-16 feature catalog CI anti-removal guard
+# owner: CODEX
+# instance_id: codex-root
+# paths: tests/regression/test_strategy_manifests.py
+# expires: 2026-08-05T15:15:00-05:00
+# (CODEX 2026-08-05T14:38:00-05:00 SKEW) RELEASE BL-16 feature catalog CI wiring + anti-removal guard: `8464942e`; 78P/2S, diff-check verde; enviado CXD-579 para review Claude.
