@@ -174,18 +174,14 @@ def validate_policy_inputs(
     tarea propia — se veia como «evaluate fallo». Se extrae, NO se duplica: `evaluate_policy`
     la llama, de modo que hay **una implementacion y dos consumidores** y no pueden divergir.
     """
-    stale = context.extras.get("snapshot_is_stale", False)
-    if not isinstance(stale, bool):
-        raise ValueError(
-            f"context.extras['snapshot_is_stale'] must be a bool, got {stale!r}"
-        )
-    if stale:
-        if stale_input_policy == "FAIL_CLOSED":
-            raise ValueError(
-                "snapshot is stale and stale_input_policy=FAIL_CLOSED — not publishing"
-            )
-        return _flat_decision(policy, context, REASON_INPUT_STALE, "snapshot marked stale")
-
+    # ORDEN: `missing` ANTES que `stale` (acordado en CXD-606 tras CLD-563).
+    # No se puede preguntar "¿este dato es viejo?" por un dato que NO TIENES: la
+    # completitud del conjunto requerido es PRECONDICION de la frescura, no una
+    # alternativa a ella. Con el orden anterior (stale primero), la EDAD de un
+    # dato declarado OPCIONAL podia reclasificar la ausencia total del nucleo
+    # requerido —opcional vieja daba FLAT/INPUT_STALE; opcional fresca daba el
+    # missing FAIL_CLOSED declarado—: mismo estado de datos, dos veredictos, y el
+    # que decidia era el dato que la policy dice no necesitar.
     errors = policy.validate_inputs(snapshot)
     if errors:
         if missing_input_policy == "FAIL_CLOSED":
@@ -193,6 +189,27 @@ def validate_policy_inputs(
         return _flat_decision(
             policy, context, REASON_INPUT_MISSING, "; ".join(errors)[:200]
         )
+
+    # Aqui los inputs requeridos ya son validos, asi que la frescura ES medible y
+    # se EXIGE como bool. Antes habia un `.get("snapshot_is_stale", False)`: la
+    # ausencia del hecho se leia como "fresco" — el mismo `False` fabricado que
+    # CXD-600 encontro en el factory, una capa mas abajo y sin que nadie lo mirara.
+    # `None` (frescura no medible) llega hasta aqui SOLO si el conjunto requerido
+    # esta completo, y entonces es una contradiccion: falla cerrado (CXD-606 §4),
+    # para que el transporte nullable no abra un bypass.
+    stale = context.extras.get("snapshot_is_stale")
+    if not isinstance(stale, bool):
+        raise ValueError(
+            f"context.extras['snapshot_is_stale'] must be a bool once required inputs "
+            f"are valid, got {stale!r} — a snapshot whose freshness was never measured "
+            f"is not evaluated"
+        )
+    if stale:
+        if stale_input_policy == "FAIL_CLOSED":
+            raise ValueError(
+                "snapshot is stale and stale_input_policy=FAIL_CLOSED — not publishing"
+            )
+        return _flat_decision(policy, context, REASON_INPUT_STALE, "snapshot marked stale")
     return None
 
 

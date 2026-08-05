@@ -279,7 +279,9 @@ def _declared_max_snapshot_age(spec: dict):
     return timedelta(days=dias, hours=horas, minutes=minutos)
 
 
-def _derive_staleness(policy_id: str, observations: dict, decision_cutoff, spec: dict) -> bool:
+def _derive_staleness(
+    policy_id: str, observations: dict, decision_cutoff, spec: dict
+) -> bool | None:
     """DERIVAR el hecho de frescura de la evidencia, o fallar cerrado.
 
     Vive en la frontera de LECTURA porque es el unico sitio donde existe: 
@@ -311,12 +313,17 @@ def _derive_staleness(policy_id: str, observations: dict, decision_cutoff, spec:
     # ella. Hoy los cuatro specs declaran `optional_features: []`, asi que el
     # comportamiento observable no cambia -- se hace explicito ANTES de que alguien
     # declare una opcional y descubra que le bloquea la cadena sin motivo.
-    # El `or observations` del final NO es un atajo: si el spec no declara features
-    # requeridas no hay a que restringirse, y entonces se mide TODO -- la opcion
-    # conservadora. Y si falta una requerida, aqui no se juzga: eso lo cierra
-    # `validate` con su fallback declarado, que es quien sabe si falta o no.
+    # Solo features REQUERIDAS presentes, y JAMAS opcionales (CXD-606 §1).
+    # Si el conjunto requerido esta incompleto la frescura NO es medible: se
+    # devuelve `None`, nunca `False`. Fabricar un "fresco" para poder seguir es lo
+    # que ya costo dos rechazos; y medir una opcional como sustituto dejaba que la
+    # EDAD de un dato que la policy dice no necesitar reclasificara la ausencia del
+    # nucleo requerido (CXD-605). Con `missing` resuelto ANTES que `stale` en el
+    # runner, este `None` no puede alcanzar el chequeo de frescura.
     requeridas = (spec.get("inputs") or {}).get("required_features") or []
-    considerar = {n: o for n, o in observations.items() if n in requeridas} or observations
+    considerar = {n: o for n, o in observations.items() if n in requeridas}
+    if not requeridas or len(considerar) < len(requeridas):
+        return None
     cutoff = _aware_datetime(decision_cutoff, field="decision_cutoff")
     # `min`, NO `max`: el snapshot esta stale si CUALQUIER observacion requerida
     # excede el umbral, asi que manda la MAS VIEJA. R5 usaba `max` -- la mas nueva --
@@ -435,11 +442,16 @@ def _policy_context(policy_id: str, context: dict):
     stale = (
         ti.xcom_pull(key=f"{STALENESS_XCOM_KEY}::{policy_id}") if ti is not None else None
     )
-    if not isinstance(stale, bool):
+    # `None` se TRANSPORTA (CXD-606 §2): significa "no medible porque el conjunto
+    # requerido esta incompleto", y quien decide entonces es el `missing_input_policy`
+    # declarado, que el runner resuelve ANTES. Abortar aqui convertiria una ausencia
+    # con `missing: FLAT` declarado en un error duro -- ignorar otra vez un fallback
+    # declarado, que es el pecado original de toda esta serie. Lo que NO se acepta es
+    # cualquier otra cosa: un string o un int ahi es un productor roto, no un matiz.
+    if stale is not None and not isinstance(stale, bool):
         raise PolicyRunConfigError(
-            f"{policy_id}: sin hecho de frescura derivado por `resolve_snapshot` "
-            f"(recibido {stale!r}). No se asume fresco: un snapshot cuya frescura no "
-            f"se ha medido no se evalua"
+            f"{policy_id}: hecho de frescura invalido ({stale!r}); se espera bool o "
+            f"None (no medible)"
         )
     return PolicyContext(as_of=as_of, mode="DECISION", extras={"snapshot_is_stale": stale})
 

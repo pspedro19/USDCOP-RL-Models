@@ -521,15 +521,25 @@ def test_no_spec_declares_a_freshness_threshold_so_the_chain_fails_closed(factor
         factory.make_resolve_snapshot(PID)(ti=ti, **CTX_INTERVALO)
 
 
-def test_validate_without_a_derived_freshness_fact_refuses_to_assume_fresh(factory, monkeypatch):
-    """Si `resolve` no produjo el hecho, `validate` no lo suple con un `False`.
+def test_complete_required_inputs_with_unmeasured_freshness_fail_closed(factory, monkeypatch):
+    """CXD-606 §4: el transporte de `None` no puede abrir un bypass.
 
-    Es el candado directo contra la regresion de R4: la ausencia del hecho es un
-    error, nunca un "no esta stale".
+    Desde R7 el hecho de frescura puede valer `None` ("no medible porque faltan
+    requeridas") y **se transporta** en vez de abortar, para que el
+    `missing_input_policy` declarado resuelva. El riesgo evidente de esa concesion
+    es que un `None` se cuele con las requeridas COMPLETAS y nadie mida nada. Aqui
+    las dos requeridas estan presentes y frescas, pero `resolve` no llego a correr:
+    tiene que fallar cerrado.
+
+    Ojo a la capa: antes fallaba en `_policy_context` con `PolicyRunConfigError`;
+    ahora falla en el RUNNER con `ValueError`, porque el contexto ya no juzga. La
+    asercion se mueve de capa, no se afloja: sigue exigiendo que no se evalue.
+
+    Rojo con: reponer un default `False` en `validate_policy_inputs`.
     """
     _con_umbral(factory, monkeypatch)
     ti = _TIProbe(OBS_FRESCAS)          # NO se corre `resolve`: no hay hecho
-    with pytest.raises(factory.PolicyRunConfigError, match="frescura"):
+    with pytest.raises(ValueError, match="freshness was never measured"):
         factory.make_validate_inputs(PID)(ti=ti, **CTX_INTERVALO)
 
 
@@ -597,29 +607,131 @@ def test_zero_duration_is_legitimate_and_still_accepted(factory):
     ) == timedelta(0)
 
 
-def test_an_optional_feature_cannot_block_a_decision_the_policy_works_without(factory):
-    """AUTOAUDITORIA: la frescura se mide sobre las REQUERIDAS, no sobre todo.
+# RETIRADO (CXD-605): aqui vivia `test_an_optional_feature_cannot_block_a_decision...`.
+# Fijaba que una opcional vieja no declarase stale el snapshot. La idea es correcta,
+# pero la implementacion que lo hacia verde permitia que la EDAD de una opcional
+# reclasificara la ausencia total de las requeridas (stale/FLAT en vez del missing
+# declarado). Un candado que fija una semantica aun no acordada es peor que su
+# ausencia: da por zanjado lo que esta en discusion (propuesta en CLD-563).
 
-    Media sobre `observations.items()` entero. Hoy da igual --los cuatro specs
-    declaran `optional_features: []`-- pero el dia que alguien declare una opcional,
-    una opcional vieja bloquearia una decision que la policy dice saber tomar sin
-    ella. Se hace explicito ANTES de que ocurra, no despues.
+
+@pytest.mark.parametrize("policy_id", ["gold_trend_simple", "btc_hodl_b1"])
+@pytest.mark.parametrize("edad_opcional,etiqueta", [
+    ("2026-06-01T00:00:00+00:00", "opcional VIEJA"),
+    ("2026-07-24T20:00:00+00:00", "opcional FRESCA"),
+])
+def test_an_optional_features_age_cannot_reclassify_a_missing_required_set(
+    factory, monkeypatch, policy_id, edad_opcional, etiqueta
+):
+    """CXD-606 §3, con los specs REALES que tienen opcionales: Gold y BTC.
+
+    ESTE ES EL DEFECTO QUE ME ENCONTRO CODEX (CXD-605). Con `stale` evaluado antes
+    que `missing`, y midiendo opcionales como fallback, la EDAD de un dato que la
+    policy declara OPCIONAL decidia la CATEGORIA de la ausencia total del nucleo
+    requerido: opcional vieja -> FLAT/INPUT_STALE; opcional fresca -> el missing
+    FAIL_CLOSED declarado. Mismo estado de datos, dos veredictos, y el que decidia
+    era el dato que la policy dice no necesitar.
+
+    Se usan Gold y BTC a proposito y no un spec sintetico: yo afirme que "los cuatro
+    specs declaran `optional_features: []`" mirando solo spx500, y sobre esa frase
+    falsa construi el argumento de que el cambio no afectaba a nadie. Afectaba a estos
+    dos. El candado se instrumenta donde el defecto vive.
+
+    Rojo con: volver a evaluar `stale` antes que `missing` en `validate_policy_inputs`.
     """
-    spec = {
-        "id": "x",
-        "inputs": {"required_features": ["close"], "max_snapshot_age": "P1D"},
-    }
-    obs = {
-        "close": {"value": 1.0, "available_at": "2026-07-24T20:00:00+00:00"},
-        "sentimiento": {"value": 1.0, "available_at": "2026-06-01T00:00:00+00:00"},
-    }
-    assert factory._derive_staleness("x", obs, CUTOFF, spec) is False, (
-        "una feature OPCIONAL vieja declaro stale un snapshot cuya unica feature "
-        "requerida esta fresca"
+    _con_umbral(factory, monkeypatch, edad="P1D", policy_id=policy_id)
+    ti = _TIProbe({"regime_risk_mult": {"value": 1.0, "available_at": edad_opcional}})
+    factory.make_resolve_snapshot(policy_id)(ti=ti, **CTX_INTERVALO)
+    assert ti.pushed[f"{factory.STALENESS_XCOM_KEY}::{policy_id}"] is None, (
+        f"{etiqueta}: sin requeridas la frescura NO es medible; devolver un bool aqui "
+        f"es fabricar el hecho"
     )
-    # …y la requerida vieja SI manda, para que esto no sea "nunca stale".
-    obs["close"]["available_at"] = "2026-06-01T00:00:00+00:00"
-    assert factory._derive_staleness("x", obs, CUTOFF, spec) is True
+    # Gold y BTC declaran `missing_input_policy: FAIL_CLOSED`: las DOS edades deben
+    # dar EXACTAMENTE eso, y no una degradacion stale.
+    with pytest.raises(ValueError, match="invalid policy inputs") as exc:
+        factory.make_validate_inputs(policy_id)(ti=ti, **CTX_INTERVALO)
+    assert "INPUT_STALE" not in str(exc.value), (
+        f"{etiqueta}: la ausencia del nucleo requerido se reclasifico como problema "
+        f"de frescura"
+    )
+
+
+# --- Candados del RUNNER, no del factory -------------------------------------
+#
+# POR QUE EXISTEN. Escribi primero los candados de arriba (Gold/BTC via factory) y
+# medi que las mutaciones "stale antes que missing" y "default False en el runner"
+# **no los ponian rojos**: el `None` que devuelve el factory tapa el fallo del
+# runner, porque un `stale` que vale None no dispara el chequeo aunque se evalue
+# primero. Es decir, el orden estaba defendido por via INDIRECTA — y una defensa
+# indirecta no es un candado, es una coincidencia. Estos dos ejercen el contrato
+# del runner de frente.
+
+
+class _PoliticaFalsa:
+    """Policy minima que declara inputs invalidos: aisla el ORDEN del veredicto."""
+
+    sleeve_id = "x"
+    version = "1.0.0"
+    policy_hash = "sha256:" + "ab" * 32
+    policy_version_id = "x:1.0.0"
+
+    def validate_inputs(self, snapshot):
+        return ["falta `close`"]
+
+    def evaluate(self, snapshot, ctx):  # pragma: no cover - no debe llegar
+        raise AssertionError("no se evalua con inputs invalidos")
+
+
+def test_runner_resolves_missing_before_stale_when_BOTH_are_true():
+    """El orden acordado (CXD-606), observado de frente.
+
+    Snapshot que esta **a la vez** incompleto y marcado stale. Con
+    `missing_input_policy: FLAT` y `stale_input_policy: FLAT` los dos caminos
+    degradan, asi que el veredicto no distingue... salvo por el REASON CODE. Eso es
+    justo lo que decide la precedencia: sin datos requeridos, el problema es la
+    ausencia, no la edad.
+
+    Rojo con: mover el bloque `stale` delante del bloque `missing`.
+    """
+    from src.contracts.policy import PolicyContext
+    from src.policy_engine import validate_policy_inputs
+
+    ctx = PolicyContext(as_of="2026-07-24T21:00:00+00:00",
+                        extras={"snapshot_is_stale": True})
+    degradada = validate_policy_inputs(
+        _PoliticaFalsa(), {"otra": 1.0}, ctx,
+        missing_input_policy="FLAT", stale_input_policy="FLAT",
+    )
+    assert degradada is not None
+    assert degradada.reason_codes == ("INPUT_MISSING",), (
+        f"con inputs incompletos Y stale, gano la frescura: {degradada.reason_codes}. "
+        f"No se puede juzgar la edad de un dato que no esta"
+    )
+
+
+def test_runner_refuses_an_absent_freshness_key_instead_of_defaulting_to_fresh():
+    """La ausencia de la clave no es "no esta stale" (CXD-606 §4).
+
+    `_policy_context` siempre pone la clave, asi que via factory este caso no se
+    alcanza — y por eso la mutacion del default no ponia nada rojo. Pero
+    `validate_policy_inputs` es API publica con otros consumidores, y ahi un
+    `.get(..., False)` convierte "nadie midio" en "esta fresco".
+
+    Rojo con: `context.extras.get("snapshot_is_stale", False)`.
+    """
+    from src.contracts.policy import PolicyContext
+    from src.policy_engine import validate_policy_inputs
+
+    class _Valida(_PoliticaFalsa):
+        def validate_inputs(self, snapshot):
+            return []
+
+        def evaluate(self, snapshot, ctx):
+            raise AssertionError("no debe evaluarse sin hecho de frescura")
+
+    ctx = PolicyContext(as_of="2026-07-24T21:00:00+00:00", extras={})
+    with pytest.raises(ValueError, match="freshness was never measured"):
+        validate_policy_inputs(_Valida(), {"close": 1.0}, ctx)
 
 
 def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factory):
