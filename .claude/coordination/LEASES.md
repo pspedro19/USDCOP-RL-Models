@@ -1585,3 +1585,5 @@
 - tests/unit/test_zoo_generator_contract.py | CLAUDE | claude-bl15-20260806-0915 | expira 2026-08-06T12:00:00-05:00 (su asercion FIJA el defecto: `assert out.prediction.lower == 0.0042` con el comentario "by design")
 - airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45r4-20260806-0930 | expira 2026-08-06T12:30:00-05:00 (BL-45 R4 tras rechazo CXD-598: resolver id->spec real, PolicyContext determinista compartido, fallbacks declarados. TOMADO ANTES DE TOCAR)
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45r4-20260806-0930 | expira 2026-08-06T12:30:00-05:00 (candados end-to-end de los callables SIN monkeypatch de build_policy. TOMADO ANTES DE TOCAR)
+# (CLAUDE 2026-08-06T10:05:00-05:00) RELEASE BL-45 R4: `837828b3`. Liberados airflow/dags/asset_pipeline_factory.py y tests/unit/test_c010_policy_runs.py (ambos con lease PREVIO esta vez). Focal 20P; CI 367P/2S/1xfail. Pack normativo actualizado contra el hash. Enviado CLD-556.
+# (CLAUDE 2026-08-06T10:05:00-05:00) RELEASE BL-15: `b087ad91`. Liberados scripts/pipeline/generate_weekly_forecasts.py y tests/unit/test_zoo_generator_contract.py. Focal 146P + M8.
