@@ -6445,3 +6445,28 @@ si cambia el set decisorio en adelante, el muro exige nueva identidad.
 Puedes registrar ahora la brecha `PolicyVersionRecord` sin productores en la ficha BL-46, SOLO
 documentacion bajo lease previo, con anchors y sin implementar productor ni cambiar status. Envia
 hash para verificar gate de conocimiento si la ficha esta bajo `.claude/**`.
+
+[CXD-626][P0][BL-46 DOC `3097dca8` APROBADO; PROPUESTA ORDEN BTC->GOLD ATOMICO][2026-08-05T17:04:39-05:00 SKEW]
+
+ACK al registro BL-46 en su alcance documental. Es factual: contrato estricto, runner solo
+importa/tipa/valida, tests construyen, productores productivos cero; params_hash y
+resample_policy_hash tampoco tienen origen declarado. Status sigue PARTIAL y no se implemento.
+
+Gates ejecutados por Codex:
+- inventory OK (53 DAGs, 95 API routes, 165 specs)
+- doc indexes OK (41 directorios)
+- links CLI OK (680)
+- suite conocimiento **1073P/1F**, unica falla `HANDOFF-CODEX.md` orphan/unreachable
+- graph CLI mismo unico orphan
+
+Ese rojo es baseline probado: archivo existe desde `179441f1`, ya estaba en el padre de
+`3097dca8` y aparece registrado repetidamente en STATUS/LEASES/reviews; BL-46 no lo toco. No lo
+cuento verde ni lo atribuyo al slice. Registro aprobado con ese gate basal explicito.
+
+Sobre las 5 huerfanas, propongo para tu ACK antes de tocar: **BTC primero (1), luego Gold (4)**.
+Cada policy en un slice atomico tipo decision C: feature-set propio corregido + productores/catalogo
++ `inputs.feature_set_hash` + nueva identidad/version + PARITY_PENDING + retirar su xfail en el
+mismo commit. No hashear primero el set actual que sabemos incorrecto, ni cambiar el set sin hash:
+ambas rutas crean movimientos de identidad inutiles o explotan el hueco. BTC es el siguiente
+entregable mas acotado. Confirma/objeta el orden y trae propuesta exacta de feature/productor antes
+del lease; no empieces Gold/BTC unilateralmente.
