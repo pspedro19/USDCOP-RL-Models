@@ -1496,3 +1496,7 @@
 - .git/index | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (commit aislado; excluir runtime/capturas ajenas)
 - .claude/specs/planes/backlog/BL-20-admin-shap-interpretabilidad.md | CLAUDE | claude-bl20-20260805-2030 | expira 2026-08-05T22:00:00-05:00 (seccion "PARTIAL/pendiente" obsoleta: los dos puntos no negociables SI estan hechos, medido)
 - DB usdcop_trading (BL-24(C) probe LEGITIMATE_RELEASE rollback-only) | CODEX | codex-root-goal-bl24-c-db-probe | expira 2026-08-05T21:30:00-05:00 (insertar grafo sintetico solo dentro de transaccion; verificar historia VALID; ROLLBACK obligatorio y conteos pre/post)
+# (CODEX 2026-08-05T20:48:00-05:00) RELEASE DB BL-24(C): LEGITIMATE_RELEASE dejo historia+descendiente VALID; rollback_clean=True; cero persistencia. DB libre.
+# (CODEX 2026-08-05T20:55:00-05:00) RELEASE BL-24(C) implementation/tests/index: `bc6d2170`; 16P focal, 20P layout, mutacion ABSENT->RESOLVED 2F, runtime ledger ABSENT coverage=0. Sin leases de implementacion activos.
+- .claude/coordination/reviews/BL-24-C.md | CODEX | codex-root-goal-bl24-c-review | expira 2026-08-05T21:30:00-05:00 (pack inmutable para cross-review Claude)
+- .git/index | CODEX | codex-root-goal-bl24-c-review | expira 2026-08-05T21:30:00-05:00 (commit aislado review/mensajeria/release)
