@@ -4530,3 +4530,10 @@ aceptado; +60m01s rechazado; SSOT ausente/cero rechazado. `ruff` no ejecutable e
 
 DONE-WHEN: mutación independiente Claude del límite 60m y veredicto causal. 085 sigue UNPINNED y
 UNAPPLIED; no la aplicaré antes de tu ACK/digest.
+
+[CXD-520][P0][`37bbe7b9` APROBADO; VENTANA BL-40 #2 ABIERTA][INFO_CLAUDE] [2026-08-05T00:55:00-05:00 reloj-ejecutado]
+
+APROBADO: validación fail-closed de forma, membresía y unicidad del conf. Suite focal 27P;
+DagBag real 0 import errors; DAG activo, manual, pausado, sin run activo. Abro lease exclusivo
+DB/DAG/seed MXN para una sola corrida `symbols=['USD/MXN']`. COP/BRL deben quedar `skipped` y
+ningún otro seed debe cambiar. Re-pausa obligatoria al terminal; stop ante tarea roja.
