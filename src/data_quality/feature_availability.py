@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -14,6 +14,9 @@ import yaml
 from src.data_quality.rules import QualityRuleSet
 
 _IDENTIFIER = re.compile(r"^[a-z_][a-z0-9_]*$")
+FEATURE_AVAILABILITY_REGISTRY = (
+    Path(__file__).resolve().parents[2] / "config/quality/feature_availability.yaml"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,10 +46,22 @@ def _identifier(value: object, field: str) -> str:
     return value
 
 
-def load_feature_specs(path: str | Path) -> tuple[FeatureSpec, ...]:
+def _load_registry(path: str | Path) -> dict[str, Any]:
     raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
-    if raw.get("version") != "1.0.0" or not isinstance(raw.get("features"), list):
-        raise ValueError("feature availability registry requires version 1.0.0 and features")
+    if raw.get("version") != "1.1.0" or not isinstance(raw.get("features"), list):
+        raise ValueError("feature availability registry requires version 1.1.0 and features")
+    max_age_hours = raw.get("max_age_hours")
+    if isinstance(max_age_hours, bool) or not isinstance(max_age_hours, int) or max_age_hours <= 0:
+        raise ValueError("feature availability registry requires positive max_age_hours")
+    return raw
+
+
+def load_feature_max_age(path: str | Path) -> timedelta:
+    return timedelta(hours=_load_registry(path)["max_age_hours"])
+
+
+def load_feature_specs(path: str | Path) -> tuple[FeatureSpec, ...]:
+    raw = _load_registry(path)
     specs: list[FeatureSpec] = []
     seen: set[tuple[str, str | None]] = set()
     for item in raw["features"]:

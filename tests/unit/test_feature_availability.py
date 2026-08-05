@@ -9,6 +9,7 @@ from src.data_quality.feature_availability import (
     FeatureMeasurement,
     FeatureSpec,
     load_feature_specs,
+    load_feature_max_age,
     measure_feature,
     persist_measurement,
     news_feature_cutoff,
@@ -56,6 +57,22 @@ def test_repository_registry_contains_only_verified_ghost_features() -> None:
         "news_articles.gdelt_tone",
     }
     assert all(spec.require_variation for spec in specs)
+    assert load_feature_max_age(
+        REPO_ROOT / "config/quality/feature_availability.yaml"
+    ).total_seconds() == 24 * 60 * 60
+
+
+def test_registry_rejects_missing_or_non_positive_max_age(tmp_path) -> None:
+    registry = tmp_path / "registry.yaml"
+    registry.write_text("version: '1.1.0'\nfeatures: []\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="positive max_age_hours"):
+        load_feature_specs(registry)
+
+    registry.write_text(
+        "version: '1.1.0'\nmax_age_hours: 0\nfeatures: []\n", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="positive max_age_hours"):
+        load_feature_specs(registry)
 
 
 def test_consumer_cutoff_matches_the_final_daily_news_run() -> None:

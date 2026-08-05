@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime
+from pathlib import Path
 
 import pandas as pd
+import psycopg2
+import pytest
 
 from src.analysis.weekly_generator import WeeklyAnalysisGenerator
 from src.analysis.prompt_templates import build_news_section
@@ -71,3 +74,85 @@ def test_prompt_names_unavailable_sentiment_instead_of_neutral() -> None:
     })
     assert "NO DISPONIBLE (feature.constant_placeholder)" in rendered
     assert "sentimiento promedio: neutral" not in rendered
+
+
+class _StatusCursor:
+    def __init__(self, status_rows):
+        self.status_rows = status_rows
+        self.rows = []
+
+    def execute(self, sql, params=None):
+        if "quality.feature_status" in sql:
+            self.rows = self.status_rows
+        else:
+            self.rows = [{
+                "date": datetime(2026, 8, 7, 12, tzinfo=UTC),
+                "title": "BanRep holds the policy rate",
+                "source": "investing",
+                "url": "https://example.invalid/stale",
+                "language": "es",
+                "sentiment_score": 0.42,
+                "sentiment_label": "positive",
+                "gdelt_tone": None,
+                "category": "monetary",
+            }]
+
+    def fetchall(self):
+        return self.rows
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class _StatusConnection:
+    def __init__(self, status_rows):
+        self.status_rows = status_rows
+
+    def cursor(self, *args, **kwargs):
+        return _StatusCursor(self.status_rows)
+
+    def close(self):
+        return None
+
+
+def test_stale_available_status_degrades_to_explicit_unavailable(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 7, 18, tzinfo=UTC)
+    monkeypatch.setattr(
+        psycopg2,
+        "connect",
+        lambda *args, **kwargs: _StatusConnection([{
+            "feature_id": "news_articles.sentiment_score",
+            "status": "AVAILABLE",
+            "reason_code": "feature.available",
+            "observed_at": datetime(2026, 8, 5, 18, tzinfo=UTC),
+        }]),
+    )
+    monkeypatch.setattr(
+        "src.analysis.weekly_generator.PROJECT_ROOT",
+        Path(__file__).resolve().parents[2],
+    )
+    generator = _generator()
+    generator._all_articles_cache = None
+    generator._feature_cutoff = cutoff
+
+    frame = generator._get_all_articles()
+
+    assert frame.iloc[0]["tone"] is None
+    assert frame.iloc[0]["sentiment_unavailable_reason"] == "feature.status_stale"
+
+
+def test_missing_feature_cutoff_fails_closed_before_db_fallback(monkeypatch) -> None:
+    monkeypatch.setattr(
+        psycopg2,
+        "connect",
+        lambda *args, **kwargs: pytest.fail("DB must not be opened without a cutoff"),
+    )
+    generator = _generator()
+    generator._all_articles_cache = None
+    generator._feature_cutoff = None
+
+    with pytest.raises(RuntimeError, match="feature cutoff must be set"):
+        generator._get_all_articles()

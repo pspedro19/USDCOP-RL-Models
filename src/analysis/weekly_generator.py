@@ -55,7 +55,11 @@ from src.contracts.analysis_schema import (
     WeeklyViewExport,
     _sanitize_for_json,
 )
-from src.data_quality.feature_availability import news_feature_cutoff
+from src.data_quality.feature_availability import (
+    FEATURE_AVAILABILITY_REGISTRY,
+    load_feature_max_age,
+    news_feature_cutoff,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1756,6 +1760,9 @@ class WeeklyAnalysisGenerator:
                 logger.warning(f"Failed to load Colombia news: {e}")
 
         # 5. Live news_articles DB table (NewsEngine pipeline — enriched articles)
+        if self._feature_cutoff is None:
+            raise RuntimeError("news feature cutoff must be set by the analysis entrypoint")
+        feature_max_age = load_feature_max_age(FEATURE_AVAILABILITY_REGISTRY)
         try:
             import os
 
@@ -1769,10 +1776,9 @@ class WeeklyAnalysisGenerator:
                 password=os.environ.get("POSTGRES_PASSWORD", ""),
             )
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                if self._feature_cutoff is None:
-                    raise RuntimeError("news feature cutoff must be set by the analysis entrypoint")
                 cur.execute(
-                    """SELECT DISTINCT ON (feature_id) feature_id, status, reason_code
+                    """SELECT DISTINCT ON (feature_id)
+                              feature_id, status, reason_code, observed_at
                        FROM quality.feature_status
                        WHERE feature_id IN (
                            'news_articles.sentiment_score',
@@ -1782,7 +1788,18 @@ class WeeklyAnalysisGenerator:
                        ORDER BY feature_id, observed_at DESC""",
                     (self._feature_cutoff,),
                 )
-                feature_statuses = {row["feature_id"]: row for row in cur.fetchall()}
+                feature_statuses = {}
+                for row in cur.fetchall():
+                    observed_at = row.get("observed_at")
+                    if not isinstance(observed_at, datetime) or observed_at.tzinfo is None:
+                        row = dict(row)
+                        row["status"] = "UNAVAILABLE"
+                        row["reason_code"] = "feature.status_timestamp_invalid"
+                    elif self._feature_cutoff - observed_at > feature_max_age:
+                        row = dict(row)
+                        row["status"] = "UNAVAILABLE"
+                        row["reason_code"] = "feature.status_stale"
+                    feature_statuses[row["feature_id"]] = row
                 cur.execute("""
                     SELECT published_at AS date, title, source_id AS source,
                            url, language, sentiment_score, sentiment_label, gdelt_tone, category

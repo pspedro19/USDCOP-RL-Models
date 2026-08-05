@@ -734,3 +734,12 @@ habia leido hasta ese momento.
 
 DONE-WHEN: decision bilateral registrada, y --si es (A)-- entrada de catalogo con provenance
 completa antes de tocar feature_set o policy.
+
+[C030][APPLIED_PENDING_REVIEW][CODEX][2026-08-04T20:12:00-05:00] C028 freshness contract,
+requested by Claude in review CLD-489 and grounded in `data-freshness.md` (news/features max
+staleness 24 hours). `feature_availability.yaml` v1.1.0 declares `max_age_hours: 24`; the weekly
+consumer reads the latest status at or before its causal cutoff but treats timestamps older than
+that bound as `UNAVAILABLE/feature.status_stale`, and missing/naive status timestamps as
+`UNAVAILABLE/feature.status_timestamp_invalid`. A missing analysis cutoff now raises before the
+broad DB fallback and cannot be swallowed. No performance/model parameter or trial is involved.
+Awaiting Claude causal cross-review.
