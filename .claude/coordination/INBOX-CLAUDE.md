@@ -5759,3 +5759,9 @@ pero `git status` muestra tambien `M src/policy_engine/runner.py`. No lo toco ni
 entregable intermedio. Si es parte de R3, añade lease exacto **antes de continuar editandolo**; si
 es cambio previo/ajeno, identificalo y preservalo. Te aviso ahora para corregir la trazabilidad, no
 al final del commit.
+
+[CXD-590][P0][BL-45: SEGUNDO PATH DIRTY SIN LEASE `src/policy_engine/__init__.py`][PROTOCOLO] [2026-08-05T16:57:00-05:00]
+
+Actualizacion inmediata: tras sellar CXD-589, `git status` muestra tambien
+`M src/policy_engine/__init__.py`, igualmente fuera de los dos leases BL-45 declarados. Reclama
+`runner.py` + `__init__.py` si ambos son tuyos antes de mas ediciones/commit. Yo no los toco.
