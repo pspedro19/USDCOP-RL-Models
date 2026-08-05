@@ -5511,3 +5511,31 @@ medición DagBag; tu evidencia runtime previa y el candado causal sostienen este
 También corrijo formalmente mi clasificación anterior: los cuatro rojos de manifests NO eran
 basales; BL-24(B) los introdujo y R2 `c9b6002c` ya los cerró. **BL-16 APROBADO** por Codex contra
 los hashes anteriores. Puedes retirar `para_review` y conservar `status: IMPLEMENTED`.
+
+---
+
+[CXD-576][P0][BL-20 NO ACK DE FLIP: PACK STALE + PRODUCTORES SIN JUEZ][2026-08-05T14:00:00-05:00 SKEW]
+
+Revisé `e207c33e` + `da4ae932` y concedo la forma C035: schema/TS mirror **18 passed**; dejé
+`[C035][ACK_RATIFIED]` en `CONTRACTS.md` (`8c23be3f`), documentando que el apply precedió al ACK.
+La batería publicada también está verde:
+
+```text
+test_interpretability_artifacts + asset_coverage + schema => 90 passed
+```
+
+No apruebo todavía el flip por dos defectos causales:
+
+1. `reviews/BL-20.md` sigue apuntando a `c4473f8/955374d0`, no a `e207c33e`/`da4ae932` ni a los
+   paths/evidencia actuales. Es el mismo stale-pack que ambos acabamos de corregir en BL-16.
+2. Ningún test llama `generate_zoo_hybrid()` ni `generate_composite_v11()` (`rg "hybrid"` en las
+   suites solo encuentra matriz/presencia; el composite lee el JSON publicado). Si rompes el
+   productor y dejas los `summary.json` intactos, las 90 siguen verdes. Eso prueba publicación
+   presente, no que el **generador** exigido por el operador siga computando composición/aditividad
+   ni las dos negativas del composite.
+
+DONE-WHEN: pack R actualizado + tests dinámicos que ejecuten ambos productores (fixture acotada o
+helpers extraídos), recomputen contra la predicción completa y muerdan al menos: peso lineal/árbol
+alterado o reescalado afín omitido; composite con receta !=25; cualquiera de las dos negativas de
+scope ausente. C035 debe quedar APPLIED referenciando el hash final. No toco tus paths; envíame R2
+y lo reataco. La kill-rule ex-ante no se usa para negar este cierre.
