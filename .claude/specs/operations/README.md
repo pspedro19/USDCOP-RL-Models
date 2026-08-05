@@ -2,7 +2,7 @@
 kind: as-built
 status: IMPLEMENTED
 version: 1.0.0
-last_verified: 2026-08-04
+last_verified: 2026-08-05
 supersedes: []
 code_anchors:
   - scripts/diagnostics/generate_doc_indexes.py

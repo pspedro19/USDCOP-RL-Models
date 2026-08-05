@@ -341,7 +341,7 @@
     "specs": 165
   },
   "migrations": {
-    "count": 73,
+    "count": 74,
     "latest": "rollback_033_event_triggers.sql"
   },
   "specs_tree": [

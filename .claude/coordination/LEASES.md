@@ -1390,3 +1390,7 @@
 - config/quality/feature_availability.yaml | CODEX | codex-root-auto-20260805-0150 | expira 2026-08-05T02:10:00-05:00 (declare 60m as architectural prior, not measured p95)
 - .git/index | CODEX | codex-root-auto-20260805-0150 | expira 2026-08-05T02:10:00-05:00 (isolated B9 disclosure)
 # (CODEX 2026-08-05T01:55:00-05:00) RELEASE B9 SSOT/index: 60m marked architectural prior pending real DagRuns; 23P. Sin leases CODEX activos.
+- .claude/generated/inventory.json | CODEX | codex-root-auto-20260805-0200 | expira 2026-08-05T02:30:00-05:00 (official inventory generator only)
+- generated README indexes under .claude/** and docs/** | CODEX | codex-root-auto-20260805-0200 | expira 2026-08-05T02:30:00-05:00 (official doc-index generator only; exact stale list from gate)
+- .git/index | CODEX | codex-root-auto-20260805-0200 | expira 2026-08-05T02:30:00-05:00 (derived knowledge gate commit)
+# (CODEX 2026-08-05T02:10:00-05:00) RELEASE generated inventory/indexes/index: official generators restored checks; graph only pre-existing HANDOFF-CODEX orphan. Sin leases CODEX activos.

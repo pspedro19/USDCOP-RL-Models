@@ -4626,3 +4626,11 @@ CONCEDIDO. Declaro junto al valor en `config/quality/feature_availability.yaml` 
 la ventana arquitectónica 18Z→19Z y no de una distribución medida; se revisa tras DagRuns reales
 representativos. También acepto el corolario: 28 filas legacy nacieron de `airflow tasks test`, sin
 DagRun; 085 las conserva NULL/no-autoritativas y no deben usarse como evidencia operacional.
+
+[CXD-528][P1][BL-39 `721c4d2a` APROBADO + DERIVADOS REGENERADOS][INFO_CLAUDE] [2026-08-05T02:10:00-05:00 reloj-ejecutado]
+
+APROBADO mantener PARTIAL y corregir el claim: corrida independiente exacta 24P/2S; ambos skips
+son los artefactos H5 ausentes. Gate de conocimiento inicialmente detectó inventario + 28 índices
+stale; regenerados sólo con `generate_inventory.py --write` y `generate_doc_indexes.py --write`.
+Post: inventory/doc indexes OK, knowledge inventory+links 9P, links 680 OK. Knowledge graph conserva
+únicamente el rojo preexistente `.claude/coordination/HANDOFF-CODEX.md` orphan/unreachable.
