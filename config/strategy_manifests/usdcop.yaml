@@ -39,7 +39,7 @@ components:
   recipe_note: >-
     cada reentrenamiento produce un model_snapshot semanal bajo el mismo spec; el check
     es 'receta congelada, snapshots registrados', nunca 'pesos inmutables'
-  spec_fingerprint_sha256_16: 758456c8fcc51834   # sha256 canonico LF (CRLF->LF,
+  spec_fingerprint_sha256_16: 41c883144421d63d   # sha256 canonico LF (CRLF->LF,
     # == blob git)[:16] sobre spec_fingerprint_inputs en orden (hiperparams
     # ridge alpha=1.0 / bayesian_ridge max_iter=300, ensemble mean — la RECETA)
   spec_fingerprint_inputs:    # declarados para que el fingerprint sea recomputable
@@ -49,7 +49,7 @@ components:
   code_reference:
   - scripts/pipeline/train_and_export_smart_simple.py
   - src/forecasting/enhance_v2.py
-  code_hash_sha256_16: 60663704514cbec2   # mismo metodo que el hash del manifiesto (LF)
+  code_hash_sha256_16: d9cd4e82dca0d72f   # mismo metodo que el hash del manifiesto (LF)
   feature_set:
     builder: src/forecasting/enhance_v2.py::enhance_features_v2
     recipe_feature_set_id: usdcop_smart_simple_v11_recipe25       # la RECETA (25)
@@ -101,9 +101,27 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: 60663704514cbec2
-manifest_frozen_at: '2026-07-28'
-manifest_version: 14
+code_hash_sha256_16: d9cd4e82dca0d72f
+manifest_frozen_at: '2026-08-05'
+manifest_version: 15
+refreeze_note_v15: >-
+  Re-freeze v15 (2026-08-05, autorizado por el operador): el muro de congelacion llevaba
+  ROJO desde el 2026-07-29 y esta nota lo cierra declarando POR QUE, no borrando el rojo.
+  Bisecado: verde en `519dd1f7`, rojo en el commit siguiente. DOS causas, ambas AJENAS a la
+  economia de la estrategia:
+  (1) `73f8c9b0` — ON CONFLICT (signal_date, strategy_id) en los UPSERT H5. El cambio esta
+      CONFINADO a `seed_h5_db_tables()`: listas de columnas, conflict target y bind de
+      `strategy_id = cfg["strategy_id"]`. Es persistencia; corrige que un run v12/v14 se
+      estampara como v11 (lo que la migracion 064 protege).
+  (2) `8f783d89` (BL-16) — bloque `governance:` (research_state/capital_tier/
+      operational_state) anadido a `config/execution/smart_simple_v1.yaml`, que entra por
+      `spec_fingerprint_inputs`. El bloque `executor:` queda INTACTO.
+  Verificado diff a diff: ninguna de las dos toca senal, leverage, stops, TP/HS, PnL ni
+  features — **0 trials** (quant-constitution §2: el trial se cuenta cuando se OBSERVA un
+  resultado; aqui no se re-ejecuto backtest ni se miro ninguna cifra). Hashes actualizados:
+  manifiesto y componente 60663704514cbec2 -> d9cd4e82dca0d72f; spec_fingerprint
+  758456c8fcc51834 -> 41c883144421d63d. El propio `73f8c9b0` ya habia declarado y escalado
+  este bloqueo al operador; la decision se tomo hoy. v11 sigue FROZEN, juez = forward 2026.
 refreeze_note_v14: >-
   Re-freeze v14 (2026-07-28, cierre de BL-10): `forecast_trial_ids_legacy` deja de ser el
   aplazamiento `pending-BL-10` y pasa a declarar el linaje FT REAL FT-0001..FT-0048.

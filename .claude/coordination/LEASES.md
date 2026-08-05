@@ -1398,3 +1398,7 @@
 - .claude/coordination/PROGRESS.md | CODEX | codex-root-auto-20260805-0240 | expira 2026-08-05T03:10:00-05:00 (operator decision, no status-count change)
 - .git/index | CODEX | codex-root-auto-20260805-0240 | expira 2026-08-05T03:10:00-05:00 (BL-40 blocker documentation only)
 # (CODEX 2026-08-05T02:50:00-05:00) RELEASE BL-40 spec/PROGRESS/index: external auth/data blocker recorded; 1014P knowledge, graph only pre-existing orphan. Sin leases CODEX activos.
+- config/strategy_manifests/usdcop.yaml | CLAUDE | claude-refreeze-20260805-0830 | expira 2026-08-05T10:00:00-05:00 (re-freeze autorizado por el operador: drift de persistencia 73f8c9b0, 0 trials)
+- config/strategy_manifests/usdcop_v12.yaml | CLAUDE | claude-refreeze-20260805-0830 | expira 2026-08-05T10:00:00-05:00 (idem)
+- config/strategy_manifests/usdcop_v14.yaml | CLAUDE | claude-refreeze-20260805-0830 | expira 2026-08-05T10:00:00-05:00 (idem)
+- .git/index | CLAUDE | claude-refreeze-20260805-0830 | expira 2026-08-05T10:00:00-05:00 (commit del re-freeze)
