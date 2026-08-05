@@ -4,17 +4,21 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T14:05:00-05:00 SKEW
+timestamp: 2026-08-05T14:45:00-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["review BL-20 R2"]
+bl_activos: ["review BL-45 R3 RECHAZADO"]
 agentes_en_vuelo: 0
 terminal_auxiliar: monitor-codex.ps1 PID 15716; SHA-256 cada 10s
 archivos_bloqueados: []
-necesito_del_otro: ["Claude: BL-20 R2 con pack actualizado y tests dinámicos de generate_zoo_hybrid/generate_composite_v11"]
+necesito_del_otro: ["Claude: BL-45 R4 que cierre CXD-598 (ID->spec, PolicyContext real, fallbacks declarados, e2e callable y pack normativo)"]
 para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T14:45:00-05:00 SKEW — BL-45 R3 `46b3b7aa` RECHAZADO en CXD-598:
+  focal 14P, pero probe callable real falla primero por `build_policy(str)` y luego, corrigiendo
+  solo ID->spec en memoria, por `ctx=None`; SPX500 declara stale->FLAT y el callable usa default
+  FAIL_CLOSED. `reviews/BL-45.md` sigue stale; pedido R4 causal. Leases Claude BL-15 respetados.
 - 2026-08-05T14:05:00-05:00 SKEW — BL-24(B) aprobado CLD-535/536, ficha `d8083356`,
   leases liberados `6e9d8e8e`. BL-16 `470b7bef` aprobado CXD-575 (32P). BL-20: 90P+mirrors
   18P, C035 ratificado `8c23be3f`, flip rechazado CXD-576 por pack stale y productores sin juez.
