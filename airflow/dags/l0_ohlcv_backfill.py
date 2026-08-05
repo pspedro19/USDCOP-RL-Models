@@ -198,13 +198,58 @@ def get_all_trading_days(start_date: date, end_date: date) -> List[date]:
     return trading_days
 
 
+def _validated_scope(raw, origen: str) -> List[str]:
+    """Valida la forma del alcance pedido en el `conf`. Fail-closed (CXD-518).
+
+    Sin esto, `symbols` aceptaba cualquier cosa y cada forma rota fallaba de un modo distinto
+    y silencioso:
+
+    - `"USD/MXN"` (string) es iterable, así que `symbol not in scope` hacía comparación de
+      SUBCADENAS. Con un solo par coincide por accidente; con `"USD/MXN,USD/COP"` el
+      aislamiento se vuelve impredecible en vez de romperse;
+    - `[]` dejaba a `health_check` devolviendo `{'status': 'healthy', 'symbols': []}` —un run
+      que se declara sano y no puede procesar nada— y el fallo aparecía tarde, en cada tarea;
+    - `['FOO']` producía un run donde las tres tareas quedan `skipped` y el export consulta un
+      alcance que no existe. Verde por vacuidad, otra vez;
+    - `['USD/MXN', 'USD/MXN']` exportaba dos veces el mismo símbolo.
+
+    Un alcance mal escrito tiene que romper en `health_check`, que es donde se declara, no
+    dispersarse en síntomas aguas abajo.
+    """
+    if isinstance(raw, str) or not isinstance(raw, (list, tuple)):
+        raise ValueError(
+            f"{origen} debe ser una lista de símbolos, no {type(raw).__name__} ({raw!r}); "
+            f"un string es iterable y convertiría el filtro de alcance en comparación de "
+            f"subcadenas"
+        )
+    scope = list(raw)
+    if not scope:
+        raise ValueError(f"{origen} vacío: un run sin alcance no se declara sano, se rechaza")
+    no_str = [s for s in scope if not isinstance(s, str)]
+    if no_str:
+        raise ValueError(f"{origen} contiene valores no-string: {no_str!r}")
+    duplicados = sorted({s for s in scope if scope.count(s) > 1})
+    if duplicados:
+        raise ValueError(f"{origen} tiene duplicados {duplicados}: el export los escribiría dos veces")
+    desconocidos = [s for s in scope if s not in ALL_SYMBOLS]
+    if desconocidos:
+        raise ValueError(
+            f"{origen} pide símbolos que este DAG no gobierna: {desconocidos} "
+            f"(gobernados: {list(ALL_SYMBOLS)})"
+        )
+    return scope
+
+
 def get_target_symbols(context) -> List[str]:
-    """Get target symbols from dag_run.conf, default ALL 3 pairs."""
+    """Alcance pedido en `dag_run.conf`, validado; sin `conf` son los 3 pares."""
     conf = context.get('dag_run').conf or {}
-    symbols = conf.get('symbols', ALL_SYMBOLS)
-    # Also support single-symbol override via legacy 'symbol' key
-    if 'symbol' in conf and 'symbols' not in conf:
-        symbols = [conf['symbol']]
+    if 'symbols' in conf:
+        symbols = _validated_scope(conf['symbols'], "conf['symbols']")
+    elif 'symbol' in conf:
+        # Override legacy de un solo símbolo: misma validación, envuelto en lista.
+        symbols = _validated_scope([conf['symbol']], "conf['symbol']")
+    else:
+        symbols = list(ALL_SYMBOLS)
     logging.info(f"[BACKFILL] Target symbols: {symbols}")
     return symbols
 

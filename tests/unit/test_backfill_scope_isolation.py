@@ -229,3 +229,55 @@ def test_validation_reports_only_the_scope_and_declares_it():
 
     assert report["_scope"] == ["USD/MXN"]
     assert set(report) - {"_scope"} == {"USD/MXN"}
+
+
+# ------------------------------------------- 5: la forma del `conf` se valida (CXD-518)
+def _conf_context(conf):
+    return {"ti": _TI({}), "dag_run": SimpleNamespace(conf=conf)}
+
+
+def test_a_string_scope_is_rejected_instead_of_iterated_as_characters():
+    """`symbols="USD/MXN"` es iterable: sin validar, el filtro compara SUBCADENAS."""
+    ns = _load("_validated_scope", "get_target_symbols")
+    with pytest.raises(ValueError, match="lista de s"):
+        ns["get_target_symbols"](_conf_context({"symbols": "USD/MXN"}))
+
+
+def test_an_empty_scope_fails_at_health_check_not_task_by_task():
+    ns = _load("_validated_scope", "get_target_symbols")
+    with pytest.raises(ValueError, match="vac"):
+        ns["get_target_symbols"](_conf_context({"symbols": []}))
+
+
+def test_an_unknown_symbol_is_rejected_instead_of_skipping_everything():
+    """`['FOO']` dejaria las tres tareas skipped: verde por vacuidad."""
+    ns = _load("_validated_scope", "get_target_symbols")
+    with pytest.raises(ValueError, match="no gobierna"):
+        ns["get_target_symbols"](_conf_context({"symbols": ["FOO"]}))
+
+
+def test_duplicates_are_rejected_so_the_export_does_not_write_twice():
+    ns = _load("_validated_scope", "get_target_symbols")
+    with pytest.raises(ValueError, match="duplicados"):
+        ns["get_target_symbols"](_conf_context({"symbols": ["USD/MXN", "USD/MXN"]}))
+
+
+def test_non_string_members_are_rejected():
+    ns = _load("_validated_scope", "get_target_symbols")
+    with pytest.raises(ValueError, match="no-string"):
+        ns["get_target_symbols"](_conf_context({"symbols": ["USD/MXN", 7]}))
+
+
+def test_a_valid_scope_and_the_legacy_single_symbol_key_still_work():
+    ns = _load("_validated_scope", "get_target_symbols")
+    assert ns["get_target_symbols"](_conf_context({"symbols": ["USD/MXN"]})) == ["USD/MXN"]
+    assert ns["get_target_symbols"](_conf_context({"symbol": "USD/BRL"})) == ["USD/BRL"]
+    with pytest.raises(ValueError, match="no gobierna"):
+        ns["get_target_symbols"](_conf_context({"symbol": "FOO"}))
+
+
+def test_no_conf_still_means_all_three_pairs():
+    """El default permisivo es legitimo AQUI: nadie declaro un alcance acotado."""
+    ns = _load("_validated_scope", "get_target_symbols")
+    assert ns["get_target_symbols"](_conf_context({})) == ALL_SYMBOLS
+    assert ns["get_target_symbols"](_conf_context(None)) == ALL_SYMBOLS
