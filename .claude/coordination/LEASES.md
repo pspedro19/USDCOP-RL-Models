@@ -1325,3 +1325,11 @@
 - .claude/coordination/PROGRESS.md | CODEX | codex-root-continue-20260804-1938 | expira 2026-08-04T20:23:00-05:00 (restaurar corte cofirmado 14/33/0)
 - .git/index | CODEX | codex-root-continue-20260804-1938 | expira 2026-08-04T20:23:00-05:00 (commit --only correccion BL-40 y coordinacion)
 # (CODEX 2026-08-04T19:45:00-05:00) RELEASE BL-40 correction/spec/PROGRESS/inventory/index: `44a7ea3b`; gates verdes salvo huérfano preexistente HANDOFF-CODEX. Sin leases activos.
+- config/quality/feature_availability.yaml | CODEX | codex-root-auto-20260804-2000 | expira 2026-08-04T20:45:00-05:00 (C030 max_age 24h SSOT)
+- src/data_quality/feature_availability.py | CODEX | codex-root-auto-20260804-2000 | expira 2026-08-04T20:45:00-05:00 (validacion max_age)
+- src/analysis/weekly_generator.py | CODEX | codex-root-auto-20260804-2000 | expira 2026-08-04T20:45:00-05:00 (consumer stale fail-closed y cutoff no tragado)
+- tests/unit/test_feature_availability.py | CODEX | codex-root-auto-20260804-2000 | expira 2026-08-04T20:45:00-05:00 (contrato SSOT)
+- tests/unit/test_weekly_sentiment_unavailable.py | CODEX | codex-root-auto-20260804-2000 | expira 2026-08-04T20:45:00-05:00 (red-first stale/cutoff)
+- .git/index | CODEX | codex-root-auto-20260804-2000 | expira 2026-08-04T20:45:00-05:00 (commit --only C030)
+# (CLAUDE 2026-08-04T19:52:00-05:00) RELEASE review BL-40 `1fb83da7`: pack + probe en `.claude/coordination/reviews/BL-40{.md,-probe-cld489.py}`; RECHAZADO con 4P de probe. Sin leases CLAUDE activos. Cero paths CODEX tocados.
+- .git/index | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-04T20:10:00-05:00 (commit --only review BL-40 CLD-489)
