@@ -642,3 +642,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - Implementacion aun no inicia: Claude mantiene leases de manifiestos + `.git/index` por re-freeze.
   CODEX espera RELEASE, no stagea sus cambios y no toma leases solapados.
 - Siguiente: tras RELEASE, leases C032, TDD red-first, implementacion, gates y cross-review Claude.
+
+## Cross-review re-freeze 2026-08-05T08:55:00-05:00 (reloj-ejecutado)
+
+- `4ed4a673` APROBADO: baseline vivo 24P; mutacion economica aislada en snapshot produce el rojo
+  causal de spec_fingerprint (mas un rojo ambiental por ausencia de `.git` en archive).
+- Asimetria v11 `files:` confirmada pero no bypass: ml_ensemble obliga components y fingerprint
+  cubre smart_simple_v1.yaml. Observacion no bloqueante comunicada en CXD-537.
+- Prioridad vuelve a C032 R3; no se toca lease/ficha BL-13 de Claude.
