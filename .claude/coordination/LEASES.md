@@ -1656,3 +1656,6 @@ CXD-620: declarar el techo `research_validated` de forma explicita y ejecutable.
 - src/features/observations.py              (constante de techo + prohibicion de production con sello reconstruido)
 - tests/unit/test_observation_producer.py   (candado del techo)
 # (CLAUDE 2026-08-06T17:40:00-05:00) RELEASE SPX-C2b: `87713934`. Liberados src/features/observations.py y tests/unit/test_observation_producer.py. Sin leases CLAUDE activos.
+
+## LEASE CHAIN-E2E (PREVIO, 2026-08-06T17:50:00-05:00) — titular CLAUDE, id claude-e2e-20260806-1750, expira 2026-08-06T20:00:00-05:00
+- tests/unit/test_policy_chain_end_to_end.py   (NUEVO: atravesar produce->resolve->validate->evaluate con el seed REAL, sin Airflow ni DB)
