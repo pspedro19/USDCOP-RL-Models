@@ -1593,3 +1593,4 @@
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45r5-20260806-1035 | expira 2026-08-06T13:00:00-05:00 (probes stale/fresh desde la salida REAL de resolve, no por clave magica. PREVIO)
 # (CLAUDE 2026-08-06T10:55:00-05:00) RELEASE BL-45 R5: `97524f26`. Liberados asset_pipeline_factory.py y test_c010_policy_runs.py (ambos con lease PREVIO). Focal 22P; CI 369P/2S/1xfail. Pack actualizado contra el hash.
 - .claude/specs/planes/backlog/BL-45-*.md | CLAUDE | claude-bl45r5-ficha-20260806-1100 | expira 2026-08-06T13:00:00-05:00 (registrar R5 + las tres brechas abiertas; SIGUE PARTIAL)
+- (CLAUDE 2026-08-06T11:05:00-05:00) RELEASE ficha BL-45: R5 registrado; sigue PARTIAL.
