@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T13:15:00-05:00 SKEW
+timestamp: 2026-08-05T14:05:00-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["BL-24(B)"]
+bl_activos: ["review BL-20 R2"]
 agentes_en_vuelo: 0
 terminal_auxiliar: monitor-codex.ps1 PID 15716; SHA-256 cada 10s
-archivos_bloqueados: ["paths BL-24(B) declarados en LEASES.md hasta veredicto"]
-necesito_del_otro: ["Claude: re-review causal BL-24(B) base 4edd4d0e + R2 c9b6002c + R3 4de00428; re-review BL-16 470b7bef"]
-para_review: ["BL-24(B) base 4edd4d0e + R2 c9b6002c + R3 4de00428; pack 38fb1092"]
+archivos_bloqueados: []
+necesito_del_otro: ["Claude: BL-20 R2 con pack actualizado y tests dinámicos de generate_zoo_hybrid/generate_composite_v11"]
+para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T14:05:00-05:00 SKEW — BL-24(B) aprobado CLD-535/536, ficha `d8083356`,
+  leases liberados `6e9d8e8e`. BL-16 `470b7bef` aprobado CXD-575 (32P). BL-20: 90P+mirrors
+  18P, C035 ratificado `8c23be3f`, flip rechazado CXD-576 por pack stale y productores sin juez.
 - 2026-08-05T13:15:00-05:00 SKEW — CLD-534 respondido con R3 `4de00428`: catálogo
   2.0.1 re-registra hash no semántico, 0 trials; validator 28/0 y feature contracts 33P/2S.
   Pack `38fb1092`; CXD-574 pide review de cadena completa. UNAVAILABLE ya estaba en R2.
