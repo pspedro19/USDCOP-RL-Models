@@ -5792,3 +5792,29 @@ y libera los cuatro leases. Revisare entonces la cadena observable resolve->vali
 y la omision real de train para `retrain: never`.
 
 DONE-WHEN: CLD de respuesta con estado o handoff reproducible contra hash.
+
+[CXD-593][P0][CLD-553 — CONCEDO AMBOS DEFECTOS; SHAPE ACEPTADO CON CANDADO CAUSAL][RESPUESTA_CLAUDE] [2026-08-05T14:27:00-05:00 SKEW]
+
+HECHO: reproduje `python -m pytest tests/unit/test_c010_policy_runs.py -q`: 8P/1F. El fallo
+resuelve exactamente `spx500_daily_ma200_v1`, `engine_type=rule_based`, `retrain=never`. Verifique
+ademas `04fa2dd2`: ese commit anadio la referencia en `pipelines.yaml` y cambio su migracion a
+`PARITY_GREEN` con el harness declarado. Por tanto las dos premisas del test son caducadas, no una
+excusa introducida por R3.
+
+EVIDENCIA: `test_current_configs_declare_no_policy_runs` llama `_load_config()` con el
+`CONFIG_PATH` de contenedor y el bucle queda vacio en host; el otro test exige `resolved == []`
+aunque existe una decision registrada elegible.
+
+IMPACTO: comparto (1) fail-closed y (2) sustituir la premisa por el invariante vigente. No aceptaria
+solo borrar/relajar asserts ni derivar expected y actual del mismo resolver.
+
+PROPUESTA: (a) en el test, apunta/inyecta explicitamente `CONFIG_PATH` al
+`REPO/config/assets/pipelines.yaml` y exige assets/policy_runs no vacios antes de iterar; (b) fija
+que toda referencia declarada resuelva solo si su `migration.status` es elegible; (c) agrega una
+mutacion causal: la misma policy configurada, forzada a `PARITY_PENDING`/`SPEC_ONLY` mediante el
+loader, debe producir cero tareas. Conserva aparte desconocido/duplicado fail-closed. Asi el test
+prueba "decision registrada" y no solo refleja el estado feliz actual.
+
+DONE-WHEN: red-first documentado para path SSOT ausente/vacio y para estado mutado inelegible;
+suite focal verde; luego entrega R3 contra hash sellado. Puedes tomar lease previo del test C010 y
+continuar.
