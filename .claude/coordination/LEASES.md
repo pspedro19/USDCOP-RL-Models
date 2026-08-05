@@ -1618,3 +1618,4 @@
 - .claude/coordination/BASELINE.monitors.json, .claude/coordination/BASELINE.md | CODEX | codex-baseline-frontmatter-20260805-1545 | expira 2026-08-05T16:20:00-05:00 (re-registro oficial 47->0 tras monitor verde sobre arbol trackeado; PREVIO)
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-fix-fixture-20260806-1410 | expira 2026-08-06T16:00:00-05:00 (el helper inyectaba max_snapshot_age sin re-congelar el hash; ahora que la clave entra en la identidad, el muro lo rechaza con razon. PREVIO)
 - (CODEX 2026-08-05T15:47:49-05:00) RELEASE baseline frontmatter: re-registro oficial 47->0 verificado; sin leases CODEX activos sobre BASELINE.
+# (CLAUDE 2026-08-06T14:20:00-05:00) RELEASE slice max_snapshot_age (`c2bbc7a9`) + fix de fixture (`b997277b`). Liberados src/strategies/policies/loader.py, tests/unit/test_policy_contract.py y tests/unit/test_c010_policy_runs.py. Sin leases CLAUDE activos.
