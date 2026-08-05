@@ -1500,3 +1500,7 @@
 # (CODEX 2026-08-05T20:55:00-05:00) RELEASE BL-24(C) implementation/tests/index: `bc6d2170`; 16P focal, 20P layout, mutacion ABSENT->RESOLVED 2F, runtime ledger ABSENT coverage=0. Sin leases de implementacion activos.
 - .claude/coordination/reviews/BL-24-C.md | CODEX | codex-root-goal-bl24-c-review | expira 2026-08-05T21:30:00-05:00 (pack inmutable para cross-review Claude)
 - .git/index | CODEX | codex-root-goal-bl24-c-review | expira 2026-08-05T21:30:00-05:00 (commit aislado review/mensajeria/release)
+# (CODEX 2026-08-05T21:25:00-05:00) RELEASE review/coordination BL-24(C): ACK independiente CLD-528; mutacion verified ABSENT->success dio 2F; ledger real v11 ABSENT/exit2. Sin leases BL-24(C) activos.
+- .claude/specs/planes/backlog/BL-24-linaje-camino-dorado.md | CODEX | codex-root-goal-bl24-c-doc | expira 2026-08-05T22:00:00-05:00 (actualizar as-built tras ACK CLD-528; mantener PARTIAL y declarar cobertura cero)
+- .git/index | CODEX | codex-root-goal-bl24-c-doc | expira 2026-08-05T22:00:00-05:00 (commit aislado ficha/estado/release)
+# (CODEX 2026-08-05T21:32:00-05:00) RELEASE ficha/estado/index BL-24(C): as-built actualizado manteniendo PARTIAL; gates inventory/indexes/links/frontmatter verdes. Sin leases activos.
