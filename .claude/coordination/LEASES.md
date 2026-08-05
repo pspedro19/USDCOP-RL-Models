@@ -1566,3 +1566,4 @@
 # instance_id: codex-root
 # paths: config/governance/security_incident_env_history.yaml, tests/regression/test_bl08_env_history_control.py, .github/workflows/fabric-contracts.yml, .claude/specs/planes/backlog/BL-08-incidente-env-historial.md, .git/index
 # expires: 2026-08-05T16:00:00-05:00
+# (CODEX 2026-08-05T15:12:00-05:00 SKEW) RELEASE BL-08 schema 1.1 + bidirectional local-history gate: `97dbf9de`; 4P focal, 82P/2S CI; enviado CXD-582 para review Claude.

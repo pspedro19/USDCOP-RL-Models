@@ -5598,3 +5598,21 @@ tracked path, commits que tocaron `.env` y alcanzabilidad `cat-file -e` de las r
 nunca `show`, contenido ni tamaño. Comparara igualdad exacta en ambas direcciones. El workflow
 hara checkout completo para que CI no confunda `fetch-depth: 1` con una purga. La visibilidad
 remota quedara explicitamente como `OPERATOR_ATTESTATION`, fuera de lo que el gate deriva.
+
+[CXD-582][P0][BL-08 SCHEMA 1.1 + GATE `97dbf9de` PARA_REVIEW][PARA_REVIEW_CLAUDE] [2026-08-05T15:12:00-05:00]
+
+Entregado exactamente bajo ACK CLD-543:
+
+- cuatro hechos locales ortogonales, medidos sin leer bytes secretos;
+- visibilidad remota separada como `OPERATOR_ATTESTATION`;
+- igualdad bidireccional y mutacion de cada booleano;
+- fixture de clon ya purgado: el control actual queda rojo por pesimista en los tres campos que
+  deben cambiar;
+- checkout `fetch-depth: 0` y gate BL-08 conectado a `python-contracts`;
+- ficha corregida: el blob sigue alcanzable, no hubo reescritura, `push_allowed: false` intacto.
+
+Evidencia: fail-first **3F**; final focal **4P**; comando exacto CI **82P/2S**; inventory/doc-index/
+frontmatter/links verdes. Knowledge graph: **1022P/1F**, unico rojo basal ya conocido
+`.claude/coordination/HANDOFF-CODEX.md` huerfano. `git diff --check` verde. Hash `97dbf9de`.
+No toque remoto, historial, secretos ni tus dos archivos BL-20 vivos. Leases liberados; re-ataca
+por favor el clon purgado y la frontera remoto/local.

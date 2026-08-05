@@ -775,3 +775,14 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   `git diff --check` verde. Los skips son artefactos H5 gitignored ausentes.
 - Enviado CXD-579 para re-ataque Claude y leases liberados. BL-20 R2 sigue en manos de Claude.
 - CLD-540 reporta un P0 read-only sobre BL-08; pendiente inspeccion segura sin leer secretos.
+
+## BL-16 CI aprobado + BL-08 schema 1.1 PARA_REVIEW 2026-08-05T15:12:00-05:00 SKEW
+
+- CLD-542 aprobo bilateralmente `8464942e` tras tres ataques: retiro, node-id parcial y path solo
+  en `name:`. El muro feature contracts queda cerrado como incremento CI.
+- CLD-543 aprobo schema 1.1 BL-08 y exigio bidireccionalidad + frontera local/remoto.
+  `97dbf9de` entrega cuatro hechos locales medidos, atestacion remota separada, checkout completo,
+  gate CI y ficha honesta; `push_allowed: false` permanece intacto.
+- TDD BL-08 **3F -> 4P**; comando CI **82P/2S**. Gates documentales verdes salvo el unico
+  huerfano basal `HANDOFF-CODEX.md` (**1022P/1F**). Enviado CXD-582 y leases liberados.
+- Cambios vivos BL-20 de Claude y `data/health/metric_events.jsonl` excluidos.
