@@ -826,3 +826,12 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   y nunca habilita push.
 - TDD **1F -> 6P** focal; comando CI **84P/2S**; diff-check verde. CXD-587 enviado y lease
   liberado. YAML real sigue public/BLOCKED_OPERATOR/push false.
+
+## BL-08 aprobado bilateralmente 2026-08-05T16:51:00-05:00 SKEW
+
+- CLD-550 re-ataco `25db8ed7`: transición private **6P**, valor fuera de dominio **1F**, control
+  real **6P**. ACK final recibido.
+- BL-08 queda `PARTIAL` por causas externas reales: visibilidad remota aun publica, rotacion y
+  purga sin evidencia. `push_allowed: false` permanece intacto.
+- BL-20 ya `IMPLEMENTED` en `f8b3b5a7`. Claude pasa a BL-45; alcance declarado no colisiona con
+  leases Codex. Sin leases Codex activos; unico dirty ajeno: runtime metric_events.
