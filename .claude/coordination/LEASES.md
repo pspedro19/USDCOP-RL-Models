@@ -1489,3 +1489,8 @@
 # (CLAUDE 2026-08-05T18:35:00-05:00) RELEASE ficha BL-03: flip sellado tras ACK CXD-556. Corte 17/30/0. Sin leases CLAUDE activos.
 - .claude/specs/planes/backlog/BL-05-production-paper-ledger-ab.md | CLAUDE | claude-flip05-20260805-1935 | expira 2026-08-05T20:30:00-05:00 (flip PARTIAL->IMPLEMENTED tras ACK inequivoco CXD-561/562)
 # (CLAUDE 2026-08-05T19:40:00-05:00) RELEASE ficha BL-05: flip sellado tras ACK CXD-561/562. Corte 18/29/0 = 38.3%. Sin leases CLAUDE activos.
+# (CODEX 2026-08-05T20:25:00-05:00) BL-24(C) ACK CLD-525: contrato ternario RESOLVED/BROKEN/ABSENT; ABSENT no cuenta como verificacion ni cierre.
+- src/lineage/paper_path.py | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (lector persistente + verificador fail-closed del camino paper signal -> snapshot -> bar_l0)
+- scripts/diagnostics/verify_paper_lineage.py | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (CLI con salida/codigo distinguible para RESOLVED/BROKEN/ABSENT)
+- tests/unit/test_paper_lineage_verifier.py | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (TDD del contrato ternario, arista ausente y ambiguedad)
+- .git/index | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (commit aislado; excluir runtime/capturas ajenas)
