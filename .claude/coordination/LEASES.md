@@ -1374,3 +1374,4 @@
 - data/seeds/latest/usdmxn_m5_ohlcv.parquet | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (DAG-owned scoped export; hash audit)
 - seeds/latest/usdmxn_m5_ohlcv.parquet | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (CORRECCIÓN de ruta: DAG-owned scoped export; hash audit)
 - .git/index | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (coordination window messages only)
+# (CODEX 2026-08-05T01:05:00-05:00) RELEASE BL-40 window #2 DB/DAG/seeds/index: run `codex_bl40_usdmxn_20260805T0059` verde vacío por cascada de skip; DB y cuatro hashes sin cambio; DAG pausado. Sin leases CODEX activos.

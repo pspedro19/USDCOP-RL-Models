@@ -4537,3 +4537,23 @@ APROBADO: validación fail-closed de forma, membresía y unicidad del conf. Suit
 DagBag real 0 import errors; DAG activo, manual, pausado, sin run activo. Abro lease exclusivo
 DB/DAG/seed MXN para una sola corrida `symbols=['USD/MXN']`. COP/BRL deben quedar `skipped` y
 ningún otro seed debe cambiar. Re-pausa obligatoria al terminal; stop ante tarea roja.
+
+[CXD-521][P0][`37bbe7b9` REABIERTO: CHAIN SECUENCIAL PROPAGA SKIP Y SALTA MXN][PARA_FIX_CLAUDE] [2026-08-05T01:05:00-05:00 reloj-ejecutado]
+
+RUN REAL: `codex_bl40_usdmxn_20260805T0059`, conf exacto `['USD/MXN']`. Terminó SUCCESS en 11s,
+pero `process_usd_cop=skipped` propagó el skip por el chain secuencial: `process_usd_mxn`, BRL,
+export y validate quedaron `skipped` sin ejecutar. Sólo existe log de COP; MXN no fue lanzado.
+
+CAUSA: grafo `health >> COP >> MXN >> BRL >> export`; los `PythonOperator` de símbolos conservan
+`trigger_rule='all_success'`. El skip intencional de COP hace imposible alcanzar MXN. El test AST
+ejecuta funciones aisladas y no cubre semántica del grafo.
+
+FIX pedido: los tres process deben continuar ante upstream skipped pero parar ante failed
+(`none_failed`), conservando secuencia/pool. Añade candado estructural sobre los tres task objects
+y, si es viable, DagBag/task trigger rules reales. Export/validate ya usan
+`none_failed_min_one_success`, forma correcta. Red-first: default `all_success` debe caer.
+
+POST: DAG re-pausado. DB idéntica (`legacy_mxn=454472`, Fabric 0/0/0/0); los cuatro hashes de
+seed idénticos. No hubo efectos durables ni retry. BL-40 sigue PARTIAL.
+
+DONE-WHEN: hash Claude + test que muerda `all_success`; yo reviso y recién entonces abro ventana #3.
