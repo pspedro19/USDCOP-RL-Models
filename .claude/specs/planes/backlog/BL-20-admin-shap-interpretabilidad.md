@@ -52,14 +52,19 @@ BL-07 (atribución reglas); opcional BL-14 (versionado del componente).
   aprendió `enum`. Renderers `TreeShapPanel` / `TreeUnavailablePanel` en la sección admin.
 - Atribución de reglas (`spx500`), etiquetada 'atribución, no SHAP'.
 
-**PARTIAL / pendiente**
-- La ruta **lineal** sigue con el esquema viejo (un único fit y φ sobre todo el histórico,
-  incluidas filas de train) y **sin corte por régimen**. Alinearla al walk-forward anual y
-  añadirle `by_regime` es trabajo pendiente (no se tocó para no romper el artefacto vivo).
+**PARTIAL / pendiente** *(sección del 2026-07-28 — sus DOS primeros puntos quedaron OBSOLETOS
+y se corrigen abajo; se conservan tachados como historia)*
+- ~~La ruta **lineal** sigue con el esquema viejo (un único fit y φ sobre todo el histórico,
+  incluidas filas de train) y **sin corte por régimen**~~ → **HECHO, medido el 2026-08-05**
+  en el artefacto real (`data/interpretability/zoo/usdcop/ridge/2026-07-28/summary.json`):
+  `fit.scheme` = *"walk-forward EXPANDING ANUAL: fit con filas < 1-ene-Y menos purga de 5d"*,
+  `n_folds: 5` con sus rangos train/test, `scope` = *"sobre filas OOS: ninguna fila fue vista
+  por el modelo"*, y **`by_regime` presente** en los tres lineales.
 - Kill-rule "contradice el prior" no está implementada en ninguna ruta: exige una tabla de
   priors por feature ⇒ **DECISIÓN PENDIENTE DEL OPERADOR** (declararlos es modelado).
-- `ard` y los tres híbridos del zoo no tienen artefacto (los híbridos mezclan lineal+árbol:
-  su atribución correcta no es TreeSHAP puro).
+- ~~`ard`~~ **tiene artefacto desde el cierre de los puntos 1-2** (medido: `model_id: ard`,
+  `by_regime` presente) — el zoo lineal está completo. Los tres híbridos siguen fuera **por
+  decisión declarada** (mezclan lineal+árbol: su atribución correcta no es TreeSHAP puro).
 - Superficies distintas de `zoo`/`rule_based` (v11 composite, Gold/BTC) sin cubrir.
 
 ## Verificación
@@ -142,6 +147,42 @@ que miras **no mienta**.
 por los prefijos `/admin` y `/api/admin` con `admin:all`, y `npm run rbac:check` sale verde
 (98 rutas API, 32 paginas). Se declara **cumplimiento por prefijo**, que es lo que el gate exige;
 no se añade una entrada redundante solo para satisfacer la letra del MD.
+
+## Re-verificación completa del criterio normativo (2026-08-05)
+
+Repitiendo el ataque, no citando la ficha. **El criterio normativo es el de `## Verificación`**
+(declarado en el recorte formal del 2026-07-28), y se verifica entero:
+
+```
+python -m pytest tests/unit/test_interpretability_artifacts.py -q       21 passed
+pytest usdcop-trading-dashboard/tests/test_interpretability_schema.py   12 passed
+npm run rbac:check                                                      OK — 95 rutas API, 32 páginas
+
+MUTANTE 1 (declarado): generate_interpretability.py:565
+  `return Zi * coefs, ...` -> `return np.ones_like(Zi), ...`
+  => 3 failed, 18 passed — exactamente los tres que la ficha nombra:
+     test_linear_shap_contributions_are_additive_to_the_raw_prediction
+     test_linear_shap_magnitudes_are_not_degenerate
+     test_linear_shap_ranking_tracks_the_model_coefficients
+
+MUTANTE 2 (declarado): TreeSHAP, `phi = np.ones_like(phi)` tras shap_fn(mdl, Xte)
+  => 1 failed — test_tree_shap_route_is_exercised_and_its_additivity_is_asserted
+     con add_err = 2.10e+01 contra el umbral 1e-06
+
+restauración verificada byte-exacta con copia de respaldo (no con `git checkout --`)
+```
+
+**Un skip que se estaba contando como verde (corregido hoy).** La ficha declaraba
+*"Ejecutado 2026-07-28: `pytest .../test_interpretability_schema.py` ⇒ **11 passed**"*. La
+corrida real de hoy daba **SKIPPED**: `could not import 'jsonschema'`. La cifra era cierta en la
+máquina donde se escribió y dejó de serlo aquí, sin que nada lo dijera — el mismo patrón que
+BL-13 y que el `<conteo sin registrar>` de BL-14. Instalada la dependencia, el test corre de
+verdad: **12 passed** (12 y no 11 porque `ard` añadió un artefacto). Un skip no es un verde, ni
+siquiera cuando la causa es del entorno.
+
+**Cobertura de las tres clases, medida y no muestreada**: lineales `ridge`, `bayesian_ridge`,
+`ard`; árbol `xgboost`, `lightgbm`, `catboost`; regla `spx500_regime_gated_v1`. El criterio
+normativo pide ≥1 de cada clase; hay 3/3/1.
 
 ## Notas constitución
 A.7: solo test-folds; sirve para RECHAZAR modelos absurdos, no para probar verdades.

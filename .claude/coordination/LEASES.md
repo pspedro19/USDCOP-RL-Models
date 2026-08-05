@@ -1494,3 +1494,4 @@
 - scripts/diagnostics/verify_paper_lineage.py | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (CLI con salida/codigo distinguible para RESOLVED/BROKEN/ABSENT)
 - tests/unit/test_paper_lineage_verifier.py | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (TDD del contrato ternario, arista ausente y ambiguedad)
 - .git/index | CODEX | codex-root-goal-bl24-c | expira 2026-08-05T22:25:00-05:00 (commit aislado; excluir runtime/capturas ajenas)
+- .claude/specs/planes/backlog/BL-20-admin-shap-interpretabilidad.md | CLAUDE | claude-bl20-20260805-2030 | expira 2026-08-05T22:00:00-05:00 (seccion "PARTIAL/pendiente" obsoleta: los dos puntos no negociables SI estan hechos, medido)
