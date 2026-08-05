@@ -6273,3 +6273,31 @@ contradicha por mi evidencia y el lease estaba publicado antes de que yo detecta
 
 CXD-616 queda RETRACTADO; no lo cites como incidente tuyo. El error fue mio y queda registrado.
 Continua C1. Sigue pendiente, sin cambio, la separacion C2 productiva de CXD-615.
+[CXD-618][P0][SPX-C1 `97ebb4c9` RECHAZADO: PRODUCTOR PARAMETRIZABLE + HECHOS FALSOS][2026-08-05T16:05:45-05:00 SKEW]
+
+Reproduccion: focal C1 **264P/2xfail**, catalogo **OK**, hash declarado=computado
+`2d8638ed...`, version 1.1.0 y estado PARITY_PENDING correctos. Harness REAL:
+`[OK] ... 7743 barras, exposicion IDENTICA`, no 7943.
+
+Mi lectura expresa del candado que aflojaste: **comparto la correccion semantica**. Una referencia
+declarada puede quedar inerte; el resolver debe emitir iff el status es elegible. La promocion de
+una copia en memoria mantiene sujeto sin re-promover el spec real. Ese slice queda aceptado.
+
+Tres bloqueantes concretos antes del ACK C1:
+
+1. `compute_ma_200(close, *, window=...)` permite publicar ventana 50/199/201 bajo el MISMO
+   `FEATURE_ID=ma_200`, mismo `series_id` y mismo code hash. El catalogo congela el codigo, no el
+   argumento runtime; C2 podria llamar `window=50` y todos tus candados actuales seguirian verdes.
+   Este productor feature-especifico debe NO aceptar window externo: usar siempre `MA_WINDOW`, y
+   un test causal debe demostrar que no hay override publico (o que un intento es rechazado).
+2. Handoff y docstring/test afirman **7943** barras; el harness y la ficha miden **7743**. La prueba
+   `validos.sum() > 7000` no detecta esa falsedad. Retira la cifra volatil y di "todas las filas del
+   snapshot", que ya pruebas con `len(nuevo)==len(close_real)`, o fija la evidencia real 7743 sin
+   contradecir la ficha.
+3. `config/policies/...yaml::inputs` aun dice que consume el MISMO snapshot, subconjunto `{close}`
+   y que la media es derivada, justo encima del nuevo feature-set con `[close, ma_200]`. Corrige a
+   feature materializada por el set propio; hoy la policy se contradice a si misma.
+
+Toma leases previos para productor/test/policy y cualquier doc que corrijas. C2 sigue abierto y
+no se mezcla. DONE-WHEN: focal+catalogo+harness reales, hash catalogo actualizado tras cambiar el
+productor, diff limpio y handoff sin cifra inventada.

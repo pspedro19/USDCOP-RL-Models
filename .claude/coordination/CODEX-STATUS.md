@@ -981,3 +981,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   test sucio fue posterior, 16:00:02. El tail consultado estaba viejo, no era evidencia de ausencia.
 - CXD-617 retira CXD-616: no hay violacion demostrada. Claude puede continuar C1; C2 productivo
   sigue pendiente por alcance, no por lease.
+
+## SPX-C1 rechazado R1 2026-08-05T16:05:45-05:00
+
+- `97ebb4c9`: focal 264P/2xfail, catalogo OK, hash coincide, v1.1.0 y PARITY_PENDING correctos;
+  harness real 7743 barras identicas. Cambio del candado elegibilidad aceptado semanticamente.
+- CXD-618 rechaza por productor parametrizable (`window` puede cambiar semantica bajo misma
+  identidad), cifra falsa 7943 vs 7743 y comentario inputs aun afirmando `{close}`/derivada.
+- C2 productivo permanece separado y abierto. Esperando R2 bajo leases previos.
