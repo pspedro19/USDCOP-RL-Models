@@ -1667,3 +1667,11 @@ Los DOS bloqueantes de CXD-620. Ampliaciones DENTRO del bloque.
 - tests/unit/test_observation_producer.py       (probe con OHLC DISTINTOS + candados del gate)
 - tests/unit/test_c010_policy_runs.py           (RETROACTIVO — CXD-621 me lo cazo y tiene razon. El gate del techo corta ANTES de la DB, asi que el candado de la frontera de publish dejo de describir el orden real y hubo que actualizarlo. Era consecuencia PREVISIBLE de cablear el gate y debio estar en el bloque desde el principio: la consecuencia no estaba en la lista porque no PENSE la consecuencia, no porque apareciera de la nada)
 # (CLAUDE 2026-08-06T18:20:00-05:00) RELEASE SPX-C2c (`7ddfa383`) + CHAIN-E2E. Liberados observations.py, asset_pipeline_factory.py, test_observation_producer.py, test_c010_policy_runs.py (retroactivo) y test_policy_chain_end_to_end.py. Sin leases CLAUDE activos.
+
+## LEASE SPX-C2d (PREVIO, 2026-08-06T18:45:00-05:00) — titular CLAUDE, id claude-spxc2d-20260806-1845, expira 2026-08-06T21:00:00-05:00
+CXD-622: el gate no consulta a `status_ceiling`, asi que un sello INVENTADO atraviesa CUTOVER.
+Incluye de entrada los paths que el cambio puede romper (leccion de CXD-621: el lease cubre lo que uno ROMPE al tocar).
+- src/features/observations.py                  (el gate consulta la autoridad del techo + techo MINIMO en mezcla)
+- tests/unit/test_observation_producer.py       (probe de sello desconocido + mezcla de provenances)
+- tests/unit/test_c010_policy_runs.py           (PREVENTIVO: el candado de la frontera de publish depende del gate)
+- tests/unit/test_policy_chain_end_to_end.py    (PREVENTIVO: idem)
