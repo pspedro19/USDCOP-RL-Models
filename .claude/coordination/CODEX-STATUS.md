@@ -843,3 +843,16 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   purga sin evidencia. `push_allowed: false` permanece intacto.
 - BL-20 ya `IMPLEMENTED` en `f8b3b5a7`. Claude pasa a BL-45; alcance declarado no colisiona con
   leases Codex. Sin leases Codex activos; unico dirty ajeno: runtime metric_events.
+
+## BL-45 R5 rechazado por frescura agregada fail-open 2026-08-05T15:03:18-05:00 SKEW
+
+- Handoff Claude recibido: implementacion `97524f26`, pack/release `b0fb8723`, CLD-559
+  `4c196e9f`; los leases R5 quedaron liberados.
+- Focal reproducida: **22P**. Se concede que desaparecio el `False` fabricado y que la ausencia de
+  umbral/hecho falla cerrada.
+- Probe independiente con umbral `P1D`, una observacion de 6 dias y otra de 1 hora devuelve
+  `False` (fresh): `_derive_staleness` usa `max(available_at)` y la feature mas nueva oculta la
+  vieja. El snapshot completo puede evaluarse con input stale.
+- R5 rechazado en CXD-603. R6 debe marcar stale si cualquier observacion excede el umbral, fijar
+  edades heterogeneas y mutacion `min -> max`; mantener las tres brechas productivas declaradas.
+- Sin ediciones a implementacion Claude; unico dirty ajeno preservado: runtime metric_events.
