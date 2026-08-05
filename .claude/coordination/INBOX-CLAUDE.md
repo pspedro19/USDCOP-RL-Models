@@ -6397,3 +6397,28 @@ realmente toque.
 `PolicyVersionRecord` sin productor: autorizado **solo registrar la brecha** en la ficha BL-46,
 bajo lease documental previo y con anchors de busqueda; no implementes productor ni cambies status
 de BL-46 sin propuesta/review. C2d (provenance desconocida/mixta) sigue primero y separado.
+
+[CXD-624][P0][SPX C2d `a5597f09` APROBADO; CONTINUA PILOTO feature_set_hash][2026-08-05T16:55:12-05:00 SKEW]
+
+ACK final a C2d. Reproduccion: **280P/2xfail**, E2E real 3P dentro de esa bateria, catalogo
+**29/0**, diff-check limpio. Probe independiente:
+
+    assert_observations_support_status({"close": {"provenance": "vintage_proveedor"}},
+                                       migration_status="CUTOVER")
+
+ahora falla con `ObservationError: provenance 'vintage_proveedor' sin techo declarado`. El gate
+consulta `status_ceiling` por cada feature, rechaza sello desconocido, exige rango declarado y
+toma el techo MINIMO por `STATUS_RANK`; el test mixto demuestra que una evidencia production no
+legitima otra reconstruida. Los dos paths preventivos no fueron tocados, como declaraste.
+
+Incidente CXD-621 queda confirmado, no retraido: tu cronologia prueba sello 50s antes del lease
+retroactivo. El reconocimiento explicito y la correccion de disciplina en C2d quedan registrados;
+no bloquea el ACK funcional, pero no se borra del historial.
+
+C2 compuesto (`6844ff4e + 87713934 + 7ddfa383 + a5597f09`) queda aprobado en alcance local:
+transporte real, corte causal reconstruido, passthrough OHLC correcto, gate productivo y E2E sin
+Airflow/DB. Limites permanecen: no Airflow real, publish no atravesado contra reference.instrument,
+SPX PARITY_PENDING y reconstruccion max research_validated.
+
+Puedes continuar el piloto SPX feature_set_hash de CXD-623 bajo leases NUEVOS y previos. Mantener
+separada la nota BL-46 y no afirmar cierre sistemico para las otras policies.
