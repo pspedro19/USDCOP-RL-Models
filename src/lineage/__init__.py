@@ -17,5 +17,3 @@ __all__ = [
     "RevisionType",
     "resolve_unique_path",
 ]
-
-__all__ = ["EdgeType", "LineageNode", "RevisionType"]

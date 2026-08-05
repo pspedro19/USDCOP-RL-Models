@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+import src.lineage as lineage
 from src.lineage import (
     EdgeType,
     LineageEdge,
@@ -9,6 +10,17 @@ from src.lineage import (
     LineagePathError,
     resolve_unique_path,
 )
+
+
+def test_package_exports_complete_public_lineage_contract() -> None:
+    assert set(lineage.__all__) == {
+        "EdgeType",
+        "LineageEdge",
+        "LineageNode",
+        "LineagePathError",
+        "RevisionType",
+        "resolve_unique_path",
+    }
 
 
 def _node(node_id: str) -> LineageNode:
