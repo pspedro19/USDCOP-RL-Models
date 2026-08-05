@@ -157,6 +157,7 @@ def validate_entries(features: list[dict]) -> list[str]:
     errors: list[str] = []
     seen_ids: set[tuple[str, str]] = set()
     series_contracts: dict[str, tuple[object, ...]] = {}
+    series_features: dict[str, object] = {}
     macro_names = _macro_canonical_names()
     for i, f in enumerate(features):
         if not isinstance(f, dict):
@@ -188,6 +189,14 @@ def validate_entries(features: list[dict]) -> list[str]:
 
         series_id = f.get("series_id")
         if isinstance(series_id, str) and series_id:
+            previous_feature_id = series_features.get(series_id)
+            if previous_feature_id is not None and previous_feature_id != fid:
+                errors.append(
+                    f"{asset_id}/{fid}: series_id {series_id!r} maps to multiple "
+                    f"feature_id values ({previous_feature_id!r}, {fid!r}); one physical "
+                    "series must identify one observable")
+            else:
+                series_features[series_id] = fid
             local_series_id = f"{asset_id}.{fid}"
             if (f.get("source_contract") == "macro.observation"
                     and series_id != local_series_id

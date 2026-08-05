@@ -178,6 +178,32 @@ def test_c032_same_series_cannot_diverge_physically():
     assert any("series_id" in error and "unit" in error for error in errors), errors
 
 
+def test_c032_series_id_cannot_relabel_a_different_observable():
+    v = _load_validator()
+    dxy = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="fxrt_index_dxy_usa_d_dxy", unit="index_level",
+        source_contract="macro.observation", transformation="identity",
+    )
+    mislabeled_vix = dict(dxy, feature_id="vix_close_lag1")
+    errors = v.validate_entries([dxy, mislabeled_vix])
+    assert any(
+        "series_id" in error and "multiple feature_id" in error
+        for error in errors
+    ), errors
+
+
+def test_c032_same_series_and_feature_can_be_shared_across_assets():
+    v = _load_validator()
+    cop = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="fxrt_index_dxy_usa_d_dxy", unit="index_level",
+        source_contract="macro.observation", transformation="identity",
+    )
+    btc = dict(cop, asset_id="btcusdt")
+    assert v.validate_entries([cop, btc]) == []
+
+
 def test_c032_materialization_and_consumer_prior_are_not_physical_identity():
     v = _load_validator()
     cop = _valid_entry(
