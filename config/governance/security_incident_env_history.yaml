@@ -1,8 +1,7 @@
-schema_version: "1.0.0"
+schema_version: "1.1.0"
 backlog_id: BL-08
 status: BLOCKED_OPERATOR
 repository: pspedro19/USDCOP-RL-Models
-observed_visibility: public
 contains_secret_values: false
 affected_history:
   - label: original_public_revision
@@ -13,7 +12,12 @@ affected_history:
     path: .env
 local_repository_evidence:
   env_tracked_now: false
-  env_in_local_rewritten_history: false
+  env_present_in_local_history: true
+  env_blob_recoverable_locally: true
+  local_history_rewritten: false
+remote_repository_evidence:
+  source: OPERATOR_ATTESTATION
+  observed_visibility: public
 operator_actions:
   rotate_every_exposed_credential:
     complete: false
