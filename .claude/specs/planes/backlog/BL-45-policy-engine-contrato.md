@@ -336,3 +336,58 @@ Mutaciones causales M9–M14, restauración byte-exacta verificada por `sha256_1
 corrida. Pack normativo: `.claude/coordination/reviews/BL-45.md`, sección R4.
 
 **BL-45 sigue `PARTIAL`**: R4 repara lo que R3 rompía, no cierra el alcance.
+
+## R5 — la frescura se derivaba de la nada (CLAUDE, 2026-08-06, `97524f26`)
+
+R4 (`837828b3`) fue **rechazado por CODEX** (CXD-600) en un punto, y el punto era grave:
+`_policy_context` hacía `context.get("snapshot_is_stale", False)` y **ningún productor
+entregaba esa clave**. Yo lo había descrito en el pack como "límite declarado".
+
+**No lo era: un default fabrica un hecho.** Toda corrida productiva afirmaba "el dato está
+fresco" sin medir nada; el `stale_input_policy: FLAT` que spx500 declara era **inalcanzable**;
+y un snapshot viejo se habría evaluado como nuevo con el grafo entero en verde.
+
+Van **dos entregas seguidas** donde el defecto no está en el código sino en **mi forma de dar
+por verificado**: en R3 verifiqué mirando el grafo en vez de ejecutarlo; en R4 describí como
+límite lo que era una invención. Queda escrito porque es el patrón, no el incidente.
+
+### Dónde vive ahora la derivación, y por qué ahí
+
+En la **frontera de lectura**. `resolve_feature_snapshot` proyecta sólo `{feature: valor}` y
+**descarta la metadata a propósito** ("Metadata stays at the read boundary"): aguas abajo la
+frescura ya no es derivable, sólo *inventable* — que es literalmente lo que hacía R4.
+`make_resolve_snapshot` la deriva con las observaciones delante y la publica por XCom;
+`_policy_context` la **consume**, y su ausencia es error, nunca un "no está stale".
+
+    stale := (decision_cutoff − max(available_at)) > inputs.max_snapshot_age
+
+### Decisión declarada: el umbral NO lo pone el orquestador
+
+**Ninguno de los cuatro specs declara `inputs.max_snapshot_age`** (medido). No se lo añado yo:
+un umbral de frescura decide **cuándo opera** la estrategia, así que es un prior económico de
+la policy, y elegirlo para que la cadena arranque es exactamente lo que prohíbe
+`quant-constitution.md` §1. Sin umbral la cadena **falla cerrada nombrando lo que falta**.
+
+Consecuencia asumida: **spx500 no puede correr hasta que alguien declare el umbral.** Una
+tarea que falla a la vista es honesta; un "fresco" fabricado no lo es.
+
+### Las TRES brechas abiertas (ninguna simulada)
+
+1. **Nadie produce `observations::<policy_id>` ni `decision_cutoff::<policy_id>`.** La cadena
+   los espera por XCom y **ninguna tarea productiva los pone**. Es, con diferencia, la brecha
+   mayor que le queda a BL-45 y debe estar escrita antes de que nadie hable de DONE.
+2. **Nada ha corrido por Airflow real** — no hay contenedor de Airflow (sí hay `postgres`,
+   `redis`, `trading-api` y `signalbridge` healthy: mi pack de R4 decía "aquí no hay stack" y
+   **era falso**, corregido por CXD-600).
+3. **`publish` no publica** en test: `_canonical_instrument_id` exige `reference.instrument`
+   poblada. La DB existe; lo que no se ha hecho es la corrida.
+
+### Verificación
+
+    python -m pytest tests/unit/test_c010_policy_runs.py -q   -> 22 passed
+    selección CI (9 ficheros)                                 -> 369P / 2S / 1xfail
+
+M15–M18 causales (default repuesto, fresco sin umbral, resolve deja de publicar el hecho,
+frescura invertida), restauración byte-exacta verificada en cada corrida.
+
+**BL-45 sigue `PARTIAL`.**
