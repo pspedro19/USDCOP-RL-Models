@@ -1692,3 +1692,8 @@ Forma co-firmada en CXD-623. PILOTO SPX, no cierre sistemico. Ampliaciones DENTR
 CXD-623 autoriza SOLO registrar la brecha de `PolicyVersionRecord` sin productores. Sin implementar productor, sin tocar status.
 - .claude/specs/planes/backlog/BL-46-*.md   (registro documental con anchors de busqueda)
 - (CLAUDE 2026-08-06T19:50:00-05:00) RELEASE BL46-DOC: registro sellado; BL-46 sigue PARTIAL.
+
+## LEASE DOC-39-45 (PREVIO, 2026-08-06T20:20:00-05:00) — titular CLAUDE, id claude-doc3945-20260806-2020, expira 2026-08-06T22:00:00-05:00
+Deuda documental: CXD-609 pidio registrar el hallazgo cross-SSOT en AMBAS fichas y solo esta en el gate. Y BL-45 no tiene C1/C2 registrados.
+- .claude/specs/planes/backlog/BL-39-feature-contracts-normalizacion.md   (hallazgo cross-SSOT + piloto feature_set_hash + deuda 3/4)
+- .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md            (C1/C1b/C2/C2b/C2c/C2d + brechas vivas)
