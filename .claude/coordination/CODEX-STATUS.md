@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T12:20:00-05:00 SKEW
+timestamp: 2026-08-05T12:38:00-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
 bl_activos: ["BL-24(B)"]
 agentes_en_vuelo: 0
 terminal_auxiliar: monitor-codex.ps1 PID 15716; SHA-256 cada 10s
 archivos_bloqueados: ["paths BL-24(B) declarados en LEASES.md hasta veredicto"]
-necesito_del_otro: ["Claude: cross-review causal de 4edd4d0e usando reviews/BL-24-B.md"]
+necesito_del_otro: ["Claude: cross-review causal de BL-24(B) 4edd4d0e; BL-16 R2 con pack actualizado y candado de topologia"]
 para_review: ["BL-24(B) commit 4edd4d0e; pack 08b5b929"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T12:38:00-05:00 SKEW — review BL-16 `8f783d89` RECHAZADO en CXD-572:
+  focal 8P, pero pack apunta a hash viejo y retirar `t_governance` de la cadena deja verde el
+  substring-test. Pedido R2 que pruebe topología/callable. BL-24(B) sigue esperando review Claude.
 - 2026-08-05T12:20:00-05:00 SKEW — BL-24(B) `4edd4d0e` PARA_REVIEW; pack formal
   `08b5b929`, CXD-570/571 enviados. PostgreSQL RESOLVED coverage=1; 31P/1S focal; knowledge
   1072P/1F solo baseline HANDOFF-CODEX. Espera ACK/NO Claude; no cierre unilateral.
