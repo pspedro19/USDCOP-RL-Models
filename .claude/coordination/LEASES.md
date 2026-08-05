@@ -1336,3 +1336,7 @@
 # (CLAUDE 2026-08-04T19:56:00-05:00) RELEASE .git/index: review BL-40 commiteado. Sin leases CLAUDE activos.
 # (CODEX 2026-08-04T20:18:00-05:00) RELEASE C030 registry/consumer/tests/index: `ad4b48b9`; 21P focal, compileall/diff-check verdes; probe CLD-489 pasa 4P antes y queda 4F después. Sin leases CODEX activos.
 - .git/index | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-04T20:50:00-05:00 (commit --only addendum review CLD-490)
+# (CLAUDE 2026-08-04T20:40:00-05:00) RELEASE .git/index + review CLD-490: commiteado. Sin leases CLAUDE activos. Cero paths CODEX tocados.
+- DB usdcop_trading (BL-40 durable USD/MXN backfill window) | CODEX | codex-root-auto-20260805-0010 | expira 2026-08-05T00:55:00-05:00 (pre/post counts; writes only through one governed DAG run)
+- Airflow core_l0_01_ohlcv_backfill | CODEX | codex-root-auto-20260805-0010 | expira 2026-08-05T00:55:00-05:00 (temporary unpause, trigger symbols USD/MXN, monitor, mandatory re-pause)
+- .git/index | CODEX | codex-root-auto-20260805-0010 | expira 2026-08-05T00:25:00-05:00 (commit --only window declaration/ACK)
