@@ -1606,3 +1606,4 @@
 - (CLAUDE 2026-08-06T11:48:00-05:00) RELEASE ficha BL-45: R6/R6b registrados; sigue PARTIAL. Sin leases CLAUDE activos.
 - airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45-revert-20260806-1205 | expira 2026-08-06T14:00:00-05:00 (retirar SOLO el slice de opcionales rechazado en CXD-605; el de duracion queda. PREVIO)
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45-revert-20260806-1205 | expira 2026-08-06T14:00:00-05:00 (retirar su candado, que fija una semantica aun no acordada. PREVIO)
+- src/policy_engine/runner.py | CLAUDE | claude-bl45r7-20260806-1215 | expira 2026-08-06T14:30:00-05:00 (BL-45 R7: missing ANTES que stale, acordado en CXD-606. PREVIO)
