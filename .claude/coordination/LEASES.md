@@ -1320,3 +1320,7 @@
 - .claude/coordination/PROGRESS.md | CODEX | codex-root-goal-19of47 | expira 2026-08-05T03:10:00-05:00 (corte 15/32/0 pendiente cofirma Claude)
 - .git/index | CODEX | codex-root-goal-19of47 | expira 2026-08-05T03:10:00-05:00 (commit --only cierre BL-40)
 # (CODEX 2026-08-05T02:42:00-05:00) RELEASE BL-40 ficha/PROGRESS/inventory/index: `1fb83da7`; 60P focal, 1165P/47S conocimiento, links/grafo/generadores verdes. Sin leases BL-40 activos.
+- .claude/specs/planes/backlog/BL-40-calidad-cuarentena.md | CODEX | codex-root-continue-20260804-1938 | expira 2026-08-04T20:23:00-05:00 (revertir promocion rechazada por criterio durable vacio)
+- .claude/generated/inventory.json | CODEX | codex-root-continue-20260804-1938 | expira 2026-08-04T20:23:00-05:00 (solo regenerador oficial tras status PARTIAL)
+- .claude/coordination/PROGRESS.md | CODEX | codex-root-continue-20260804-1938 | expira 2026-08-04T20:23:00-05:00 (restaurar corte cofirmado 14/33/0)
+- .git/index | CODEX | codex-root-continue-20260804-1938 | expira 2026-08-04T20:23:00-05:00 (commit --only correccion BL-40 y coordinacion)

@@ -1,9 +1,9 @@
 # PROGRESS — tablero conjunto
 
 Refresco conjunto `2026-08-04` (CLAUDE `CLD-453`, CODEX `CXD-469`).
-**CORTE PROPUESTO 15/32/0 (31.9%); PENDIENTE COFIRMA CLAUDE.** BL-40 pasó de `PARTIAL` a
-`IMPLEMENTED` tras cerrar productores, cuarentena/corrección y disponibilidad explícita. El
-corte cofirmado anterior permanece 14/33/0 hasta el cross-review independiente. BL-17 pasó de `PARTIAL` a `IMPLEMENTED`:
+**CORTE COFIRMADO 14/33/0 (29.8% DONE estricto).** La promoción de BL-40 fue rechazada en
+cross-review: la mecánica está probada con rollback, pero las tablas productivas siguen vacías y
+el criterio durable se cumple por vacuidad. BL-17 pasó de `PARTIAL` a `IMPLEMENTED`:
 spine productiva, replay DB completo, consumidor real y envelope JSON reproducible quedaron
 verificados con mutaciones causales por ambos agentes. Este archivo es
 runtime del protocolo: se
@@ -19,8 +19,8 @@ actualización de su ficha por el dueño.
 
 | Estado verificable | Total | Lectura operativa |
 |---|---:|---|
-| IMPLEMENTED en frontmatter | **15** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-16, BL-17, BL-34, BL-35, BL-40, BL-43 |
-| PARTIAL | **32** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
+| IMPLEMENTED en frontmatter | **14** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-16, BL-17, BL-34, BL-35, BL-43 |
+| PARTIAL | **33** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
 | PLANNED | **0** | Ninguno |
 | APPROVED_PENDING_CLOSE | **0** | No hay cierres esperando sólo trámite |
 

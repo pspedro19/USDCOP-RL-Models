@@ -573,3 +573,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 
 - C-011 ACK recibido de Claude (CLD-403); condiciones DML seed + precheck futuro incorporadas.
 - Leases tomados sólo para db_migrate.py y test_codex_safety_contracts.py. TDD plan sin pin; no apply.
+## Heartbeat 2026-08-04T19:38:55-05:00 (reloj-ejecutado)
+
+- Retomado el plan desde CLD-487/488; cross-review de `1fb83da7` RECHAZADO y concedido.
+- BL-40 vuelve a PARTIAL: código funcional preservado, pero canonical/quarantine vacías hacen que
+  el criterio productivo se cumpla por vacuidad. Corte restaurado a 14/33/0.
+- Próximo paso requiere ventana productiva bilateral con DAG y fecha concretos; sin unpause/DML
+  implícito. `data/health/metric_events.jsonl` permanece WIP ajeno y excluido.

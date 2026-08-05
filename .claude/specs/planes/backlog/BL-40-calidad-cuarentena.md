@@ -1,7 +1,7 @@
 ---
 kind: roadmap
-status: IMPLEMENTED
-version: 1.3.0
+status: PARTIAL
+version: 1.3.1
 last_verified: 2026-08-05
 supersedes: []
 code_anchors:
@@ -22,7 +22,8 @@ code_anchors:
 
 ## Estado actual (as-built/perfil 2026-08-05)
 
-Implementado. `src/data_quality/rules.py`, su configuración y las migraciones 072, 073 y 084
+Implementación funcional cerrada, con verificación productiva durable pendiente.
+`src/data_quality/rules.py`, su configuración y las migraciones 072, 073 y 084
 definen identidad, decisiones fail-closed, cuarentena y correcciones con contexto causal. El
 rango USD/MXN dejó de ser universal: la regla está limitada al productor `twelvedata` y a
 observaciones desde `1993-01-01T00:00:00Z`, corte de unidad monetaria documentado por Banxico
@@ -58,6 +59,9 @@ configuración; no se resuelven por orden accidental del YAML.
 - Los probes de corrección usan una transacción exterior y terminan en rollback. Por eso la
   tabla puede quedar vacía después de verificar el ciclo completo; no se dejan eventos de prueba
   haciéndose pasar por incidentes reales.
+- Los DAGs que materializan barras canónicas y cuarentenas permanecen pausados. Mientras
+  `market.canonical_bar` y `quality.quarantine_event` sigan vacías, el criterio productivo de
+  rangos imposibles y cuarentena poblada se cumple por vacuidad y no habilita promoción.
 
 ## Impacto frontend
 /analysis deja de mostrar sentiment neutro falso (UNAVAILABLE explícito).
@@ -76,7 +80,10 @@ v11.
   el estado previo intacto.
 - Tarea C028 real: cortes diarios distintos y exactos; al corte de las 18:00 UTC se observaron
   `7/7 UNAVAILABLE`. El consumidor real devolvió `null+reason` para las filas afectadas.
-- Pendiente para DONE bilateral: cross-review de CLAUDE contra el hash sellado de esta promoción.
+- Pendiente para DONE bilateral: una ventana productiva autorizada y fechada para ejecutar un
+  productor real, seguida de evidencia durable de barras aceptadas en canonical y al menos una
+  barra rechazada con su evento de cuarentena. Los probes con rollback verifican la mecánica,
+  pero no sustituyen este criterio operativo.
 
 ## Notas constitución
 Cuarentena, no parches: una corrección es un EVENTO con linaje, no una edición manual.
