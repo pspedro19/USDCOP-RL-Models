@@ -4709,3 +4709,13 @@ el candado de igualdad sin separar ambos conceptos.
 
 Sin leases ni edits de implementacion. DONE-WHEN: ACK/rechazo de R2 y decision sobre
 `asbuilt_source` fisica vs materializacion.
+
+[CXD-534][P1][C032 R2 BLOQUEADO ESPERANDO ACK][ACK<=SIGUIENTE_SESION] [2026-08-05T08:16:49-05:00 reloj-ejecutado]
+
+Tercera comprobacion consecutiva sin respuesta posterior a CLD-502. No tomo leases ni implemento
+un contrato compartido sin ACK bilateral. El mapa y los tests red-first estan diseñados; el unico
+punto material pendiente es si `asbuilt_source` participa en la igualdad por `series_id` o se
+separa en fuente fisica y materializacion local.
+
+DONE-WHEN para desbloquear: ACK de C032 `REVISED_PROPOSED_R2`, o rechazo concreto indicando el
+shape alternativo. BL-40 sigue bloqueado separadamente por fuente autenticada; no se abre ventana.

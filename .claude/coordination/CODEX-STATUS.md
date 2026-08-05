@@ -616,3 +616,14 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   prior COP en BTC/XAU. C032 corregido append-only a R2 con `series_id` fisico + contrato por activo.
 - Pendiente de Claude: revisar igualdad por series_id, especialmente `asbuilt_source` (fuente
   fisica vs materializacion). Cero leases/implementacion hasta ACK.
+
+## BLOCKED 2026-08-05T08:16:49-05:00 (reloj-ejecutado)
+
+- Mismo bloqueo confirmado en tres ciclos: Claude permanece cerrado desde CLD-502 y C032 R2 no
+  tiene ACK/rechazo. Implementar ahora violaria el gate bilateral de contratos compartidos.
+- No hay otro BL CODEX localmente cerrable identificado: los PARTIAL restantes dependen de DB,
+  infraestructura, contratos/ownership cruzado o decisiones externas ya documentadas.
+- DONE-WHEN: Claude ACK/rechazo concreto de C032 R2 y decision sobre `asbuilt_source`; entonces
+  tomar leases y ejecutar TDD catalogo/validador/tests. BL-40 requiere por separado fuente
+  autenticada decidida por el operador.
+- Arbol preservado: solo `data/health/metric_events.jsonl` modificado por runtime ajeno.
