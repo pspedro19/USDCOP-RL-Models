@@ -58,6 +58,15 @@ BTC: se llenan solos, NO borrar).
    - bi.fact_* → DEPRECATED (drop tras BL-15/18; dims se derivan de config YAMLs).
    - experiment_*/model_registry/metrics.model_performance → DEPRECATED; autoridad =
      MLflow + bundles inmutables (o adopción explícita como proyección — pero UNA cosa).
+     **Consecuencia medida aguas abajo (2026-08-05, entra desde BL-05 y queda con dueño
+     aquí, D-02):** el frontend llama a un **`GET /api/models` que NO EXISTE** y recibe 404
+     en **todas** las páginas — `ModelProvider` se monta en `app/layout.tsx:106`, el layout
+     raíz. El endpoint está **declarado** (`lib/config/models.config.ts:212`), tiene
+     **entrada RBAC** (`rbac.contract.ts:168`, `research:read`) y **dos consumidores**
+     (`contexts/ModelContext.tsx:134`, `lib/services/model.service.ts:50`), pero
+     `app/api/models/` sólo contiene `[modelId]/`. **No se crea la ruta hasta cerrar
+     D-02**: hacerlo antes de decidir cuál es el registry autoritativo fabricaría un
+     **sexto** lugar que describe un modelo — justo lo que este BL existe para impedir.
    - macro_variable_snapshots → DROP (pit es la vintage; analysis es file-driven).
    - daily/weekly_analysis → DEPRECATED hasta que exista escritor real (nota en spec).
    - OMS legacy → ABSORBIDAS por BL-21/22 con migración y drop posterior (jamás

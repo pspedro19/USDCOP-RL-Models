@@ -183,8 +183,39 @@ decidir si la ruta debe crearse o si los llamantes son legado a retirar — deci
 **no pertenece a BL-05**, y construir un endpoint para poner verde un test sería exactamente la
 motivación equivocada.
 
-**BL-05 sigue `PARTIAL`, con el gap reducido a una única ruta nombrada.** Toda la accesibilidad
-está verificada en runtime con capturas; el aserto de consola no se relaja.
+**El 404 es TRANSVERSAL, no de `/production` — medido 2026-08-05.** `ModelProvider` se monta en
+`app/layout.tsx:106`, el layout **raíz**, así que `ModelContext.fetchModels()` dispara ese 404 en
+**todas** las páginas del dashboard. No es un fallo del panel de candidatas ni de `/production`:
+es un defecto global que este E2E simplemente fue el primero en observar.
+
+### Recorte formal del criterio (2026-08-05, bilateral)
+
+Mismo mecanismo que BL-20 usó cuando su MD llevaba dos criterios en conflicto: se declara cuál es
+**normativo**, con argumento, en vez de estirar el alcance o rebajar un aserto.
+
+**Normativo**: el alcance declarado de este BL — `ProductionView`, `PaperCandidatesPanel`, el
+ledger real y la regla N<20 — más los cuatro gaps del rechazo CXD-022. Todos verificados, los tres
+últimos con **evidencia runtime y capturas**.
+
+**Fuera del criterio, con dueño explícito**: el 404 de `/api/models`. No aparece en los
+`code_anchors`, ni en *Qué falta exactamente*, ni en *Verificación* de esta ficha. Es una
+superficie propia: endpoint **declarado** (`lib/config/models.config.ts:212`), con **entrada RBAC**
+(`rbac.contract.ts:168`, `research:read`) y **dos consumidores**
+(`contexts/ModelContext.tsx:134`, `lib/services/model.service.ts:50`), pero `app/api/models/`
+sólo contiene `[modelId]/`.
+
+**Dueño: BL-36, decisión D-02.** No se abre ficha nueva —eso movería el denominador del backlog—
+porque BL-36 ya gobierna exactamente esta pregunta: declara que *"`public.model_registry` +
+`models.model_registry` + `config.models` + `bi.dim_models` + `mlflow.model_deployments` = cinco
+lugares que describen un modelo"* y la marca como **DECISIÓN (D-02)**. Que el frontend llame a un
+`/api/models` inexistente es aguas abajo de *cuál* es el registry autoritativo: crear la ruta antes
+de esa decisión sería fabricar un sexto lugar.
+
+**Lo que NO se hace y por qué**: no se crea el endpoint ni se retiran los llamantes para cobrar
+este BL. Construir una ruta para poner verde un aserto de consola es la motivación equivocada, y
+CODEX lo confirmó en CXD-558 (*"no crear ni retirar `/api/models` para cobrar BL-05"*). El aserto
+de consola **permanece intacto** en el spec: la corrida se reporta honestamente como
+**`2 passed / 1 failed`**, no como verde.
 
 El aserto se mantiene intacto **a propósito**. La ficha ya documenta que en su día se estabilizó
 esta spec dejando de *fabricar* ruido, nunca bajando el listón; relajarlo ahora para cobrar un
