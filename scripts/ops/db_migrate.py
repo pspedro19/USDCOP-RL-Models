@@ -242,6 +242,9 @@ FABRIC_REQUIRED_TABLES = {
 
 REQUIRED_TABLES_BY_PLAN = {
     "legacy-init": LEGACY_REQUIRED_TABLES,
+    "feature-status-provenance-v1": {
+        "quality.feature_status": "Governed feature availability measurements",
+    },
     "platform-bootstrap-v1": PLATFORM_BOOTSTRAP_REQUIRED_TABLES,
     "commerce-v1": {
         "public.checkout_orders": "Immutable sealed checkout quotes",

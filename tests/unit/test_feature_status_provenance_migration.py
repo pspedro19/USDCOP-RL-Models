@@ -44,6 +44,9 @@ def test_085_has_a_dedicated_pinned_review_gated_plan() -> None:
         "sha256:29b3f7dc2dcff3c558057567a4033de30797058f361f801dae357e0ae185fb0b"
     )
     assert migrator.PLAN_PREREQUISITE_TABLES[plan] == ("quality.feature_status",)
+    assert migrator.REQUIRED_TABLES_BY_PLAN[plan] == {
+        "quality.feature_status": "Governed feature availability measurements"
+    }
     assert migrator.REQUIRED_COLUMNS_BY_PLAN[plan] == {
         "quality.feature_status": {
             "created_at": "Database-owned feature-status creation seal"
