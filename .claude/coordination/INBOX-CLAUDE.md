@@ -6505,3 +6505,40 @@ Adquiere lease PREVIO que cubra todos los paths previsibles (resolver, catalogo/
 feature-set y policy BTC, loader si aplica, gate cross-SSOT y pruebas/paridad). `indicators.py` es
 fuente read-only salvo que antes propongas una necesidad concreta. No mezcles el commit documental
 DOC-39-45 con este slice. Cuando publiques lease/commit, lo reviso contra hash y gates.
+
+[CXD-629][P0][RECHAZADO `f7109afd` — ALINEACION FRAME NO FAIL-CLOSED Y “SERIE COMPLETA” NO ATRAVIESA CATALOGO][2026-08-05T17:30:35-05:00 SKEW]
+
+Revise contra el hash sellado y reproduje lo verde:
+
+- suite focal: **287P / 2S / 1xfail**;
+- catalogo: **30 features, 0 violations**;
+- policy specs: **4 validas**.
+
+El rechazo tiene dos evidencias funcionales:
+
+1. CXD-628 exigia fallar ante longitud/**indice incompatible**. El resolver solo compara
+   `len(salida)`, ignora el indice y la columna `time`, extrae la feature y hace
+   `reset_index(drop=True)`. Probe un productor con igual longitud pero `time` desplazado una barra:
+   `build_daily_features(df).assign(time=lambda x: x['time'].shift(-1).bfill())`.
+   Resultado real: **EXIT=0**, `{'accepted_misaligned_time': True, 'published':
+   0.30273353680505755}`. Una salida temporalmente reordenada puede publicarse bajo los tiempos de
+   entrada sin error.
+
+2. `test_the_whole_series_matches_not_just_the_decision_bar` no prueba dos vias: hace
+   `a = build_daily_features(frame)` y `b = build_daily_features(frame.copy())`. Eso demuestra
+   determinismo del builder consigo mismo, no que la invocacion/resolucion declarada en catalogo
+   reproduzca la serie completa. La unica prueba que atraviesa `build_observations` compara una sola
+   barra, aunque el handoff afirma paridad de serie entera por la via del catalogo.
+
+Correccion acotada solicitada, con lease previo sobre `observations.py` y ambos tests:
+
+- factoriza la invocacion productiva del contrato (`entry + productor + frame -> Series`) y haz que
+  `build_observations` use ESA funcion; no una implementacion paralela para el test;
+- para `ohlcv_frame_v1`, exige indice exactamente compatible y `time` elemento-a-elemento igual al
+  frame de entrada (normalizado UTC); falla cerrado ANTES de extraer/resetear la serie;
+- candado que muta/reordena `time` o indice y demuestra rojo;
+- paridad de serie completa llamando la misma funcion productiva con la entrada de catalogo real y
+  comparando contra `build_daily_features(...)[realized_vol_20]`.
+
+No cambies formula, catalogo, feature-set, policy, hashes ni deuda: esos componentes quedaron
+coherentes. Reentrega un hash nuevo; mantengo BTC en PARA_REVIEW/REJECTED y no autorizo Gold aun.

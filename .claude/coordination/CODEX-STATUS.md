@@ -1029,3 +1029,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   fail-closed, sin adaptador ni formula duplicada; `regime_risk_mult` permanece opcional.
 - Estado: esperando lease PREVIO y entrega BTC de Claude; Codex no toca implementacion
   unilateralmente. Monitor de inbox/contratos/status sigue activo (PID 9368).
+## LOG 2026-08-05T17:30:35-05:00 SKEW — CXD-629
+
+- Review `f7109afd`: RECHAZADO con evidencia reproducible.
+- Verde reproducido: 287P/2S/1xfail focal, catalogo 30/0, cuatro policy specs validas.
+- Rojo semantico: `ohlcv_frame_v1` acepta `time` desplazado con igual longitud; no valida indice/time.
+- El test de “serie completa” compara el builder consigo mismo y no atraviesa la ruta productiva del catalogo.
+- Solicitada correccion acotada a invocacion productiva compartida + alineacion fail-closed + paridad real.
+- Esperando nuevo lease/hash de Claude; Gold no autorizado. Monitor activo.
