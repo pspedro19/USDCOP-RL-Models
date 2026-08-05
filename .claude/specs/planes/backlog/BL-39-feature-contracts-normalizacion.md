@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-28
+version: 1.0.1
+last_verified: 2026-08-05
 supersedes: []
 code_anchors:
   - src/core/contracts/feature_contract.py
@@ -33,7 +33,7 @@ Reproducir la señal v11 de la última semana desde feature_set+snapshot == bit-
 
 ```
 comando: python -m pytest tests/regression/test_feature_contracts.py -q
-verde:   26 passed
+verde:   24 passed, 2 skipped   (2026-08-05; NO "26 passed" — ver más abajo)
 
 muta:    quitar el .shift(1) de un feature macro (fuga temporal T-1 pura)
 espera:  4 failed — 2 muros de hash + los 2 muros nuevos de CAUSALIDAD
@@ -44,6 +44,25 @@ espera-2: 2 failed, 24 passed — los dos muros de hash VUELVEN A VERDE con la f
          y los dos tests de causalidad SIGUEN ROJOS.
          Restaurado: producción y catálogo sin diff.
 ```
+
+**Corrección 2026-08-05: tampoco hay evidencia LOCAL, y el número de arriba estaba mal.** Más
+abajo esta ficha ya declaraba que el bit-check "skipea siempre en CI" y lo llamaba *evidencia
+local-only*. Medido: **no existe esa evidencia local**. La corrida real aquí es
+**24 passed, 2 skipped** —no las `26 passed` que esta ficha publicaba—, y los dos `skipped` son
+`test_disk_artifacts_are_bit_identical_to_frozen_registration` y
+`test_bitcheck_v11_signal_from_feature_set_plus_snapshot`, o sea la primera línea de esta
+Verificación. No hay artefactos H5 **ni en el working tree ni dentro del contenedor de Airflow**
+(`find /opt -name feature_cols_h5.json` ⇒ 0 resultados), y la metadata de Airflow sólo registra
+ejecuciones de tres DAGs (`control_system_health`, `core_l0_01_ohlcv_backfill`,
+`rbac_entitlements_daily`): H5-L3 nunca ha entrenado en este entorno.
+
+La diferencia importa: "skipea en CI pero se verifica en local" describe una evidencia que existe
+en otro sitio; "no hay artefactos en ningún sitio" describe una que **no se ha producido nunca**.
+Lo que sostiene el `PARTIAL` es la mitad **contractual** del criterio —catálogo, priors de signo,
+causalidad, muros de hash y la mutación de look-ahead—, que sí corre. Lo que convertiría el
+bit-check en evidencia es una corrida real de `train_and_export_smart_simple.py` que produzca los
+artefactos congelados; entonces se publica `26 passed` **medido**. Hasta entonces el skip se
+declara y no se cuenta como verde (`K-051`).
 
 **Historial honesto**: hasta el 2026-07-28 el look-ahead **solo se detectaba por DRIFT DE
 HASH**. Quitar el `.shift(1)` de un feature macro daba rojos que decían *"drifted from the
