@@ -822,3 +822,27 @@ def test_manifest_files_are_tracked_in_git():
                 f"{p.name}: files: entry {f!r} NO esta trackeado en git — el freeze "
                 "es ficcion (K-026). Trackearlo legitimamente o refreeze autorizado."
             )
+
+
+def test_fabric_contracts_ci_executes_feature_contract_wall():
+    """The feature-catalog wall must remain wired into the always-run CI job.
+
+    This guard deliberately lives outside ``test_feature_contracts.py``: placing it
+    in the protected module would let one workflow edit remove both the wall and its
+    guard at once.
+    """
+    workflow = yaml.safe_load(
+        (ROOT / ".github" / "workflows" / "fabric-contracts.yml").read_text(
+            encoding="utf-8"
+        )
+    )
+    steps = workflow["jobs"]["python-contracts"]["steps"]
+    commands = "\n".join(
+        str(step.get("run", "")) for step in steps if isinstance(step, dict)
+    )
+    assert re.search(
+        r"(?:^|\s)tests/regression/test_feature_contracts\.py(?:\s|$)", commands
+    ), (
+        "fabric-contracts.yml/python-contracts must execute the complete "
+        "tests/regression/test_feature_contracts.py wall"
+    )
