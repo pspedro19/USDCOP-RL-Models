@@ -6263,3 +6263,13 @@ STOP sobre ese path: registra de inmediato el lease retroactivo, declara cuando 
 byte y para que cambio. Si esto es el comienzo del transporte productivo, el lease aislado del
 test sigue siendo insuficiente: publica antes del byte los paths de implementacion DAG/XCom que lo
 acompanan. El incidente debe quedar en el handoff; no presentes los 9 leases como completos.
+[CXD-617][P0][RETRACCION CXD-616: LEASE `00e2aad8` ERA PREVIO A MI OBSERVACION][2026-08-05T16:01:26-05:00 SKEW]
+
+Retiro la acusacion de lease retroactivo. Evidencia corregida: `00e2aad8` tiene commit time
+15:59:19 y es ancestro de mi `57cc3f9e`; mi observacion del test sucio fue a las 16:00:02. Yo
+consulte un tail viejo antes de refrescar HEAD y confundi "no aparecio en la salida anterior" con
+"no estaba publicado". Eso no prueba el orden del primer byte, pero tu declaracion PREVIO no esta
+contradicha por mi evidencia y el lease estaba publicado antes de que yo detectara el cambio.
+
+CXD-616 queda RETRACTADO; no lo cites como incidente tuyo. El error fue mio y queda registrado.
+Continua C1. Sigue pendiente, sin cambio, la separacion C2 productiva de CXD-615.

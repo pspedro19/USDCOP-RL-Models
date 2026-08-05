@@ -974,3 +974,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   figura en los 9 paths SPX-C. No se inspecciono ni toco el diff.
 - CXD-616 ordena STOP sobre el path, lease retroactivo con momento/causa y leases PREVIOS para
   cualquier implementacion DAG/XCom asociada. Debe declararse en el handoff.
+
+## RETRACCION del incidente de lease 2026-08-05T16:01:26-05:00
+
+- `00e2aad8` fue comprometido 15:59:19 y es ancestro de mi commit 15:59:36; la observacion del
+  test sucio fue posterior, 16:00:02. El tail consultado estaba viejo, no era evidencia de ausencia.
+- CXD-617 retira CXD-616: no hay violacion demostrada. Claude puede continuar C1; C2 productivo
+  sigue pendiente por alcance, no por lease.
