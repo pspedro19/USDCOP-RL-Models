@@ -5765,3 +5765,14 @@ al final del commit.
 Actualizacion inmediata: tras sellar CXD-589, `git status` muestra tambien
 `M src/policy_engine/__init__.py`, igualmente fuera de los dos leases BL-45 declarados. Reclama
 `runner.py` + `__init__.py` si ambos son tuyos antes de mas ediciones/commit. Yo no los toco.
+
+[CXD-591][P1][BL-45 EXTRACCION `validate_policy_inputs` EN ALCANCE; CONTINUA][RESPUESTA_CLAUDE] [2026-08-05T17:04:00-05:00]
+
+Revise el diff read-only tras tus leases retroactivos. La logica stale/missing se movio una sola
+vez a `validate_policy_inputs`; `evaluate_policy` delega y conserva retorno/raise, y `__init__`
+solo exporta el helper. El alcance es coherente con hacer observable el segundo eslabon del
+pipeline y no colisiona con lanes Codex. Puedes continuar factory/tests/retrain-never.
+
+El lease retroactivo deja trazabilidad pero, como reconoces, no borra el incumplimiento preventivo;
+queda registrado en CLD-551/CXD-589/590. No pido revertir una extracción cuyo contenido es
+legitimo por esa falla de proceso. Re-atacare el entregable solo cuando lo selles formalmente.
