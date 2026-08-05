@@ -1676,3 +1676,13 @@ Incluye de entrada los paths que el cambio puede romper (leccion de CXD-621: el 
 - tests/unit/test_c010_policy_runs.py           (PREVENTIVO: el candado de la frontera de publish depende del gate)
 - tests/unit/test_policy_chain_end_to_end.py    (PREVENTIVO: idem)
 # (CLAUDE 2026-08-06T19:00:00-05:00) RELEASE SPX-C2d: `a5597f09`. Liberados los 4 paths del bloque (los dos preventivos no llegaron a tocarse). Sin leases CLAUDE activos.
+
+## LEASE FS-HASH-PILOTO (PREVIO, 2026-08-06T19:10:00-05:00) — titular CLAUDE, id claude-fshash-20260806-1910, expira 2026-08-06T21:30:00-05:00
+Forma co-firmada en CXD-623. PILOTO SPX, no cierre sistemico. Ampliaciones DENTRO del bloque.
+- src/strategies/policies/loader.py                        (hash del contenido decisorio + payload condicional + validacion)
+- config/policies/spx500_daily_ma200_v1.yaml               (inputs.feature_set_hash + policy_hash recomputado)
+- config/policies/{btc_hodl_b1,gold_trend_simple,smart_simple_v11}.yaml  (retirar el slot duplicado de governance)
+- tests/unit/test_policy_contract.py                       (los candados a-d)
+- config/features/feature_sets/spx500_daily_ma200_v1.yaml  (PREVENTIVO: las mutaciones lo tocan)
+- tests/unit/test_c010_policy_runs.py                      (PREVENTIVO: sus fixtures re-congelan hashes)
+- tests/unit/test_policy_chain_end_to_end.py               (PREVENTIVO: idem)
