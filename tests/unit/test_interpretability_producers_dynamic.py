@@ -181,40 +181,106 @@ def test_hybrid_producer_refuses_when_the_affine_rescale_is_omitted(sandbox, mon
 
 # ───────────────────────────────────────────────── composite v11: el productor se ejecuta
 
-def test_composite_producer_runs_and_declares_both_negatives(sandbox, monkeypatch):
-    """El composite CORRE y su `scope` niega explícitamente lo que no explica.
+def _frame25(recipe: list[str]) -> pd.DataFrame:
+    """Frame con las 25 columnas REALES de la receta v11.
 
-    Las dos negativas son criterio DURO, no prosa: sin ellas el artefacto se lee como si
-    explicara el PnL de v11 o el snapshot de 23 que persiste el DAG.
+    El atajo de 8 features fue justo lo que dejo pasar la mentira que CODEX reprodujo
+    (`n_features: 8` publicado con `scope` afirmando 25): si el camino sano no usa la
+    receta canonica, la guarda de identidad nunca se ejercita.
     """
-    recipe = list(FEATS)
-    monkeypatch.setattr(gi, "yaml_safe_load_recipe", lambda: recipe)
+    base = _frame()
+    rng = np.random.default_rng(4242)
+    n = len(base)
+    for c in recipe:
+        if c in base.columns:
+            continue
+        if c == "day_of_week":
+            base[c] = base["date"].dt.dayofweek
+        elif c == "month":
+            base[c] = base["date"].dt.month
+        elif c == "is_month_end":
+            base[c] = base["date"].dt.is_month_end.astype(int)
+        else:
+            base[c] = rng.normal(0, 1.0, n)
+    return base
+
+
+class _Loader25:
+    def __init__(self, cfg, project_root=None):
+        self._recipe = gi.yaml_safe_load_recipe()
+        self._df = _frame25(self._recipe)
+
+    def load_dataset(self, target_horizon=None):
+        return self._df.copy(), list(self._recipe)
+
+
+@pytest.fixture()
+def sandbox25(tmp_path, monkeypatch):
+    """Sandbox del composite con la receta CANONICA de 25, no un atajo."""
+    recipe = gi.yaml_safe_load_recipe()
+    monkeypatch.setattr(gi, "OUT_ROOT", tmp_path)
+    import src.forecasting.ssot_config as ssot
+    import src.forecasting.dataset_loader as dl
+
+    class _C:
+        _config_path = str(REPO / "config" / "forecasting_ssot.yaml")
+
+        def get_feature_columns(self):
+            return list(recipe)
+
+    monkeypatch.setattr(ssot.ForecastingSSOTConfig, "load", classmethod(lambda cls, p=None: _C()))
+    monkeypatch.setattr(dl, "ForecastingDatasetLoader", _Loader25)
+    return tmp_path, recipe
+
+
+def test_composite_producer_runs_on_the_canonical_25_and_declares_both_negatives(
+        sandbox25, monkeypatch):
+    """Camino sano con la receta CANONICA: 25 medidas, no 25 afirmadas.
+
+    `yaml_safe_load_recipe` NO se parchea aqui — se usa la real, que es lo que hace que la
+    guarda de identidad se ejercite de verdad.
+    """
+    tmp, recipe = sandbox25
     monkeypatch.setattr(
         "src.forecasting.enhance_v2.enhance_features_v2",
-        lambda df, base, project_root=None, include_xlead=False: (df, list(FEATS)))
+        lambda df, base, project_root=None, include_xlead=False: (df, list(recipe)))
     gi.generate_composite_v11()
-    arts = _artifacts(sandbox)
-    assert arts, "el productor composite no publicó nada"
-    a = arts[0]
+    a = _artifacts(tmp)[0]
     assert a["surface"] == "composite" and a["model_id"] == "usdcop_ridge_br"
-    assert a["additivity_max_abs_err"] < 1e-9, a["additivity_max_abs_err"]
-    assert "NO explica" in a["scope"] and "REGLAS" in a["scope"], (
-        "el scope dejó de negar que esto explique la decisión OPERADA")
-    assert "recipe25" in a["scope"] and "dag_legacy23" in a["scope"], (
-        "el scope dejó de nombrar AMBOS feature sets: explicar uno y callar el otro deja "
-        "ambiguo qué se está atribuyendo")
-    assert all("coef" in r for r in a["top_features"]), "faltan los coeficientes del ensemble"
+    assert a["n_features"] == 25 == len(recipe), (
+        f"el productor publico {a['n_features']} features")
+    assert f"recipe25 ({a['n_features']}" in a["scope"], (
+        "el scope debe DERIVAR el conteo, no cablearlo: publicar 8 diciendo 25 fue el "
+        "defecto que CXD-583 reprodujo")
+    assert a["additivity_max_abs_err"] < 1e-9
+    assert "NO explica" in a["scope"] and "REGLAS" in a["scope"]
+    assert "recipe25" in a["scope"] and "dag_legacy23" in a["scope"]
+    assert all("coef" in r for r in a["top_features"])
 
 
-def test_composite_producer_refuses_a_recipe_that_is_not_the_declared_one(sandbox, monkeypatch):
-    """Si el builder no produce las features que la RECETA declara, el productor ABORTA.
-
-    Publicar con una receta distinta sería atribuir OTRO modelo con la etiqueta de v11 —
-    exactamente el error fácil que este BL evita al no reutilizar las features del zoo.
-    """
-    monkeypatch.setattr(gi, "yaml_safe_load_recipe", lambda: list(FEATS) + ["feature_inventada"])
+def test_composite_aborts_when_the_builder_returns_24_with_the_real_recipe(
+        sandbox25, monkeypatch):
+    """NEGATIVA 1 — receta REAL, builder incompleto: falta una feature declarada."""
+    _, recipe = sandbox25
     monkeypatch.setattr(
         "src.forecasting.enhance_v2.enhance_features_v2",
-        lambda df, base, project_root=None, include_xlead=False: (df, list(FEATS)))
-    with pytest.raises(RuntimeError, match="receta"):
+        lambda df, base, project_root=None, include_xlead=False: (df, list(recipe)[:-1]))
+    with pytest.raises(RuntimeError, match="builder no produjo"):
+        gi.generate_composite_v11()
+
+
+def test_composite_aborts_when_the_recipe_itself_is_not_the_canonical_25(
+        sandbox25, monkeypatch):
+    """NEGATIVA 2 — builder y receta COINCIDEN, pero la receta no es la de v11.
+
+    Este es el agujero exacto de CXD-583: con ambos a 24 (o a 8) mi version anterior
+    publicaba, porque solo exigia inclusion y nunca identidad. Ahora aborta ANTES.
+    """
+    _, recipe = sandbox25
+    recorte = list(recipe)[:-1]
+    monkeypatch.setattr(gi, "yaml_safe_load_recipe", lambda: recorte)
+    monkeypatch.setattr(
+        "src.forecasting.enhance_v2.enhance_features_v2",
+        lambda df, base, project_root=None, include_xlead=False: (df, list(recorte)))
+    with pytest.raises(RuntimeError, match="v11 declara"):
         gi.generate_composite_v11()

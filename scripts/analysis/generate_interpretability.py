@@ -112,6 +112,7 @@ def _models_for_asset(asset: str, kind: str) -> tuple[str, ...]:
     return tuple(m for m in declared if m.endswith("_pure"))
 
 
+V11_RECIPE_N = 25    # identidad de usdcop_smart_simple_v11_recipe25 (CXD-583)
 MIN_TRAIN = 400      # misma guarda que meta01_zoo_ledger.py (años con menos train se SALTAN)
 
 # Header OBLIGATORIO en cada JSON (BL-20 / A.7).
@@ -1339,6 +1340,17 @@ def generate_composite_v11(*, supersede: bool = False) -> list[Path]:
     feat_cols = [c for c in feat_cols if c in df.columns]
 
     recipe = yaml_safe_load_recipe()
+
+    # IDENTIDAD CANONICA de la receta, no solo inclusion (CXD-583). Mi version anterior solo
+    # comprobaba que el builder CONTUVIERA la receta, asi que una receta de 8 —o una coherente
+    # de 24— publicaba igual mientras el `scope` seguia afirmando "recipe25 (25)". CODEX lo
+    # reprodujo: `n_features: 8` con `declared_recipe25: True`. Una atribucion que miente sobre
+    # QUE modelo explica es peor que no publicarla.
+    if len(recipe) != V11_RECIPE_N:
+        raise RuntimeError(
+            f"la receta resuelta tiene {len(recipe)} features y v11 declara "
+            f"{V11_RECIPE_N} (usdcop_smart_simple_v11_recipe25): publicar asi seria "
+            f"atribuir OTRO modelo con la etiqueta de v11")
     faltan = [f for f in recipe if f not in feat_cols]
     if faltan:
         raise RuntimeError(
@@ -1453,7 +1465,7 @@ def generate_composite_v11(*, supersede: bool = False) -> list[Path]:
             "smart_simple_v11. NO explica lo que la estrategia OPERA: la decision pasa despues "
             "por el gate de regimen (Hurst), el sizing por confianza y la mecanica TP/HS, que "
             "son REGLAS y no se atribuyen con SHAP. Feature set = usdcop_smart_simple_v11_"
-            "recipe25 (25, builder enhance_v2::enhance_features_v2); el DAG H5-L3 persiste "
+            f"recipe25 ({len(feat_cols)}, builder enhance_v2::enhance_features_v2); el DAG H5-L3 persiste "
             "usdcop_smart_simple_v11_dag_legacy23 (23) y la divergencia esta declarada como "
             "declared_not_resolved: FALTAN alli rate_diff_ibr_ust2y y term_spread, asi que "
             "esto NO explica el snapshot del DAG. Ensemble = MEDIA de ridge y bayesian_ridge, "
