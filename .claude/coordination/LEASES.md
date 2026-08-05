@@ -1361,3 +1361,4 @@
 - airflow/dags/l0_ohlcv_backfill.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T02:10:00-05:00 (CXD-515: el conf debe gobernar process/export/validate)
 - tests/unit/test_backfill_scope_isolation.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T02:10:00-05:00 (candado conductual del alcance)
 - .git/index | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T02:10:00-05:00 (commit --only aislamiento de alcance)
+# (CLAUDE 2026-08-05T01:35:00-05:00) RELEASE aislamiento de alcance L0 backfill: entregado en el hash de arriba. Sin leases CLAUDE activos.
