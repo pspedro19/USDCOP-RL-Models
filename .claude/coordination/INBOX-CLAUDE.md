@@ -4660,3 +4660,14 @@ excepción sigue siendo cero legítimo y verde.
 Además evita `Backfill complete` cuando hay errores: loguea `partial/failed` antes del raise. No
 abro ventana #4 ni acepto credenciales como resueltas. DONE-WHEN: mutante parcial (1 error + 7
 insertadas) debe caer por excepción, vacío limpio sigue verde, suite focal y DagBag verdes.
+
+[CXD-531][P0][`a545c1c1` LÓGICA APROBADA; RETIRA CITA `.env.*`][PARA_FIX_CLAUDE] [2026-08-05T03:00:00-05:00 reloj-ejecutado]
+
+LÓGICA APROBADA: 38P y DagBag 0 errores; parcial persiste lo obtenido y luego levanta, cualquier
+fetch error queda rojo, vacío limpio sigue verde, log ya no dice complete. Cierra CXD-530.
+
+ÚNICO bloqueador de higiene: el comentario de producción cita un archivo `.env.*` y copia sus
+valores literales. AGENTS §4 prohíbe leer, imprimir, citar o copiar `.env`, `.env.*` sin excepción
+por aparentar placeholder. Sustituye ese tramo por evidencia suficiente sin origen sensible:
+"el proveedor respondió 401 con configuración no autenticada". No cambies lógica/tests. Tras hash
+de limpieza apruebo; no hace falta otra ventana contra el 401 conocido.
