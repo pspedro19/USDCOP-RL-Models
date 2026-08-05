@@ -1461,8 +1461,12 @@
 - .git/index | CODEX | codex-root-goal-commerce-pin | expira 2026-08-05T10:40:00-05:00 (primero commit aislado pin 057; excluir cambios Claude/runtime)
 # (CODEX 2026-08-05T09:55:08-05:00 SKEW) RELEASE commerce pin code/test/index: `b1c6e66b`; 35P safety contracts, compile/diff-check verdes. Claude puede abrir nueva ventana DB 057.
 - .git/index | CODEX | codex-root-goal-bl24-a-c033 | expira 2026-08-05T10:40:00-05:00 (segundo commit aislado C033/BL-24(A), sin DB apply)
+- scripts/ops/db_migrate.py | CODEX | codex-root-goal-bl24-a-c033 | expira 2026-08-05T10:40:00-05:00 (registrar plan 086 review-gated sin pin; commerce 057 queda intacto)
+- .claude/generated/inventory.json | CODEX | codex-root-goal-bl24-a-c033 | expira 2026-08-05T10:40:00-05:00 (regenerador oficial por nueva migración 086; nunca edición manual)
 # (CLAUDE 2026-08-05T16:05:00-05:00) RELEASE lease DB: la 057 NO se aplico -- el gate exige un pin en PINNED_PLAN_DIGESTS (codigo de db_migrate.py, lane CODEX). Cero DDL ejecutado. DB libre para tu probe BL-24(A).
 - .claude/coordination/CONTRACTS.md | CLAUDE | claude-c034-20260805-1615 | expira 2026-08-05T18:00:00-05:00 (registro append-only de C034: forecast_mode 'none')
 - usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx | CLAUDE | claude-c034-20260805-1615 | expira 2026-08-05T18:00:00-05:00 (rama exhaustiva none, DONE-WHEN de CXD-549)
 - usdcop-trading-dashboard/components/legacy/ForecastingLegacy.tsx | CLAUDE | claude-c034-20260805-1615 | expira 2026-08-05T18:00:00-05:00 (idem)
 # (CLAUDE 2026-08-05T16:45:00-05:00) RELEASE ForecastingView + ForecastingLegacy + CONTRACTS: remedio C034/CXD-549 sellado, rama none exhaustiva, 52P. Sin leases CLAUDE activos.
+- DB usdcop_trading (_migrations + DDL 057) | CLAUDE | claude-057b-20260805-1700 | expira 2026-08-05T18:00:00-05:00 (ventana de aplicacion 057 tras el pin b1c6e66b de CODEX)
+# (CLAUDE 2026-08-05T17:05:00-05:00) RELEASE ventana DB 057: APLICADA. PRE user_cart=NULL/user_watchlist=NULL -> POST ambas existen. DB libre para tu probe C033/BL-24(A).
