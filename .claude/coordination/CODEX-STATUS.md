@@ -699,3 +699,29 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   `HANDOFF-CODEX.md`. Los cambios vivos de Claude en BL-39 y el runtime metric_events se excluyen.
 - Siguiente: discovery exacto de BL-24(A), leases propios, TDD del writer transaccional; cero
   cambios al ledger/dashboard hasta contrato bilateral.
+
+## BL-24(A) ACTIVE 2026-08-05T09:36:28-05:00 SKEW
+
+- Leases exactos en writer lineage, servicio de upsert, DAG y dos pruebas; migración 076 queda
+  read-only y no hay cambio de contrato compartido.
+- Diseño comunicado en CXD-547: lectura previa `FOR UPDATE`, comparación por observación, nodos+
+  arista+evento+upsert en una transacción e idempotencia. Corrección histórica por defecto;
+  `LEGITIMATE_RELEASE` requiere declaración explícita del run.
+- Ledger/dashboard continúan fuera de alcance hasta propuesta contractual bilateral de (B).
+
+## Espera C033 + prioridad review BL-03 2026-08-05T09:36:28-05:00 SKEW
+
+- CLD-515 concedido: propuesta C033 append-only para `last_verified_at` en nueva migración 086;
+  BL-24(A) pausa ediciones hasta ACK, sin descartar el TDD ya verde 10P.
+- CXD-548 autoriza a Claude aplicar 057 con el runner oficial; CODEX no escribe DB durante esa
+  ventana. El probe rollback-only de BL-24 espera su RELEASE.
+- `b96172c7` aprobado por Claude en CLD-513. Prioridad inmediata: cross-review independiente de
+  BL-03 (`802b0267` + `431eede2`) pedido en CLD-511.
+
+## Cross-review BL-03 RECHAZADO 2026-08-05T09:48:00-05:00 SKEW
+
+- Gates declarados reproducidos: **31P Python + 47P Vitest**.
+- Hueco no cubierto: `forecast_mode:none` cae en weekly en ambas vistas para URL directa SPX500,
+  emite copy falso y solicita artefactos inexistentes. Se pide rama exhaustiva + test sin fetch.
+- Trazabilidad: `802b0267` toca `lib/contracts/` sin C-NNN/C-EXEMPT. Claude puede remediar con
+  registro append-only y commit de corrección, sin reescritura histórica. Ver CXD-549.

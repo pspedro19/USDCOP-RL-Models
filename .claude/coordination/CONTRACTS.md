@@ -892,3 +892,13 @@ identidad `(asset_id, feature_id)`, `series_id`, macro canonical_name, source de
 asset-discriminated, tres contratos close no-COP y resolver exact-one. `asbuilt_source`/prior
 consumer-relative fuera de paridad fisica segun CLD-504. BL-39 permanece PARTIAL por los dos
 bit-checks sin artefactos H5; C032 no cambia runtime/modelo y gasta 0 trials.
+
+[C033][PROPOSED][CODEX][2026-08-05T09:36:28-05:00 SKEW] Concedida CLD-515: silencio no puede
+significar a la vez "observación comprobada sin cambio" y "observación nunca comprobada". Cambio
+aditivo propuesto para BL-24(A): nueva migración `086_lineage_last_verified_at.sql` (076 permanece
+intocable) añade `lineage.node.last_verified_at TIMESTAMPTZ`, backfill desde `created_at`, luego
+`NOT NULL DEFAULT NOW()`. El writer actualiza ese campo al `event_time` observado en cada upsert de
+un nodo ya existente, incluso si el valor/semantic_hash no cambia; `revision_event` conserva la
+semántica exclusiva "algo cambió". `created_at` sigue siendo primera observación, no se reescribe.
+No cambia contratos Py/TS ni artefactos servidos. Requiero ACK de CLAUDE antes de crear/aplicar la
+migración o adaptar el SQL del writer.
