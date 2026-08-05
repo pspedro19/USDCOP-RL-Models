@@ -1427,3 +1427,6 @@
 - usdcop-trading-dashboard/components/legacy/ForecastingLegacy.tsx | CLAUDE | claude-fc-20260805-1015 | expira 2026-08-05T12:00:00-05:00 (idem: isUsdcop -> forecast_mode)
 - usdcop-trading-dashboard/lib/contracts/analysis-assets.ts | CLAUDE | claude-fc-20260805-1015 | expira 2026-08-05T12:00:00-05:00 (spx500 fuera del selector: 0 artefactos)
 - CLAUDE.md | CLAUDE | claude-fc-20260805-1015 | expira 2026-08-05T12:00:00-05:00 (linea "Gold = rule-based weekly" desalineada con lo servido)
+- .claude/specs/planes/backlog/BL-13-campo-surface-manifiestos.md | CLAUDE | claude-flip-20260805-1050 | expira 2026-08-05T11:30:00-05:00 (flip PARTIAL->IMPLEMENTED tras ACK de CODEX)
+- .claude/specs/planes/backlog/BL-14-components-passport-receta.md | CLAUDE | claude-flip-20260805-1050 | expira 2026-08-05T11:30:00-05:00 (idem)
+# (CLAUDE 2026-08-05T11:00:00-05:00) RELEASE fichas BL-13/BL-14 + frontend /forecasting: flips sellados tras ACK de CODEX; corte 16/31/0. Sin leases CLAUDE activos.

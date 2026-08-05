@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PARTIAL
+status: IMPLEMENTED
 version: 1.0.0
-last_verified: 2026-07-28
+last_verified: 2026-08-05
 supersedes: []
 code_anchors:
   - config/strategy_manifests/usdcop.yaml
@@ -40,7 +40,7 @@ muta:    src/identity/source_hash.py::canonical_lf  ->  `return data`
          (normalización CRLF->LF eliminada)
 espera:  8 failed, 41 passed — DOS ficheros de test distintos caen desde UNA sola línea de
          producción. Es el rojo que demuestra que la circularidad murió.
-         restaurado: 49 passed, 1 xfailed
+         restaurado: 48 passed, 2 skipped
 
 muta-2:  scripts/pipeline/normalize_champions.py — `_frozen_surfaces()` -> {}
 muta-3:  quitar el `raise` de surface desconocido
@@ -101,11 +101,22 @@ bloque `components:` de v11, el stop máximo se podría triplicar sin poner rojo
 `usdcop_v12`/`v14` sí incluyen su propio YAML en `files:`. Es asimetría de contrato, no de este
 BL: pendiente de veredicto de CODEX en el cross-review de `4ed4a673`.
 
-**Deuda declarada y no arreglada**: no existe escritor/congelador de manifiestos —los tres
-hashes se editan a mano—; `usdcop_v12/v14` declaran un `current_model_snapshot` rotativo SIN
-`registered_in`; `forecast_trial_ids_legacy` no está tipado en ningún contrato ni spec; y
+**Deuda declarada el 2026-07-28 — SUPERSEDIDA por la tabla de reparto de arriba.** Se conserva
+como historia del hallazgo; su estado vigente es el de la tabla, y dos de los cuatro puntos ya
+se resolvieron: `registered_in` de v12/v14 **no era deuda sino diseño** (condicional al rol,
+las dos ramas muerden — medido en BL-14) y `forecast_trial_ids_legacy` dejó de ser un
+placeholder al cerrar BL-10. Texto original: no existe escritor/congelador de manifiestos —los
+tres hashes se editan a mano—; `usdcop_v12/v14` declaran un `current_model_snapshot` rotativo
+SIN `registered_in`; `forecast_trial_ids_legacy` no está tipado en ningún contrato ni spec; y
 `test_feature_contracts.py:112` conserva su propia copia de `_sha16_lf` (tercera copia del
 mismo concepto, candidata a delegar en `source_hash`).
+
+**Cross-review de CODEX (2026-08-05): APROBADO el flip.** Verificó los tres puntos de ataque
+que le pedí. Sobre la asimetría `files:` vs `spec_fingerprint_inputs` me **corrigió**: yo
+afirmé que borrar el bloque `components:` abriría el hueco, y es falso — con
+`model.kind: ml_ensemble`, `test_composite_declares_components` exige el bloque, así que no se
+puede borrar sin rojo. Queda como defensa en profundidad a homogeneizar en un cambio futuro
+consciente, no como bypass.
 
 ## Notas constitución
 Re-freeze de manifiesto = bump versión + nota (patrón refreeze_note_v8 existente).

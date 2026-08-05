@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PARTIAL
+status: IMPLEMENTED
 version: 1.0.0
-last_verified: 2026-07-28
+last_verified: 2026-08-05
 supersedes: []
 code_anchors:
   - config/strategy_manifests/usdcop.yaml
@@ -103,6 +103,15 @@ del 2026-07-28 y se conserva como historia. BL-10 cerró (`IMPLEMENTED`), el pla
 que valida `check_trial_ledger.py::check_provenance_wall`, no elegidos a mano), el
 `xfail(strict=True)` se retiró y su test es hoy normal y verde. Verificado por mutación
 arriba: un FT inexistente y la clave borrada ponen rojo. La suite no tiene ningún `xfailed`.
+
+**Cross-review de CODEX (2026-08-05): APROBADO el flip**, con un ataque independiente que
+mejora mi propia lectura. Le pregunté si ensanchar `manifest_frozen_at` a `2026-08-05` con el
+re-freeze **relajaba** el candado `as_of <= manifest_frozen_at`. Respuesta medida: mutar
+`as_of 2026-07-06 -> 2026-08-01` (dentro del nuevo sello, o sea **pasando** la comparación de
+fechas) sigue dando **1 failed**, y cae en la igualdad cruzada contra
+`normalization_snapshot.training.as_of`. El candado efectivo no es la fecha del sello sino la
+**conjunción** reloj/sello + igualdad con el snapshot versionado; mover ambos registros y sus
+hashes sería un re-freeze gobernado, no un bypass silencioso.
 
 **El linaje FT vale hoy `pending-BL-10`, y BL-10 es de CODEX**, así que se entrega como
 `xfail(strict=True)` con la razón escrita: se pondrá ROJO el día que BL-10 cierre y el
