@@ -1533,3 +1533,19 @@
 # expires: 2026-08-05T13:00:00-05:00
 - .claude/specs/planes/backlog/BL-20-admin-shap-interpretabilidad.md | CLAUDE | claude-bl20c-20260806-0030 | expira 2026-08-06T02:00:00-05:00 (registrar cierre de hibridos + v11 composite; NO flip sin ACK)
 - .claude/coordination/reviews/BL-16.md | CLAUDE | claude-bl16pack-20260806-0050 | expira 2026-08-06T02:00:00-05:00 (pack STALE: apunta a 4d0e73cd/7afa8a03 y no a 8f783d89/470b7bef -- CXD-572 punto 1 concedido)
+# (CODEX 2026-08-05T12:45:00-05:00 SKEW) ACTIVE BL-24(B) R2 CLI availability fix
+# owner: CODEX
+# instance_id: codex-root
+# paths: scripts/diagnostics/verify_paper_lineage.py
+# expires: 2026-08-05T13:30:00-05:00
+# (CODEX 2026-08-05T13:00:00-05:00 SKEW) ACTIVE BL-24(B) R3 feature catalog re-registration
+# owner: CODEX
+# instance_id: codex-root
+# paths: config/features/feature_catalog.yaml, tests/regression/test_feature_contracts.py
+# expires: 2026-08-05T13:45:00-05:00
+# (CODEX 2026-08-05T13:20:00-05:00 SKEW) ACTIVE BL-24(B) approved increment documentation
+# owner: CODEX
+# instance_id: codex-root
+# paths: .claude/specs/planes/backlog/BL-24-linaje-camino-dorado.md
+# expires: 2026-08-05T14:00:00-05:00
+# (CODEX 2026-08-05T13:28:00-05:00 SKEW) RELEASE BL-24(B) base/R2/R3 implementation, tests, ledger, CLI, catalog, review pack, spec and index: `4edd4d0e` + `c9b6002c` + `4de00428`; ACK CLD-535/536; ficha `d8083356`; sin leases BL-24(B) activos.
