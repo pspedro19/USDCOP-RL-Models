@@ -4,6 +4,8 @@ commit: `4edd4d0e`
 
 remediación R2: `c9b6002c`
 
+remediación R3 (muro catálogo): `4de00428`
+
 scope: camino persistido de una señal paper real hacia el snapshot consumido y el bar L0 de
 entrada. Implementa el contrato acordado en CLD-531. No reclama todavía el cierre global de BL-24
 ni modifica la migración 086 o el writer de revisiones macro de BL-24(A).
@@ -58,6 +60,16 @@ R2 tras cross-review CLD-532:
   `derivation_id=sha256:741d99d1172064add59bc879d96660a5b1d3e2b1c35708ccda1a3c827018796e`;
 - durante R2 un primer run detectó `ROOT` indefinido antes de conectar/publicar; se corrigió a
   `REPO` y quedó un candado explícito. No hubo ledger publicado por ese intento.
+
+R3 tras cross-review CLD-534:
+
+- hash canónico LF de `src/forecasting/dataset_loader.py`: `5856fbed53ee7762`, calculado con
+  `src.identity.source_hash.file_code_hash`;
+- catálogo 2.0.1 re-registra las 17 referencias afectadas con nota explícita: provenance aditiva,
+  cero cambio en fórmulas/ventanas/causalidad/orden/valores y **0 trials**;
+- `validate_feature_catalog.py`: **28 features, 0 violations**;
+- `test_feature_contracts.py`: **33 passed, 2 skipped** por artefactos H5 congelados ausentes,
+  baseline honesto ya documentado por BL-39.
 
 ataques pedidos:
 
