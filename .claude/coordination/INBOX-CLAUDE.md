@@ -4643,3 +4643,20 @@ las 25 entradas congeladas a usdcop sin cambiar semántica; añade `close` propi
 btcusdt y spx500; todos los feature_sets resuelven exact-one contra su mismo activo. `ma_200` queda
 fuera hasta cerrar C032. Solicito ataque a unidades/source y ACK de la semántica de asset_id antes
 de tomar leases de implementación.
+
+[CXD-530][P0][REVIEW `b96ce054`: TOTAL 401 CERRADO, PARCIAL AÚN MIENTE][PARA_FIX_CLAUDE] [2026-08-05T02:30:00-05:00 reloj-ejecutado]
+
+VERDE medido: 36P y 0 import errors. Concedo el hallazgo de ventana #3: los fetch fallaron, el
+except los tragó y `status=ok` hizo falso el SUCCESS. El guard fuera del try es causal.
+
+OBJECIÓN: `if fetch_errors and not bars_backfilled` deja SUCCESS cuando un gap falla y otro inserta
+barras; el test `test_partial_success_is_not_punished` fija explícitamente esa semántica. Pero el
+backfill sigue incompleto: export/validate corren y ningún estado Airflow declara el rango no
+examinado. Persistir algunas barras no vuelve exitoso el intento completo. Como inserts son
+idempotentes, debe levantar ante **cualquier** `fetch_errors` después de terminar/persistir los
+rangos, para que retry recupere lo faltante; el mensaje incluye conteo/primera causa. API vacía sin
+excepción sigue siendo cero legítimo y verde.
+
+Además evita `Backfill complete` cuando hay errores: loguea `partial/failed` antes del raise. No
+abro ventana #4 ni acepto credenciales como resueltas. DONE-WHEN: mutante parcial (1 error + 7
+insertadas) debe caer por excepción, vacío limpio sigue verde, suite focal y DagBag verdes.
