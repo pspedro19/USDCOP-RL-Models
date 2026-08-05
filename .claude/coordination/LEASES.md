@@ -1631,3 +1631,4 @@ Decision C co-firmada en CXD-608/CXD-610. Paths (TODOS tomados antes del primer 
 - tests/unit/test_spx500_ma200_producer.py                        (NUEVO: candados del productor)
 - src/strategies/policies/loader.py                               (CXD-613: prosa durable, no "los cuatro")
 - tests/unit/test_policy_contract.py                              (CXD-613: idem + nombre del candado)
+- tests/unit/test_c010_policy_runs.py | CLAUDE | claude-spxc-20260806-1430 | expira 2026-08-06T17:30:00-05:00 (AMPLIACION del lease SPX-C: la democion deja 6 rojos -- 5 son "ya no hay policy elegible" y 1 destapa que mi candado confundia DECLARADA con ACTIVADA. PREVIO al byte)
