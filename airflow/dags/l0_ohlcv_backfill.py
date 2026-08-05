@@ -687,6 +687,7 @@ def process_symbol(**context):
 
         # --- Backfill gaps via API ---
         total_inserted = 0
+        fetch_errors = []
         for i, gr in enumerate(gap_ranges, 1):
             start_date = gr['start_date'].isoformat()
             end_date = gr['end_date'].isoformat()
@@ -703,10 +704,14 @@ def process_symbol(**context):
                 time.sleep(API_RATE_DELAY_SECONDS)
             except Exception as e:
                 logging.error(f"[{symbol}] Gap #{i} error: {e}")
+                fetch_errors.append(f"gap#{i} {start_date}→{end_date}: {e}")
                 continue
 
         result['bars_backfilled'] = total_inserted
-        logging.info(f"[{symbol}] Backfill complete: {total_inserted} bars inserted across {len(gap_ranges)} gaps")
+        result['fetch_errors'] = len(fetch_errors)
+        result['first_fetch_error'] = fetch_errors[0] if fetch_errors else None
+        logging.info(f"[{symbol}] Backfill complete: {total_inserted} bars inserted across "
+                     f"{len(gap_ranges)} gaps ({len(fetch_errors)} fetch errors)")
 
     except Exception as e:
         result['status'] = 'error'
@@ -714,6 +719,34 @@ def process_symbol(**context):
         logging.error(f"[{symbol}] Processing failed: {e}")
     finally:
         conn.close()
+
+    # ── Fail-closed FUERA del try: aquí sí escapa y la tarea queda `failed` ──────────
+    #
+    # Estas dos comprobaciones tienen que vivir fuera del bloque anterior: su `except
+    # Exception` captura todo, pone `status: 'error'` en el diccionario y **retorna
+    # normalmente**, asi que Airflow marcaba SUCCESS. Un `raise` dentro del try lo habria
+    # tragado ese mismo `except`.
+    #
+    # Caso 1 — TODA peticion rechazada no es "backfill sin novedades", es un backfill que NO
+    # OCURRIO. Medido en el run `codex_bl40_usdmxn_20260805T0110`: los dos fetch murieron con
+    # `401 Unauthorized` porque las 8 claves de TwelveData son los placeholders literales
+    # `YOUR_REAL_TWELVEDATA_API_KEY_*` de `.env.example`, y la tarea devolvio
+    # `{'status': 'ok', 'bars_backfilled': 0}` y Airflow la marco SUCCESS. Ese SUCCESS afirma
+    # "mire y no habia nada que traer" cuando el hecho es "no me dejaron mirar", y aguas abajo
+    # se lee como que L0 esta al dia.
+    #
+    # El discriminador es el ERROR, no el cero: un hueco que la API sirve vacio (festivo, fuera
+    # de su historia) es un cero legitimo y sigue siendo `ok`.
+    if result.get('fetch_errors') and not result['bars_backfilled']:
+        raise RuntimeError(
+            f"{symbol}: los {result['fetch_errors']} fetch intentados fallaron y no entro "
+            f"ninguna barra — el backfill no ocurrio. Primero: {result['first_fetch_error']}"
+        )
+
+    # Caso 2 — un `status: 'error'` que se reporta como SUCCESS es la misma mentira con otra
+    # forma: si el procesamiento se rompio, la tarea esta roja.
+    if result['status'] == 'error':
+        raise RuntimeError(f"{symbol}: procesamiento fallido — {result.get('error')}")
 
     return result
 

@@ -353,3 +353,80 @@ def test_export_hangs_off_every_symbol_not_just_the_last_one():
     assert "symbol_tasks[-1] >> task_export" not in code
     # La secuencia por pool de API se conserva.
     assert "symbol_tasks[i] >> symbol_tasks[i + 1]" in code
+
+
+# ------- 7: un backfill 100% rechazado no puede reportarse SUCCESS (log real 401)
+def _gap_namespace(fetch, inserta=0):
+    """`process_symbol` con la deteccion de huecos y la API simuladas."""
+    from datetime import date as _date
+
+    ns = _load("resolve_scope", "process_symbol")
+    ns["get_db_connection"] = lambda *a, **k: _Conn({})
+    ns["SYMBOL_CONFIG"] = {s: {"seed_path": Path("nope")} for s in ALL_SYMBOLS}
+    ns["get_data_date_range"] = lambda conn, sym: (_date(2026, 1, 2), _date(2026, 8, 4))
+    ns["get_all_trading_days"] = lambda a, b: [_date(2026, 1, 2)]
+    ns["get_bars_per_day"] = lambda conn, sym: {}
+    ns["detect_all_gaps"] = lambda *a: [_date(2026, 3, 27)]
+    ns["group_consecutive_gaps"] = lambda gaps: [
+        {"start_date": _date(2026, 3, 27), "end_date": _date(2026, 3, 27), "days_missing": 1},
+        {"start_date": _date(2026, 7, 29), "end_date": _date(2026, 8, 4), "days_missing": 6},
+    ]
+    ns["fetch_ohlcv_data"] = fetch
+    ns["filter_market_hours"] = lambda df: df
+    ns["insert_ohlcv_batch"] = lambda conn, df: inserta
+    ns["API_RATE_DELAY_SECONDS"] = 0
+    ns["time"] = SimpleNamespace(sleep=lambda *_a: None)
+    ns["datetime"] = __import__("datetime").datetime
+    ns["COT_TZ"] = __import__("datetime").timezone.utc
+    return ns
+
+
+def _un_401(*_a, **_k):
+    raise RuntimeError("401 Client Error: Unauthorized for url: https://api.twelvedata.com/...")
+
+
+def test_every_rejected_fetch_fails_the_task_instead_of_reporting_success():
+    """Log real del run codex_bl40_usdmxn_20260805T0110: dos 401 y `status: ok` + SUCCESS."""
+    ns = _gap_namespace(_un_401)
+    with pytest.raises(RuntimeError, match="el backfill no ocurrio"):
+        ns["process_symbol"](**_context(["USD/MXN"], symbol="USD/MXN"))
+
+
+def test_the_failure_names_the_first_real_cause():
+    ns = _gap_namespace(_un_401)
+    with pytest.raises(RuntimeError, match="401"):
+        ns["process_symbol"](**_context(["USD/MXN"], symbol="USD/MXN"))
+
+
+def test_a_gap_the_api_serves_empty_is_a_legitimate_zero_and_stays_ok():
+    """El discriminador es el ERROR, no el cero: festivo o fuera de historia es `ok`."""
+    ns = _gap_namespace(lambda *a, **k: pd.DataFrame())
+    resultado = ns["process_symbol"](**_context(["USD/MXN"], symbol="USD/MXN"))
+    assert resultado["status"] == "ok"
+    assert resultado["bars_backfilled"] == 0
+    assert resultado["fetch_errors"] == 0
+
+
+def test_partial_success_is_not_punished():
+    """Si entro aunque sea una barra, un fetch roto no tumba la tarea."""
+    llamadas = {"n": 0}
+
+    def fetch_mixto(*_a, **_k):
+        llamadas["n"] += 1
+        if llamadas["n"] == 1:
+            raise RuntimeError("401 Client Error: Unauthorized")
+        return pd.DataFrame([{"time": pd.Timestamp("2026-07-29", tz="UTC"), "close": 1.0}])
+
+    ns = _gap_namespace(fetch_mixto, inserta=7)
+    resultado = ns["process_symbol"](**_context(["USD/MXN"], symbol="USD/MXN"))
+    assert resultado["status"] == "ok"
+    assert resultado["bars_backfilled"] == 7
+    assert resultado["fetch_errors"] == 1
+
+
+def test_an_internal_error_status_no_longer_returns_as_success():
+    """`status: 'error'` devuelto normalmente era SUCCESS en Airflow."""
+    ns = _gap_namespace(_un_401)
+    ns["get_data_date_range"] = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("DB caida"))
+    with pytest.raises(RuntimeError, match="procesamiento fallido"):
+        ns["process_symbol"](**_context(["USD/MXN"], symbol="USD/MXN"))
