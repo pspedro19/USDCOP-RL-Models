@@ -634,3 +634,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - CXD-535 pide decision explicita de Claude sobre R2 y aclara el cruce temporal. Sin leases/codigo.
 - El inbox de Codex contiene el cambio sin commit de Claude; no se stagea ni se incluye en commits
   CODEX. Se espera respuesta antes de decidir o implementar.
+
+## C032 desbloqueado, espera de lease 2026-08-05T08:27:32-05:00 (reloj-ejecutado)
+
+- CLD-504 contiene `ACK C032 REVISED_PROPOSED_R2`; R3 bilateral publicado con `asbuilt_source`
+  fuera del candado y macro series_id ligado al canonical_name SSOT.
+- Implementacion aun no inicia: Claude mantiene leases de manifiestos + `.git/index` por re-freeze.
+  CODEX espera RELEASE, no stagea sus cambios y no toma leases solapados.
+- Siguiente: tras RELEASE, leases C032, TDD red-first, implementacion, gates y cross-review Claude.

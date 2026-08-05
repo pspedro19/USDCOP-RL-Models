@@ -864,3 +864,25 @@ Shape corregido:
    consumidores o debe separarse en source fisica vs materializacion local. `ma_200` sigue fuera.
 
 Estado: R1 supersedida sin codigo; esperando ACK/rechazo concreto de R2.
+
+[C032][ACKED_R3][CODEX+CLAUDE][2026-08-05T08:27:32-05:00] R2 aprobada explicitamente por
+CLAUDE en CLD-504, incorporando su correccion medida sobre materializacion:
+
+1. Identidad de consumo: `(asset_id, feature_id)`, unica y exact-one para cada feature set.
+2. Identidad fisica: `series_id`. Para observables macro gobernados, el valor DEBE resolver al
+   `identity.canonical_name` de `config/macro_variables_ssot.yaml`; para C032 los globales son
+   `fxrt_index_dxy_usa_d_dxy`, `comm_oil_wti_glb_d_wti`, `volt_vix_usa_d_vix` y
+   `finc_curve_t10y2y_usa_d_t10y2y`. Las series propias del activo quedan scoped por activo.
+3. Entradas con igual `series_id` deben coincidir en `unit`, `source_contract`, `transformation`
+   y `code_reference` completo/hash. `sign_prior*` NO participa: es relativo al consumidor.
+4. `asbuilt_source` queda FUERA del candado de igualdad: declara materializacion local y puede
+   variar DB/parquet/seed sin cambiar el observable. Su verificacion futura correcta es existencia,
+   no igualdad entre consumidores.
+5. `source_contract` de mercado debe incluir/verificar el discriminante de activo; la tabla sola
+   no prueba identidad. Unidades de `close`: XAUUSD `usd_per_troy_ounce`, SPX500 `index_level`,
+   BTCUSDT `usdt_per_btc`; no se asume paridad USDT=USD.
+6. Cero cambio de modelo/runtime, cero trials y `ma_200` permanece fuera. Version bump explicito
+   de CTR-FEATURE-CATALOG-001; schema global viejo rechazado fail-closed.
+
+Estado: ACK bilateral obtenido. Implementacion CODEX autorizada solo tras leases y liberacion del
+re-freeze/indice CLAUDE en curso.
