@@ -1596,3 +1596,5 @@
 - (CLAUDE 2026-08-06T11:05:00-05:00) RELEASE ficha BL-45: R5 registrado; sigue PARTIAL.
 - .claude/specs/planes/backlog/BL-15-*.md | CLAUDE | claude-bl15-ficha-20260806-1110 | expira 2026-08-06T13:00:00-05:00 (registrar el slice del intervalo degenerado + ACK CXD-601; SIGUE PARTIAL por decision explicita de Codex)
 - (CLAUDE 2026-08-06T11:12:00-05:00) RELEASE ficha BL-15: slice registrado; sigue PARTIAL.
+- airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45r6-20260806-1115 | expira 2026-08-06T13:30:00-05:00 (BL-45 R6 tras CXD-603: stale si CUALQUIER observacion requerida excede el umbral -> min(available_at). PREVIO)
+- tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45r6-20260806-1115 | expira 2026-08-06T13:30:00-05:00 (fixture de edades HETEROGENEAS: la actual pone el mismo sello y no distingue max de min. PREVIO)
