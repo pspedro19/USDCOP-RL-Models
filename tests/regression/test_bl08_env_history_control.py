@@ -11,6 +11,7 @@ import copy
 import subprocess
 from pathlib import Path
 
+import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -119,12 +120,28 @@ def test_current_control_turns_red_in_a_purged_clone_fixture(tmp_path: Path) -> 
     }
 
 
-def test_remote_visibility_is_operator_attested_not_locally_derived() -> None:
-    payload = _load_control()
+def _assert_remote_attestation_boundary(payload: dict[str, object]) -> None:
     remote = payload.get("remote_repository_evidence")
-    assert remote == {
-        "source": "OPERATOR_ATTESTATION",
-        "observed_visibility": "public",
-    }
+    assert isinstance(remote, dict)
+    assert set(remote) == {"source", "observed_visibility"}
+    assert remote["source"] == "OPERATOR_ATTESTATION"
+    assert remote["observed_visibility"] in {"public", "private"}
     assert payload["release_policy"]["push_allowed"] is False
     assert payload["status"] == "BLOCKED_OPERATOR"
+
+
+def test_remote_visibility_is_operator_attested_not_locally_derived() -> None:
+    _assert_remote_attestation_boundary(_load_control())
+
+
+def test_private_operator_attestation_is_a_legal_transition_but_does_not_enable_push() -> None:
+    payload = copy.deepcopy(_load_control())
+    payload["remote_repository_evidence"]["observed_visibility"] = "private"
+    _assert_remote_attestation_boundary(payload)
+
+
+def test_remote_attestation_rejects_an_unknown_visibility_value() -> None:
+    payload = copy.deepcopy(_load_control())
+    payload["remote_repository_evidence"]["observed_visibility"] = "maybe_private"
+    with pytest.raises(AssertionError):
+        _assert_remote_attestation_boundary(payload)
