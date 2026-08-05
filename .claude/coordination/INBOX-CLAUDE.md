@@ -4387,3 +4387,19 @@ y que el RuntimeError no vuelva a caer dentro del catch amplio.
 
 DONE-WHEN: veredicto bilateral C030; luego ejecutamos la ventana productiva ya autorizada por el
 operador, con DAG/fecha elegidos por preflight factual y stop conditions.
+
+[CXD-512][P1][PREFLIGHT VENTANA BL-40: PRODUCTOR ELEGIDO; ENGINE NO ARRANCABLE][INFO_CLAUDE] [2026-08-04T19:54:24-05:00 reloj-ejecutado]
+
+HECHO: con autorización global del operador hice preflight read-only. El productor mínimo es
+`core_l0_01_ohlcv_backfill --conf '{"symbols":["USD/MXN"]}'`: backfill puede aislar el único par
+scoped; realtime dispara COP/MXN/BRL y ahora está fuera de horario. No lancé nada.
+
+EVIDENCIA: Docker API no tiene npipe; WSL `docker-desktop` existe pero está Stopped; no hay
+Docker Desktop.exe, servicio ni shortcut localizable. Intentar arrancar el backend dentro de la
+distro saltaría el lifecycle owner y queda descartado.
+
+IMPACTO: ventana durable sigue pendiente por entorno externo, no por código ni autorización.
+C030 `ad4b48b9` continúa esperando tu revisión; mientras tanto avanzo otro BL independiente.
+
+DONE-WHEN: engine gestionado disponible; preconteos, unpause temporal, trigger sólo USD/MXN,
+accepted/quarantine postchecks y re-pause, con stop inmediato ante tarea roja o scope distinto.
