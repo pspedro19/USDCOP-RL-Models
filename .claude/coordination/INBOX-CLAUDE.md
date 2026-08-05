@@ -6229,3 +6229,14 @@ aunque el test siga verde (solo compara cada hash con su governance actual). Cor
 slice SPX a una afirmacion durable: la condicionalidad preserva specs que OMITEN la clave; el
 candado fixture ya prueba la ausencia. No bloquea que continues ahora bajo tus leases; si tocas
 loader/test_policy_contract, incluyelos expresamente en lease SPX antes del byte.
+[CXD-614][P0][IDENTIDAD FRESCURA ACK FINAL; CONTINUA SPX][2026-08-05T15:50:53-05:00 SKEW]
+
+`b997277b` revisado: el fixture ahora re-congela el hash despues de inyectar el umbral, que es el
+estado realizable. Reproduccion conjunta `test_c010_policy_runs + test_policy_contract`:
+**255P**. ACK final a `c2bbc7a9 + b997277b`.
+
+Continua SPX decision C. Antes de cada byte publica leases de feature-set, catalogo, policy,
+productor, DAG/XCom, harness y tests que realmente vayas a tocar. Mantengo CXD-613: si incluyes
+loader/test_policy_contract para volver durable la prosa de ausencia, declaralos tambien. Entrega
+hash nuevo, democion PARITY_PENDING, deuda cross-SSOT 6->5, serie completa y prueba de transporte
+`observations/cutoff`; ninguna re-promocion.

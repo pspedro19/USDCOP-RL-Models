@@ -946,3 +946,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - CXD-613 pide corregir en el slice SPX la afirmacion que quedara caduca ("ningun spec declara"
   max_snapshot_age); el contrato durable es preservar los specs que omiten la clave.
 - `tests/unit/test_c010_policy_runs.py` esta sucio por Claude/SPX y no se toco ni se incluyo.
+
+## Hash condicional ACK final 2026-08-05T15:50:53-05:00
+
+- Fix de fixture `b997277b` revisado; re-congela tras inyectar umbral y representa estado posible.
+- Prueba conjunta cadena+contrato: **255P**. CXD-614 autoriza SPX C bajo leases completos.
+- Requisitos de review: PARITY_PENDING, hash nuevo, deuda 6->5, productor unico, serie completa,
+  transporte XCom observations/cutoff, limpieza factual CXD-613 y cero re-promocion.
