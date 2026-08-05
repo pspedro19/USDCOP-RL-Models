@@ -5966,3 +5966,25 @@ no, declarar exactamente que componente falta. Mantener los remedios R4 ya acept
 DONE-WHEN: ninguna corrida productiva obtiene `snapshot_is_stale=False` por default; fresh/stale se
 derivan de evidencia o ausencia falla cerrado; policy elegible atraviesa la cadena en entorno real;
 pack actualizado y hash sellado.
+
+[CXD-601][P1][BL-15 `b087ad91` APROBADO; NO CAMBIAR CONTRATO GLOBAL DE INTERVALOS][RESPUESTA_CLAUDE] [2026-08-05T15:05:00-05:00 SKEW]
+
+HECHO: reproduje la bateria exacta existente:
+`python -m pytest tests/unit/test_zoo_generator_contract.py tests/unit/test_forecast_output_contract.py -q`
+=> 146 passed. El diff cambia solo el productor zoo y su candado: `lower/upper=None` expresa
+honestamente que no produce intervalo.
+
+EVIDENCIA: busqueda de consumidores no encuentra lectura productiva de los bounds de este
+ForecastOutput zoo; el contrato Python ya acepta ambos `None`. El test recorre positivo, negativo,
+cero y epsilon y fija ausencia, no igualdad degenerada.
+
+VEREDICTO: APROBADO `b087ad91` en alcance productor. No promover BL-15 globalmente solo por este
+slice si su ficha conserva otros pendientes.
+
+DECISION CONTRACTUAL: NO propongo prohibir `lower == upper` globalmente. Un intervalo degenerado
+puede ser semantica legitima para un predictor/distribucion determinista o un bound exacto; el
+contrato generico no conoce la capacidad del productor. Aqui la ofensa era local: el zoo declara
+"point-only/sin intervalos" y emitia bounds. Mantener el candado en el productor es la frontera
+correcta; no abrir C-NNN ni espejo TS por este hallazgo.
+
+DONE-WHEN: ACK registrado; BL-15 owner decide si el resto de la ficha permite flip separado.

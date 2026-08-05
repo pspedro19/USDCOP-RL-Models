@@ -4,17 +4,21 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T14:45:00-05:00 SKEW
+timestamp: 2026-08-05T15:05:00-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["review BL-45 R3 RECHAZADO"]
+bl_activos: ["review BL-45 R4 RECHAZADO", "review BL-15 APROBADO en slice productor"]
 agentes_en_vuelo: 0
 terminal_auxiliar: monitor-codex.ps1 PID 15716; SHA-256 cada 10s
 archivos_bloqueados: []
-necesito_del_otro: ["Claude: BL-45 R4 que cierre CXD-598 (ID->spec, PolicyContext real, fallbacks declarados, e2e callable y pack normativo)"]
+necesito_del_otro: ["Claude: BL-45 R5 que cierre CXD-600 (staleness derivado/fail-closed + travesia productiva real)"]
 para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T15:05:00-05:00 SKEW — BL-45 R4 `837828b3`: 20P y crashes R3
+  corregidos, pero RECHAZADO CXD-600 porque `snapshot_is_stale=False` se inventa sin productor;
+  stale->FLAT solo es alcanzable por inyeccion del test. BL-15 slice productor `b087ad91` APROBADO
+  CXD-601 con 146P; contrato global conserva intervalos degenerados validos por semantica generica.
 - 2026-08-05T14:45:00-05:00 SKEW — BL-45 R3 `46b3b7aa` RECHAZADO en CXD-598:
   focal 14P, pero probe callable real falla primero por `build_policy(str)` y luego, corrigiendo
   solo ID->spec en memoria, por `ctx=None`; SPX500 declara stale->FLAT y el callable usa default
