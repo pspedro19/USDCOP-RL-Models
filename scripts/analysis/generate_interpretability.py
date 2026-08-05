@@ -1284,6 +1284,197 @@ def generate_zoo_hybrid(model_ids: tuple[str, ...] | None = None,
     return paths
 
 
+def generate_composite_v11(*, supersede: bool = False) -> list[Path]:
+    """SHAP del componente `decision_input` de v11 — el PREDICTOR, NO la decision operada.
+
+    Es la superficie que faltaba de BL-20 y la que mas facil seria publicar mintiendo, asi
+    que las tres afirmaciones que NO hace van primero:
+
+    1. **NO explica lo que v11 opera.** El manifiesto declara `usdcop_ridge_br` con
+       `role: decision_input`: la decision pasa DESPUES por el gate de regimen (Hurst),
+       el sizing por confianza y la mecanica TP/HS — todo eso son REGLAS, no el modelo, y
+       un valor SHAP no las atribuye. La estrategia gana o pierde por el conjunto; esto
+       explica solo su entrada.
+    2. **NO explica el snapshot que persiste el DAG.** El manifiesto declara DOS feature
+       sets con divergencia `declared_not_resolved`: la RECETA (`recipe25`, la que
+       construye `enhance_v2::enhance_features_v2`, y la que se usa aqui) y lo que el DAG
+       H5-L3 persiste (`dag_legacy23`). Difieren en `rate_diff_ibr_ust2y` y `term_spread`.
+       Publicar "interpretabilidad de v11" sin decir cual seria ambiguo justo donde importa.
+    3. **NO es un modelo nuevo.** Ridge y BayesianRidge con los hiperparametros congelados
+       del manifiesto, sin tuning y sin ninguna metrica de acierto: 0 trials.
+
+    Lo que SI es exacto: el predictor es la MEDIA del ensemble, o sea una combinacion lineal,
+    luego `phi = (phi_ridge + phi_br)/2` y `base = (b_ridge + b_br)/2` — mismo argumento que
+    los hibridos. Y como alli, no se afirma: `additivity_max_abs_err` lo comprueba contra la
+    prediccion del ENSEMBLE y si no cuadra no se publica.
+    """
+    from sklearn.preprocessing import StandardScaler
+    from src.forecasting.models.factory import ModelFactory
+    from src.forecasting.ssot_config import ForecastingSSOTConfig
+    from src.forecasting.dataset_loader import ForecastingDatasetLoader
+    from src.forecasting.enhance_v2 import enhance_features_v2
+
+    MEMBERS = ("ridge", "bayesian_ridge")      # manifiesto: model.members de smart_simple_v11
+    cfg = ForecastingSSOTConfig.load()
+    loader = ForecastingDatasetLoader(cfg, project_root=REPO)
+    df, _ = loader.load_dataset()
+    base_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
+    df = df.sort_values("date").reset_index(drop=True)
+
+    # LA RECETA v11, no las 21 del zoo: construirla con el MISMO builder que declara el
+    # manifiesto es lo que hace que esto explique a v11 y no a un primo suyo.
+    df, feat_cols = enhance_features_v2(df, base_cols, project_root=REPO)
+    feat_cols = [c for c in feat_cols if c in df.columns]
+
+    recipe = yaml_safe_load_recipe()
+    faltan = [f for f in recipe if f not in feat_cols]
+    if faltan:
+        raise RuntimeError(
+            f"la receta v11 declara features que el builder no produjo: {faltan} — "
+            f"publicar sin ellas seria atribuir otro modelo")
+    feat_cols = list(recipe)                   # ORDEN de la receta, no el del builder
+
+    df["y5"] = df["close"].shift(-HORIZON) / df["close"] - 1.0
+    df["regime"] = _regime_labels(df)
+    version = pd.Timestamp(df["date"].iloc[-1]).date().isoformat()
+
+    folds = _annual_expanding_folds(df, feat_cols)
+    if not folds:
+        raise RuntimeError("v11 composite: ningun fold anual cumple la guarda de train minimo")
+    distinct_train_rows = _distinct_train_rows(folds)
+    data_fp = _frame_fingerprint(df, feat_cols + ["close"])
+    code_fp = _code_fingerprint()
+
+    phi_parts, base_parts, coef_parts, dates, fold_meta = [], [], [], [], []
+    add_err = 0.0
+    for f in folds:
+        sc = StandardScaler().fit(f["Xtr"])
+        Xte = sc.transform(f["test"][feat_cols].to_numpy(float))
+        phis, bases, preds, coefs_m = [], [], [], []
+        for mid in MEMBERS:
+            mdl = ModelFactory.create(mid)
+            mdl.fit(sc.transform(f["Xtr"]), f["ytr"])
+            phi_m, intercept, coefs = _linear_contributions(mdl, Xte)
+            phis.append(np.asarray(phi_m, float))
+            bases.append(float(intercept))
+            coefs_m.append(np.asarray(coefs, float))
+            preds.append(np.asarray(mdl.predict(Xte), float).ravel())
+        coef_parts.append(np.mean(coefs_m, axis=0))   # el ensemble es lineal: coef = media
+        phi_f = np.mean(phis, axis=0)                  # ensemble = media -> SHAP = media
+        base_f = float(np.mean(bases))
+        ens_pred = np.mean(preds, axis=0)
+        add_err = max(add_err,
+                      float(np.nanmax(np.abs(phi_f.sum(axis=1) + base_f - ens_pred))))
+        phi_parts.append(phi_f)
+        base_parts.append(np.full(len(Xte), base_f, dtype=float))
+        dates.append(f["test"][["date", "regime"]])
+        fold_meta.append(_fold_meta(f, len(Xte), base_f))
+
+    if not np.isfinite(add_err) or add_err > 1e-9:
+        raise RuntimeError(
+            f"v11 composite: la media del ensemble no reproduce la prediccion "
+            f"(additivity_max_abs_err={add_err:.3e}). No se publica.")
+
+    phi = np.vstack(phi_parts)
+    meta = pd.concat(dates, ignore_index=True)
+    base_value = float(np.nanmean(np.concatenate(base_parts)))
+    global_rows = _agg_rows(phi, feat_cols, np.ones(len(phi), dtype=bool))
+    coef_mean = np.mean(np.vstack(coef_parts), axis=0)
+    col = {c: i for i, c in enumerate(feat_cols)}
+    top_features = [{"rank": i + 1, "feature": r["feature"],
+                     "coef": float(coef_mean[col[r["feature"]]]),
+                     "mean_abs_shap": r["mean_abs_shap"], "mean_shap": r["mean_shap"]}
+                    for i, r in enumerate(global_rows)]
+    scale = float(np.nanmean([r["mean_abs_shap"] for r in global_rows]))
+    yr_arr = meta["date"].dt.year.to_numpy()
+    by_year = {str(int(y)): _agg_rows(phi, feat_cols, yr_arr == y) for y in sorted(set(yr_arr))}
+    reg_arr = meta["regime"].to_numpy()
+    by_regime = {str(r): _agg_rows(phi, feat_cols, reg_arr == r) for r in sorted(set(reg_arr))}
+
+    config_fp = _canonical_sha({
+        "horizon": HORIZON, "purge_days": HORIZON, "min_train": MIN_TRAIN,
+        "features": feat_cols, "members": list(MEMBERS),
+        "feature_set_id": "usdcop_smart_simple_v11_recipe25",
+        "builder": "src/forecasting/enhance_v2.py::enhance_features_v2",
+        "forecasting_ssot": _file_fingerprint(Path(cfg._config_path)),
+        "manifest": _file_fingerprint(REPO / "config" / "strategy_manifests" / "usdcop.yaml"),
+        "regime_gate_config": _file_fingerprint(
+            REPO / "config" / "execution" / "smart_simple_v1.yaml"),
+    })
+    model_fp = _canonical_sha({
+        "basis": "frozen_recipe_plus_fold_train_fingerprints",
+        "component_id": "usdcop_ridge_br", "members": list(MEMBERS),
+        "folds": [m["fold_fingerprint"] for m in fold_meta],
+    })
+
+    payload = {
+        "nota": NOTA,
+        "surface": "composite",
+        "asset": "usdcop",
+        "model_id": "usdcop_ridge_br",
+        "model_type": "linear",
+        "method": "linear_shap_closed_form",
+        "attribution_not_shap": False,
+        "version": version,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "provenance": {
+            "data_fingerprint": data_fp, "code_fingerprint": code_fp,
+            "config_fingerprint": config_fp, "model_fingerprint": model_fp,
+            "model_fingerprint_basis": "frozen_recipe_plus_fold_train_fingerprints",
+        },
+        "additivity_max_abs_err": add_err,
+        "fit": {
+            "scheme": ("walk-forward EXPANDING ANUAL: fit con filas < 1-ene-Y menos purga "
+                       f"de {HORIZON}d; atribucion SOLO sobre filas del año Y (test-fold)"),
+            "origin": version,
+            **_train_size_summary(fold_meta, distinct_train_rows),
+            "horizon": HORIZON, "purge_days": HORIZON,
+            "scaler": "StandardScaler train-only por fold",
+            # n_fits = folds x miembros: el ensemble ajusta AMBOS modelos en cada fold,
+            # asi que publicar `len(folds)` seria contar la mitad de los fits reales.
+            "n_fits": len(folds) * len(MEMBERS),
+            "params": {"members": "+".join(MEMBERS), "ensemble": "mean"},
+        },
+        "folds": fold_meta,
+        "scope": (
+            "COMPONENTE `usdcop_ridge_br` (role=decision_input) del manifiesto congelado de "
+            "smart_simple_v11. NO explica lo que la estrategia OPERA: la decision pasa despues "
+            "por el gate de regimen (Hurst), el sizing por confianza y la mecanica TP/HS, que "
+            "son REGLAS y no se atribuyen con SHAP. Feature set = usdcop_smart_simple_v11_"
+            "recipe25 (25, builder enhance_v2::enhance_features_v2); el DAG H5-L3 persiste "
+            "usdcop_smart_simple_v11_dag_legacy23 (23) y la divergencia esta declarada como "
+            "declared_not_resolved: FALTAN alli rate_diff_ibr_ust2y y term_spread, asi que "
+            "esto NO explica el snapshot del DAG. Ensemble = MEDIA de ridge y bayesian_ridge, "
+            "luego phi = media de sus phi (exacto, comprobado por aditividad). Solo filas OOS; "
+            "hiperparametros congelados, ninguna metrica de acierto computada (0 trials)."),
+        "base_value": base_value,
+        "n_rows": int(len(phi)),
+        "n_features": len(feat_cols),
+        "n_folds": len(fold_meta),
+        "top_features": top_features,
+        "by_year": by_year,
+        "by_regime": by_regime,
+        "regime_gate": ("gate Hurst congelado de config/execution/smart_simple_v1.yaml "
+                        "evaluado con retornos <= la propia fila (sin look-ahead). Se usa para "
+                        "CORTAR la atribucion por regimen, no se atribuye a si mismo"),
+        "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
+        "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
+    }
+    p = _write("composite", "usdcop", "usdcop_ridge_br", version, payload, supersede=supersede)
+    print(f"[composite] usdcop_ridge_br: {_rel(p)} (n_rows={len(phi)}, "
+          f"folds={len(fold_meta)}, feats={len(feat_cols)}, add_err={add_err:.2e})", flush=True)
+    return [p]
+
+
+def yaml_safe_load_recipe() -> list[str]:
+    """Los 25 `feature_id` de la receta v11, EN ORDEN, leidos del feature_set congelado."""
+    import yaml
+    fs = yaml.safe_load(
+        (REPO / "config" / "features" / "feature_sets"
+         / "usdcop_smart_simple_v11_recipe25.yaml").read_text(encoding="utf-8"))
+    return [f["feature_id"] for f in sorted(fs["ordered_features"], key=lambda r: r["order"])]
+
+
 def _shap_package_available() -> bool:
     """¿Importa el paquete `shap`? Informativo: el TreeSHAP usado es el NATIVO del booster."""
     try:

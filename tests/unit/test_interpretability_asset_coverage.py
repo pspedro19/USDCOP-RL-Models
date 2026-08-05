@@ -131,6 +131,49 @@ def test_undeclared_asset_is_rejected_not_silently_defaulted() -> None:
         _models_for_asset("noexiste", "linear")
 
 
+def test_v11_composite_component_has_a_published_artifact() -> None:
+    """La superficie `composite` de v11 tiene artefacto, y NO se confunde con el zoo.
+
+    Rojo con: borrar `data/interpretability/composite/usdcop/usdcop_ridge_br/`.
+    Sin este test la superficie que cierra BL-20 quedaba sin juez, igual que Gold/BTC
+    antes de CXD-569.
+    """
+    base = ARTIFACT_ROOT / "composite" / "usdcop" / "usdcop_ridge_br"
+    assert base.is_dir() and any(base.glob("*/summary.json")), (
+        "falta el artefacto del componente `usdcop_ridge_br` (role=decision_input) de "
+        "smart_simple_v11. Regenerar con: python -c \"from scripts.analysis."
+        "generate_interpretability import generate_composite_v11; generate_composite_v11()\"")
+
+
+def test_v11_composite_declares_the_recipe25_and_denies_explaining_the_decision() -> None:
+    """Las DOS afirmaciones que hacen honesto ese artefacto, exigidas por contrato.
+
+    (1) Que explica la RECETA de 25 y no el snapshot de 23 que persiste el DAG — la
+        divergencia esta `declared_not_resolved` en el manifiesto y omitirla haria el
+        artefacto ambiguo justo donde importa.
+    (2) Que NO explica lo que la estrategia OPERA: gate de regimen, sizing y TP/HS son
+        REGLAS y no se atribuyen con SHAP. Sin esta frase, "interpretabilidad de v11" se
+        lee como si explicara el PnL.
+
+    Rojo con: quitar cualquiera de las dos del `scope`, o publicar con != 25 features.
+    """
+    import json
+    art = sorted((ARTIFACT_ROOT / "composite" / "usdcop" / "usdcop_ridge_br")
+                 .glob("*/summary.json"))
+    assert art, "sin artefacto composite que juzgar"
+    d = json.loads(art[-1].read_text(encoding="utf-8"))
+    assert d["n_features"] == 25, (
+        f"el componente de v11 se atribuye sobre la RECETA de 25 features; "
+        f"el artefacto declara {d['n_features']}")
+    scope = d.get("scope", "")
+    assert "recipe25" in scope and "dag_legacy23" in scope, (
+        "el scope debe nombrar AMBOS feature sets: explicar uno y callar el otro deja "
+        "ambiguo que se esta atribuyendo")
+    assert "NO explica" in scope and "REGLAS" in scope, (
+        "el scope debe negar explicitamente que esto explique la decision operada "
+        "(gate/sizing/TP-HS son reglas, no el modelo)")
+
+
 def test_every_covered_asset_declares_a_config_path() -> None:
     """Los activos cubiertos están en `ASSET_CONFIGS`; si no, `--asset` los rechazaría."""
     faltan = [a for a in COVERED_ASSETS if a not in ASSET_CONFIGS]
