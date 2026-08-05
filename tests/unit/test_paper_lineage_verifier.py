@@ -180,9 +180,9 @@ def test_wrong_persisted_node_type_is_broken() -> None:
     assert "wrong lineage node types" in result.detail
 
 
-def test_persistence_failure_is_reported_as_broken() -> None:
+def test_persistence_failure_is_reported_as_unavailable() -> None:
     result = verify_paper_path(BrokenConnection(), _ledger(_ids()), strategy_id="smart_simple_v11")
-    assert result.status is PaperPathStatus.BROKEN
+    assert result.status is PaperPathStatus.UNAVAILABLE
     assert result.verified is False
     assert result.detail == "database unavailable"
 
@@ -194,6 +194,66 @@ def test_cli_exit_codes_keep_absent_distinct_from_success() -> None:
     assert EXIT_CODES[PaperPathStatus.BROKEN] != 0
     assert EXIT_CODES[PaperPathStatus.ABSENT] != 0
     assert EXIT_CODES[PaperPathStatus.BROKEN] != EXIT_CODES[PaperPathStatus.ABSENT]
+    assert EXIT_CODES[PaperPathStatus.UNAVAILABLE] == 3
+    assert EXIT_CODES[PaperPathStatus.UNAVAILABLE] not in {
+        EXIT_CODES[PaperPathStatus.RESOLVED],
+        EXIT_CODES[PaperPathStatus.BROKEN],
+        EXIT_CODES[PaperPathStatus.ABSENT],
+    }
+
+
+def test_cli_detects_broken_trade_identity_before_connecting_to_database(tmp_path: Path) -> None:
+    ledger = tmp_path / "ledger.json"
+    ledger.write_text(json.dumps(_ledger(_ids(), trades=[])), encoding="utf-8")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "scripts/diagnostics/verify_paper_lineage.py",
+            "--ledger",
+            str(ledger),
+            "--strategy-id",
+            "smart_simple_v11",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    report = json.loads(completed.stdout)
+    assert completed.returncode == 1
+    assert report["status"] == "BROKEN"
+    assert "got 0" in report["detail"]
+
+
+def test_cli_reports_database_failure_as_unavailable_with_exit_three(
+    monkeypatch, tmp_path: Path, capsys
+) -> None:
+    from scripts.diagnostics import verify_paper_lineage as cli
+
+    ledger = tmp_path / "ledger.json"
+    ledger.write_text(json.dumps(_ledger(_ids())), encoding="utf-8")
+
+    def unavailable():
+        raise RuntimeError("database intentionally unavailable")
+
+    monkeypatch.setattr(cli, "get_psycopg2_connection", unavailable)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "verify_paper_lineage.py",
+            "--ledger",
+            str(ledger),
+            "--strategy-id",
+            "smart_simple_v11",
+        ],
+    )
+
+    assert cli.main() == 3
+    report = json.loads(capsys.readouterr().out)
+    assert report["status"] == "UNAVAILABLE"
+    assert report["verified"] is False
+    assert report["coverage"] == 0
+    assert report["detail"] == "database intentionally unavailable"
 
 
 def test_cli_reports_real_absence_with_coverage_zero_and_exit_two(tmp_path: Path) -> None:

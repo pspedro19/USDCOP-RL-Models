@@ -156,3 +156,18 @@ def test_real_producer_commits_lineage_before_atomic_publication() -> None:
 
     assert staged_write < commit < publication
     assert rollback > publication
+
+
+def test_real_producer_uses_its_declared_repository_root() -> None:
+    source = PRODUCER.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    module_names = {
+        target.id
+        for node in tree.body
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+    assert "REPO" in module_names
+    assert "project_root=REPO" in source
+    assert "project_root=ROOT" not in source

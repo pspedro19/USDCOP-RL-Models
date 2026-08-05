@@ -92,17 +92,16 @@ def _python_values(value):
 def main() -> int:
     from train_and_export_smart_simple import (
         load_config,
-        load_data_with_provenance,
         run_production_backtest,
     )
     from src.forecasting.enhance_v2 import enhance_features_v2
-    from src.forecasting.dataset_loader import rebind_dataset_provenance
+    from src.forecasting.dataset_loader import load_data_with_provenance, rebind_dataset_provenance
     from src.contracts.strategy_schema import safe_json_dump
     from src.identity.candidate_ledger import seal_candidate_ledger
     from src.lineage.paper_writer import persist_paper_lineage
 
     cfg0 = load_config()
-    df, feats, provenance = load_data_with_provenance()
+    df, feats, provenance = load_data_with_provenance(project_root=REPO)
     df, feats = enhance_features_v2(df, feats)
     provenance = rebind_dataset_provenance(provenance, df, feats)
 

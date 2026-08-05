@@ -17,11 +17,12 @@ from src.lineage.graph import (
 
 
 class PaperPathStatus(StrEnum):
-    """Three non-overlapping outcomes; ABSENT is deliberately not success."""
+    """Non-overlapping verification outcomes; only RESOLVED is success."""
 
     RESOLVED = "RESOLVED"
     BROKEN = "BROKEN"
     ABSENT = "ABSENT"
+    UNAVAILABLE = "UNAVAILABLE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,8 +135,8 @@ def verify_paper_path(
     """Verify the exact signal -> snapshot -> L0 path declared by a real ledger.
 
     A ledger without identifiers is ``ABSENT`` (coverage zero), not a successful
-    verification. Once a declaration exists, every malformed or unprovable state is
-    ``BROKEN``.
+    verification. Malformed lineage is ``BROKEN``; infrastructure that cannot be
+    queried is ``UNAVAILABLE`` and must never masquerade as broken lineage.
     """
 
     preliminary, node_ids, expected_signal_hash, detail = _declared_ids(ledger, strategy_id)
@@ -144,8 +145,20 @@ def verify_paper_path(
     assert node_ids is not None
     assert expected_signal_hash is not None
 
+    if connection is None:
+        return PaperPathResult(
+            PaperPathStatus.UNAVAILABLE,
+            strategy_id,
+            "lineage persistence is unavailable",
+            node_ids,
+        )
+
     try:
         nodes, edges = _load_subgraph(connection, node_ids)
+    except Exception as exc:  # noqa: BLE001 - database adapter boundary
+        return PaperPathResult(PaperPathStatus.UNAVAILABLE, strategy_id, str(exc), node_ids)
+
+    try:
         nodes_by_id = {node.node_id: node for node in nodes}
         missing = [node_id for node_id in node_ids if node_id not in nodes_by_id]
         if missing:
@@ -168,7 +181,7 @@ def verify_paper_path(
             raise LineagePathError(
                 f"golden path must be signal -> snapshot -> bar_l0, got {resolved_ids!r}"
             )
-    except Exception as exc:  # noqa: BLE001 - DB adapter boundary must fail closed as BROKEN
+    except (LineagePathError, KeyError, TypeError, ValueError) as exc:
         return PaperPathResult(PaperPathStatus.BROKEN, strategy_id, str(exc), node_ids)
 
     return PaperPathResult(

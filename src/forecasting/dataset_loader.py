@@ -106,6 +106,16 @@ def rebind_dataset_provenance(
     )
 
 
+def load_data_with_provenance(
+    *, project_root: Path | None = None, target_horizon: int = 5
+) -> tuple[pd.DataFrame, list[str], DatasetProvenance]:
+    """Load the production dataset while retaining its content provenance."""
+    config = ForecastingSSOTConfig.load()
+    loader = ForecastingDatasetLoader(config, project_root=project_root)
+    frame, feature_columns = loader.load_dataset(target_horizon=target_horizon)
+    return frame, feature_columns, loader.provenance
+
+
 def _find_project_root() -> Path:
     """Walk up from this file to find project root (contains pyproject.toml)."""
     p = Path(__file__).resolve().parent
