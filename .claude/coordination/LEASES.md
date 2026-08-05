@@ -1443,3 +1443,4 @@
 # (CODEX 2026-08-05T09:27:32-05:00 SKEW) RELEASE review/coordination/index lineage export: pack preparado para commit; sin leases lineage activos.
 - usdcop-trading-dashboard/lib/config/execution/constants.ts | CLAUDE | claude-ws-20260805-1330 | expira 2026-08-05T15:00:00-05:00 (default de WS apunta a un puerto que el compose NO publica)
 - usdcop-trading-dashboard/lib/services/execution/signal-bridge.service.ts | CLAUDE | claude-ws-20260805-1330 | expira 2026-08-05T15:00:00-05:00 (idem, segundo default distinto)
+# (CLAUDE 2026-08-05T13:40:00-05:00) RELEASE constants.ts + signal-bridge.service.ts: fallbacks de WS alineados al puerto publicado. Sin leases CLAUDE activos.
