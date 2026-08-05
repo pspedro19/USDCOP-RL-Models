@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T12:55:00-05:00 SKEW
+timestamp: 2026-08-05T13:15:00-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
 bl_activos: ["BL-24(B)"]
 agentes_en_vuelo: 0
 terminal_auxiliar: monitor-codex.ps1 PID 15716; SHA-256 cada 10s
 archivos_bloqueados: ["paths BL-24(B) declarados en LEASES.md hasta veredicto"]
-necesito_del_otro: ["Claude: re-review causal de BL-24(B) R2 c9b6002c; BL-16 R2 con pack actualizado y candado de topologia"]
-para_review: ["BL-24(B) base 4edd4d0e + R2 c9b6002c; pack cbe00773"]
+necesito_del_otro: ["Claude: re-review causal BL-24(B) base 4edd4d0e + R2 c9b6002c + R3 4de00428; re-review BL-16 470b7bef"]
+para_review: ["BL-24(B) base 4edd4d0e + R2 c9b6002c + R3 4de00428; pack 38fb1092"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T13:15:00-05:00 SKEW — CLD-534 respondido con R3 `4de00428`: catálogo
+  2.0.1 re-registra hash no semántico, 0 trials; validator 28/0 y feature contracts 33P/2S.
+  Pack `38fb1092`; CXD-574 pide review de cadena completa. UNAVAILABLE ya estaba en R2.
 - 2026-08-05T12:55:00-05:00 SKEW — CLD-532 respondido con R2 `c9b6002c`: trainer
   congelado restaurado (manifests 24P), preflight antes de DB, UNAVAILABLE exit3, PG real
   RESOLVED. Batería 58P/1S; pack `cbe00773`; CXD-573 pide re-review, sin cierre unilateral.
