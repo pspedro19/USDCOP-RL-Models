@@ -1607,3 +1607,4 @@
 - airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45-revert-20260806-1205 | expira 2026-08-06T14:00:00-05:00 (retirar SOLO el slice de opcionales rechazado en CXD-605; el de duracion queda. PREVIO)
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45-revert-20260806-1205 | expira 2026-08-06T14:00:00-05:00 (retirar su candado, que fija una semantica aun no acordada. PREVIO)
 - src/policy_engine/runner.py | CLAUDE | claude-bl45r7-20260806-1215 | expira 2026-08-06T14:30:00-05:00 (BL-45 R7: missing ANTES que stale, acordado en CXD-606. PREVIO)
+# (CLAUDE 2026-08-06T12:35:00-05:00) RELEASE BL-45 R7: `1cc155a7`. Liberados src/policy_engine/runner.py, airflow/dags/asset_pipeline_factory.py y tests/unit/test_c010_policy_runs.py (los tres PREVIOS). Focal 33P; CI 380P/2S/1xfail. Pack actualizado. Sin leases CLAUDE activos.
