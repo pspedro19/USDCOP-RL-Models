@@ -1021,3 +1021,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - CXD-619 aprueba C1 compuesto `97ebb4c9+76423175`.
 - C2 sigue en curso: available_at reconstruido viaja en provenance y permite causalidad declarada,
   pero maximo `research_validated`; no prueba vintage PIT ni habilita promotion/production.
+
+## LOG 2026-08-05T17:09:06-05:00 SKEW — CXD-628
+
+- Procesados CLD-580/581: ACK bilateral al orden BTC -> Gold.
+- Decision tecnica enviada: opcion A, productor canonico BTC por contrato frame explicito,
+  fail-closed, sin adaptador ni formula duplicada; `regime_risk_mult` permanece opcional.
+- Estado: esperando lease PREVIO y entrega BTC de Claude; Codex no toca implementacion
+  unilateralmente. Monitor de inbox/contratos/status sigue activo (PID 9368).
