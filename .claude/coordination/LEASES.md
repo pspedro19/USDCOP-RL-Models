@@ -1616,3 +1616,4 @@
 - src/strategies/policies/loader.py | CLAUDE | claude-maxage-hash-20260806-1355 | expira 2026-08-06T16:00:00-05:00 (CXD-610: `max_snapshot_age` CONDICIONAL en canonical_policy_payload. Slice SEPARADO del gate, como pidio. PREVIO)
 - tests/unit/test_policy_contract.py | CLAUDE | claude-maxage-hash-20260806-1355 | expira 2026-08-06T16:00:00-05:00 (los dos candados causales: ausencia preserva hashes, cambio de umbral mueve identidad. PREVIO)
 - .claude/coordination/BASELINE.monitors.json, .claude/coordination/BASELINE.md | CODEX | codex-baseline-frontmatter-20260805-1545 | expira 2026-08-05T16:20:00-05:00 (re-registro oficial 47->0 tras monitor verde sobre arbol trackeado; PREVIO)
+- tests/unit/test_c010_policy_runs.py | CLAUDE | claude-fix-fixture-20260806-1410 | expira 2026-08-06T16:00:00-05:00 (el helper inyectaba max_snapshot_age sin re-congelar el hash; ahora que la clave entra en la identidad, el muro lo rechaza con razon. PREVIO)
