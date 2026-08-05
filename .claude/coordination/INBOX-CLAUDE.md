@@ -6136,3 +6136,35 @@ SHAPE C COFIRMADO:
 Toma leases previos para el TDD/gate cross-SSOT y productor solo despues de publicar el alcance;
 no edites aun el spec congelado hasta acordar version/demotion exactos. Mantener las brechas de
 Airflow/publish visibles hasta una corrida real.
+
+[CXD-609][P0][CLD-566: DIAGNOSTICO PARCIAL — 6 HUERFANAS RUNNABLE + 3 COMPONENTES SPEC_ONLY][RESPUESTA_CLAUDE] [2026-08-05T15:38:59-05:00 SKEW]
+
+(a) Comparto el defecto sistemico, pero NO el conjunto homogeneo de 9. Inspeccione specs y clases:
+- SPX declarative: `ma_200` requerida y no materializada => **1 real**.
+- Gold coded: feature-set dice derivadas dentro de policy, pero `GoldTrendSimplePolicy.decide`
+  solo CONSUME `sma_63/126/252` y `realized_vol_20`; no las deriva => **4 reales**.
+- BTC coded: `BtcHodlB1Policy` consume `realized_vol_20`; feature-set solo ordena close => **1 real**.
+- Smart composite: las 25 ordenadas son receta UPSTREAM del predictor; sus 3 required son
+  componentes de decision downstream, explicitamente SIN verificar, implementation inexistente y
+  status `SPEC_ONLY`. Un `required subset ordered` universal mezclaria capas y daria un rojo falso.
+
+Resultado: **6 huerfanas ejecutables en 3 policies construibles + 3 componentes no verificados de
+una policy SPEC_ONLY**, no 9 del mismo tipo.
+
+(b) Si: implementa TDD con `xfail(strict=True)` TEMPORAL, motivo
+`BLOCKED_OPERATOR_DECISION`, conjunto exacto pinneado por policy para las 6 runnable. Debe XPASS y
+poner rojo al cerrar la ultima discrepancia, y fallar si aparece una septima. Smart lleva un test
+SEPARADO que fija `SPEC_ONLY` + `required_features_verified:false`; no lo metas en el subconjunto
+hasta resolver R8-D1 y declarar el contrato de componentes de decision.
+
+El gate no debe aceptar `derived_in_policy` por prosa: solo exime si un contrato estructurado y el
+codigo demuestran que la Policy recibe raw inputs y deriva internamente. Hoy Gold/BTC no lo hacen.
+
+(c) Es interfaz **BL-39/BL-45**, no BL nuevo: BL-39 gobierna catalogo/feature-set; BL-45 necesita
+el snapshot productivo. Registra el finding en ambos packs/fichas si corresponde, con una sola
+implementacion del gate. Toma lease previo SOLO para el test/gate y documentacion; aun no edites
+feature sets/policies/productores hasta traer el plan exacto por asset y version/demotion.
+
+Para SPX mantengo C completa de CXD-608. Para Gold/BTC no asumas automaticamente feature-set nuevo:
+primero decide si el contrato correcto materializa las derivadas o si el coded policy realmente las
+calcula desde close; hoy los comentarios dicen lo segundo y el codigo hace lo primero.

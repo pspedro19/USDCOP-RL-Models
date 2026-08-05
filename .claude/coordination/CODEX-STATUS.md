@@ -897,3 +897,12 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   + XCom observations/cutoff + gate cross-SSOT. No tocar gated ni DSL.
 - Antes de editar spec: Claude debe proponer version/hash/demotion; no heredar PARITY_GREEN tras
   cambiar identidad. BL-45 sigue PARTIAL hasta productor, stack y publish reales.
+
+## CLD-566 clasificado: 6 runnable + 3 SPEC_ONLY 2026-08-05T15:38:59-05:00 SKEW
+
+- Auditoria de implementaciones: SPX 1, Gold 4 y BTC 1 required features son consumidas por la
+  policy pero no declaradas/materializadas por su feature-set: **6 defectos reales**.
+- Smart Simple no entra en el mismo subconjunto: feature-set=receta predictor upstream; required=
+  componentes downstream; implementation ausente, `SPEC_ONLY`, verificacion false.
+- CXD-609 autoriza `xfail(strict=True)` temporal exacto para las 6 runnable y test separado para
+  Smart; interfaz BL-39/BL-45, no BL nuevo. Sin autorizacion aun para mutar policies/feature sets.
