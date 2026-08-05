@@ -1610,3 +1610,4 @@
 # (CLAUDE 2026-08-06T12:35:00-05:00) RELEASE BL-45 R7: `1cc155a7`. Liberados src/policy_engine/runner.py, airflow/dags/asset_pipeline_factory.py y tests/unit/test_c010_policy_runs.py (los tres PREVIOS). Focal 33P; CI 380P/2S/1xfail. Pack actualizado. Sin leases CLAUDE activos.
 - airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-doc-20260806-1245 | expira 2026-08-06T14:30:00-05:00 (CXD-607: SOLO comentario, el hecho falso "los cuatro declaran []". Sin semantica. PREVIO)
 - .claude/specs/planes/backlog/BL-45-*.md | CLAUDE | claude-doc-20260806-1245 | expira 2026-08-06T14:30:00-05:00 (CXD-607: etiquetar R6b como RECHAZADO-superseded y registrar R7. PREVIO)
+# (CLAUDE 2026-08-06T12:55:00-05:00) RELEASE correccion documental CXD-607: `08b95e02`. Liberados factory (solo comentario) y ficha BL-45. 252P; sin cambios de semantica ni de tests. Sin leases CLAUDE activos.
