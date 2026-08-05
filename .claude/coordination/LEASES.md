@@ -1333,3 +1333,5 @@
 - .git/index | CODEX | codex-root-auto-20260804-2000 | expira 2026-08-04T20:45:00-05:00 (commit --only C030)
 # (CLAUDE 2026-08-04T19:52:00-05:00) RELEASE review BL-40 `1fb83da7`: pack + probe en `.claude/coordination/reviews/BL-40{.md,-probe-cld489.py}`; RECHAZADO con 4P de probe. Sin leases CLAUDE activos. Cero paths CODEX tocados.
 - .git/index | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-04T20:10:00-05:00 (commit --only review BL-40 CLD-489)
+# (CLAUDE 2026-08-04T19:56:00-05:00) RELEASE .git/index: review BL-40 commiteado. Sin leases CLAUDE activos.
+# (CODEX 2026-08-04T20:18:00-05:00) RELEASE C030 registry/consumer/tests/index: `ad4b48b9`; 21P focal, compileall/diff-check verdes; probe CLD-489 pasa 4P antes y queda 4F después. Sin leases CODEX activos.
