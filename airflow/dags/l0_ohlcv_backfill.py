@@ -878,7 +878,19 @@ with dag:
         python_callable=health_check,
     )
 
-    # One task per symbol — they run sequentially to respect API rate limits
+    # One task per symbol — they run sequentially to respect API rate limits.
+    #
+    # `trigger_rule='none_failed'` es OBLIGATORIO aquí y no un detalle de estilo (CXD-521).
+    # La cadena es secuencial por el pool de API, así que con el `all_success` por defecto un
+    # `skipped` INTENCIONAL aguas arriba hace inalcanzable todo lo que va detrás: el run
+    # `codex_bl40_usdmxn_20260805T0059` con `symbols=['USD/MXN']` termino SUCCESS en 11s
+    # habiendo ejecutado SOLO el skip de COP — MXN, BRL, export y validate quedaron `skipped`
+    # sin lanzarse, y el aislamiento que este DAG acababa de ganar se convirtio en un run que
+    # no hace nada y lo llama exito.
+    #
+    # `none_failed` distingue las dos cosas que `all_success` confunde: continua ante un
+    # upstream `skipped` (decision de alcance, no incidente) y para ante `failed`/
+    # `upstream_failed` (incidente real). Mismo criterio que ya usan export/validate.
     symbol_tasks = []
     for sym in ALL_SYMBOLS:
         safe_id = sym.replace('/', '_').lower()
@@ -887,6 +899,7 @@ with dag:
             python_callable=process_symbol,
             params={'symbol': sym},
             pool='api_requests',
+            trigger_rule='none_failed',
         )
         symbol_tasks.append(task)
 
@@ -902,8 +915,17 @@ with dag:
         trigger_rule='none_failed_min_one_success',
     )
 
-    # Chain: health → symbols (sequential) → export → validate
+    # Chain: health → symbols (secuencial, por el pool de API) → export → validate
+    #
+    # `task_export` cuelga de LOS TRES símbolos, no sólo del último. Con
+    # `none_failed_min_one_success` y un único upstream, un run acotado a USD/MXN deja a BRL
+    # `skipped` — cero éxitos entre los upstream directos — y export/validate se saltarían
+    # aunque MXN hubiera corrido bien. El fan-in es lo que hace que la regla signifique lo que
+    # dice: "al menos un símbolo se proceso de verdad". La secuencia COP→MXN→BRL se conserva
+    # para no golpear la API en paralelo; el fan-in sólo añade dependencias, no concurrencia.
     task_health >> symbol_tasks[0]
     for i in range(len(symbol_tasks) - 1):
         symbol_tasks[i] >> symbol_tasks[i + 1]
-    symbol_tasks[-1] >> task_export >> task_validate
+    for task in symbol_tasks:
+        task >> task_export
+    task_export >> task_validate

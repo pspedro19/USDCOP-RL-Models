@@ -281,3 +281,75 @@ def test_no_conf_still_means_all_three_pairs():
     ns = _load("_validated_scope", "get_target_symbols")
     assert ns["get_target_symbols"](_conf_context({})) == ALL_SYMBOLS
     assert ns["get_target_symbols"](_conf_context(None)) == ALL_SYMBOLS
+
+
+# --------------- 6: la semantica del GRAFO, no solo de los callables (CXD-521)
+def _operator_calls() -> dict:
+    """`python_callable` -> kwargs literales de cada `PythonOperator` del DAG.
+
+    Los tests de arriba ejercen funciones AISLADAS y por eso NO vieron el defecto de
+    CXD-521: con el `trigger_rule` por defecto (`all_success`) el skip intencional de COP
+    hacia inalcanzable a MXN, y el run terminaba SUCCESS habiendo ejecutado solo un skip.
+    Aqui se mira el cableado.
+    """
+    calls = {}
+    for node in ast.walk(ast.parse(DAG_SOURCE)):
+        if not (isinstance(node, ast.Call) and getattr(node.func, "id", None) == "PythonOperator"):
+            continue
+        kwargs = {kw.arg: kw.value for kw in node.keywords}
+        callable_node = kwargs.get("python_callable")
+        nombre = getattr(callable_node, "id", None)
+        if nombre:
+            calls[nombre] = kwargs
+    return calls
+
+
+def test_symbol_tasks_continue_past_an_intentional_upstream_skip():
+    """El defecto exacto de CXD-521: `all_success` + skip de alcance = run vacio."""
+    kwargs = _operator_calls()["process_symbol"]
+    regla = kwargs.get("trigger_rule")
+    assert regla is not None, (
+        "process_* no puede usar el trigger_rule por defecto: la cadena es secuencial, asi "
+        "que un skipped de alcance aguas arriba haria inalcanzable el simbolo pedido"
+    )
+    assert isinstance(regla, ast.Constant) and regla.value == "none_failed", (
+        f"process_* debe usar 'none_failed' (continua ante skipped, para ante failed); "
+        f"declara {getattr(regla, 'value', regla)!r}"
+    )
+
+
+def test_the_sequential_pool_is_preserved_so_the_fix_does_not_flood_the_api():
+    """`none_failed` no debe convertirse en 'ejecuta los tres en paralelo'."""
+    kwargs = _operator_calls()["process_symbol"]
+    pool = kwargs.get("pool")
+    assert isinstance(pool, ast.Constant) and pool.value == "api_requests"
+    assert ">> task_export" in DAG_SOURCE or "task_export" in DAG_SOURCE
+
+
+def test_export_and_validate_keep_their_own_permissive_rule():
+    calls = _operator_calls()
+    for nombre in ("export_seeds", "validate_results"):
+        regla = calls[nombre].get("trigger_rule")
+        assert isinstance(regla, ast.Constant), f"{nombre} sin trigger_rule explicito"
+        assert regla.value == "none_failed_min_one_success", (
+            f"{nombre} debe exigir al menos un exito: si TODO se salto, no hay nada que "
+            f"exportar ni validar; declara {regla.value!r}"
+        )
+
+
+def test_export_hangs_off_every_symbol_not_just_the_last_one():
+    """Con un solo upstream skipped, `min_one_success` salta export igual.
+
+    Encontrado midiendo el grafo REAL en el contenedor: `export_seeds` colgaba solo de
+    `process_usd_brl`. En un run acotado a USD/MXN, BRL queda `skipped` => cero exitos entre
+    los upstream directos => export y validate se saltan aunque MXN hubiera corrido bien.
+    El fan-in es lo que hace que `none_failed_min_one_success` signifique lo que dice.
+    """
+    chain = DAG_SOURCE.split("# Chain: health")[1]
+    code = "\n".join(l for l in chain.splitlines() if not l.lstrip().startswith("#"))
+    assert "for task in symbol_tasks:" in code and "task >> task_export" in code, (
+        "export debe depender de los tres process, no solo de symbol_tasks[-1]"
+    )
+    assert "symbol_tasks[-1] >> task_export" not in code
+    # La secuencia por pool de API se conserva.
+    assert "symbol_tasks[i] >> symbol_tasks[i + 1]" in code
