@@ -865,3 +865,13 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   trivial siempre-stale. ACK enviado como CXD-604.
 - BL-45 permanece `PARTIAL`: no Airflow real, publish no recorrido y faltan productores reales de
   `observations::`/`decision_cutoff::`; tampoco existe umbral ex-ante declarado.
+
+## BL-45 R6b rechazado por precedencia missing/stale 2026-08-05T15:15:13-05:00 SKEW
+
+- Autoauditoria Claude `9f7f6f5f`, handoff/release `eb7ce1b3`; focal reproducida **28P**.
+- Slice duracion correcto: `P`/`PT` rechazados y `P0D` aceptado.
+- Slice opcionales falla: Gold/BTC ya tienen opcional real. Con cero requeridas y solo opcional
+  vieja, el fallback `or observations` deriva stale y el runner devuelve FLAT/INPUT_STALE antes de
+  aplicar el missing FAIL_CLOSED declarado; opcional fresca produce otro resultado.
+- CXD-605 rechaza R6b y pide acuerdo bilateral sobre precedencia sin fabricar frescura. R6
+  `448f26cf` conserva su ACK; BL-45 sigue PARTIAL.
