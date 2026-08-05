@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -10,6 +10,7 @@ from src.data_quality.feature_availability import (
     FeatureSpec,
     load_feature_specs,
     load_feature_max_age,
+    load_feature_publish_lag,
     measure_feature,
     persist_measurement,
     news_feature_cutoff,
@@ -60,12 +61,33 @@ def test_repository_registry_contains_only_verified_ghost_features() -> None:
     assert load_feature_max_age(
         REPO_ROOT / "config/quality/feature_availability.yaml"
     ).total_seconds() == 24 * 60 * 60
+    assert load_feature_publish_lag(
+        REPO_ROOT / "config/quality/feature_availability.yaml"
+    ) == timedelta(minutes=60)
 
 
 def test_registry_rejects_missing_or_non_positive_max_age(tmp_path) -> None:
     registry = tmp_path / "registry.yaml"
     registry.write_text("version: '1.1.0'\nfeatures: []\n", encoding="utf-8")
     with pytest.raises(ValueError, match="positive max_age_hours"):
+        load_feature_specs(registry)
+
+
+def test_registry_rejects_missing_or_non_positive_publish_lag(tmp_path) -> None:
+    registry = tmp_path / "registry.yaml"
+    registry.write_text(
+        "version: '1.1.0'\nmax_age_hours: 24\nfeatures: []\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="positive max_publish_lag_minutes"):
+        load_feature_specs(registry)
+
+    registry.write_text(
+        "version: '1.1.0'\nmax_age_hours: 24\nmax_publish_lag_minutes: 0\n"
+        "features: []\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="positive max_publish_lag_minutes"):
         load_feature_specs(registry)
 
     registry.write_text(

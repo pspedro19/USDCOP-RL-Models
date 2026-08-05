@@ -58,6 +58,7 @@ from src.contracts.analysis_schema import (
 from src.data_quality.feature_availability import (
     FEATURE_AVAILABILITY_REGISTRY,
     load_feature_max_age,
+    load_feature_publish_lag,
     news_feature_cutoff,
 )
 
@@ -1739,6 +1740,7 @@ class WeeklyAnalysisGenerator:
         if self._feature_cutoff is None:
             raise RuntimeError("news feature cutoff must be set by the analysis entrypoint")
         feature_max_age = load_feature_max_age(FEATURE_AVAILABILITY_REGISTRY)
+        feature_publish_lag = load_feature_publish_lag(FEATURE_AVAILABILITY_REGISTRY)
         try:
             import os
 
@@ -1760,11 +1762,11 @@ class WeeklyAnalysisGenerator:
                            'news_articles.sentiment_score',
                            'news_articles.sentiment_label',
                            'news_articles.gdelt_tone'
-                       ) AND observed_at <= %s
+                         ) AND observed_at <= %s
                          AND created_at IS NOT NULL
-                         AND created_at <= %s
+                         AND created_at <= observed_at + %s
                        ORDER BY feature_id, observed_at DESC""",
-                    (self._feature_cutoff, self._feature_cutoff),
+                    (self._feature_cutoff, feature_publish_lag),
                 )
                 feature_statuses = {}
                 for row in cur.fetchall():
@@ -1778,7 +1780,7 @@ class WeeklyAnalysisGenerator:
                         not isinstance(created_at, datetime)
                         or created_at.tzinfo is None
                         or observed_at > created_at
-                        or created_at > self._feature_cutoff
+                        or created_at - observed_at > feature_publish_lag
                     ):
                         row = dict(row)
                         row["status"] = "UNAVAILABLE"

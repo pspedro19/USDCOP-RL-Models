@@ -53,11 +53,24 @@ def _load_registry(path: str | Path) -> dict[str, Any]:
     max_age_hours = raw.get("max_age_hours")
     if isinstance(max_age_hours, bool) or not isinstance(max_age_hours, int) or max_age_hours <= 0:
         raise ValueError("feature availability registry requires positive max_age_hours")
+    max_publish_lag_minutes = raw.get("max_publish_lag_minutes")
+    if (
+        isinstance(max_publish_lag_minutes, bool)
+        or not isinstance(max_publish_lag_minutes, int)
+        or max_publish_lag_minutes <= 0
+    ):
+        raise ValueError(
+            "feature availability registry requires positive max_publish_lag_minutes"
+        )
     return raw
 
 
 def load_feature_max_age(path: str | Path) -> timedelta:
     return timedelta(hours=_load_registry(path)["max_age_hours"])
+
+
+def load_feature_publish_lag(path: str | Path) -> timedelta:
+    return timedelta(minutes=_load_registry(path)["max_publish_lag_minutes"])
 
 
 def load_feature_specs(path: str | Path) -> tuple[FeatureSpec, ...]:

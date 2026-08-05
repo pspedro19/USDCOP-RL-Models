@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -166,6 +166,58 @@ def test_exact_24h_status_with_valid_creation_seal_remains_fresh(monkeypatch) ->
 
     assert frame.iloc[0]["tone"] == pytest.approx(0.42)
     assert frame.iloc[0]["sentiment_unavailable_reason"] is None
+
+
+def test_status_created_seconds_after_cutoff_remains_authoritative(monkeypatch) -> None:
+    cutoff = datetime(2026, 8, 7, 18, tzinfo=UTC)
+    monkeypatch.setattr(
+        psycopg2,
+        "connect",
+        lambda *args, **kwargs: _StatusConnection([{
+            "feature_id": "news_articles.sentiment_score",
+            "status": "AVAILABLE",
+            "reason_code": "feature.available",
+            "observed_at": cutoff,
+            "created_at": cutoff + timedelta(seconds=7),
+        }]),
+    )
+    generator = _generator()
+    generator._all_articles_cache = None
+    generator._feature_cutoff = cutoff
+
+    frame = generator._get_all_articles()
+
+    assert frame.iloc[0]["tone"] == pytest.approx(0.42)
+    assert frame.iloc[0]["sentiment_unavailable_reason"] is None
+
+
+def test_status_created_beyond_governed_publish_lag_is_not_authoritative(
+    monkeypatch,
+) -> None:
+    cutoff = datetime(2026, 8, 7, 18, tzinfo=UTC)
+    observed_at = cutoff - timedelta(hours=1)
+    monkeypatch.setattr(
+        psycopg2,
+        "connect",
+        lambda *args, **kwargs: _StatusConnection([{
+            "feature_id": "news_articles.sentiment_score",
+            "status": "AVAILABLE",
+            "reason_code": "feature.available",
+            "observed_at": observed_at,
+            "created_at": observed_at + timedelta(minutes=60, seconds=1),
+        }]),
+    )
+    generator = _generator()
+    generator._all_articles_cache = None
+    generator._feature_cutoff = cutoff
+
+    frame = generator._get_all_articles()
+
+    assert frame.iloc[0]["tone"] is None
+    assert (
+        frame.iloc[0]["sentiment_unavailable_reason"]
+        == "feature.status_provenance_invalid"
+    )
 
 
 def test_status_without_creation_seal_is_not_authoritative(monkeypatch) -> None:
