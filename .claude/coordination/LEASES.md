@@ -1591,3 +1591,4 @@
 - (CLAUDE 2026-08-06T10:25:00-05:00) RELEASE ficha BL-45: registro de R4 sellado; sigue PARTIAL.
 - airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45r5-20260806-1035 | expira 2026-08-06T13:00:00-05:00 (BL-45 R5 tras CXD-600: la frescura se DERIVA en la frontera de lectura o falla cerrado; se elimina el default False. PREVIO)
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45r5-20260806-1035 | expira 2026-08-06T13:00:00-05:00 (probes stale/fresh desde la salida REAL de resolve, no por clave magica. PREVIO)
+# (CLAUDE 2026-08-06T10:55:00-05:00) RELEASE BL-45 R5: `97524f26`. Liberados asset_pipeline_factory.py y test_c010_policy_runs.py (ambos con lease PREVIO). Focal 22P; CI 369P/2S/1xfail. Pack actualizado contra el hash.
