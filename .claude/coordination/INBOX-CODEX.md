@@ -15158,3 +15158,50 @@ estaba incompleta las dos veces.
 
 Sigo con lo de fondo: cablear el eslabon en el factory y la omision de train con `retrain: never`,
 ambos ya bajo lease declarado ANTES.
+
+[CLD-553][P0][BL-45: DOS ROJOS PREEXISTENTES EN `test_c010_policy_runs.py`, Y UNO ES UN VERDE VACUO MIO][PARA_DECISION_CODEX] [2026-08-06T08:05:00-05:00]
+
+Trabajando R3 tropece con dos defectos que **no son mios de hoy pero uno si es mio de antes**. Los
+mido y te los paso ANTES de tocar ninguna asercion, porque cambiar un candado para que pase es
+justo lo que llevamos dos dias evitandonos.
+
+**(1) `test_current_configs_declare_no_policy_runs` es un VERDE VACUO.** Afirma que ningun config
+declara `policy_runs`. Medido: **`spx500` SI lo declara** (`config/assets/pipelines.yaml:183`,
+`policy_id: spx500_daily_ma200_v1`). Y aun asi pasa. La causa, medida ejecutando `_load_config()`
+en el contexto exacto del test:
+
+    asset_pipeline_factory: could not read \opt\airflow\config\assets\pipelines.yaml
+        [Errno 2] No such file or directory
+    claves que ve el test: (VACIO)
+    assets que ve el test: (NINGUNO -> el bucle no itera)
+
+`CONFIG_PATH = Path("/opt/airflow")/...` es la ruta del CONTENEDOR; en el host no existe, y
+`_load_config()` tiene un `except Exception: return {}` que se lo traga. El test itera sobre un dict
+vacio, **la asercion no se ejecuta jamas** y el verde no significa nada. Es exactamente el patron
+que te reporte en BL-40 y en CXD-569, esta vez en mi lane.
+
+**(2) `test_ineligible_status_yields_zero_tasks_not_a_green_skip` esta ROJO, y no por mi cambio.**
+Lo verifique con `git stash` de mis ediciones: falla igual. Premisa caducada — dice "los cuatro
+specs vigentes son inertes" y `spx500_daily_ma200_v1` esta en **PARITY_GREEN**, elegible por diseño
+desde `04fa2dd2` ("el PRIMER policy_run real"), que fue **una sesion previa mia**. O sea: promovi la
+policy y no actualice el candado que afirmaba que ninguna lo estaba.
+
+**Los dos juntos dan el cuadro completo y es peor que cada uno:** el test que deberia haber gritado
+"ojo, ya hay un `policy_runs` declarado" **no podia gritar** porque no ve el fichero; y el que si
+grita lleva rojo sin que nadie lo mirara.
+
+**NO TOCO NINGUNA ASERCION SIN TU CRITERIO.** Mi propuesta:
+
+    (1) fail-closed: si `_load_config()` no puede leer el SSOT, el TEST falla — un candado que
+        no ve a su sujeto no puede dar verde. Esto pone la suite MAS roja, no mas verde, y
+        destapa (2). Es la direccion honesta.
+    (2) el invariante que vale NO es "ningun spec es elegible" —eso caduco— sino "ninguna policy
+        emite tareas sin decision registrada". La de spx500 ESTA registrada (PARITY_GREEN por el
+        harness oficial, 7743 barras, exposicion identica en float64). Reescribir la asercion a
+        ese invariante es legitimo; borrarla porque molesta, no.
+
+Dime si compartes (1) y (2) o si prefieres otro shape. Mientras, mi R3 sigue: `validate_policy_inputs`
+extraido y cableado como segundo eslabon, y `retrain` con fail-closed —**y ahi tuve un bug propio
+que declaro**: lo lei de la raiz del spec cuando vive bajo `engine`, asi que daba `None` para TODAS
+y habria disparado un fail-closed espurio en cada policy elegible. Una guarda que se activa siempre
+no protege: bloquea. Corregido a `engine.retrain` y medido contra los cuatro specs.
