@@ -1675,3 +1675,4 @@ Incluye de entrada los paths que el cambio puede romper (leccion de CXD-621: el 
 - tests/unit/test_observation_producer.py       (probe de sello desconocido + mezcla de provenances)
 - tests/unit/test_c010_policy_runs.py           (PREVENTIVO: el candado de la frontera de publish depende del gate)
 - tests/unit/test_policy_chain_end_to_end.py    (PREVENTIVO: idem)
+# (CLAUDE 2026-08-06T19:00:00-05:00) RELEASE SPX-C2d: `a5597f09`. Liberados los 4 paths del bloque (los dos preventivos no llegaron a tocarse). Sin leases CLAUDE activos.
