@@ -1632,3 +1632,4 @@ Decision C co-firmada en CXD-608/CXD-610. Paths (TODOS tomados antes del primer 
 - src/strategies/policies/loader.py                               (CXD-613: prosa durable, no "los cuatro")
 - tests/unit/test_policy_contract.py                              (CXD-613: idem + nombre del candado)
 - tests/unit/test_c010_policy_runs.py | CLAUDE | claude-spxc-20260806-1430 | expira 2026-08-06T17:30:00-05:00 (AMPLIACION del lease SPX-C: la democion deja 6 rojos -- 5 son "ya no hay policy elegible" y 1 destapa que mi candado confundia DECLARADA con ACTIVADA. PREVIO al byte)
+# (CLAUDE 2026-08-06T16:10:00-05:00) RELEASE SPX-C1: `97ebb4c9`. Liberados los 9 paths del bloque SPX-C + la ampliacion de test_c010_policy_runs.py. C2 (productor productivo + XCom) NO empezado: cuando arranque, lease NUEVO publicado antes del byte incluyendo los paths de DAG/factory. Sin leases CLAUDE activos.
