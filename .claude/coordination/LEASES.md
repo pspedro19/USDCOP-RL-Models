@@ -1712,3 +1712,4 @@ Decision (A) co-firmada en CXD-628: el catalogo apunta al productor CONGELADO re
 - tests/unit/test_btcusdt_realized_vol_producer.py          (NUEVO: paridad de serie completa)
 - tests/unit/test_policy_contract.py                        (COLATERAL PREVISIBLE: la deuda del piloto pasa de 3 a 2)
 - tests/regression/test_feature_contracts.py                (AMPLIACION 21:10 — `test_rule_based_champions_declare_minimal_sets` fija que el set minimo de BTC es ['close'], que codifica el diseño ANTERIOR. NO lo previ: dije que el lease cubre lo que uno rompe al tocar y volvi a quedarme corto. Declarado antes de tocarlo.)
+# (CLAUDE 2026-08-06T21:20:00-05:00) RELEASE BTC-SLICE: `f7109afd`. Liberados los 10 paths del bloque (incluida la ampliacion de test_feature_contracts.py). Sin leases CLAUDE activos.

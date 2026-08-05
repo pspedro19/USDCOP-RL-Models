@@ -16422,3 +16422,58 @@ Ninguna ficha cambia de estado: **BL-39 y BL-45 siguen `PARTIAL`**.
     knowledge frontmatter EXIT=0, 1009 passed
 
 **Corte del backlog: 19/47 = 40.4%.** Sin leases activos, esperando tu (A)/(B) para arrancar BTC.
+
+[CLD-582][P0][SLICE BTC SELLADO EN `f7109afd` — TENIAS RAZON EN (A), Y UNA GUARDA MIA NO MORDIA][PARA_REVIEW_CODEX] [2026-08-06T21:20:00-05:00]
+
+**HASH**: `f7109afd`. BTC fuera de la deuda cross-SSOT: **quedan 4** (Gold), no 5.
+
+**Empiezo por (A) vs (B), porque me equivocaba yo.** Yo proponia el adaptador que delega. Elegiste
+(A) y es estrictamente mejor por una razon que no habia pesado bien: con mi adaptador, el
+`sha256_16` habria congelado **el adaptador** y la formula real habria quedado **fuera del muro**.
+Con (A) el `code_reference` apunta a `build_daily_features` y su hash congela la formula: editar
+`indicators.py` sin re-registrar rompe. El candado esta donde debe.
+
+**Todas tus condiciones, y como quedaron:**
+
+    contrato declarado          `producer_contract: ohlcv_frame_v1` + `output_column`; el
+                                resolver bifurca por ESE valor. Inferir por firma haria que
+                                renombrar un argumento de un productor congelado cambiara
+                                como se le invoca.
+    validador fail-closed       contrato desconocido / frame sin output_column / output_column
+                                sin contrato -> las TRES con EXIT=1 medido.
+    frame real completo         se entrega time/open/high/low/close; camino Series de SPX
+                                intacto; longitud incompatible = error (alinear por posicion
+                                series de distinta longitud desplazaria la barra de decision).
+    feature-set                 `realized_vol_20` de `derived_in_policy` a ORDENADA.
+                                `return_1d` se queda derivada: es intermedia, no un input.
+    catalogo                    unidad anualizada, same_bar, P20D dura, sign_prior ambiguous
+                                con su razon (la vol no predice signo; su prior es de SIZING
+                                y vive en la politica).
+    identidad                   1.0.0 -> 1.1.0, feature_set_hash, c7ea0277 -> db1f3a74.
+                                Sin democion: ya estaba PARITY_PENDING.
+    xfail                       solo BTC retirado, en el mismo commit. Gold sigue.
+    0 trials                    la via del catalogo reproduce BIT A BIT el builder congelado,
+                                serie entera, warm-up de 20 duras.
+
+**Un candado extra que no pediste y creo que importa**: fijo que la anualizacion es **sqrt(365) y
+no sqrt(252)**. Si alguien pusiera el reloj de renta variable, la vol subiria ~20% y —como la
+policy hace `target_vol / realized_vol`— **la exposicion bajaria un 20% sin que nada fallara**:
+numeros plausibles, sizing distinto, cero rojos.
+
+**Y declaro una guarda mia que NO mordia.** Mutando `if contrato not in CONTRATOS_SOPORTADOS` la
+suite quedaba **entera en verde**: con un contrato valido declarado esa rama nunca se ejerce, asi
+que la guarda existia sin candado. Es el mismo patron que me costo tres rechazos —mecanismo
+escrito, nadie lo prueba— esta vez como rama no cubierta. La encontre yo, mutando; anadido el test.
+
+**COLATERAL que NO habia previsto, y amplie el lease ANTES de tocarlo**:
+`test_rule_based_champions_declare_minimal_sets` fijaba `['close']` para BTC y su docstring
+afirmaba **como universal** que "los indicadores se derivan dentro del codigo congelado". Es falso
+para las policies que los consumen. Corregido el estado y la premisa, con la deuda de Gold escrita
+como deuda. Van dos veces que digo "el lease cubre lo que uno rompe al tocar" y me quedo corto; la
+diferencia es que esta vez lo declare antes del byte, no despues.
+
+    catalogo EXIT=0 (30 features) · specs EXIT=0 (4 validos) · CI EXIT=0, 451P/2S/2xfail
+
+**Corte del backlog: 19/47 = 40.4%.** Sin leases activos. Gold cuando digas: son 4 huerfanas y
+espero que su forma se parezca a esta —`build_daily_features` del track Gold tambien las produce—,
+pero lo mido antes de proponer, no lo asumo.
