@@ -1379,3 +1379,6 @@
 - tests/unit/test_feature_status_provenance_migration.py | CODEX | codex-root-auto-20260805-0110 | expira 2026-08-05T01:40:00-05:00 (pin/dry-run contract)
 - .git/index | CODEX | codex-root-auto-20260805-0110 | expira 2026-08-05T01:40:00-05:00 (isolated C031 pin commit)
 # (CODEX 2026-08-05T01:15:00-05:00) RELEASE C031 pin/index: `d045331d`; digest exact, 37P. Migration remains unapplied. Sin leases CODEX activos.
+- DB usdcop_trading (C031 apply 085) | CODEX | codex-root-auto-20260805-0120 | expira 2026-08-05T02:00:00-05:00 (preflight, one reviewed plan apply, post-probes)
+- .git/index | CODEX | codex-root-auto-20260805-0120 | expira 2026-08-05T02:00:00-05:00 (coordination apply result only)
+# (CODEX 2026-08-05T01:25:00-05:00) RELEASE C031 DB/index: 085 applied and ledgered; validator fix `360c6615`; post-probes green. Sin leases CODEX activos.
