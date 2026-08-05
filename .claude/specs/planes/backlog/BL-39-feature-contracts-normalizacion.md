@@ -67,6 +67,37 @@ bit-check en evidencia es una corrida real de `train_and_export_smart_simple.py`
 artefactos congelados; entonces se publica `26 passed` **medido**. Hasta entonces el skip se
 declara y no se cuenta como verde (`K-051`).
 
+### El bit-check NO se cierra regenerando: por qué, medido (2026-08-05)
+
+Esta ficha proponía como salida «una corrida real de `train_and_export_smart_simple.py` que
+produzca los artefactos congelados; entonces se publica `26 passed` medido». **Se fue a hacer y
+no se puede, y la razón es más interesante que el obstáculo.**
+
+Primero, el productor no es ése: los `.pkl` los escribe
+`airflow/dags/forecast_h5_l3_weekly_training.py:299-349` (`MODELS_DIR = outputs/forecasting/
+h5_weekly_models/latest/`), no el script de export.
+
+Segundo, y decisivo — `bitcheck_v11_signal.py:112-119` compara el hash del disco contra
+`manifest.components[0].current_model_snapshot.artifacts_sha256_16`, que es la **registración
+as-of 2026-07-06**. Una corrida de hoy no puede coincidir por **dos** motivos independientes:
+
+| Motivo | Medido |
+|---|---|
+| Versión de sklearn | snapshot declara `sklearn_version_at_fit: 1.9.0` (contenedor Airflow); **local es 1.6.1** → los bytes del pickle difieren aunque el modelo sea idéntico |
+| Ventana de entrenamiento | v11 usa ventana **expansiva** hasta el último viernes; hoy es un mes más larga que el `as_of 2026-07-06` → otros pesos |
+
+Y aquí está el fondo: **este test no se puede satisfacer regenerando, por construcción.** Si se
+regenera y no casa, es rojo; si se ajustara algo para que casara, sería **circular** — la misma
+trampa que esta ficha ya documenta en su `muta-2` (re-registrar el hash devuelve el verde con la
+fuga dentro). El bit-check sólo es evidencia **allí donde el pipeline congelado corrió de verdad y
+dejó sus artefactos**. Aquí nunca corrió, así que el skip es la respuesta honesta, no una tarea
+pendiente de código.
+
+**Consecuencia para el cierre**: lo que falta de BL-39 no es trabajo de código sino que el pipeline
+H5-L3 se ejecute en un entorno con el contenedor de Airflow. Mientras tanto el `PARTIAL` lo
+sostiene la mitad contractual —que sí corre y sí muerde— y el skip queda declarado (`K-051`), nunca
+contado como verde.
+
 ### C032 — identidad por activo y serie física (2026-08-05)
 
 C032 cerró el falso verde medido por CLD-503: la resolución global por `feature_id` ligaba

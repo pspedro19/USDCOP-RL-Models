@@ -57,13 +57,41 @@ que devolviera SIEMPRE la misma constante pasaría el check y solo cae en Vitest
 fila a fila. Por eso va acompañado de un guard de delegación que fija fichero, helper, los
 dos títulos de test y el aserto concreto, para que la delegación no se evapore en silencio.
 
-**Defecto de producto declarado y NO arreglado**: las dos puertas de `/forecasting`
+**Defecto de producto — RESUELTO el 2026-08-05 (`802b0267`), con decisión del operador.** El
+texto original está debajo. Era real y era peor de lo que decía: no eran dos afirmaciones
+contradictorias sino **cuatro declaraciones, tres incompatibles** — `analysis-assets.ts` (los
+cuatro activos `model_zoo`), el comentario de `ForecastingView.tsx:1031` («Gold = weekly
+inference», contradicho por la línea inmediatamente debajo), `ForecastingLegacy.tsx:57`
+(`isUsdcop`) y `CLAUDE.md:181`.
+
+Se resolvió midiendo **lo servido**, no lo declarado: `xauusd` y `btcusdt` publican **459
+ficheros cada uno** (`bi_dashboard_unified.csv` + PNGs por modelo) y además
+`weekly_inference_*.json`; `spx500` estaba declarado `model_zoo` con **cero** artefactos y su
+`csvPath` apuntaba a un fichero inexistente. Decisión del operador: manda el disco — Oro y BTC
+**son** model zoo, sus JSON weekly quedan como superficie secundaria, la puerta es
+`forecast_mode` en ambas vistas, y `forecast_mode` gana el valor `'none'` para declarar la
+ausencia de superficie en vez de ocultarla (`spx500` sale del selector pero sigue en
+`ANALYSIS_ASSETS`, que es SSOT compartida con `/analysis`).
+
+Texto original: las dos puertas de `/forecasting`
 discriminan por criterios DISTINTOS —la vista GM por `forecast_mode`, y
 `components/legacy/ForecastingLegacy.tsx:121` por `isUsdcop`—, así que
 `/forecasting?asset=btcusdt` afirma "9 modelos de Machine Learning" y `/legacy/forecasting`
 con BTC monta el banner weekly que afirma "política basada en REGLAS: no hay conjunto de
 modelos ML". Dos afirmaciones de hecho contradictorias sobre el mismo producto; qué es
 Oro/BTC es decisión de producto, no de ingeniería.
+
+**Re-verificación 2026-08-05 (repetir el ataque, no citar la ficha):**
+
+    pytest test_forecasting_caveat_present.py                31 passed
+    vitest forecasting-caveat-surfaces + weekly-branch       47 passed
+    MUTANTE declarado: el CUERPO de directionLabel devuelve
+      el token crudo (`return d`) en vez de la constante SSOT
+      -> 1 failed, 30 passed  (test_direction_label_maps_tokens_to_the_ssot_constants)
+    restaurado con `git checkout --` -> byte-idéntico
+
+El candado sigue vivo y sigue apuntando al **cuerpo** de la función, que es donde falló de
+origen: mirar el fichero entero dejaba que el bloque de `import` satisficiera la comprobación.
 
 ## Notas constitución
 FABRIC §24.3: 'sin colores ni etiquetas imperativas'. No es cosmética: es la barrera visible.
