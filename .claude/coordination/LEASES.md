@@ -1404,3 +1404,17 @@
 - .git/index | CLAUDE | claude-refreeze-20260805-0830 | expira 2026-08-05T10:00:00-05:00 (commit del re-freeze)
 # (CLAUDE 2026-08-05T08:55:00-05:00) RELEASE manifiestos COP v11/v12/v14 + index: re-freeze sellado en 4ed4a673; muro 48P/2S y verificado por DOS mutaciones (economia real y fichero congelado) con restauracion sha256 identica. Sin leases CLAUDE activos.
 - .claude/specs/planes/backlog/BL-13-campo-surface-manifiestos.md | CLAUDE | claude-bl13-20260905-0900 | expira 2026-08-05T10:30:00-05:00 (evidencia re-medida hoy + deuda con dueno; NO flip de status hasta cross-review CODEX)
+- config/features/feature_catalog.yaml | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 R3 catalogo asset/series identity)
+- config/features/feature_sets/btc_hodl_b1.yaml | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 exact-one asset resolution)
+- config/features/feature_sets/gold_trend_simple.yaml | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 exact-one asset resolution)
+- config/features/feature_sets/spx500_regime_gated_v1.yaml | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 exact-one asset resolution)
+- config/features/feature_sets/usdcop_smart_simple_v11_dag_legacy23.yaml | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 exact-one asset resolution)
+- config/features/feature_sets/usdcop_smart_simple_v11_recipe25.yaml | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 exact-one asset resolution)
+- scripts/validation/validate_feature_catalog.py | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 schema/parity resolver)
+- tests/regression/test_feature_contracts.py | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 red-first + mutations)
+- .claude/specs/planes/backlog/BL-39-feature-contracts-bit-check-v11.md | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 as-built/status only after gates)
+- # ERRATA CODEX 2026-08-05T08:36:16-05:00: la ruta anterior no existe; no confiere lease.
+- .claude/specs/planes/backlog/BL-39-feature-contracts-normalizacion.md | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 as-built/status only after gates)
+- .git/index | CODEX | codex-root-goal-c032 | expira 2026-08-05T09:21:00-05:00 (C032 isolated commits)
+- config/strategy_manifests/usdcop.yaml | CLAUDE | claude-bl14-20260805-0925 | expira 2026-08-05T10:30:00-05:00 (MUTACION+restauracion BL-14: current_model_snapshot inventado; sin cambio persistente)
+# (CLAUDE 2026-08-05T09:35:00-05:00) RELEASE usdcop.yaml (mutacion BL-14) + ficha BL-13: mutaciones ejecutadas y restauradas byte-exactas; usdcop.yaml sin cambio persistente. Sin leases CLAUDE activos.
