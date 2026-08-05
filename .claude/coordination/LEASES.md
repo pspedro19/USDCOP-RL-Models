@@ -1506,3 +1506,4 @@
 # (CODEX 2026-08-05T21:32:00-05:00) RELEASE ficha/estado/index BL-24(C): as-built actualizado manteniendo PARTIAL; gates inventory/indexes/links/frontmatter verdes. Sin leases activos.
 # (CLAUDE 2026-08-05T21:40:00-05:00) RELEASE ficha BL-20: decision del operador registrada (alcance original SE MANTIENE, recorte revocado). BL-20 sigue PARTIAL. Corte final 18/29/0. Sin leases CLAUDE activos.
 - scripts/analysis/generate_interpretability.py | CLAUDE | claude-bl20b-20260805-2215 | expira 2026-08-05T23:59:00-05:00 (BL-20 alcance real: parametrizar por activo para cubrir Gold y BTC, directiva del operador de 100%)
+# (CLAUDE 2026-08-05T22:55:00-05:00) RELEASE generate_interpretability.py + ficha BL-20: cobertura Gold/BTC sellada en 7ac243cd. Sin leases CLAUDE activos.

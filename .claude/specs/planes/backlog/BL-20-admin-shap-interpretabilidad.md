@@ -65,7 +65,26 @@ y se corrigen abajo; se conservan tachados como historia)*
 - ~~`ard`~~ **tiene artefacto desde el cierre de los puntos 1-2** (medido: `model_id: ard`,
   `by_regime` presente) — el zoo lineal está completo. Los tres híbridos siguen fuera **por
   decisión declarada** (mezclan lineal+árbol: su atribución correcta no es TreeSHAP puro).
-- Superficies distintas de `zoo`/`rule_based` (v11 composite, Gold/BTC) sin cubrir.
+- ~~Superficies distintas de `zoo`/`rule_based` (v11 composite, Gold/BTC) sin cubrir~~ →
+  **Gold y BTC CUBIERTOS el 2026-08-05** (`7ac243cd`), tras restaurar el operador el alcance
+  original. **Falta sólo v11 composite.** El generador estaba cableado a `usdcop` —`_write(...)`
+  ya recibía `asset`, pero los siete call-sites pasaban el literal— y Gold/BTC declaran su
+  propio zoo con otro vocabulario (`xgboost_pure`). Añadidos `ASSET_CONFIGS`, `--asset`, y
+  `_models_for_asset()` que lee los `model_id` **que declara el activo**, nunca una lista fija.
+  12 artefactos nuevos con SHAP real y aditividad verificada:
+
+      xauusd   ridge 2.78e-17 · bayesian_ridge 1.39e-17 · ard 0.00e+00
+               xgboost_pure 2.25e-09 · lightgbm_pure 3.47e-18 · catboost_pure 2.08e-17
+      btcusdt  ridge 6.94e-17 · bayesian_ridge 2.78e-17 · ard 0.00e+00
+               xgboost_pure 2.72e-08 · lightgbm_pure 8.33e-17 · catboost_pure 4.86e-17
+      (n_rows 1182 Gold / 1662 BTC · 5 folds · walk-forward expanding anual)
+
+  Dos hallazgos de camino: el backend TreeSHAP no reconocía el sufijo `_pure` (los seis árboles
+  salían `tree_shap_unavailable` — degradación honesta, pero cobertura **cero** por vocabulario);
+  y `xgboost`/`lightgbm` **no estaban instalados**, igual que le pasó a `catboost` en su día.
+  `usdcop` queda **sin un solo byte cambiado** (verificado con `git status`): sin `--asset` el
+  comportamiento es el previo. `test_interpretability_schema` pasa de 12 a **24 passed** porque
+  valida también los nuevos.
 
 ## Verificación
 Artefactos para ≥1 modelo de cada clase (lineal/árbol/regla); vista renderiza; rbac:check; 0 trials (diagnóstico declarado sobre congelados §10.1).
