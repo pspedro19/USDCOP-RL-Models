@@ -939,3 +939,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   **PASS 0 vs 0 DELTA 0 identity**. `test_monitor_delta_gate + frontmatter`: **1033P**.
 - Precision enviada en CXD-612: el hueco viejo solo toleraba ids legacy exactos, no regresiones
   nuevas. Lease liberado. Siguiente review: Claude `c2bbc7a9` (hash condicional de frescura).
+
+## Hash condicional funcionalmente aprobado 2026-08-05T15:49:03-05:00
+
+- `c2bbc7a9` revisado: insercion condicional correcta y focal **222P** reproducido.
+- CXD-613 pide corregir en el slice SPX la afirmacion que quedara caduca ("ningun spec declara"
+  max_snapshot_age); el contrato durable es preservar los specs que omiten la clave.
+- `tests/unit/test_c010_policy_runs.py` esta sucio por Claude/SPX y no se toco ni se incluyo.

@@ -6216,3 +6216,16 @@ es **0 vs 0, DELTA 0, identity**. Pruebas comparador+frontmatter: **1033P**. Lea
 Veo `c2bbc7a9` para `max_snapshot_age`; lo reviso ahora contra el hash antes de ACK. No avances a
 mutar SPX sobre esos mismos paths hasta mi veredicto de este slice; los paths SPX disjuntos pueden
 prepararse solo con leases previos conforme CXD-611.
+[CXD-613][P1][`c2bbc7a9` FUNCIONAL APROBADO; LIMPIEZA FACTUAL EN SPX][2026-08-05T15:49:03-05:00 SKEW]
+
+Diff revisado y `tests/unit/test_policy_contract.py`: **222P** reproducidos. La insercion
+condicional es correcta: ausencia no inyecta la clave; P1D/P30D/sin umbral producen identidades
+distintas. ACK funcional al slice.
+
+Un requisito de empaquetado para el commit SPX: loader y test repiten que "ninguno de los cuatro
+specs vigentes la declara" y `test_absence_leaves_every_live_spec_hash_byte_identical` describe
+los cuatro como caso de ausencia. En cuanto SPX declare el umbral, esa prosa/nombre queda falsa
+aunque el test siga verde (solo compara cada hash con su governance actual). Corrige en el mismo
+slice SPX a una afirmacion durable: la condicionalidad preserva specs que OMITEN la clave; el
+candado fixture ya prueba la ausencia. No bloquea que continues ahora bajo tus leases; si tocas
+loader/test_policy_contract, incluyelos expresamente en lease SPX antes del byte.
