@@ -45,6 +45,7 @@ Contract: CTR-L0-BACKFILL-003
 
 from datetime import datetime, timedelta, date
 from airflow import DAG
+from airflow.exceptions import AirflowSkipException
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.empty import EmptyOperator
 import pandas as pd
@@ -206,6 +207,28 @@ def get_target_symbols(context) -> List[str]:
         symbols = [conf['symbol']]
     logging.info(f"[BACKFILL] Target symbols: {symbols}")
     return symbols
+
+
+def resolve_scope(context) -> List[str]:
+    """El alcance REAL de este run, leído del XCom que publicó `health_check`.
+
+    Existe porque el `conf` no gobernaba nada: las tres tareas `process_*` se crean al
+    parsear el DAG y cada una leía su propio `params['symbol']`, así que
+    `symbols=['USD/MXN']` disparó igualmente gap detection de COP y BRL (run
+    `codex_bl40_usdmxn_20260805T0015`, CXD-515). `get_target_symbols` calculaba la lista
+    correcta y nadie la consultaba.
+
+    **Fail-closed a propósito**: si el XCom no está, se levanta. Caer a `ALL_SYMBOLS` es
+    exactamente cómo se perdió el aislamiento — un default permisivo convierte "no sé cuál
+    es mi alcance" en "todos", que es la respuesta más peligrosa de las posibles.
+    """
+    scope = context['ti'].xcom_pull(key='target_symbols', task_ids='health_check')
+    if not scope:
+        raise ValueError(
+            "target_symbols ausente en el XCom de health_check: sin alcance declarado no se "
+            "procesa nada (no se asume ALL_SYMBOLS)"
+        )
+    return list(scope)
 
 
 def get_data_date_range(conn, symbol: str) -> Tuple[Optional[date], Optional[date]]:
@@ -530,6 +553,17 @@ def process_symbol(**context):
     This task is called once per symbol via op_kwargs.
     """
     symbol = context['params']['symbol']
+
+    # El alcance manda ANTES de tocar la DB: un símbolo fuera de `symbols` no se procesa, y
+    # su estado en Airflow es `skipped`, no `success` con `bars_backfilled: 0`. La diferencia
+    # importa: un SUCCESS vacío se lee como "corrió y no había nada", que es una afirmación
+    # sobre los datos; `skipped` dice la verdad — no se miró.
+    scope = resolve_scope(context)
+    if symbol not in scope:
+        raise AirflowSkipException(
+            f"{symbol} fuera del alcance declarado {scope}: no se ejecuta gap detection"
+        )
+
     force = context['ti'].xcom_pull(key='force_backfill', task_ids='health_check') or False
     cfg = SYMBOL_CONFIG.get(symbol)
     if not cfg:
@@ -658,12 +692,19 @@ def export_seeds(**context):
     seeds_dir = Path(os.environ.get('AIRFLOW_HOME', '/opt/airflow')) / 'seeds' / 'latest'
     seeds_dir.mkdir(parents=True, exist_ok=True)
 
+    # Mismo alcance que `process_*`. Antes iteraba `ALL_SYMBOLS` y además reescribía el
+    # parquet unificado desde la tabla COMPLETA: un run acotado a USD/MXN sobrescribió los
+    # cuatro parquets trackeados con cero datos nuevos y hubo que restaurarlos a HEAD
+    # (CXD-515). Un export fuera de alcance no es inocuo: los seeds son el backup de restore.
+    scope = resolve_scope(context)
+    logging.info(f"[EXPORT] Alcance declarado: {scope}")
+
     conn = get_db_connection()
     cur = conn.cursor()
     exported = []
 
     try:
-        for symbol in ALL_SYMBOLS:
+        for symbol in scope:
             safe_name = symbol.replace('/', '').lower()
             seed_file = seeds_dir / f'{safe_name}_m5_ohlcv.parquet'
 
@@ -687,13 +728,22 @@ def export_seeds(**context):
             logging.info(f"[{symbol}] Exported {len(df)} rows → {seed_file.name}")
             exported.append({'symbol': symbol, 'rows': len(df), 'file': str(seed_file)})
 
-        # Unified seed (all pairs)
-        cur.execute("""
-            SELECT time, symbol, open, high, low, close, volume
-            FROM usdcop_m5_ohlcv
-            ORDER BY symbol, time
-        """)
-        rows = cur.fetchall()
+        # Unified seed (all pairs) — SOLO si el run cubrió los tres pares. Reescribirlo desde
+        # un run parcial publicaría un "unificado" cuya mitad no se verificó en esta corrida.
+        rows = []
+        if set(scope) != set(ALL_SYMBOLS):
+            logging.info(
+                f"[UNIFIED] Omitido: alcance parcial {scope}; el unificado sólo se reescribe "
+                f"cuando el run cubre {ALL_SYMBOLS}"
+            )
+            exported.append({'symbol': 'ALL', 'rows': 0, 'file': None, 'skipped': 'partial_scope'})
+        else:
+            cur.execute("""
+                SELECT time, symbol, open, high, low, close, volume
+                FROM usdcop_m5_ohlcv
+                ORDER BY symbol, time
+            """)
+            rows = cur.fetchall()
 
         if rows:
             df_all = pd.DataFrame(rows, columns=[
@@ -714,13 +764,19 @@ def export_seeds(**context):
 
 
 def validate_results(**context):
-    """Validate final state of all symbols in DB."""
+    """Valida el estado final de los símbolos DENTRO DEL ALCANCE del run.
+
+    Reportar los tres pares tras un run de uno solo produce un informe que parece cubrir lo
+    que no se tocó. El alcance viaja en el propio reporte (`_scope`) para que la evidencia
+    diga de qué es evidencia.
+    """
+    scope = resolve_scope(context)
     conn = get_db_connection()
     cur = conn.cursor()
-    report = {}
+    report = {'_scope': scope}
 
     try:
-        for symbol in ALL_SYMBOLS:
+        for symbol in scope:
             cur.execute("""
                 SELECT COUNT(*), MIN(time), MAX(time)
                 FROM usdcop_m5_ohlcv WHERE symbol = %s
@@ -738,8 +794,9 @@ def validate_results(**context):
         conn.close()
 
     logging.info("=" * 60)
-    logging.info("BACKFILL VALIDATION COMPLETE")
-    for sym, info in report.items():
+    logging.info(f"BACKFILL VALIDATION COMPLETE — alcance {scope}")
+    for sym in scope:
+        info = report[sym]
         logging.info(f"  {sym}: {info['total_bars']} bars ({info['earliest']} → {info['latest']})")
     logging.info("=" * 60)
 

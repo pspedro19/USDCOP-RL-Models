@@ -1358,3 +1358,6 @@
 - tests/unit/test_agent_tools_no_ungoverned_sentiment.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T01:20:00-05:00 (candado del carril)
 - .git/index | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T01:20:00-05:00 (commit --only carril C-031)
 # (CLAUDE 2026-08-05T00:55:00-05:00) RELEASE C-031 carril CLAUDE: entregado en el hash de arriba; 8P candado, 3F red-first, archivo normalizado a LF. Sin leases CLAUDE activos.
+- airflow/dags/l0_ohlcv_backfill.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T02:10:00-05:00 (CXD-515: el conf debe gobernar process/export/validate)
+- tests/unit/test_backfill_scope_isolation.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T02:10:00-05:00 (candado conductual del alcance)
+- .git/index | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T02:10:00-05:00 (commit --only aislamiento de alcance)
