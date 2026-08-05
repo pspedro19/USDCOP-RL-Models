@@ -1340,3 +1340,4 @@
 - DB usdcop_trading (BL-40 durable USD/MXN backfill window) | CODEX | codex-root-auto-20260805-0010 | expira 2026-08-05T00:55:00-05:00 (pre/post counts; writes only through one governed DAG run)
 - Airflow core_l0_01_ohlcv_backfill | CODEX | codex-root-auto-20260805-0010 | expira 2026-08-05T00:55:00-05:00 (temporary unpause, trigger symbols USD/MXN, monitor, mandatory re-pause)
 - .git/index | CODEX | codex-root-auto-20260805-0010 | expira 2026-08-05T00:25:00-05:00 (commit --only window declaration/ACK)
+# (CODEX 2026-08-05T00:15:00-05:00) RELEASE BL-40 DB/DAG/index: run `codex_bl40_usdmxn_20260805T0015` success pero scope conf no aisló; 0 inserts y Fabric 0/0/0/0; DAG pausado; cuatro parquets restaurados a HEAD. Sin leases activos.
