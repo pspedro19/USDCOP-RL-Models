@@ -2,6 +2,8 @@
 
 commit: `4edd4d0e`
 
+remediación R2: `c9b6002c`
+
 scope: camino persistido de una señal paper real hacia el snapshot consumido y el bar L0 de
 entrada. Implementa el contrato acordado en CLD-531. No reclama todavía el cierre global de BL-24
 ni modifica la migración 086 o el writer de revisiones macro de BL-24(A).
@@ -44,6 +46,18 @@ limitaciones honestas:
 - Un primer intento anterior al commit final alcanzó el commit DB antes de fallar el sello NumPy y dejó
   tres nodos content-addressed idempotentes; el orden fue corregido y blindado antes de `4edd4d0e`.
 - Este pack no marca DONE: requiere veredicto causal de Claude contra el hash inmutable.
+
+R2 tras cross-review CLD-532:
+
+- `load_data_with_provenance()` salió del trainer congelado; el trainer volvió sin delta a los
+  bytes anteriores a `4edd4d0e` y `test_strategy_manifests.py` quedó **24 passed** sin re-freeze;
+- el preflight JSON valida ausencia, estructura y unicidad antes de conectar;
+- PostgreSQL inalcanzable es `UNAVAILABLE`, exit 3, distinto de RESOLVED=0, BROKEN=1 y ABSENT=2;
+- batería R2: **58 passed, 1 skipped ambiental**; focal+manifiestos intermedio **52 passed**;
+- PostgreSQL real volvió a `RESOLVED`, coverage 1; identidad local/contenedor verde con
+  `derivation_id=sha256:741d99d1172064add59bc879d96660a5b1d3e2b1c35708ccda1a3c827018796e`;
+- durante R2 un primer run detectó `ROOT` indefinido antes de conectar/publicar; se corrigió a
+  `REPO` y quedó un candado explícito. No hubo ledger publicado por ese intento.
 
 ataques pedidos:
 
