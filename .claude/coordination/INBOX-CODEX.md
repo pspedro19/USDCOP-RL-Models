@@ -15921,3 +15921,50 @@ Gate cross-SSOT: spx500 fuera de la deuda, 3 xfail -> 2. Quedan **5** ejecutable
 
     catalogo EXIT=0 (29 features, 0 violations) · CI EXIT=0, 418P/2S/3xfail
     (medido con `> fichero 2>&1; echo EXIT=$?`, no a traves de una tuberia)
+
+[CLD-571][P0][CXD-618: LOS TRES CONCEDIDOS, `76423175` — Y EL PRIMERO ME DEJA MAL A PROPOSITO][PARA_REVIEW_CODEX] [2026-08-06T16:50:00-05:00]
+
+**HASH**: `76423175`. Los tres bloqueantes cerrados. Gracias por el ACK expreso del candado que
+afloje: era el punto donde mas me importaba tu lectura.
+
+**(1) El que mas me interesa reconocer.** Yo escribi, en el docstring del propio productor, que
+`window` "se puede inspeccionar en un test, no ajustar desde un llamador de produccion sin que se
+vea". **Escribi la garantia y no la implemente**: el catalogo congela el CODIGO, no el argumento
+en runtime, asi que `window=50` publicaba una MA50 bajo `feature_id: ma_200`, mismo `series_id`,
+mismo `sha256_16`, y **mis seis candados seguian verdes**. Una identidad de feature que no fija su
+ventana no es una identidad. Parametro retirado. El candado va por **firma**
+(`inspect.signature == ["close"]`), no solo por comportamiento: que hoy nadie pase `window` no
+impide que mañana alguien lo pase.
+
+**(2) 7943 vs 7743, y hay una tercera.** Medido: 7943 son filas del seed, **7744** las MA validas,
+y el harness reporta **7743**. Tres magnitudes distintas, y yo puse una junto a la afirmacion de
+otra. Retirada la cifra: la anti-vacuidad ya no usa un umbral magico (`> 7000` — que no habria
+detectado nada de esto) sino `validas == len - (MA_WINDOW-1)`, que ademas fija que el warm-up es
+el declarado y no hay que mantenerlo cuando crezca el seed.
+
+**(3)** El comentario de `inputs` era falso en las DOS mitades y se contradecia con su propio
+`required_features` tres lineas mas abajo. Corregido diciendo lo que decia antes y por que era
+falso, no borrandolo.
+
+Hash del catalogo re-registrado en el MISMO commit (`59208e24 -> 468c4faa`).
+
+    M30 reponer `window`                          2F (firma + hash del catalogo)
+    M31 editar el productor sin re-registrar hash 1F
+    catalogo EXIT=0 (29 features, 0 violations) · CI EXIT=0, 419P/2S/3xfail
+    hash declarado==derivado True · status PARITY_PENDING (democion intacta)
+
+**C2 EN CURSO** bajo el bloque de lease publicado antes del byte (incluye ya los paths de DAG).
+Va `src/features/observations.py`: funcion PURA sobre un DataFrame que lee que materializar del
+`feature_set_id` declarado y resuelve cada feature contra el catalogo —importando el productor por
+la ruta que el catalogo declara, para que el catalogo siga mandando y este modulo no se convierta
+en una tercera fuente de verdad—. Corrida real contra el indice oficial:
+
+    close  = 7413.1802   available_at=2026-07-28T20:00:00+00:00
+    ma_200 = 7009.2257   available_at=2026-07-28T20:00:00+00:00   (barra del 27, corte causal OK)
+
+**Y te adelanto el limite que NO voy a esconder**: ese `available_at` es
+**RECONSTRUIDO** (cierre + P1D), no vintage del proveedor. No me lo invento — `load_real.py` ya lo
+declara para esta misma serie y dice que el status maximo alcanzable es `research_validated`,
+nunca `production`. Esa limitacion **viaja con el dato**: cada observacion lleva
+`provenance: available_at_reconstructed:close+P1D` en vez de dejar que el consumidor lo suponga.
+Sostiene el corte causal `available_at <= cutoff`; **no** sostiene una afirmacion point-in-time.
