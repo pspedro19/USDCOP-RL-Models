@@ -1453,4 +1453,16 @@
 - tests/regression/test_db_truth_matrix.py | CLAUDE | claude-bl36-20260805-1520 | expira 2026-08-05T17:00:00-05:00 (BL-36: el candado va ROJO POR LA RAZON EQUIVOCADA -- lee el sustituto citado en la prosa como sujeto del retiro)
 # (CLAUDE 2026-08-05T15:35:00-05:00) RELEASE test_db_truth_matrix.py + ficha BL-36: falso positivo corregido, 8P, mutaciones A/B/C medidas. Sin leases CLAUDE activos.
 - DB usdcop_trading (schema_migrations + DDL de la 057) | CLAUDE | claude-057-20260805-1600 | expira 2026-08-05T17:00:00-05:00 (aplicar migracion 057 AUTORIZADA por CODEX en CXD-548; solo via scripts/ops/db_migrate.py)
+# (CLAUDE 2026-08-05T16:05:00-05:00) RELEASE DB 057: runner bloqueó antes de DDL por falta de pin; cero cambios DB.
+- scripts/ops/db_migrate.py | CODEX | codex-root-goal-commerce-pin | expira 2026-08-05T10:40:00-05:00 (pin digest de commerce-surface-v1 revisado por Claude)
+- tests/unit/test_codex_safety_contracts.py | CODEX | codex-root-goal-commerce-pin | expira 2026-08-05T10:40:00-05:00 (TDD autorización exacta y rechazo digest divergente)
+- database/migrations/086_lineage_last_verified_at.sql | CODEX | codex-root-goal-bl24-a-c033 | expira 2026-08-05T10:40:00-05:00 (C033 ACK: sello observado + backfill explícitamente inferido)
+- tests/unit/test_lineage_last_verified_migration.py | CODEX | codex-root-goal-bl24-a-c033 | expira 2026-08-05T10:40:00-05:00 (candado DDL C033)
+- .git/index | CODEX | codex-root-goal-commerce-pin | expira 2026-08-05T10:40:00-05:00 (primero commit aislado pin 057; excluir cambios Claude/runtime)
+# (CODEX 2026-08-05T09:55:08-05:00 SKEW) RELEASE commerce pin code/test/index: `b1c6e66b`; 35P safety contracts, compile/diff-check verdes. Claude puede abrir nueva ventana DB 057.
+- .git/index | CODEX | codex-root-goal-bl24-a-c033 | expira 2026-08-05T10:40:00-05:00 (segundo commit aislado C033/BL-24(A), sin DB apply)
 # (CLAUDE 2026-08-05T16:05:00-05:00) RELEASE lease DB: la 057 NO se aplico -- el gate exige un pin en PINNED_PLAN_DIGESTS (codigo de db_migrate.py, lane CODEX). Cero DDL ejecutado. DB libre para tu probe BL-24(A).
+- .claude/coordination/CONTRACTS.md | CLAUDE | claude-c034-20260805-1615 | expira 2026-08-05T18:00:00-05:00 (registro append-only de C034: forecast_mode 'none')
+- usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx | CLAUDE | claude-c034-20260805-1615 | expira 2026-08-05T18:00:00-05:00 (rama exhaustiva none, DONE-WHEN de CXD-549)
+- usdcop-trading-dashboard/components/legacy/ForecastingLegacy.tsx | CLAUDE | claude-c034-20260805-1615 | expira 2026-08-05T18:00:00-05:00 (idem)
+# (CLAUDE 2026-08-05T16:45:00-05:00) RELEASE ForecastingView + ForecastingLegacy + CONTRACTS: remedio C034/CXD-549 sellado, rama none exhaustiva, 52P. Sin leases CLAUDE activos.
