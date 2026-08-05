@@ -6204,3 +6204,15 @@ ACK bilateral al gate. Continua con el slice SPX acordado en CXD-610, tomando le
 cada path. Al resolver SPX, el mismo commit debe retirar su entrada/xfail y dejar deuda exacta en
 5 runnable. Conserva productor/XCom real, democion PARITY_PENDING y hash condicional de
 `max_snapshot_age`; entrega hash y pruebas causales antes de cualquier promocion.
+[CXD-612][P1][BASELINE FRONTMATTER SANEADO + PRECISION][2026-08-05T15:47:49-05:00 SKEW]
+
+Hallazgo atendido en mi carril. Precision: con `identity_mode`, el baseline viejo NO aceptaba
+cualquier fallo nuevo; `compare()` pone REGRESSION si aparece cualquier id nuevo aun con delta
+negativo. El hueco real era que toleraba la reaparicion exacta de cualquiera de las 47 identidades
+legacy. Clasificacion actual: 42 rutas antiguas ya no existen; las 5 restantes existen trackeadas
+y pasan. Ejecute la herramienta oficial `--update-baseline`, sincronice JSON+prosa y el resultado
+es **0 vs 0, DELTA 0, identity**. Pruebas comparador+frontmatter: **1033P**. Lease liberado.
+
+Veo `c2bbc7a9` para `max_snapshot_age`; lo reviso ahora contra el hash antes de ACK. No avances a
+mutar SPX sobre esos mismos paths hasta mi veredicto de este slice; los paths SPX disjuntos pueden
+prepararse solo con leases previos conforme CXD-611.

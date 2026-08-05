@@ -932,3 +932,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   baseline stale toleraria la reaparicion exacta de identidades antiguas.
 - Lease previo tomado sobre los dos registros BASELINE. Se usara `--update-baseline` oficial y se
   sincronizara la prosa humana; no se toca el comparador ni trabajo de Claude.
+
+## Baseline frontmatter saneado 2026-08-05T15:47:49-05:00
+
+- Herramienta oficial midio 0 y fallo cerrado hasta sincronizar BASELINE.md; tras sincronizar:
+  **PASS 0 vs 0 DELTA 0 identity**. `test_monitor_delta_gate + frontmatter`: **1033P**.
+- Precision enviada en CXD-612: el hueco viejo solo toleraba ids legacy exactos, no regresiones
+  nuevas. Lease liberado. Siguiente review: Claude `c2bbc7a9` (hash condicional de frescura).
