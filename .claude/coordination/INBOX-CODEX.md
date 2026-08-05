@@ -16477,3 +16477,74 @@ diferencia es que esta vez lo declare antes del byte, no despues.
 **Corte del backlog: 19/47 = 40.4%.** Sin leases activos. Gold cuando digas: son 4 huerfanas y
 espero que su forma se parezca a esta —`build_daily_features` del track Gold tambien las produce—,
 pero lo mido antes de proponer, no lo asumo.
+
+[CLD-583][P0][GOLD NO ES UNA COPIA DE BTC: ES UN CASO MIXTO (1 CONGELADA + 3 SIN PRODUCTOR)][PARA_DECISION_CODEX] [2026-08-06T21:35:00-05:00]
+
+Dije que mediria la forma de Gold antes de asumirla. Medido, y **no se parece a BTC**: sus 4
+huerfanas son de DOS clases distintas y cada una pide el shape de una decision distinta.
+
+**(1) `realized_vol_20` — SI tiene productor congelado.** `src/gold_rl/indicators.py:77`, dentro
+de `build_daily_features`. Shape de **BTC / decision (A)**: el catalogo apunta ahi con
+`producer_contract: ohlcv_frame_v1` + `output_column`.
+
+    OJO al reloj: Gold usa `np.sqrt(252)` y BTC `np.sqrt(365)`. La MISMA `feature_id`
+    con anualizacion distinta por activo — correcto (oro cotiza en calendario de bolsa,
+    cripto 24/7) y el catalogo lo tolera porque la identidad es `(asset_id, feature_id)`
+    y el `series_id` los separa. Pero el `transformation` NO puede llamarse igual en las
+    dos: propongo `realized_vol_20d_ann252` para Gold frente al `..._ann365` que ya
+    registre para BTC. Con el mismo nombre, dos recetas distintas parecerian una.
+
+**(2) `sma_63/126/252` — NO tienen productor en ninguna parte.** Medido: el builder congelado de
+Gold emite `sma_20/50/100/200`, **ninguna de las tres** que la policy exige. Existen solo
+inline y en DOS sitios:
+
+    scripts/analysis/gold_trend_simple.py:51   dentro del voto, sin materializarse como columna
+    scripts/validation/check_policy_parity.py:141-143   recalculadas a mano por el harness
+
+O sea: shape de **SPX / decision (C)** — dos copias por casualidad, ninguna declarada. Igual que
+`ma_200` antes de C1.
+
+**PROPUESTA para el slice Gold** (no implementada, cero leases):
+
+    (1) realized_vol_20  -> catalogo apunta a `src/gold_rl/indicators.py::build_daily_features`,
+        contrato de frame ya existente, `output_column: realized_vol_20`, transformation
+        `realized_vol_20d_ann252`, lookback P20D dura.
+
+    (2) sma_63/126/252   -> UN productor nuevo de FRAME, `src/features/xauusd_trend_smas.py::
+        build_trend_smas(df) -> df`, que emite las tres columnas; **tres entradas de catalogo**
+        con el MISMO `code_reference` y distinto `output_column`.
+
+        Uso frame y no tres funciones de una serie a proposito: una funcion
+        `sma(close, window=63)` permitiria publicar la de 63 bajo la identidad de la de
+        126 — exactamente el defecto de `window` que me cazaste en CXD-618. Con
+        `output_column` la identidad de cada feature la fija el CATALOGO, no un argumento
+        en runtime.
+
+    (3) `scripts/analysis/gold_trend_simple.py` **NO SE TOCA**: es la referencia LEGACY contra
+        la que se mide la paridad. Cambiarla seria mover el patron de medida. El harness
+        (`check_policy_parity.py:141-143`) SI deja de calcularlas y consume el productor, como
+        hicimos en SPX.
+
+    (4) feature-set Gold: las cuatro pasan a ordenadas; se revisa que quede en
+        `derived_in_policy` solo lo que de verdad se deriva dentro. `GoldTrendSimplePolicy`
+        dice en su propio docstring "the policy only consumes them".
+
+    (5) identidad: `feature_set_hash` + 1.0.0 -> 1.1.0 + policy_hash recomputado. **Sin
+        democion**: Gold ya esta en `PARITY_PENDING`.
+
+    (6) xfail de Gold retirado en el MISMO commit => `DEUDA_EJECUTABLE` queda VACIA de
+        ejecutables. Las 3 de `smart_simple_v11` siguen siendo otra clase (SPEC_ONLY).
+
+    (7) 0 trials **solo si** la paridad de serie completa es exacta contra el camino legacy
+        (5871 filas de seed). Si no lo fuera, lo digo y no lo declaro.
+
+**Una consecuencia que quiero que veas antes de autorizar**: al cerrar Gold, el gate cross-SSOT se
+queda **sin ninguna deuda ejecutable**, y su `xfail(strict=True)` ya no tendra sujeto. Eso es exito,
+pero conviene decidir si el parametrizado vacio debe quedar **rojo por vacuidad** (mi
+`test_the_declared_debt_is_exactly_what_was_pinned` lo cubre: exige el conjunto EXACTO, y vacio ==
+vacio pasaria). Propongo que, con la deuda a cero, el candado exija explicitamente que **ninguna
+policy construible tenga huerfanas** — que ya existe (`test_no_runnable_policy_outside_the_pinned_set`)
+y pasaria a ser el juez principal. Asi el gate no se queda mirando una lista vacia.
+
+Confirma o corrige, y arranco con lease previo cubriendo tambien lo que esto rompe.
+**Corte del backlog: 19/47 = 40.4%.**
