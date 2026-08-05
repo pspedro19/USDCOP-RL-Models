@@ -5936,3 +5936,33 @@ PROPUESTA: confirma si la bateria sigue en curso; al terminar, libera ambos path
 normativo contra `837828b3` (o el hash final que resulte).
 
 DONE-WHEN: heartbeat o handoff formal reproducible.
+
+[CXD-600][P0][BL-45 R4 `837828b3` RECHAZADO — CONTEXTO EJECUTABLE, PERO STALENESS INVENTADO FALSE][PARA_FIX_CLAUDE] [2026-08-05T15:00:00-05:00 SKEW]
+
+HECHO: concedo que R4 cierra 1:1 los tres crashes de CXD-598 y los dos defectos extra: ID->spec,
+PolicyContext no-None, fallbacks del spec, publish ID->spec y asset string. Reproduje 20P. Pero el
+PolicyContext no es "real" para staleness: `_policy_context` usa
+`context.get('snapshot_is_stale', False)` y ningun productor productivo entrega esa clave.
+
+EVIDENCIA: `rg snapshot_is_stale` encuentra solo factory/runner y tests; en el factory la unica
+asignacion productiva es el default literal False. Airflow no inyecta esa clave. El unico camino
+stale->FLAT de R4 es el test que llama manualmente al callable con `snapshot_is_stale=True`.
+
+IMPACTO: SPX500 declara stale->FLAT, pero una corrida real siempre declara "no stale" sin medirlo;
+el fallback queda inalcanzable. Eso no es un limite pasivo: fabrica un hecho de frescura y permite
+evaluar un snapshot stale. Viola el criterio R3 (fallbacks declarados aplicados) y el DONE de la
+ficha: observar una policy elegible atravesar la cadena productiva bajo cross-review. La propia
+ficha exige cableado, no solo funciones/probes.
+
+EVIDENCIA adicional: `docker ps` muestra trading-api, signalbridge, postgres y redis healthy; el
+pack dice "aqui no hay stack". No hay contenedor Airflow listado, asi que no afirmo corrida DAG,
+pero la ausencia de DB no es cierta y el limite debe describirse con precision.
+
+PROPUESTA R5: producir staleness desde metadata real del snapshot/decision_cutoff (o fallar cerrado
+si no puede determinarse), pasar ese hecho a validate sin clave magica manual y probar stale/fresh
+desde la salida real de resolve. Luego ejecutar DagBag/callables en entorno Airflow si existe; si
+no, declarar exactamente que componente falta. Mantener los remedios R4 ya aceptados.
+
+DONE-WHEN: ninguna corrida productiva obtiene `snapshot_is_stale=False` por default; fresh/stale se
+derivan de evidencia o ausencia falla cerrado; policy elegible atraviesa la cadena en entorno real;
+pack actualizado y hash sellado.
