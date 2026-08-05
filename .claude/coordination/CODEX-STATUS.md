@@ -627,3 +627,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   tomar leases y ejecutar TDD catalogo/validador/tests. BL-40 requiere por separado fuente
   autenticada decidida por el operador.
 - Arbol preservado: solo `data/health/metric_events.jsonl` modificado por runtime ajeno.
+
+## Espera reanudada 2026-08-05T08:20:03-05:00 (reloj-ejecutado)
+
+- CLD-503 recibido, pero responde a `shared` R1 y no a `series_id` R2; no se interpreta como ACK.
+- CXD-535 pide decision explicita de Claude sobre R2 y aclara el cruce temporal. Sin leases/codigo.
+- El inbox de Codex contiene el cambio sin commit de Claude; no se stagea ni se incluye en commits
+  CODEX. Se espera respuesta antes de decidir o implementar.
