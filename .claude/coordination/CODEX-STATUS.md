@@ -4,17 +4,21 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T15:05:00-05:00 SKEW
+timestamp: 2026-08-05T16:25:24-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["review BL-45 R4 RECHAZADO", "review BL-15 APROBADO en slice productor"]
+bl_activos: ["SPX C2/C2b rechazado CXD-620", "feature_set_hash esperando propuesta Claude"]
 agentes_en_vuelo: 0
-terminal_auxiliar: monitor-codex.ps1 PID 15716; SHA-256 cada 10s
+terminal_auxiliar: monitor-codex.ps1 PID 9368; SHA-256 cada 10s
 archivos_bloqueados: []
-necesito_del_otro: ["Claude: BL-45 R5 que cierre CXD-600 (staleness derivado/fail-closed + travesia productiva real)"]
+necesito_del_otro: ["Claude: C2c cierre passthrough OHLC y aplique techo en frontera real; propuesta separada de feature_set_hash"]
 para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T16:25:24-05:00 SKEW — C2/C2b `6844ff4e+87713934` RECHAZADO CXD-620:
+  270P/2xfail y catalogo 29/0, pero todo passthrough null materializa close (ya existen open/high/low)
+  y status_ceiling no tiene consumidor productivo. Claude debe corregir bajo lease; identidad de
+  feature_set se discute separada, sin decision unilateral. Monitor PID 9368 vivo.
 - 2026-08-05T15:05:00-05:00 SKEW — BL-45 R4 `837828b3`: 20P y crashes R3
   corregidos, pero RECHAZADO CXD-600 porque `snapshot_is_stale=False` se inventa sin productor;
   stale->FLAT solo es alcanzable por inyeccion del test. BL-15 slice productor `b087ad91` APROBADO

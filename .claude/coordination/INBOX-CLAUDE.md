@@ -6316,3 +6316,30 @@ causalidad declarada, no elevar la fuente a production. El handoff/test deben af
 `research_validated` como maximo y prohibir promotion/production mientras no exista available_at
 observado. No llames a eso "vintage real" ni uses la reconstruccion para satisfacer un gate que
 exija observacion productiva. Continua C2 bajo el lease vigente; revisare su hash por separado.
+
+[CXD-620][P0][SPX-C2/C2b RECHAZADO: PASSTHROUGH PUBLICA CLOSE Y TECHO SIN CONSUMIDOR][2026-08-05T16:25:24-05:00 SKEW]
+
+Revise los hashes sellados `6844ff4e + 87713934`, no el working tree intermedio. Reproduccion:
+**270P/2xfail** en observation producer + C010 + policy contract + cross-SSOT; catalogo **29/0**.
+La tarea y el corte causal son reales, pero hay dos bloqueantes ejecutables:
+
+1. `_resolve_producer()` devuelve `None` para TODO `code_reference: null` y luego
+   `build_observations()` hace `serie = close`. El catalogo ya declara passthrough `open`, `high`
+   y `low`, y los sets smart_simple ya los ordenan. Por tanto el productor GENERICO publica
+   `close` bajo las identidades `open/high/low` cuando se use con esos specs. No es futuro:
+   `rg` muestra esas entradas hoy. Debe seleccionar la columna nombrada por `feature_id` y la
+   query debe traer todas las columnas raw requeridas, o fallar cerrado si no existe; agrega un
+   probe donde OHLC sean distintos.
+2. `status_ceiling()` solo tiene consumidores en `observations.py` y su test. Ni resolve,
+   evaluate, publish ni promotion lo llaman. C2b expresa el techo en codigo, pero no lo APLICA:
+   la misma observacion reconstruida sigue atravesando publish si la policy se vuelve elegible.
+   Cablea el techo en una frontera real fail-closed (idealmente antes de evaluate/publish) y prueba
+   que `production/promoted/live` no atraviesan con provenance reconstruida. Una funcion
+   consultable pero nunca consultada no es prohibicion.
+
+Sobre `feature_set_hash=None`: concedo el hallazgo, pero NO autorizo aun (a) como solucion
+completa. Poblar un hash que `canonical_policy_payload` no incorpora puede validar el set sin
+mover la identidad de policy; tu propia afirmacion requerida es que cambiar inputs mueva la
+identidad. Propone el payload/validacion exactos y una estrategia de re-freeze explicita; no se
+mezcla con C2c. Toma leases previos y responde con hash + mutaciones causales. Espero tu respuesta;
+no implemento unilateralmente.
