@@ -269,18 +269,51 @@ def test_composite_aborts_when_the_builder_returns_24_with_the_real_recipe(
         gi.generate_composite_v11()
 
 
-def test_composite_aborts_when_the_recipe_itself_is_not_the_canonical_25(
-        sandbox25, monkeypatch):
-    """NEGATIVA 2 — builder y receta COINCIDEN, pero la receta no es la de v11.
+def _con_receta(monkeypatch, candidata: list[str]) -> None:
+    """Instala una receta CANDIDATA y hace que el builder coincida con ella.
 
-    Este es el agujero exacto de CXD-583: con ambos a 24 (o a 8) mi version anterior
-    publicaba, porque solo exigia inclusion y nunca identidad. Ahora aborta ANTES.
+    `_canonical_v11_recipe_ids` NO se parchea nunca: es la autoridad independiente contra la
+    que se compara. Parchearla seria dejar que la prueba se mienta a si misma — el agujero
+    exacto que CXD-584 describe.
     """
-    _, recipe = sandbox25
-    recorte = list(recipe)[:-1]
-    monkeypatch.setattr(gi, "yaml_safe_load_recipe", lambda: recorte)
+    monkeypatch.setattr(gi, "yaml_safe_load_recipe", lambda: list(candidata))
     monkeypatch.setattr(
         "src.forecasting.enhance_v2.enhance_features_v2",
-        lambda df, base, project_root=None, include_xlead=False: (df, list(recorte)))
-    with pytest.raises(RuntimeError, match="v11 declara"):
+        lambda df, base, project_root=None, include_xlead=False: (df, list(candidata)))
+
+
+def test_composite_aborts_when_the_recipe_has_24_ids(sandbox25, monkeypatch):
+    """NEGATIVA 2 — builder y receta COINCIDEN a 24. El agujero de CXD-583."""
+    _, recipe = sandbox25
+    _con_receta(monkeypatch, list(recipe)[:-1])
+    with pytest.raises(RuntimeError, match="NO es usdcop_smart_simple_v11_recipe25"):
+        gi.generate_composite_v11()
+
+
+def test_composite_aborts_when_one_id_is_substituted_keeping_the_length(
+        sandbox25, monkeypatch):
+    """NEGATIVA 3 — 25 ids con UNO sustituido: longitud correcta, identidad falsa.
+
+    Es el ataque literal de CXD-584, que atraveso la guarda de longitud de R3 y publico
+    `feats=25` con `invented_id_present: True` — o sea, OTRO modelo bajo la etiqueta de
+    recipe25. Longitud no es identidad.
+    """
+    _, recipe = sandbox25
+    falsa = ["invented_but_length_preserved"] + list(recipe)[1:]
+    _con_receta(monkeypatch, falsa)
+    with pytest.raises(RuntimeError, match="sobran"):
+        gi.generate_composite_v11()
+
+
+def test_composite_aborts_when_the_25_are_permuted(sandbox25, monkeypatch):
+    """NEGATIVA 4 — MISMO conjunto, ORDEN distinto.
+
+    El orden no es cosmetico: `ordered_features` lo declara y el productor asigna los
+    coeficientes por posicion. Un conjunto correcto mal ordenado atribuye cada peso a la
+    feature equivocada, y el conteo seguiria diciendo 25.
+    """
+    _, recipe = sandbox25
+    permutada = list(recipe)[1:] + [list(recipe)[0]]
+    _con_receta(monkeypatch, permutada)
+    with pytest.raises(RuntimeError, match="ORDEN distinto"):
         gi.generate_composite_v11()

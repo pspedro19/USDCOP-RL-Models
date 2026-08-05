@@ -112,7 +112,6 @@ def _models_for_asset(asset: str, kind: str) -> tuple[str, ...]:
     return tuple(m for m in declared if m.endswith("_pure"))
 
 
-V11_RECIPE_N = 25    # identidad de usdcop_smart_simple_v11_recipe25 (CXD-583)
 MIN_TRAIN = 400      # misma guarda que meta01_zoo_ledger.py (años con menos train se SALTAN)
 
 # Header OBLIGATORIO en cada JSON (BL-20 / A.7).
@@ -1339,18 +1338,30 @@ def generate_composite_v11(*, supersede: bool = False) -> list[Path]:
     df, feat_cols = enhance_features_v2(df, base_cols, project_root=REPO)
     feat_cols = [c for c in feat_cols if c in df.columns]
 
-    recipe = yaml_safe_load_recipe()
+    recipe = list(yaml_safe_load_recipe())          # CANDIDATA: lo que el productor resolvio
 
-    # IDENTIDAD CANONICA de la receta, no solo inclusion (CXD-583). Mi version anterior solo
-    # comprobaba que el builder CONTUVIERA la receta, asi que una receta de 8 —o una coherente
-    # de 24— publicaba igual mientras el `scope` seguia afirmando "recipe25 (25)". CODEX lo
-    # reprodujo: `n_features: 8` con `declared_recipe25: True`. Una atribucion que miente sobre
-    # QUE modelo explica es peor que no publicarla.
-    if len(recipe) != V11_RECIPE_N:
+    # IDENTIDAD CANONICA: lista Y ORDEN exactos contra el feature_set CONGELADO (CXD-584).
+    #
+    # Historia de dos rechazos, porque explica cada palabra de esta guarda:
+    #  - R2 solo exigia INCLUSION (builder ⊇ receta): una receta de 8 publicaba afirmando 25.
+    #  - R3 anadio guarda de LONGITUD: CODEX sustituyo UN id conservando los 25 y volvio a
+    #    publicar — "OTRO modelo bajo la etiqueta de recipe25". Longitud no es identidad.
+    #
+    # La autoridad se lee por una ruta INDEPENDIENTE de la candidata: comparar contra la misma
+    # funcion que produjo la lista seria compararla consigo misma y no probaria nada. Y no se
+    # duplican los 25 ids en Python: el YAML congelado es la SSOT y el muro feature-contracts
+    # protege su identidad.
+    canonical = _canonical_v11_recipe_ids()
+    if recipe != canonical:
+        falta = [f for f in canonical if f not in recipe]
+        sobra = [f for f in recipe if f not in canonical]
+        permutada = not falta and not sobra
         raise RuntimeError(
-            f"la receta resuelta tiene {len(recipe)} features y v11 declara "
-            f"{V11_RECIPE_N} (usdcop_smart_simple_v11_recipe25): publicar asi seria "
-            f"atribuir OTRO modelo con la etiqueta de v11")
+            f"la receta resuelta NO es usdcop_smart_simple_v11_recipe25: "
+            + ("mismo conjunto en ORDEN distinto" if permutada
+               else f"faltan={falta[:3]} sobran={sobra[:3]} "
+                    f"(resuelta={len(recipe)}, canonica={len(canonical)})")
+            + " — publicar asi seria atribuir OTRO modelo con la etiqueta de v11")
     faltan = [f for f in recipe if f not in feat_cols]
     if faltan:
         raise RuntimeError(
@@ -1488,6 +1499,21 @@ def generate_composite_v11(*, supersede: bool = False) -> list[Path]:
     print(f"[composite] usdcop_ridge_br: {_rel(p)} (n_rows={len(phi)}, "
           f"folds={len(fold_meta)}, feats={len(feat_cols)}, add_err={add_err:.2e})", flush=True)
     return [p]
+
+
+def _canonical_v11_recipe_ids() -> list[str]:
+    """Autoridad CANONICA de la receta v11: los `feature_id` EN ORDEN del feature_set congelado.
+
+    Deliberadamente separada de `yaml_safe_load_recipe()` aunque hoy lean el mismo fichero: la
+    guarda de identidad compara la lista CANDIDATA contra ESTA, y si ambas salieran de la misma
+    llamada la comparacion seria consigo misma — que es exactamente el agujero por el que R3
+    dejo publicar 25 ids con uno sustituido (CXD-584).
+    """
+    import yaml
+    fs = yaml.safe_load(
+        (REPO / "config" / "features" / "feature_sets"
+         / "usdcop_smart_simple_v11_recipe25.yaml").read_text(encoding="utf-8"))
+    return [f["feature_id"] for f in sorted(fs["ordered_features"], key=lambda r: r["order"])]
 
 
 def yaml_safe_load_recipe() -> list[str]:
