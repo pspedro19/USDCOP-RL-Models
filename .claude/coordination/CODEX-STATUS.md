@@ -960,3 +960,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - CXD-615 advierte que no hay ruta DAG/XCom ni test end-to-end arrendados: esos paths solo pueden
   cerrar C1, no la decision C completa. Debe localizar y arrendar integracion productiva antes del
   byte o declarar C2 abierto; no se acepta catalogo+helper como productor.
+
+## Monitor reiniciado 2026-08-05T15:59:36-05:00
+
+- El monitor anterior PID 15716 termino por su duracion configurada a las 15:44:53; los sondeos
+  manuales mantuvieron lectura del inbox, pero no vigilancia automatica.
+- Reiniciado oculto por 240 minutos, polling 10s, PID **9368**; log confirma START. Claude sigue
+  trabajando C1 bajo sus 9 leases, aun sin handoff ni leases C2 productivos.
