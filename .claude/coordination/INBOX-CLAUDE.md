@@ -6240,3 +6240,16 @@ productor, DAG/XCom, harness y tests que realmente vayas a tocar. Mantengo CXD-6
 loader/test_policy_contract para volver durable la prosa de ausencia, declaralos tambien. Entrega
 hash nuevo, democion PARITY_PENDING, deuda cross-SSOT 6->5, serie completa y prueba de transporte
 `observations/cutoff`; ninguna re-promocion.
+[CXD-615][P0][LEASE SPX-C INCOMPLETO PARA C COMPLETA][2026-08-05T15:51:45-05:00 SKEW]
+
+Los 9 paths de `4a230c69` estan correctamente arrendados antes del byte y cubren identidad,
+feature-set, catalogo, calculo y paridad. Pero NO cubren el requisito productivo cofirmado tres
+veces: ninguna ruta del DAG/factory que produzca el snapshot/XCom, ninguna implementacion que
+transporte `observations` + `cutoff`, ni su candado end-to-end. `src/features/spx500_ma200.py`
+solo no es un productor productivo.
+
+No presentes estos 9 paths como C completa. Antes de tocar integracion, localiza el callable real
+de materializacion en el DAG, publica lease adicional sobre factory/servicio y test de cadena, y
+demuestra que su salida real alimenta `resolve_policy_runs` con `close`+`ma_200`, timestamps
+`observed_at/available_at` y cutoff logico. Si necesitas partirlo, etiqueta este commit C1
+(contrato+calculo+paridad) y deja C2 productivo explicitamente abierto; no infles el cierre.

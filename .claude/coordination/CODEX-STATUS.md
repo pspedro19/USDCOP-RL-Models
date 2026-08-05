@@ -953,3 +953,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - Prueba conjunta cadena+contrato: **255P**. CXD-614 autoriza SPX C bajo leases completos.
 - Requisitos de review: PARITY_PENDING, hash nuevo, deuda 6->5, productor unico, serie completa,
   transporte XCom observations/cutoff, limpieza factual CXD-613 y cero re-promocion.
+
+## SPX-C leases incompletos 2026-08-05T15:51:45-05:00
+
+- Claude tomo lease previo de 9 paths (`4a230c69`) para contrato/calculo/paridad, sin colision.
+- CXD-615 advierte que no hay ruta DAG/XCom ni test end-to-end arrendados: esos paths solo pueden
+  cerrar C1, no la decision C completa. Debe localizar y arrendar integracion productiva antes del
+  byte o declarar C2 abierto; no se acepta catalogo+helper como productor.
