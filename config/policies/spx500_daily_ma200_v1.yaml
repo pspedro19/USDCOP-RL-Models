@@ -24,9 +24,17 @@ engine:
     schema: qlab_policy_v1
 
 inputs:
-  # El set del activo (BL-39, catálogo 1.1.0) ya declara "MA200 solo close":
-  # esta política consume el MISMO snapshot diario, subconjunto {close}, y la
-  # media se registra como feature derivada del mismo código congelado.
+  # Feature-set PROPIO (v1.1.0, decisión C): declara {close, ma_200} y `ma_200` se
+  # materializa por el productor único `src/features/spx500_ma200.py`, catalogada
+  # como `spx500.ma_200`. NO es derivada dentro de la política: el DSL no tiene
+  # operador de ventana y una policy declarativa no puede derivar una media.
+  #
+  # Aquí decía, hasta 2026-08-06, que esta política "consume el MISMO snapshot
+  # diario, subconjunto {close}, y la media se registra como feature derivada".
+  # Era FALSO en las dos mitades y se contradecía con su propio `required_features`
+  # tres líneas más abajo: la media no era derivada por nadie —se calculaba inline
+  # en el harness de paridad, sin catálogo ni productor— y el subconjunto {close}
+  # habría hecho fallar la policy por `missing` en toda corrida (CXD-618 §3).
   feature_set_id: spx500_daily_ma200_v1_action_v1
   resample_policy_id: spx500_daily_official_v1
   required_features: [close, ma_200]

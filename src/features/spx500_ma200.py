@@ -56,20 +56,26 @@ FEATURE_ID = "ma_200"
 SERIES_ID = "spx500.ma_200"
 
 
-def compute_ma_200(close: pd.Series, *, window: int = MA_WINDOW) -> pd.Series:
-    """SMA de `window` sesiones sobre el cierre, con `min_periods=window`.
+def compute_ma_200(close: pd.Series) -> pd.Series:
+    """SMA de 200 sesiones sobre el cierre, con `min_periods=200`.
 
-    Una sola línea de aritmética, y aun así merece ser función: lo que se está
-    congelando no es el cálculo sino **que haya UNO**. Antes existían dos fórmulas
-    idénticas por casualidad (harness de paridad y publisher legacy) y ninguna
-    declarada; dos definiciones que coinciden hoy son dos definiciones que pueden
-    divergir mañana sin que nada lo note.
+    Una sola línea de aritmética, y aun así merece ser función: lo que se congela no
+    es el cálculo sino **que haya UNO**. Antes existían dos fórmulas idénticas por
+    casualidad (harness de paridad y publisher legacy) y ninguna declarada; dos
+    definiciones que coinciden hoy son dos definiciones que pueden divergir mañana
+    sin que nada lo note.
 
-    `window` es keyword-only y por defecto la declarada: se puede *inspeccionar* en
-    un test, no *ajustar* desde un llamador de producción sin que se vea.
+    **SIN parámetro `window`, y eso es justo el punto.** La primera versión lo
+    aceptaba keyword-only "para poder inspeccionarlo en un test", con la idea de que
+    nadie lo ajustaría sin que se viera. Era falso, y CXD-618 lo midió: el catálogo
+    congela el **código**, no el argumento en runtime, así que un llamador podía
+    pedir `window=50` y publicar una MA50 bajo el mismo `feature_id: ma_200`, el
+    mismo `series_id` y el mismo `sha256_16` — con todos los candados en verde.
+    **Una identidad de feature que no fija su ventana no es una identidad.**
+
+    Quien quiera otra ventana declara OTRA feature en el catálogo, con su
+    `series_id` y su hash. Eso es el catálogo haciendo su trabajo, no un estorbo.
     """
     if not isinstance(close, pd.Series):
         raise TypeError(f"close debe ser una pd.Series, no {type(close).__name__}")
-    if window < 1:
-        raise ValueError(f"window debe ser >= 1, no {window}")
-    return close.astype(float).rolling(window, min_periods=window).mean()
+    return close.astype(float).rolling(MA_WINDOW, min_periods=MA_WINDOW).mean()

@@ -8,9 +8,16 @@ sólo `close`— a ser una feature del sistema con un solo productor.
 Ese movimiento sólo puede ser **0 trials** si es reparación de REPRESENTACIÓN: si la
 serie que sale de aquí no reprodujera bit a bit la que ya se publicaba, sería un
 cambio económico disfrazado de fontanería y habría que cobrarlo como trial y
-revalidarlo. Por eso la paridad se demuestra sobre la **serie completa** (7943 barras
-reales del índice oficial, 1995→2026), no por muestreo: un muestreo que pasa no
-distingue "idéntico" de "casi idéntico en los puntos que miré".
+revalidarlo. Por eso la paridad se demuestra sobre **todas las filas del snapshot**
+del índice oficial, no por muestreo: un muestreo que pasa no distingue "idéntico" de
+"casi idéntico en los puntos que miré".
+
+**Sin cifra escrita a mano, a propósito** (CXD-618 §2): el docstring decía "7943
+barras" y el harness de paridad reporta **7743** — dos magnitudes distintas (filas
+del seed vs barras comparadas por el harness) que yo puse una junto a la afirmación
+de la otra. Una cifra que hay que mantener sincronizada a mano es una falsedad
+esperando su turno; que la comparación cubre TODAS las filas ya lo prueba
+`len(nuevo) == len(close_real)`.
 """
 from __future__ import annotations
 
@@ -41,7 +48,7 @@ def close_real() -> pd.Series:
 
 
 def test_full_series_parity_against_the_legacy_inline_formula(close_real: pd.Series) -> None:
-    """Paridad EXACTA sobre las 7943 barras contra la fórmula que había inline.
+    """Paridad EXACTA sobre TODAS las filas contra la fórmula que había inline.
 
     La referencia es literalmente lo que hacía `check_policy_parity.py:101` antes de
     este cambio —`close.rolling(200, min_periods=200).mean()`— reescrita aquí a mano
@@ -58,14 +65,46 @@ def test_full_series_parity_against_the_legacy_inline_formula(close_real: pd.Ser
     # NaN en las mismas posiciones (el warm-up es parte del contrato, no un borde).
     assert nuevo.isna().equals(legacy.isna()), "el warm-up no coincide"
     validos = ~legacy.isna()
-    assert validos.sum() > 7000, (
-        f"sólo {validos.sum()} barras válidas: la serie no es la completa y la "
-        f"paridad no probaría lo que dice probar"
+    # Anti-vacuidad SIN cifra mágica: la comparación debe cubrir casi todas las filas
+    # —sólo el warm-up queda fuera— y sobre una serie que de verdad es larga. Un
+    # umbral escrito a mano (`> 7000`) no habría detectado nada de esto y además
+    # habría que mantenerlo cada vez que crece el seed.
+    assert validos.sum() == len(close_real) - (MA_WINDOW - 1), (
+        f"válidas={validos.sum()} no cuadra con len-{MA_WINDOW - 1}: el warm-up no es "
+        f"el declarado y la paridad no cubre lo que dice cubrir"
+    )
+    assert len(close_real) > 5 * MA_WINDOW, (
+        f"la serie tiene {len(close_real)} filas: demasiado corta para que una "
+        f"paridad de ventana 200 signifique algo"
     )
     assert np.array_equal(nuevo[validos].to_numpy(), legacy[validos].to_numpy()), (
         "la media difiere del cálculo legacy en al menos una barra: esto NO sería "
         "reparación de representación y no podría declararse 0 trials"
     )
+
+
+def test_the_window_cannot_be_overridden_by_a_caller(close_real: pd.Series) -> None:
+    """No hay forma pública de publicar otra ventana bajo la identidad `ma_200`.
+
+    ESTE ES EL DEFECTO QUE ENCONTRÓ CODEX (CXD-618 §1). La primera versión aceptaba
+    `window` keyword-only, así que un llamador podía pedir `window=50` y publicar una
+    **MA50** bajo el mismo `feature_id: ma_200`, el mismo `series_id` y el mismo
+    `sha256_16` — y todos los candados de este fichero seguían verdes, porque el
+    catálogo congela el **código**, no el argumento en runtime.
+
+    Se comprueba por FIRMA y no sólo por comportamiento: que hoy no exista un test
+    que pase `window` no impide que mañana alguien lo pase.
+    """
+    import inspect
+
+    params = list(inspect.signature(compute_ma_200).parameters)
+    assert params == ["close"], (
+        f"el productor acepta {params}: cualquier parámetro además de la serie permite "
+        f"publicar otra feature bajo esta identidad. Otra ventana = otra entrada de "
+        f"catálogo, con su series_id y su hash"
+    )
+    with pytest.raises(TypeError):
+        compute_ma_200(close_real, window=50)  # type: ignore[call-arg]
 
 
 def test_the_warmup_is_a_hard_window_not_a_soft_start(close_real: pd.Series) -> None:

@@ -152,7 +152,7 @@ features:
     el valor es NaN y no hay decision, que es lo que el spec expresa con
     `warmup_bars: 200`.
   compute_location: python
-  code_reference: {file: src/features/spx500_ma200.py, symbol: compute_ma_200, sha256_16: 59208e248b935c7a}
+  code_reference: {file: src/features/spx500_ma200.py, symbol: compute_ma_200, sha256_16: 468c4faa235cacc5}
   sign_prior: ambiguous
   sign_prior_note: >-
     La MEDIA no tiene prior de signo por si misma; el prior direccional vive en la
