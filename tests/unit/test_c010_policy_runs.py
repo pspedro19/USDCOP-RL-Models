@@ -379,16 +379,25 @@ class _TIProbe:
         return None
 
 
-def _obs(available_at: str) -> dict:
-    """Observaciones con `available_at` REAL: de ahi sale la frescura."""
+def _obs(close_at: str, ma_at: str | None = None) -> dict:
+    """Observaciones con `available_at` REAL, y **por feature**.
+
+    El parametro por feature existe porque la version anterior ponia el MISMO sello
+    en todas: con edades homogeneas el test no distingue `max(available_at)` de
+    `min(available_at)`, asi que no podia cazar que R5 midiera la observacion mas
+    NUEVA. Fixture que no puede fallar en la dimension que importa — la misma clase
+    de defecto que CODEX ya me encontro en BL-20 (CXD-576).
+    """
     return {
-        "close": {"value": 5200.0, "available_at": available_at},
-        "ma_200": {"value": 5000.0, "available_at": available_at},
+        "close": {"value": 5200.0, "available_at": close_at},
+        "ma_200": {"value": 5000.0, "available_at": ma_at or close_at},
     }
 
 
-OBS_FRESCAS = _obs("2026-07-24T20:00:00+00:00")   # 1h antes del cutoff
-OBS_VIEJAS = _obs("2026-07-18T20:00:00+00:00")    # 6 dias antes
+OBS_FRESCAS = _obs("2026-07-24T20:00:00+00:00")   # ambas 1h antes del cutoff
+OBS_VIEJAS = _obs("2026-07-18T20:00:00+00:00")    # ambas 6 dias antes
+#: El caso de CXD-603: `close` de hace 1h, `ma_200` de hace 6 dias.
+OBS_MIXTAS = _obs("2026-07-24T20:00:00+00:00", "2026-07-18T20:00:00+00:00")
 SNAPSHOT_SANO = {"close": 5200.0, "ma_200": 5000.0}
 
 
@@ -522,6 +531,45 @@ def test_validate_without_a_derived_freshness_fact_refuses_to_assume_fresh(facto
     ti = _TIProbe(OBS_FRESCAS)          # NO se corre `resolve`: no hay hecho
     with pytest.raises(factory.PolicyRunConfigError, match="frescura"):
         factory.make_validate_inputs(PID)(ti=ti, **CTX_INTERVALO)
+
+
+def test_one_fresh_feature_cannot_launder_a_stale_one(factory, monkeypatch):
+    """Un snapshot vale lo que su observacion MAS VIEJA (CXD-603).
+
+    R5 derivaba la frescura con `max(available_at)` — la observacion mas NUEVA — asi
+    que `close` de hace una hora blanqueaba una `ma_200` de hace seis dias y la policy
+    operaba con un input caducado creyendolo fresco. Y los 22 tests en verde no podian
+    verlo porque la fixture ponia el MISMO sello en todas las features: con edades
+    homogeneas, `max` y `min` son indistinguibles.
+
+    La regla correcta: stale si CUALQUIER observacion requerida excede el umbral.
+
+    Rojo con: `min(...)` -> `max(...)` en `_derive_staleness`.
+    """
+    _con_umbral(factory, monkeypatch, edad="P1D")
+    ti = _TIProbe(OBS_MIXTAS)
+    factory.make_resolve_snapshot(PID)(ti=ti, **CTX_INTERVALO)
+    assert ti.pushed[f"{factory.STALENESS_XCOM_KEY}::{PID}"] is True, (
+        "una feature fresca blanqueo a una vieja: el snapshot se declaro fresco con "
+        "`ma_200` de hace 6 dias y umbral P1D"
+    )
+    degradada = factory.make_validate_inputs(PID)(ti=ti, **CTX_INTERVALO)
+    assert degradada is not None and degradada.direction == "FLAT", (
+        "el snapshot mixto debia degradar a FLAT por el fallback declarado"
+    )
+
+
+def test_all_fresh_is_still_fresh_so_the_lock_is_not_just_always_stale(factory, monkeypatch):
+    """La otra mitad del par: si TODAS son frescas, no se declara stale.
+
+    Sin este, `_derive_staleness` cableada a `True` pasaria el test de arriba y la
+    cadena no operaria nunca — un candado que solo comprueba una direccion no
+    distingue "mide bien" de "siempre dice stale".
+    """
+    _con_umbral(factory, monkeypatch, edad="P1D")
+    ti = _TIProbe(OBS_FRESCAS)
+    factory.make_resolve_snapshot(PID)(ti=ti, **CTX_INTERVALO)
+    assert ti.pushed[f"{factory.STALENESS_XCOM_KEY}::{PID}"] is False
 
 
 def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factory):

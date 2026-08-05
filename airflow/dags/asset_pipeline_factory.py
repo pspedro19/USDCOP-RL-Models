@@ -296,11 +296,18 @@ def _derive_staleness(policy_id: str, observations: dict, decision_cutoff, spec:
             f"umbral es decision de la policy, no del orquestador"
         )
     cutoff = _aware_datetime(decision_cutoff, field="decision_cutoff")
-    mas_nuevo = max(
+    # `min`, NO `max`: el snapshot esta stale si CUALQUIER observacion requerida
+    # excede el umbral, asi que manda la MAS VIEJA. R5 usaba `max` -- la mas nueva --
+    # y con eso una feature reciente blanqueaba a otra de hace seis dias: el
+    # snapshot se declaraba fresco y la policy operaba con un input caducado
+    # (CXD-603, probado con cutoff 24-jul, `vieja` del 18 y `fresca` del 24 -> False
+    # cuando la respuesta segura era True). Un agregado mal elegido no es un detalle
+    # de estilo: convierte el peor caso en el mejor.
+    mas_vieja = min(
         _aware_datetime(obs["available_at"], field=f"feature {name!r} available_at")
         for name, obs in observations.items()
     )
-    return (cutoff - mas_nuevo) > limite
+    return (cutoff - mas_vieja) > limite
 
 
 def make_resolve_snapshot(policy_id: str):
