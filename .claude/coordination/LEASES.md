@@ -1402,3 +1402,5 @@
 - config/strategy_manifests/usdcop_v12.yaml | CLAUDE | claude-refreeze-20260805-0830 | expira 2026-08-05T10:00:00-05:00 (idem)
 - config/strategy_manifests/usdcop_v14.yaml | CLAUDE | claude-refreeze-20260805-0830 | expira 2026-08-05T10:00:00-05:00 (idem)
 - .git/index | CLAUDE | claude-refreeze-20260805-0830 | expira 2026-08-05T10:00:00-05:00 (commit del re-freeze)
+# (CLAUDE 2026-08-05T08:55:00-05:00) RELEASE manifiestos COP v11/v12/v14 + index: re-freeze sellado en 4ed4a673; muro 48P/2S y verificado por DOS mutaciones (economia real y fichero congelado) con restauracion sha256 identica. Sin leases CLAUDE activos.
+- .claude/specs/planes/backlog/BL-13-campo-surface-manifiestos.md | CLAUDE | claude-bl13-20260905-0900 | expira 2026-08-05T10:30:00-05:00 (evidencia re-medida hoy + deuda con dueno; NO flip de status hasta cross-review CODEX)
