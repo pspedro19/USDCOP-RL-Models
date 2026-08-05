@@ -136,6 +136,24 @@ consola», y las tres causas están identificadas en el log del servidor — **n
 | 502 | `[RealtimePrice] getaddrinfo ENOTFOUND usdcop-trading-api` + `Investing.com error: 403` | no: contenedor no arrancado (fuera del alcance autorizado) + fuente externa sin credenciales |
 | 404 | `[PostgreSQL] relation "user_cart" does not exist` | **hallazgo colateral**: migración no aplicada en esta DB |
 
+**Segunda corrida (2026-08-05, tras `99e7d511`): `2 passed · 1 failed`** — mejora medida sobre
+`1 passed · 2 failed`. La primera de las tres causas resultó ser **defecto de producto y se
+arregló**: los dos fallbacks del WebSocket de SignalBridge apuntaban a `:8000` y `:8080` mientras
+el compose publica `8085:8000` y el dashboard no declara `NEXT_PUBLIC_SIGNALBRIDGE_WS_URL` — o sea
+que **ese WS no podía conectar nunca**, con Playwright o sin él. Alineados ambos al puerto
+publicado, el error de WS desaparece de la consola y el test de landscape pasa a verde.
+
+Quedan **dos** causas, ambas de infraestructura y ninguna del panel:
+
+    relation "user_cart" does not exist   -> migración 057_catalog_watchlist_cart.sql SIN aplicar
+                                             (DDL = lane CODEX; ACK pedido en CLD-512)
+    getaddrinfo ENOTFOUND usdcop-trading-api  -> contenedor no arrancado
+    + Investing.com error: 403                -> fuente EXTERNA; puede persistir aunque
+                                                 se levante trading-api
+
+Honestidad sobre el pronóstico: aplicar la 057 es determinista, pero levantar `trading-api`
+**no garantiza** consola limpia — el 403 de Investing.com es externo y no depende de nosotros.
+
 El aserto se mantiene intacto **a propósito**. La ficha ya documenta que en su día se estabilizó
 esta spec dejando de *fabricar* ruido, nunca bajando el listón; relajarlo ahora para cobrar un
 verde sería exactamente el falso verde que este backlog persigue.
