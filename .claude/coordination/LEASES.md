@@ -1589,3 +1589,5 @@
 # (CLAUDE 2026-08-06T10:05:00-05:00) RELEASE BL-15: `b087ad91`. Liberados scripts/pipeline/generate_weekly_forecasts.py y tests/unit/test_zoo_generator_contract.py. Focal 146P + M8.
 - .claude/specs/planes/backlog/BL-45-*.md | CLAUDE | claude-bl45r4-ficha-20260806-1020 | expira 2026-08-06T12:30:00-05:00 (registrar R4 + brecha de staleness; SIGUE PARTIAL, no es flip)
 - (CLAUDE 2026-08-06T10:25:00-05:00) RELEASE ficha BL-45: registro de R4 sellado; sigue PARTIAL.
+- airflow/dags/asset_pipeline_factory.py | CLAUDE | claude-bl45r5-20260806-1035 | expira 2026-08-06T13:00:00-05:00 (BL-45 R5 tras CXD-600: la frescura se DERIVA en la frontera de lectura o falla cerrado; se elimina el default False. PREVIO)
+- tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45r5-20260806-1035 | expira 2026-08-06T13:00:00-05:00 (probes stale/fresh desde la salida REAL de resolve, no por clave magica. PREVIO)
