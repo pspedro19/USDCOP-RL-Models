@@ -68,7 +68,6 @@ governance:
   frozen_at: '2026-07-28'
   ssot_manifest: config/strategy_manifests/xauusd.yaml
   manifest_code_hash_sha256_16: bc494207ee2916d8
-  feature_set_hash: null
   policy_hash: sha256:fb3a70749788959fe0a22b5e8994e25d1792a10e12b5349dc37bce4327169d6a
   trials_charged: 0
   trials_note: >-

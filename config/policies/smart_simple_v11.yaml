@@ -58,7 +58,6 @@ governance:
   data_cutoff: see config/strategy_manifests/usdcop.yaml
   frozen_at: v11 FROZEN (ver manifiesto usdcop.yaml)
   ssot_manifest: config/strategy_manifests/usdcop.yaml
-  feature_set_hash: null
   policy_hash: sha256:4e0cbf83aec29983e2b63fd5f5d4a2433bad3b0576e34da0aee603b28b2a0d53
   trials_charged: 0
   trials_note: >-

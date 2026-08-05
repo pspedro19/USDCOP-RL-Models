@@ -36,6 +36,11 @@ inputs:
   # en el harness de paridad, sin catálogo ni productor— y el subconjunto {close}
   # habría hecho fallar la policy por `missing` en toda corrida (CXD-618 §3).
   feature_set_id: spx500_daily_ma200_v1_action_v1
+  # Hash del CONTENIDO decisorio del set (no del fichero: un comentario no mueve la
+  # identidad). Entra en `canonical_policy_payload`, asi que anadir o quitar una
+  # feature de entrada obliga a nueva version de la policy — el `feature_set_id` solo
+  # no lo garantizaba (CXD-623, piloto).
+  feature_set_hash: sha256:9d5306397304610e77c3b8ee1f2e09b6d6a962ae9cc8faa003217ab9748b7440
   resample_policy_id: spx500_daily_official_v1
   required_features: [close, ma_200]
   optional_features: []
@@ -79,15 +84,18 @@ governance:
   frozen_at: '2026-07-28'
   ssot_manifest: config/strategy_manifests/spx500.yaml
   manifest_code_hash_sha256_16: ea76413e60621521
-  feature_set_hash: null       # lo publica el catálogo de features (BL-39)
-  policy_hash: sha256:2d8638ed90a6ca5d8b18b0aed86ecad0812133745c80a4b0a4e7993f80de80f7
+  policy_hash: sha256:44e83b9e885112449de97b2cbe1eab590065dc9b99c81f69a25d8e523dbef992
+  policy_hash_v1_1_0_pre_fs_hash: sha256:2d8638ed90a6ca5d8b18b0aed86ecad0812133745c80a4b0a4e7993f80de80f7
   policy_hash_v1_0_0: sha256:c00e63c676f2c96e0f32972f4b6c3d9f65d34cf4bbef2135774802ce41864d19
   policy_hash_note: >-
     v1.1.0 cambia `inputs.feature_set_id` (spx500_regime_gated_v1_action_v1 ->
     spx500_daily_ma200_v1_action_v1), que ENTRA en `canonical_policy_payload`, asi
     que la identidad se mueve. Se conserva el hash de v1.0.0 para que la paridad
     contra lo publicado siga siendo auditable: un hash que desaparece no deja
-    comparar.
+    comparar. Segundo movimiento dentro de v1.1.0: al declarar
+    `inputs.feature_set_hash` (piloto CXD-623) el payload gana una clave y la
+    identidad vuelve a moverse. Se conservan los DOS hashes previos por la misma
+    razon. Sigue siendo 0 trials: no cambia ventana, umbral, salida ni sizing.
   trials_charged: 0
   trials_note: >-
     Migración de representación (publisher -> motor de políticas). No cambia

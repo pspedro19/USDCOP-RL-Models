@@ -59,7 +59,6 @@ governance:
   frozen_at: '2026-07-28'
   ssot_manifest: config/strategy_manifests/btcusdt.yaml
   manifest_code_hash_sha256_16: 3b9b3c6dd1b9a70d
-  feature_set_hash: null
   policy_hash: sha256:c7ea0277c2b120b088a999624ecbbe3b4cfb9c94428e67fbc66325136e8b8a06
   trials_charged: 0
   trials_note: Migración de representación; misma aritmética, 0 trials.

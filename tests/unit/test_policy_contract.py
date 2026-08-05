@@ -1391,3 +1391,138 @@ class TestMaxSnapshotAgeEntersIdentityConditionally:
             "declarar un umbral debe distinguirse de no declararlo: son politicas "
             "distintas, no la misma con adorno"
         )
+
+
+class TestFeatureSetHashPilot:
+    """`inputs.feature_set_hash` — PILOTO SPX, no cierre sistémico (CXD-623).
+
+    EL HUECO. `canonical_policy_payload` llevaba el `feature_set_id` pero **no su
+    contenido**, así que un feature set podía ganar o perder features bajo una policy
+    congelada sin que el `policy_hash` se moviera un bit: la identidad apuntaba a un
+    contrato de inputs que cambiaba por debajo. Es peor que el caso de
+    `max_snapshot_age` en un aspecto — allí la clave estaba ausente en todos los
+    specs; aquí el `feature_set_id` **sí** viajaba, así que daba la impresión de estar
+    cubierto. Un candado a medias que parece entero.
+
+    LO QUE ESTE SLICE **NO** HACE. No cierra la identidad de feature-set de forma
+    sistémica: es opt-in, y `gold_trend_simple`, `btc_hodl_b1` y `smart_simple_v11`
+    **conservan el hueco a propósito**, con deuda declarada. Re-freezearlas es
+    decisión de gobierno, no efecto colateral de una mejora de contrato.
+    """
+
+    PILOTO = "spx500_daily_ma200_v1"
+    SIN_PILOTO = ("btc_hodl_b1", "gold_trend_simple", "smart_simple_v11")
+
+    def _spec(self, policy_id: str) -> dict:
+        import yaml
+
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[2]
+        return yaml.safe_load(
+            (root / "config" / "policies" / f"{policy_id}.yaml").read_text(encoding="utf-8")
+        )
+
+    def test_a_specs_that_omit_the_hash_keep_their_frozen_identity(self):
+        """(a) Las tres que NO lo declaran conservan su `policy_hash` publicado."""
+        from src.strategies.policies.loader import canonical_policy_hash
+
+        for policy_id in self.SIN_PILOTO:
+            spec = self._spec(policy_id)
+            assert "feature_set_hash" not in (spec.get("inputs") or {}), (
+                f"{policy_id} declara el hash: ya no es 'sin piloto', actualiza el candado"
+            )
+            assert spec["governance"]["policy_hash"] == canonical_policy_hash(spec), (
+                f"{policy_id}: el piloto movió un hash que debía quedar intacto"
+            )
+
+    def test_b_altering_the_set_content_breaks_the_wall(self, tmp_path, monkeypatch):
+        """(b) Con el hash declarado, tocar el set y no re-registrar => FALLA."""
+        from src.strategies.policies import loader
+
+        spec = self._spec(self.PILOTO)
+        fs = loader.load_feature_set(spec["inputs"]["feature_set_id"])
+        alterado = dict(fs)
+        alterado["ordered_features"] = list(fs["ordered_features"]) + [
+            {"feature_id": "colada_x", "order": 9, "required": True}
+        ]
+        monkeypatch.setattr(loader, "load_feature_set", lambda _id: alterado)
+
+        with pytest.raises(loader.PolicySpecError, match="feature_set_hash"):
+            loader.validate_policy_spec(spec)
+
+    def test_c_changing_the_declared_hash_moves_the_policy_identity(self):
+        """(c) El hash está DENTRO de la identidad: cambiarlo mueve `policy_hash`.
+
+        Es la mitad que faltaba en mi primera propuesta y que CODEX rechazó: poblar un
+        hash fuera del payload validaría el set **sin mover la identidad**, que
+        contradice justo lo que se quiere garantizar.
+        """
+        import copy
+
+        from src.strategies.policies.loader import canonical_policy_hash
+
+        spec = self._spec(self.PILOTO)
+        otro = copy.deepcopy(spec)
+        otro["inputs"]["feature_set_hash"] = "sha256:" + "0" * 64
+        sin = copy.deepcopy(spec)
+        sin["inputs"].pop("feature_set_hash")
+
+        h_real, h_otro, h_sin = (
+            canonical_policy_hash(spec), canonical_policy_hash(otro), canonical_policy_hash(sin)
+        )
+        assert h_real != h_otro, "cambiar el hash del set no movió la identidad"
+        assert h_sin not in (h_real, h_otro), (
+            "declarar el hash debe distinguirse de no declararlo: son contratos de "
+            "input distintos, no el mismo con adorno"
+        )
+
+    def test_d_editing_only_a_comment_does_not_move_the_hash(self):
+        """(d) Un COMENTARIO no mueve la identidad — o el punto 2 sería falso.
+
+        Se hashea el contenido decisorio y no el fichero justamente para esto: si
+        editar un comentario obligara a re-freezear la policy, el muro acumularía
+        ruido y acabaría dejando de creerse. Contrapartida declarada y asumida: un
+        comentario mentiroso no mueve el hash. Para eso están las revisiones.
+        """
+        import copy
+
+        from src.strategies.policies.loader import (
+            canonical_feature_set_hash,
+            load_feature_set,
+        )
+
+        spec = self._spec(self.PILOTO)
+        fs = load_feature_set(spec["inputs"]["feature_set_id"])
+        antes = canonical_feature_set_hash(fs)
+
+        # Un comentario no llega al dict tras `yaml.safe_load`; lo que sí llegaría es
+        # una clave puramente descriptiva. Ninguna de las dos debe mover el hash.
+        con_prosa = copy.deepcopy(fs)
+        con_prosa["descripcion_libre"] = "texto nuevo que no decide nada"
+        con_prosa["manifest_version"] = 99
+        assert canonical_feature_set_hash(con_prosa) == antes, (
+            "una clave no decisoria movió el hash: el hash dejaría de ser del "
+            "CONTENIDO que decide y pasaría a ser del fichero"
+        )
+
+        # …y lo que SÍ decide, sí lo mueve.
+        con_feature = copy.deepcopy(fs)
+        con_feature["ordered_features"] = list(fs["ordered_features"])[:-1]
+        assert canonical_feature_set_hash(con_feature) != antes, (
+            "quitar una feature ordenada no movió el hash: el muro no vigila nada"
+        )
+
+    def test_the_pilot_is_declared_as_debt_for_the_others_not_as_closed(self):
+        """El alcance queda escrito: tres policies siguen con el hueco.
+
+        Sin esto, el piloto se lee como cierre sistémico — y afirmar que la identidad
+        de feature-set está cubierta cuando lo está en 1 de 4 es exactamente la clase
+        de media verdad que este repo lleva días desmontando.
+        """
+        pendientes = [p for p in self.SIN_PILOTO
+                      if "feature_set_hash" not in (self._spec(p).get("inputs") or {})]
+        assert len(pendientes) == 3, (
+            f"la deuda cambió: {pendientes}. Si se cerró alguna, quítala de SIN_PILOTO "
+            f"en el mismo commit; si apareció otra policy sin hash, decláralo"
+        )

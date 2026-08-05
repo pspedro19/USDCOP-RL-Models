@@ -76,6 +76,56 @@ def policy_specs_dir() -> Path:
 # Canonical hash of the ECONOMIC content (presentation/comments excluded)
 # ---------------------------------------------------------------------------
 
+#: Directorio de feature sets. El hash del set se deriva de aqui, no de una copia.
+FEATURE_SET_DIR = Path(__file__).resolve().parents[3] / "config" / "features" / "feature_sets"
+
+
+def canonical_feature_set_payload(fs: Mapping[str, Any]) -> dict[str, Any]:
+    """El subconjunto del feature set que DECIDE que entra al snapshot.
+
+    Se hashea el CONTENIDO decisorio, no el fichero. Hashear el YAML haria que editar
+    un COMENTARIO moviera la identidad de la policy y obligara a un re-freeze; ese
+    ruido es exactamente lo que hace que un muro de congelacion deje de creerse
+    (mismo argumento que sostuvo la inclusion condicional de `max_snapshot_age`).
+
+    Contrapartida DECLARADA: un comentario mentiroso no mueve el hash. Para eso estan
+    las revisiones, no los digests.
+    """
+    return {
+        "feature_set_id": fs.get("feature_set_id"),
+        "ordered_features": [
+            {
+                "feature_id": o.get("feature_id"),
+                "order": o.get("order"),
+                "required": o.get("required"),
+            }
+            for o in (fs.get("ordered_features") or [])
+        ],
+        "derived_in_policy": list(fs.get("derived_in_policy") or []),
+    }
+
+
+def canonical_feature_set_hash(fs: Mapping[str, Any]) -> str:
+    """`sha256:<64 hex>` del contenido decisorio del set.
+
+    Usa `policy_canonical_hash`, que el contrato declara "the single producer of
+    every policy-family hash": un segundo hasher seria una segunda forma de derivar
+    la misma identidad, y por tanto una segunda forma de que divergiera.
+    """
+    return policy_canonical_hash(canonical_feature_set_payload(fs))
+
+
+def load_feature_set(feature_set_id: str) -> dict[str, Any]:
+    """Cargar el feature set por su id declarado, o fallar cerrado."""
+    for path in sorted(FEATURE_SET_DIR.glob("*.yaml")):
+        doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+        if str(doc.get("feature_set_id")) == feature_set_id:
+            return doc
+    raise PolicySpecError(
+        f"feature_set_id {feature_set_id!r} no existe en {FEATURE_SET_DIR.name}/"
+    )
+
+
 def canonical_policy_payload(spec: Mapping[str, Any]) -> dict[str, Any]:
     """The subset of the spec that decides. Changing any of it = new version."""
     engine = spec.get("engine", {})
@@ -96,6 +146,19 @@ def canonical_policy_payload(spec: Mapping[str, Any]) -> dict[str, Any]:
             "optional_features": list(inputs.get("optional_features", [])),
             "decision_point": inputs.get("decision_point"),
             "execution_ref": inputs.get("execution_ref"),
+            # `feature_set_hash` entra CONDICIONALMENTE, igual que `max_snapshot_age`.
+            # El payload llevaba el `feature_set_id` pero NO su contenido, asi que el
+            # set podia ganar o perder features bajo una policy congelada sin que el
+            # `policy_hash` se moviera un bit: la identidad apuntaba a un contrato de
+            # inputs que cambiaba por debajo. Peor que el caso del umbral, porque el
+            # `feature_set_id` SI viajaba y daba la impresion de estar cubierto.
+            #
+            # PILOTO SPX (CXD-623): opt-in por policy. Ausente => payload
+            # byte-identico y ningun hash vigente se mueve. Las otras tres policies
+            # CONSERVAN el hueco a proposito y con deuda declarada; esto NO cierra la
+            # identidad de feature-set de forma sistemica.
+            **({"feature_set_hash": inputs["feature_set_hash"]}
+               if "feature_set_hash" in inputs else {}),
             # `max_snapshot_age` entra CONDICIONALMENTE (CXD-610). Razon de fondo:
             # el umbral de frescura decide CUANDO opera la policy -- con `P1D` una
             # serie de ayer bloquea y con `P30D` pasa-- asi que pertenece al
@@ -204,6 +267,22 @@ def validate_policy_spec(spec: Mapping[str, Any]) -> None:
             raise PolicySpecError(f"{name}: inputs.{field} es obligatorio (§6: snapshot explícito)")
     if not isinstance(inputs["required_features"], list):
         raise PolicySpecError(f"{name}: inputs.required_features debe ser una lista")
+
+    # MURO DEL FEATURE SET. Solo si la policy lo declara (piloto opt-in, CXD-623):
+    # el hash tiene que coincidir con el contenido decisorio del set REAL. Sin esto,
+    # declarar el hash seria decorativo -- y con `feature_set_hash` dentro del payload
+    # canonico, ademas obliga a que cambiar el set mueva la identidad de la policy.
+    declarado_fs = inputs.get("feature_set_hash")
+    if declarado_fs is not None:
+        derivado_fs = canonical_feature_set_hash(
+            load_feature_set(str(inputs.get("feature_set_id")))
+        )
+        if declarado_fs != derivado_fs:
+            raise PolicySpecError(
+                f"{name}: inputs.feature_set_hash declarado ({declarado_fs}) no "
+                f"coincide con el contenido del feature set ({derivado_fs}) — cambiar "
+                f"las features de entrada exige nueva version de la policy"
+            )
 
     policy = spec["policy"]
     if policy.get("missing_input_policy") not in MISSING_INPUT_POLICIES:
