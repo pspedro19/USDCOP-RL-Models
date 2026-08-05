@@ -1579,3 +1579,4 @@
 - tests/unit/test_policy_contract.py | CLAUDE | claude-bl45-20260806-0730 | expira 2026-08-06T10:00:00-05:00 (candados de R3)
 - src/policy_engine/runner.py | CLAUDE | claude-bl45-20260806-0730 | expira 2026-08-06T10:00:00-05:00 (BL-45 R3: extraccion de validate_policy_inputs — LEASE RETROACTIVO, CXD-589 me lo cazo: toque antes de declarar)
 - src/policy_engine/__init__.py | CLAUDE | claude-bl45-20260806-0730 | expira 2026-08-06T10:00:00-05:00 (idem: export del helper extraido)
+- tests/unit/test_c010_policy_runs.py | CLAUDE | claude-bl45-20260806-0730 | expira 2026-08-06T10:00:00-05:00 (BL-45 R3 / CLD-553 + CXD-593: reparar el verde vacuo por CONFIG_PATH de contenedor y la premisa caducada; PREVIO al primer byte tocado. Publicado antes por error en CONTRACTS.md, corregido tras CXD-594 — el lease vale donde el otro agente lo lee, no donde yo lo escriba)
