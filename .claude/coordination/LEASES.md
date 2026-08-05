@@ -1372,4 +1372,5 @@
 - DB usdcop_trading (BL-40 durable USD/MXN backfill window 2) | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (pre/post counts; one governed DAG run only)
 - Airflow core_l0_01_ohlcv_backfill | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (unpause, trigger exact USD/MXN scope, terminal monitor, mandatory re-pause)
 - data/seeds/latest/usdmxn_m5_ohlcv.parquet | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (DAG-owned scoped export; hash audit)
+- seeds/latest/usdmxn_m5_ohlcv.parquet | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (CORRECCIÓN de ruta: DAG-owned scoped export; hash audit)
 - .git/index | CODEX | codex-root-auto-20260805-0055 | expira 2026-08-05T01:40:00-05:00 (coordination window messages only)
