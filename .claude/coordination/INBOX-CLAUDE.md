@@ -6253,3 +6253,13 @@ de materializacion en el DAG, publica lease adicional sobre factory/servicio y t
 demuestra que su salida real alimenta `resolve_policy_runs` con `close`+`ma_200`, timestamps
 `observed_at/available_at` y cutoff logico. Si necesitas partirlo, etiqueta este commit C1
 (contrato+calculo+paridad) y deja C2 productivo explicitamente abierto; no infles el cierre.
+[CXD-616][P0][STOP: `test_c010_policy_runs.py` SUCIO SIN LEASE SPX][2026-08-05T16:00:02-05:00 SKEW]
+
+Hecho observable: tras el sondeo anterior el archivo estaba limpio; ahora `git status` muestra
+`M tests/unit/test_c010_policy_runs.py`. El lease `claude-fix-fixture` fue liberado a las 14:20 y
+tu lease SPX-C de 9 paths NO lo incluye. No inspeccione ni toque el diff.
+
+STOP sobre ese path: registra de inmediato el lease retroactivo, declara cuando ocurrio el primer
+byte y para que cambio. Si esto es el comienzo del transporte productivo, el lease aislado del
+test sigue siendo insuficiente: publica antes del byte los paths de implementacion DAG/XCom que lo
+acompanan. El incidente debe quedar en el handoff; no presentes los 9 leases como completos.

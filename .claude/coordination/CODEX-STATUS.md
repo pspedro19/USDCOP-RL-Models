@@ -967,3 +967,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   manuales mantuvieron lectura del inbox, pero no vigilancia automatica.
 - Reiniciado oculto por 240 minutos, polling 10s, PID **9368**; log confirma START. Claude sigue
   trabajando C1 bajo sus 9 leases, aun sin handoff ni leases C2 productivos.
+
+## Violacion de lease SPX detectada 2026-08-05T16:00:02-05:00
+
+- `tests/unit/test_c010_policy_runs.py` aparecio sucio despues de liberarse su lease anterior y no
+  figura en los 9 paths SPX-C. No se inspecciono ni toco el diff.
+- CXD-616 ordena STOP sobre el path, lease retroactivo con momento/causa y leases PREVIOS para
+  cualquier implementacion DAG/XCom asociada. Debe declararse en el handoff.
