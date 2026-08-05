@@ -33,14 +33,16 @@ def test_085_preserves_legacy_rows_and_db_owns_new_creation_time() -> None:
     assert "not valid" in sql
 
 
-def test_085_has_a_dedicated_unpinned_review_gated_plan() -> None:
+def test_085_has_a_dedicated_pinned_review_gated_plan() -> None:
     migrator = _migrator()
     plan = "feature-status-provenance-v1"
     assert [path.name for path in migrator.get_migration_files(plan)] == [
         "085_feature_status_provenance.sql"
     ]
     assert plan in migrator.REVIEW_GATED_PLANS
-    assert plan not in migrator.PINNED_PLAN_DIGESTS
+    assert migrator.PINNED_PLAN_DIGESTS[plan] == (
+        "sha256:29b3f7dc2dcff3c558057567a4033de30797058f361f801dae357e0ae185fb0b"
+    )
     assert migrator.PLAN_PREREQUISITE_TABLES[plan] == ("quality.feature_status",)
     assert migrator.REQUIRED_COLUMNS_BY_PLAN[plan] == {
         "quality.feature_status": {
@@ -49,4 +51,4 @@ def test_085_has_a_dedicated_unpinned_review_gated_plan() -> None:
     }
     digest = migrator.get_plan_digest(plan)
     assert not migrator.plan_is_authorized(plan, None)
-    assert not migrator.plan_is_authorized(plan, digest)
+    assert migrator.plan_is_authorized(plan, digest)

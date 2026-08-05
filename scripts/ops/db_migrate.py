@@ -145,6 +145,9 @@ PINNED_PLAN_DIGESTS = {
     "h5-identity-v1": (
         "sha256:17b9c70f1d7152b5a85e8c7a59896a88dcd1b45447ecd5edba4bece01e1ecb41"
     ),
+    "feature-status-provenance-v1": (
+        "sha256:29b3f7dc2dcff3c558057567a4033de30797058f361f801dae357e0ae185fb0b"
+    ),
     "platform-bootstrap-v1": (
         "sha256:9d6e2d40fa974aca3474c70336b5e0912c04f5b75c7474e62ea172a01388c06d"
     ),
