@@ -1514,3 +1514,4 @@
 # (CODEX 2026-08-05T23:18:00-05:00) RELEASE monitor/index: `3329d3a6`; PID 15716 activo, SHA-256/10s/4h; inventory/indexes/frontmatter+links verdes. Sin leases CODEX activos.
 - .claude/coordination/monitor/.gitignore | CODEX | codex-root-goal-inbox-monitor-ignore | expira 2026-08-05T23:50:00-05:00 (logs/PID runtime nunca versionados)
 - .git/index | CODEX | codex-root-goal-inbox-monitor-ignore | expira 2026-08-05T23:50:00-05:00 (commit --only gitignore/lease)
+# (CODEX 2026-08-05T23:20:00-05:00) RELEASE monitor gitignore/index: `2f3ea469`; logs/PID ignorados, sin leases CODEX activos.
