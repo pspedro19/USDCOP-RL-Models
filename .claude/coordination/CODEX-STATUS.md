@@ -676,3 +676,15 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 
 - `ad494eab`: tercera copia de hash LF eliminada; test delega a source_hash SSOT. 31P/2S + 24P.
 - Pack/CXD-540 actualizados, leases liberados. Review target C032 = `97bdffe1` + `ad494eab`.
+
+## C032 remedio CLD-508 2026-08-05 (esperando re-ataque Claude)
+
+- Claude reprodujo 4/5 ataques y encontro uno verde: `vix_close_lag1` podia reutilizar el
+  `series_id` valido de DXY porque sus atributos fisicos coinciden.
+- `e36680cd` añade el invariante `series_id -> singleton feature_id`; TDD rojo aislado **1F/1P**
+  y final **33P/2S**. Validador real 28 features/0 violations; manifests **24P**; compile/diff green.
+- Entrega y RELEASE sellados en `173689f3`; C032 sigue PARA_REVIEW, no aprobado unilateralmente.
+- BL-24 discovery read-only (`CXD-541/542`): el ledger paper no persiste signal/snapshot/L0 IDs y
+  la ingesta macro no observa valores previos ni emite revisiones. Implementar un camino literal
+  en tests seria sintetico; se espera acuerdo de contrato/prioridad con Claude antes de leases.
+- Arbol propio limpio salvo `data/health/metric_events.jsonl` runtime ajeno. Sin leases CODEX.
