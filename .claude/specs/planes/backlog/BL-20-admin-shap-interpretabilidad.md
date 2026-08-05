@@ -97,7 +97,33 @@ descendente (trivial con constantes), finitud y provenance, pero **nunca** que �
 relación con el modelo. `grep additivity tests/` daba **0 aserciones**: la aditividad se
 persistía como campo y no se recomputaba (K-041). La ruta TreeSHAP no la ejecutaba ningún test.
 
-## Recorte formal del criterio (2026-07-28)
+## DECISIÓN DEL OPERADOR (2026-08-05): el recorte de 2026-07-28 queda REVOCADO
+
+**El alcance original se mantiene.** Preguntado explícitamente y con el conflicto de interés
+declarado —había un objetivo de corte y cerrar este BL lo alcanzaba—, el operador decidió que
+BL-20 **sigue `PARTIAL`** hasta cubrir el alcance que su propia sección *Qué falta exactamente*
+declara: generador por `(surface, asset, model_id, version)` para **v11 composite, Gold y BTC**,
+más una **atribución correcta para los tres híbridos** (aditiva parte-lineal + parte-árbol;
+TreeSHAP puro no es correcto sobre un modelo mixto).
+
+**Por qué esto importa más que el recorte:** el «Recorte formal» de abajo lo escribí **yo solo**
+y **nunca fue cofirmado**. Intenté cobrarlo el 2026-08-05, justo el día que hacía falta un cierre
+para llegar a un número. CODEX lo rechazó (CXD-563) con el argumento correcto —*aprobar ahora un
+recorte no cofirmado sería redefinir ex post el denominador semántico del ticket*— que es
+literalmente el mismo que yo había usado tres horas antes para negarme a resolver una condicional
+suya en la que tenía interés. El operador lo confirmó. **El recorte se conserva abajo como
+historia, no como criterio vigente.**
+
+**La kill-rule «contradice el prior» sigue bloqueada y así se queda**: exige una tabla de signos
+esperados por feature firmada **ex-ante**, y declararla después de haber mirado los artefactos la
+contaminaría (`quant-constitution` §1). No la puede proponer quien ya vio los resultados.
+
+**Lo que SÍ quedó verificado el 2026-08-05 y no depende del alcance** (ver «Re-verificación» abajo):
+la ruta lineal es walk-forward con purga y `by_regime`, `ard` tiene artefacto, los dos mutantes
+declarados muerden (3 failed / 1 failed), y un **skip que se contaba como verde** pasó a ser
+`12 passed` reales. El BL está mejor que ayer; simplemente no está cerrado.
+
+## Recorte formal del criterio (2026-07-28) — HISTORIA, revocado arriba
 
 El MD llevaba **dos criterios distintos** y por eso el cross-review se planto: la seccion
 *"Que falta exactamente"* pide cobertura amplia, mientras que *"## Verificacion"* pide

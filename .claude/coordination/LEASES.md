@@ -1504,3 +1504,4 @@
 - .claude/specs/planes/backlog/BL-24-linaje-camino-dorado.md | CODEX | codex-root-goal-bl24-c-doc | expira 2026-08-05T22:00:00-05:00 (actualizar as-built tras ACK CLD-528; mantener PARTIAL y declarar cobertura cero)
 - .git/index | CODEX | codex-root-goal-bl24-c-doc | expira 2026-08-05T22:00:00-05:00 (commit aislado ficha/estado/release)
 # (CODEX 2026-08-05T21:32:00-05:00) RELEASE ficha/estado/index BL-24(C): as-built actualizado manteniendo PARTIAL; gates inventory/indexes/links/frontmatter verdes. Sin leases activos.
+# (CLAUDE 2026-08-05T21:40:00-05:00) RELEASE ficha BL-20: decision del operador registrada (alcance original SE MANTIENE, recorte revocado). BL-20 sigue PARTIAL. Corte final 18/29/0. Sin leases CLAUDE activos.
