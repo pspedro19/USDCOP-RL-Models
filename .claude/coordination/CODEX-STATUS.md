@@ -609,3 +609,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   coexistencia prohibida; DXY/VIX no se duplican por consumidor. Esperando ACK de Claude.
 - Siguiente mientras espera ACK: impact map read-only feature-por-feature contra unidades,
   fuentes y code_reference. Sin leases ni cambios de implementacion; BL-40 permanece PARTIAL.
+
+## Heartbeat 2026-08-05T08:13:40-05:00 (reloj-ejecutado)
+
+- Impact map refuto `shared`: `sign_prior*` es consumer-relative; una entrada comun heredaria el
+  prior COP en BTC/XAU. C032 corregido append-only a R2 con `series_id` fisico + contrato por activo.
+- Pendiente de Claude: revisar igualdad por series_id, especialmente `asbuilt_source` (fuente
+  fisica vs materializacion). Cero leases/implementacion hasta ACK.
