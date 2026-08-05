@@ -1341,3 +1341,12 @@
 - Airflow core_l0_01_ohlcv_backfill | CODEX | codex-root-auto-20260805-0010 | expira 2026-08-05T00:55:00-05:00 (temporary unpause, trigger symbols USD/MXN, monitor, mandatory re-pause)
 - .git/index | CODEX | codex-root-auto-20260805-0010 | expira 2026-08-05T00:25:00-05:00 (commit --only window declaration/ACK)
 # (CODEX 2026-08-05T00:15:00-05:00) RELEASE BL-40 DB/DAG/index: run `codex_bl40_usdmxn_20260805T0015` success pero scope conf no aisló; 0 inserts y Fabric 0/0/0/0; DAG pausado; cuatro parquets restaurados a HEAD. Sin leases activos.
+- database/migrations/085_feature_status_provenance.sql | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (C031 DB-owned creation seal)
+- scripts/ops/db_migrate.py | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (plan review-gated sin pin)
+- src/analysis/weekly_generator.py | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (created_at cutoff + retirar fallback CSV)
+- tests/unit/test_feature_status_provenance_migration.py | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (TDD migración/plan)
+- tests/unit/test_weekly_sentiment_unavailable.py | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (A3/A4 conductual)
+- .git/index | CODEX | codex-root-auto-20260805-0018 | expira 2026-08-05T01:03:00-05:00 (commit --only C031 lane Codex)
+- src/analysis/agent_tools.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T01:20:00-05:00 (C-031 carril CLAUDE: matar lector numerico no gobernado)
+- tests/unit/test_agent_tools_no_ungoverned_sentiment.py | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T01:20:00-05:00 (candado del carril)
+- .git/index | CLAUDE | claude-root-bc8b1e89 | expira 2026-08-05T01:20:00-05:00 (commit --only carril C-031)
