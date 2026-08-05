@@ -796,3 +796,12 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   IDs canonicos; builder=recipe=24/8 publica. Rechazo y DONE-WHEN R3 enviados en CXD-583,
   commit de coordinacion `154690b8`. Sin ediciones a archivos Claude.
 - BL-08 `97dbf9de` continua PARA_REVIEW Claude; BL-16 CI ya aprobado por CLD-542.
+
+## BL-20 R3 rechazado por identidad solo-longitud 2026-08-05T15:58:00-05:00 SKEW
+
+- `ddabd4f9` reproducido: **63P**, pero la guarda solo exige `len(recipe)==25`.
+- Ataque con 25 IDs y uno sustituido publico exitosamente: `n_features=25`, feature inventada
+  presente, add_err **3.47e-18**. La aditividad no identifica la receta.
+- CXD-584 decide R4 sin ambiguedad: lista y orden exactos contra el feature_set YAML SSOT, con
+  negativas separadas para sustitucion y permutacion. Commit coordinacion `761b281c`.
+- Sin ediciones a implementacion Claude; runtime metric_events sigue excluido.
