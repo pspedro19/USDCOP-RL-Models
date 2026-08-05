@@ -572,6 +572,56 @@ def test_all_fresh_is_still_fresh_so_the_lock_is_not_just_always_stale(factory, 
     assert ti.pushed[f"{factory.STALENESS_XCOM_KEY}::{PID}"] is False
 
 
+@pytest.mark.parametrize("declarado", ["P", "PT"])
+def test_a_duration_without_magnitude_is_rejected_not_read_as_zero(factory, declarado):
+    """AUTOAUDITORIA (no vino de un rechazo): "P"/"PT" se aceptaban como cero.
+
+    Devolvian `timedelta(0)` en silencio, o sea que una declaracion malformada
+    pasaba por un umbral valido. La direccion era fail-safe (todo stale), pero
+    aceptar basura callando es como se cuela una config sin sentido creyendo que
+    hay criterio. `P0D` SI es legitimo -- declara "mismo instante" -- asi que se
+    rechaza el vacio, jamas el cero.
+    """
+    with pytest.raises(factory.PolicyRunConfigError, match="magnitud"):
+        factory._declared_max_snapshot_age(
+            {"id": "x", "inputs": {"max_snapshot_age": declarado}}
+        )
+
+
+def test_zero_duration_is_legitimate_and_still_accepted(factory):
+    """La otra mitad: `P0D` no es basura, es un umbral exigente. No se rechaza."""
+    from datetime import timedelta
+
+    assert factory._declared_max_snapshot_age(
+        {"id": "x", "inputs": {"max_snapshot_age": "P0D"}}
+    ) == timedelta(0)
+
+
+def test_an_optional_feature_cannot_block_a_decision_the_policy_works_without(factory):
+    """AUTOAUDITORIA: la frescura se mide sobre las REQUERIDAS, no sobre todo.
+
+    Media sobre `observations.items()` entero. Hoy da igual --los cuatro specs
+    declaran `optional_features: []`-- pero el dia que alguien declare una opcional,
+    una opcional vieja bloquearia una decision que la policy dice saber tomar sin
+    ella. Se hace explicito ANTES de que ocurra, no despues.
+    """
+    spec = {
+        "id": "x",
+        "inputs": {"required_features": ["close"], "max_snapshot_age": "P1D"},
+    }
+    obs = {
+        "close": {"value": 1.0, "available_at": "2026-07-24T20:00:00+00:00"},
+        "sentimiento": {"value": 1.0, "available_at": "2026-06-01T00:00:00+00:00"},
+    }
+    assert factory._derive_staleness("x", obs, CUTOFF, spec) is False, (
+        "una feature OPCIONAL vieja declaro stale un snapshot cuya unica feature "
+        "requerida esta fresca"
+    )
+    # …y la requerida vieja SI manda, para que esto no sea "nunca stale".
+    obs["close"]["available_at"] = "2026-06-01T00:00:00+00:00"
+    assert factory._derive_staleness("x", obs, CUTOFF, spec) is True
+
+
 def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factory):
     """El TERCER eslabon roto, que el rechazo no llego a nombrar.
 

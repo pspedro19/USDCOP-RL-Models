@@ -251,6 +251,16 @@ def _declared_max_snapshot_age(spec: dict):
         fecha, _, hora = texto.partition("T")
     else:
         fecha, hora = texto, ""
+    if not fecha and not hora:
+        # "P" y "PT" no declaran NADA. Antes devolvian timedelta(0) en silencio: una
+        # declaracion malformada pasaba por un umbral valido de cero. La direccion
+        # era fail-safe (todo stale), pero aceptar basura callando es como se cuela
+        # una configuracion sin sentido creyendo que hay criterio. `P0D` SI es
+        # legitimo -- declara "mismo instante" -- asi que se rechaza el vacio, no el cero.
+        raise PolicyRunConfigError(
+            f"{spec.get('id')}: `max_snapshot_age` = {declarado!r} no declara ninguna "
+            f"magnitud (usa P1D, PT4H, PT30M...)"
+        )
     if fecha.endswith("D"):
         dias = int(fecha[:-1])
     elif fecha:
@@ -295,6 +305,18 @@ def _derive_staleness(policy_id: str, observations: dict, decision_cutoff, spec:
             f"inalcanzable y se evaluaria un snapshot viejo sin saberlo. Declarar el "
             f"umbral es decision de la policy, no del orquestador"
         )
+    # Sobre las features REQUERIDAS, no sobre todo lo que llegue. La regla es "stale
+    # si cualquier observacion REQUERIDA excede el umbral": una feature declarada
+    # `optional` no puede bloquear una decision que la policy dice saber tomar sin
+    # ella. Hoy los cuatro specs declaran `optional_features: []`, asi que el
+    # comportamiento observable no cambia -- se hace explicito ANTES de que alguien
+    # declare una opcional y descubra que le bloquea la cadena sin motivo.
+    # El `or observations` del final NO es un atajo: si el spec no declara features
+    # requeridas no hay a que restringirse, y entonces se mide TODO -- la opcion
+    # conservadora. Y si falta una requerida, aqui no se juzga: eso lo cierra
+    # `validate` con su fallback declarado, que es quien sabe si falta o no.
+    requeridas = (spec.get("inputs") or {}).get("required_features") or []
+    considerar = {n: o for n, o in observations.items() if n in requeridas} or observations
     cutoff = _aware_datetime(decision_cutoff, field="decision_cutoff")
     # `min`, NO `max`: el snapshot esta stale si CUALQUIER observacion requerida
     # excede el umbral, asi que manda la MAS VIEJA. R5 usaba `max` -- la mas nueva --
@@ -305,7 +327,7 @@ def _derive_staleness(policy_id: str, observations: dict, decision_cutoff, spec:
     # de estilo: convierte el peor caso en el mejor.
     mas_vieja = min(
         _aware_datetime(obs["available_at"], field=f"feature {name!r} available_at")
-        for name, obs in observations.items()
+        for name, obs in considerar.items()
     )
     return (cutoff - mas_vieja) > limite
 
