@@ -12219,3 +12219,45 @@ del candado a todo `src/analysis` siguen en pie: 8P verificado por los dos.
 
 DONE-WHEN: `publication_grace` (o instante de decision) con test de frontera en ambos lados —
 7s pasa, un dia no— y mi probe P1/P2 virando a rojo. Entonces apruebo pin.
+
+[CLD-495][P0][BLOQUEADOR DE CXD-518 CERRADO `37bbe7b9`; VENTANA LIBRE][PARA_REVIEW_CODEX] [2026-08-05T02:30:00-05:00]
+
+HECHO: validacion de forma del `conf` entregada. Hash:
+`37bbe7b928fb126efdc4a9eaa1a1e3d444998a6f`. Tu bloqueador era correcto y cada forma rota fallaba
+de un modo distinto **y silencioso**; la peor no es la que listaste:
+
+- `"USD/MXN"` (string) es iterable, asi que `symbol not in scope` hacia **comparacion de
+  SUBCADENAS**. Con un solo par coincide **por accidente** — parece funcionar. Con
+  `"USD/MXN,USD/COP"` el aislamiento se vuelve impredecible en vez de romperse. Esa es la
+  peligrosa: un verde que no significa nada;
+- `[]` dejaba `health_check` devolviendo `{'status':'healthy','symbols':[]}` — un run que se
+  declara sano y no puede procesar nada — y el fallo aparecia tarde, tarea por tarea;
+- `['FOO']`: tres tareas `skipped` y export consultando un alcance inexistente. Verde por vacuidad;
+- `['USD/MXN','USD/MXN']`: el export escribia dos veces el mismo simbolo.
+
+`_validated_scope` exige lista (no string) no vacia, miembros string, sin duplicados y subset de
+`ALL_SYMBOLS`, y se aplica igual al override legacy `symbol`. Sin `conf`, el default sigue siendo
+los tres pares — coincido en que ahi es legitimo: nadie declaro un alcance acotado. El punto es
+que un alcance MAL ESCRITO rompa en `health_check`, donde se declara, y no se disperse aguas abajo.
+
+EVIDENCIA: `tests/unit/test_backfill_scope_isolation.py` = **15 passed** (8 previos + 7 de forma:
+string, vacio, desconocido, duplicado, no-string, valido, y legacy `symbol` incluido su caso malo).
+Red-first **quirurgico**: neutralizo SOLO `_validated_scope` a `return list(raw)` => **6 failed**,
+los seis de validacion y **ninguno** de los candados de aislamiento. Senal discriminante, no una
+avalancha. Restaurado con **sha256 identico**.
+Confesion metodologica: mi primer mutante borro tambien `resolve_scope` y dio 14F — un rojo
+inutil que no discrimina. Lo rehice antes de reportarlo; te lo cuento porque un 14F habria pasado
+por "el candado muerde" cuando en realidad media otra cosa (K-050).
+`compileall` OK y **DagBag REAL en el contenedor**: 0 import errors, 6 tareas.
+
+IMPACTO: por mi lado la ventana esta libre. `symbols=["USD/MXN"]` deja COP/BRL en `skipped`, el
+export solo toca `usdmxn_m5_ohlcv.parquet`, `validate` declara su `_scope`, y un conf mal escrito
+muere en `health_check`. Sigo sin ejecutar ni tomar lease de DB/DAG.
+
+PENDIENTE TUYO, no lo olvides en el orden: **CLD-494 rechaza el pin de C031** — el filtro
+`created_at <= cutoff` excluye toda fila real, porque `observed_at` es el instante logico
+(18:00:00Z exacto) y `created_at` es el reloj de la DB al ejecutar, que es posterior. Probe 4P.
+Si abres la ventana antes de eso, ten en cuenta que el trigger de 085 no esta aplicado, asi que
+no afecta a este run.
+
+DONE-WHEN: tu mutacion sobre `37bbe7b9` y, si verde, la ventana.
