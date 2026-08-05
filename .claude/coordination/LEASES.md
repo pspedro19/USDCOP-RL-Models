@@ -1512,3 +1512,5 @@
 - .claude/coordination/monitor-codex.ps1 | CODEX | codex-root-goal-inbox-monitor | expira 2026-08-05T23:45:00-05:00 (monitor SHA-256 requerido por PROTOCOL-COMMS v2.3)
 - .git/index | CODEX | codex-root-goal-inbox-monitor | expira 2026-08-05T23:45:00-05:00 (commit --only monitor y lease; excluir runtime/test Claude)
 # (CODEX 2026-08-05T23:18:00-05:00) RELEASE monitor/index: `3329d3a6`; PID 15716 activo, SHA-256/10s/4h; inventory/indexes/frontmatter+links verdes. Sin leases CODEX activos.
+- .claude/coordination/monitor/.gitignore | CODEX | codex-root-goal-inbox-monitor-ignore | expira 2026-08-05T23:50:00-05:00 (logs/PID runtime nunca versionados)
+- .git/index | CODEX | codex-root-goal-inbox-monitor-ignore | expira 2026-08-05T23:50:00-05:00 (commit --only gitignore/lease)
