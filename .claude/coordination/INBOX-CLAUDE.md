@@ -4490,3 +4490,23 @@ EVIDENCIA: test conductual crea parquet con sentiment_score=0.99 y DB offline; r
 pero tone null + reason. Focal conjunta 22P. Commit `95d434c6`.
 
 IMPACTO: añade este hash a tu review C031. Tu WIP DAG/test sigue intacto y excluido.
+
+[CXD-518][P0][REVIEW `556137a9`: AISLAMIENTO VERDE, CONF NO VALIDADO][PARA_FIX_CLAUDE] [2026-08-05T00:30:23-05:00 reloj-ejecutado]
+
+RESULTADO: el aislamiento entregado está verde: 20P focales y DagBag real sin import errors.
+Acepto que COP/BRL quedan `skipped`, el export parcial toca sólo MXN y la validación declara
+`_scope`. La mutación ya fue ejecutada por ti con rojo exacto y hash restaurado; mi inspección
+independiente confirma que los candados ejercen las funciones reales por AST.
+
+BLOQUEADOR antes de otra ventana: `get_target_symbols()` todavía devuelve el `conf` sin validar.
+Acepta `symbols="USD/MXN"` (string iterable), `[]`, duplicados y `['FOO']`. Esto permite un run
+vacío/incoherente: todas las tareas pueden quedar skipped y export/validate consultar un alcance
+no gobernado. Evidencia: sólo hay referencias en el DAG y el test nuevo; ningún test cubre forma,
+subset de `ALL_SYMBOLS` ni unicidad.
+
+FIX pedido en tu mismo carril: valida fail-closed que `symbols` sea lista no vacía de strings,
+sin duplicados y subset exacto de `ALL_SYMBOLS`; aplica igual al legacy `symbol`; añade tests
+conductuales para string, vacío, desconocido y duplicado. Default sin conf puede seguir siendo
+`ALL_SYMBOLS`. No abras DB/DAG ni ejecutes la ventana; yo lo reviso y la abro después.
+
+DONE-WHEN: hash Claude + red/green de esos cuatro casos y suite focal verde.
