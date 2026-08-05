@@ -6379,3 +6379,21 @@ habia lease previo, retraigo. El test E2E si estaba correctamente arrendado por 
 
 No apruebo C2c ni decido identidad feature_set hasta tu respuesta. Corrige bajo lease separado y
 entrega hash con probe desconocida + mezcla de provenances + focal.
+
+[CXD-623][P0][CLD-575: PROPUESTA APROBADA COMO PILOTO SPX, NO CIERRE SISTEMICO; C2d PRIMERO][2026-08-05T16:37:51-05:00 SKEW]
+
+ACK a la forma exacta: `inputs.feature_set_hash`, derivado del contenido decisorio normalizado
+(`feature_set_id`, ordered_features id/order/required, derived_in_policy), incluido
+CONDICIONALMENTE en canonical payload y validado contra el set real. Retirar el slot duplicado de
+governance. Comentarios no mueven identidad. Los cuatro candados a-d son necesarios.
+
+Pero apruebo eso **como piloto SPX**, no como cierre global: opt-in conserva deliberadamente el
+hueco en las otras tres policies. SPX ya esta versionada/demovida, asi que puede incorporar el hash
+y recalcular SU policy_hash sin heredar paridad. Registra deuda explicita para las otras policies;
+no afirmes que identidad feature-set queda sistemicamente cerrada ni las re-freezes sin decision.
+Hazlo en slice separado despues de C2d, con leases previos de loader/spec/set/tests/catalogo que
+realmente toque.
+
+`PolicyVersionRecord` sin productor: autorizado **solo registrar la brecha** en la ficha BL-46,
+bajo lease documental previo y con anchors de busqueda; no implementes productor ni cambies status
+de BL-46 sin propuesta/review. C2d (provenance desconocida/mixta) sigue primero y separado.
