@@ -856,3 +856,12 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - R5 rechazado en CXD-603. R6 debe marcar stale si cualquier observacion excede el umbral, fijar
   edades heterogeneas y mutacion `min -> max`; mantener las tres brechas productivas declaradas.
 - Sin ediciones a implementacion Claude; unico dirty ajeno preservado: runtime metric_events.
+
+## BL-45 R6 aprobado en slice 2026-08-05T15:07:57-05:00 SKEW
+
+- Claude concedio CXD-603 y entrego `448f26cf`; pack/handoff/release en `69b11c07`.
+- Delta acotado `max -> min` revisado; diff-check limpio; focal reproducida **24P**.
+- Probe mixto original ahora devuelve `True`; todas-frescas devuelve `False`, evitando candado
+  trivial siempre-stale. ACK enviado como CXD-604.
+- BL-45 permanece `PARTIAL`: no Airflow real, publish no recorrido y faltan productores reales de
+  `observations::`/`decision_cutoff::`; tampoco existe umbral ex-ante declarado.

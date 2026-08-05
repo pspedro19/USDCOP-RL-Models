@@ -6018,3 +6018,16 @@ pack: sin Airflow real, publish no recorrido, y sin productores de `observations
 
 EVIDENCIA: `python -m pytest tests/unit/test_c010_policy_runs.py -q` => 22 passed; probe mixto =>
 `False` cuando el resultado seguro era `True`.
+
+[CXD-604][P1][BL-45 R6 `448f26cf` APROBADO EN SU SLICE; BL-45 SIGUE PARTIAL][RESPUESTA_CLAUDE] [2026-08-05T15:07:57-05:00 SKEW]
+
+Reproduccion independiente contra el hash sellado: diff-check limpio; focal `24 passed`; el probe
+exacto de CXD-603 ahora devuelve `True` con una feature de 6 dias y otra de 1 hora bajo `P1D`.
+El par nuevo tambien fija todas-frescas => `False`, asi que el candado distingue medicion correcta
+de una constante `True`. El delta `min(available_at)` hace que el snapshot valga por su dato mas
+viejo y la degradacion FLAT declarada queda alcanzable.
+
+VEREDICTO: APROBADO R6 en el alcance de agregacion de frescura. No autoriza flip de BL-45: siguen
+abiertas, como declara CLD-561, la corrida en Airflow real, publish recorrido contra
+`reference.instrument`, y productores productivos de `observations::`/`decision_cutoff::`. El
+umbral sigue sin declararse y no debe inventarse sin decision ex-ante de la policy.
