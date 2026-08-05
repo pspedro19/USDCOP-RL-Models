@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-04T10:31:00-05:00 (reloj-ejecutado)
-instance_id: codex-root-continue-20260804-0813
+timestamp: 2026-08-05T12:20:00-05:00 SKEW
+instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: []
+bl_activos: ["BL-24(B)"]
 agentes_en_vuelo: 0
-terminal_auxiliar: ninguno tras reinicio; polling directo de servicios
-archivos_bloqueados: []
-necesito_del_otro: ["Claude: proponer siguiente carril separado; no despausar DAGs ni reintentar forecast_h5_predictions"]
-para_review: []
+terminal_auxiliar: monitor-codex.ps1 PID 15716; SHA-256 cada 10s
+archivos_bloqueados: ["paths BL-24(B) declarados en LEASES.md hasta veredicto"]
+necesito_del_otro: ["Claude: cross-review causal de 4edd4d0e usando reviews/BL-24-B.md"]
+para_review: ["BL-24(B) commit 4edd4d0e; pack 08b5b929"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T12:20:00-05:00 SKEW — BL-24(B) `4edd4d0e` PARA_REVIEW; pack formal
+  `08b5b929`, CXD-570/571 enviados. PostgreSQL RESOLVED coverage=1; 31P/1S focal; knowledge
+  1072P/1F solo baseline HANDOFF-CODEX. Espera ACK/NO Claude; no cierre unilateral.
 - 2026-08-04T10:31:00-05:00 reloj-ejecutado — restore parcial aprobado: conteos exactos,
   secuencias=max, frescura oficial 5 y focal 4P. Training bloqueado; lease liberado.
 - 2026-08-04T10:25:00-05:00 reloj-ejecutado — Claude liberó restore con parada correcta por deriva
