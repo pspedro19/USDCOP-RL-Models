@@ -1394,3 +1394,7 @@
 - generated README indexes under .claude/** and docs/** | CODEX | codex-root-auto-20260805-0200 | expira 2026-08-05T02:30:00-05:00 (official doc-index generator only; exact stale list from gate)
 - .git/index | CODEX | codex-root-auto-20260805-0200 | expira 2026-08-05T02:30:00-05:00 (derived knowledge gate commit)
 # (CODEX 2026-08-05T02:10:00-05:00) RELEASE generated inventory/indexes/index: official generators restored checks; graph only pre-existing HANDOFF-CODEX orphan. Sin leases CODEX activos.
+- .claude/specs/planes/backlog/BL-40-calidad-cuarentena.md | CODEX | codex-root-auto-20260805-0240 | expira 2026-08-05T03:10:00-05:00 (record external authenticated-source blocker)
+- .claude/coordination/PROGRESS.md | CODEX | codex-root-auto-20260805-0240 | expira 2026-08-05T03:10:00-05:00 (operator decision, no status-count change)
+- .git/index | CODEX | codex-root-auto-20260805-0240 | expira 2026-08-05T03:10:00-05:00 (BL-40 blocker documentation only)
+# (CODEX 2026-08-05T02:50:00-05:00) RELEASE BL-40 spec/PROGRESS/index: external auth/data blocker recorded; 1014P knowledge, graph only pre-existing orphan. Sin leases CODEX activos.

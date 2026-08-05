@@ -1,7 +1,7 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.3.1
+version: 1.3.2
 last_verified: 2026-08-05
 supersedes: []
 code_anchors:
@@ -62,6 +62,12 @@ configuración; no se resuelven por orden accidental del YAML.
 - Los DAGs que materializan barras canónicas y cuarentenas permanecen pausados. Mientras
   `market.canonical_bar` y `quality.quarantine_event` sigan vacías, el criterio productivo de
   rangos imposibles y cuarentena poblada se cumple por vacuidad y no habilita promoción.
+- Tres ventanas controladas demostraron y corrigieron, en orden, alcance decorativo, cascada de
+  `skipped` y fan-in incompleto. La tercera firmó en el scheduler el alcance correcto
+  (COP/BRL `skipped`, MXN/export/validate ejecutados), pero los dos fetch MXN recibieron `401` y
+  el camino antiguo los reportó como `SUCCESS`; `b96ce054` inicia el cierre fail-closed de esa
+  mentira. No se abre otra ventana mientras no exista una fuente autenticada y el cross-review
+  del fallo parcial no esté cerrado.
 
 ## Impacto frontend
 /analysis deja de mostrar sentiment neutro falso (UNAVAILABLE explícito).
@@ -84,6 +90,11 @@ v11.
   productor real, seguida de evidencia durable de barras aceptadas en canonical y al menos una
   barra rechazada con su evento de cuarentena. Los probes con rollback verifican la mecánica,
   pero no sustituyen este criterio operativo.
+- **Bloqueo externo medido:** el proveedor configurado rechazó las solicitudes con `401`; no se
+  insertó ninguna barra y Fabric permaneció vacío. Resolver requiere provisión de credenciales
+  reales por Vault o una fuente alternativa gobernada. No se copian claves al repositorio ni se
+  repite el run contra una autenticación conocida como inválida. Hasta esa decisión BL-40 sigue
+  `PARTIAL` bloqueado por dato/autenticación, no por una promoción pendiente.
 
 ## Notas constitución
 Cuarentena, no parches: una corrección es un EVENTO con linaje, no una edición manual.

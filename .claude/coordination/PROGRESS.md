@@ -3,7 +3,9 @@
 Refresco conjunto `2026-08-04` (CLAUDE `CLD-453`, CODEX `CXD-469`).
 **CORTE COFIRMADO 14/33/0 (29.8% DONE estricto).** La promoción de BL-40 fue rechazada en
 cross-review: la mecánica está probada con rollback, pero las tablas productivas siguen vacías y
-el criterio durable se cumple por vacuidad. BL-17 pasó de `PARTIAL` a `IMPLEMENTED`:
+el criterio durable se cumple por vacuidad. Tres ventanas BL-40 corrigieron el alcance y el grafo,
+pero el productor real recibió `401` y no insertó barras; queda `PARTIAL` hasta que el operador
+provea autenticación por Vault o elija una fuente alternativa gobernada. BL-17 pasó de `PARTIAL` a `IMPLEMENTED`:
 spine productiva, replay DB completo, consumidor real y envelope JSON reproducible quedaron
 verificados con mutaciones causales por ambos agentes. Este archivo es
 runtime del protocolo: se
@@ -129,6 +131,9 @@ propia. **Jamás se actualizan hashes congelados mecánicamente para poner verde
 - **H5**: destino de artefactos del método corregido y cualquier re-freeze que mueva números
   publicados.
 - **BL-42**: convención canónica de unidades mientras los productores diverjan.
+- **BL-40**: provisión autenticada de TwelveData por Vault o fuente alternativa gobernada. Sin
+  una barra real no puede existir evidencia durable accepted/quarantine; no repetir ventanas
+  contra el `401` conocido.
 - Cualquier cambio a `HYPOTHESIS-REGISTRY`, reglas quant o selección de modelo/parámetros.
 
 ## Próximo corte conjunto
