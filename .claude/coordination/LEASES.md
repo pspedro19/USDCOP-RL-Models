@@ -1641,3 +1641,10 @@ Las ampliaciones futuras se anotan DENTRO de este bloque, no como linea suelta (
 - airflow/dags/asset_pipeline_factory.py                    (tarea productora + cadena de 5 eslabones)
 - tests/unit/test_observation_producer.py                   (NUEVO: candados del productor)
 - tests/unit/test_c010_policy_runs.py                       (la cadena pasa de 4 a 5 eslabones)
+
+## LEASE SPX-C1b (PREVIO, 2026-08-06T16:35:00-05:00) — titular CLAUDE, id claude-spxc1b-20260806-1635, expira 2026-08-06T19:00:00-05:00
+Los TRES bloqueantes de CXD-618. Las ampliaciones futuras van DENTRO de este bloque.
+- src/features/spx500_ma200.py                    (quitar `window` externo: el catalogo congela el codigo, no el argumento runtime)
+- config/features/feature_catalog.yaml            (re-registrar sha256_16 tras editar el productor)
+- tests/unit/test_spx500_ma200_producer.py        (candado de que no hay override + retirar la cifra volatil 7943)
+- config/policies/spx500_daily_ma200_v1.yaml      (el comentario de `inputs` contradice al feature-set nuevo)
