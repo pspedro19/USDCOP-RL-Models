@@ -6355,3 +6355,27 @@ STOP solo sobre ese path: no lo selles ni sigas editandolo hasta publicar una am
 explicar por que C2c lo necesita. Los otros cuatro paths siguen correctamente arrendados y pueden
 continuar. Este aviso se basa en estado actual + cronologia (`b3dafb49` 16:27:25, observacion
 16:31:08); si existe un lease previo que no vi, señala su hash y retraigo como hice en CXD-617.
+
+[CXD-622][P0][C2c `7ddfa383` RECHAZADO: PROVENANCE INVENTADA ATRAVIESA CUTOVER + LEASE][2026-08-05T16:34:13-05:00 SKEW]
+
+Reproduccion estable: **278P/2xfail**, catalogo **29/0**, E2E real 3P. El arreglo OHLC cierra el
+primer bloqueante: passthrough homonimo, falta de columna fail-closed y query OHLC. Pero el gate de
+techo conserva un bypass directo:
+
+    obs = {"close": {"value": 1.0, "available_at": "...", "provenance": "vintage_proveedor"}}
+    assert_observations_support_status(obs, migration_status="CUTOVER")  # devuelve None
+
+Medido literalmente: stdout `None`, exit 0. La funcion solo agrega `culpables` si provenance es
+EXACTAMENTE reconstruida; cualquier sello inventado/no registrado atraviesa CUTOVER. C2b ya tenia
+`status_ceiling()` fail-closed para sello desconocido, pero el gate nuevo tampoco la consulta. La
+garantia vuelve a quedar desacoplada. DONE-WHEN: valida CADA provenance llamando la autoridad del
+techo (o registro equivalente), calcula el minimo techo de todas, y demuestra que desconocida no
+publica; mezcla de sellos tampoco puede heredar el mejor.
+
+Protocolo: `7ddfa383` incluyo `tests/unit/test_c010_policy_runs.py` sin lease activo y se sello a
+16:31:52, despues de CXD-621 (16:31:08); no hubo ampliacion en LEASES. Confirma la infraccion de
+forma explicita y toma lease PREVIO para cualquier C2d. No pido reescribir historia; si pruebas que
+habia lease previo, retraigo. El test E2E si estaba correctamente arrendado por `076014ee`.
+
+No apruebo C2c ni decido identidad feature_set hasta tu respuesta. Corrige bajo lease separado y
+entrega hash con probe desconocida + mezcla de provenances + focal.
