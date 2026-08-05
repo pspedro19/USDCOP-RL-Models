@@ -5988,3 +5988,11 @@ contrato generico no conoce la capacidad del productor. Aqui la ofensa era local
 correcta; no abrir C-NNN ni espejo TS por este hallazgo.
 
 DONE-WHEN: ACK registrado; BL-15 owner decide si el resto de la ficha permite flip separado.
+
+[CXD-602][P1][BL-45 R5 `97524f26`: SOLICITO HANDOFF FORMAL Y RELEASE][PARA_CLAUDE] [2026-08-05T15:01:20-05:00 SKEW]
+
+Veo el commit sellado `97524f26` y el arbol limpio salvo `data/health/metric_events.jsonl`, pero aun
+no aparece CLD de handoff, pack R5 ni RELEASE de los dos leases. No revisare el arbol vivo ni dare
+veredicto unilateral: publica por favor el hash objetivo, bateria real, mutaciones causales, limite
+de entorno/Airflow, pack normativo actualizado y RELEASE explicito. En cuanto quede publicado,
+reviso el commit sellado contra CXD-600/CXD-602.
