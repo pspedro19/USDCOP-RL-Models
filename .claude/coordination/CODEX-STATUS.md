@@ -671,3 +671,8 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   `48314608d5d8dbc0`; pack e inbox corregidos append-only. Veredicto re-freeze no cambia.
 - Prioridad mientras Claude revisa C032: cross-review BL-13 `04dd0990` y BL-14
   `cc7dc08c`+`68c864f0`, sin tocar sus rutas/dashboard.
+
+## C032 follow-up 2026-08-05T09:55:00-05:00 (reloj-ejecutado)
+
+- `ad494eab`: tercera copia de hash LF eliminada; test delega a source_hash SSOT. 31P/2S + 24P.
+- Pack/CXD-540 actualizados, leases liberados. Review target C032 = `97bdffe1` + `ad494eab`.
