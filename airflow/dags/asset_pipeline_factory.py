@@ -310,9 +310,15 @@ def _derive_staleness(
     # Sobre las features REQUERIDAS, no sobre todo lo que llegue. La regla es "stale
     # si cualquier observacion REQUERIDA excede el umbral": una feature declarada
     # `optional` no puede bloquear una decision que la policy dice saber tomar sin
-    # ella. Hoy los cuatro specs declaran `optional_features: []`, asi que el
-    # comportamiento observable no cambia -- se hace explicito ANTES de que alguien
-    # declare una opcional y descubra que le bloquea la cadena sin motivo.
+    # ella.
+    #
+    # CORRECCION (CXD-607): aqui decia "hoy los cuatro specs declaran
+    # `optional_features: []`, asi que el comportamiento observable no cambia".
+    # ERA FALSO — medido: `gold_trend_simple` y `btc_hodl_b1` declaran
+    # `[regime_risk_mult]`. Se miro solo `spx500` y se generalizo a cuatro, y sobre
+    # esa frase se argumento que el cambio no afectaba a nadie. Afectaba a esos dos,
+    # que es justo donde CXD-605 encontro el defecto.
+    #
     # Solo features REQUERIDAS presentes, y JAMAS opcionales (CXD-606 §1).
     # Si el conjunto requerido esta incompleto la frescura NO es medible: se
     # devuelve `None`, nunca `False`. Fabricar un "fresco" para poder seguir es lo

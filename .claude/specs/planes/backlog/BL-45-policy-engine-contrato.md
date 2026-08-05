@@ -405,12 +405,21 @@ features, y con edades homogéneas `min(x,x) == max(x,x)`: la elección del agre
 **invisible**. Medido, no supuesto — con la mutación `min → max` puesta cae **un solo test**,
 el nuevo, y los otros 23 siguen verdes. Esa es la prueba de la ceguera.
 
-**R6b (autoauditoría, sin rechazo previo).** Dos defectos encontrados aplicándome la misma
-lente: `"P"`/`"PT"` se aceptaban en silencio como `timedelta(0)` (declaración malformada
-leída como umbral válido; se rechaza el **vacío**, nunca el cero — `P0D` es legítimo y tiene
-candado propio); y la frescura se medía sobre **todas** las observaciones cuando la regla es
-sobre las **requeridas** (hoy indistinguible porque los cuatro specs declaran
-`optional_features: []`, así que ningún test podía cazarlo).
+**R6b (autoauditoría, sin rechazo previo) — PARCIALMENTE RECHAZADO, ver R7.** Dos slices:
+
+- **Duraciones (ACEPTADO)**: `"P"`/`"PT"` se aceptaban en silencio como `timedelta(0)` —
+  declaración malformada leída como umbral válido. Se rechaza el **vacío**, nunca el cero
+  (`P0D` es legítimo y tiene candado propio).
+- **Opcionales (RECHAZADO en CXD-605, superseded por R7)**: restringir la medida a las
+  features requeridas *con un fallback `or observations`*. Con **todas** las requeridas
+  ausentes, ese fallback volvía a medir la opcional; y como `stale` se evaluaba antes que
+  `missing`, la **edad de un dato opcional** reclasificaba la ausencia del núcleo requerido.
+
+> **Corrección de un hecho que afirmé aquí y era FALSO** (CXD-607): escribí que "los cuatro
+> specs declaran `optional_features: []`, así que ningún test podía cazarlo". **Falso** —
+> `gold_trend_simple` y `btc_hodl_b1` declaran `[regime_risk_mult]`. Miré `spx500` y generalicé
+> a cuatro; sobre esa frase construí el argumento de que el slice no afectaba a nadie. Afectaba
+> exactamente a esos dos, que es donde CXD-605 encontró el defecto.
 
 Candados **en par** en los tres casos, que es lo único que separa "mide bien" de "siempre dice
 que sí": mixto→stale + todas-frescas→fresco; vacío rechazado + cero aceptado; opcional vieja
@@ -431,3 +440,35 @@ no el detalle de ningún defecto concreto.
 
 **BL-45 sigue `PARTIAL`.** Las tres brechas productivas siguen abiertas y sin simular: sin
 Airflow real; `publish` no recorrido; y **nadie produce `observations::`/`decision_cutoff::`**.
+
+
+## R7 — la completitud es precondición de la frescura (CLAUDE, 2026-08-06, `1cc155a7`)
+
+Cambio semántico **acordado antes de tocarlo**: propuesto en CLD-563, autorizado en CXD-606.
+`policy.validate_inputs` y su `missing_input_policy` se resuelven **ANTES** del chequeo stale.
+No se puede preguntar *"¿este dato es viejo?"* por un dato que **no tienes**.
+
+- `_derive_staleness` considera **sólo requeridas presentes**, jamás opcionales; con el
+  conjunto requerido incompleto devuelve `None`, nunca `False`.
+- Ese `None` se **transporta** en vez de abortar, para que el `missing_input_policy` declarado
+  resuelva — abortar convertiría una ausencia con `missing: FLAT` en error duro, o sea ignorar
+  otra vez un fallback declarado.
+- Se elimina del runner el `.get("snapshot_is_stale", False)`, que leía la ausencia del hecho
+  como *"fresco"*. **Llevaba ahí desde antes de toda esta serie**: el mismo `False` fabricado
+  que CXD-600 encontró en el factory, una capa más abajo, y no lo vio nadie hasta que la
+  precedencia obligó a tocar esa línea.
+- CXD-606 §4 (aportación de CODEX): requeridas completas + freshness `None` ⇒ **fail-closed**,
+  para que el transporte nullable no abra un bypass.
+
+**Lo que casi entrego mal.** Escribí primero los candados vía factory (Gold/BTC reales) y medí
+que las mutaciones *"stale antes que missing"* y *"default `False`"* **no los ponían rojos**:
+el `None` del factory tapa el fallo del runner. Una defensa indirecta no es un candado, es una
+coincidencia. Añadidos dos que ejercen el contrato del runner de frente.
+
+    M22c stale antes que missing   1F      M24 False en vez de None   4F (Gold×2 + BTC×2)
+    M23b default False repuesto    2F      M25 medir opcionales       4F
+
+    python -m pytest tests/unit/test_c010_policy_runs.py -q   -> 33 passed
+    selección CI (9 ficheros)                                 -> 380P / 2S / 1xfail
+
+**BL-45 sigue `PARTIAL`.** Las tres brechas productivas siguen abiertas.
