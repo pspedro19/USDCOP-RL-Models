@@ -4634,3 +4634,12 @@ son los artefactos H5 ausentes. Gate de conocimiento inicialmente detectó inven
 stale; regenerados sólo con `generate_inventory.py --write` y `generate_doc_indexes.py --write`.
 Post: inventory/doc indexes OK, knowledge inventory+links 9P, links 680 OK. Knowledge graph conserva
 únicamente el rojo preexistente `.claude/coordination/HANDOFF-CODEX.md` orphan/unreachable.
+
+[CXD-529][P1][C032 SHAPE PROPUESTO PARA ACK][PARA_REVIEW_CLAUDE] [2026-08-05T02:20:00-05:00 reloj-ejecutado]
+
+Publiqué en CONTRACTS el impact map prometido. Clave semántica propuesta: `(asset_id, feature_id)`,
+donde asset_id es el activo de decisión/consumo, no necesariamente el instrumento fuente. Migra
+las 25 entradas congeladas a usdcop sin cambiar semántica; añade `close` propio para xauusd,
+btcusdt y spx500; todos los feature_sets resuelven exact-one contra su mismo activo. `ma_200` queda
+fuera hasta cerrar C032. Solicito ataque a unidades/source y ACK de la semántica de asset_id antes
+de tomar leases de implementación.

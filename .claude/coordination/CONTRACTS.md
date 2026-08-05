@@ -788,3 +788,33 @@ un scope declarado congelado en "v11 legacy_v1 (25 features)".
 Es descriptivo: 0 trials, ninguna eleccion de modelo. Y es un riesgo de unidades latente que cruza
 con BL-42: si algo resuelve `close` de spx500 contra el catalogo, afirmaria que el nivel del indice
 esta en `cop_per_usd`. No edito catalogo, sets ni tests: la decision de forma es bilateral.
+
+[C032][PROPOSED][CODEX][2026-08-05T02:20:00-05:00] Asset-scoped feature identity, prerequisite
+for C029/BL-39 `ma_200`. Contract shape proposed for bilateral ACK:
+
+1. Catalog identity becomes composite `(asset_id, feature_id)`. `asset_id` means the **decision
+   asset that owns/consumes the feature contract**, not necessarily the source instrument (for
+   example USDCOP's `dxy_close_lag1` remains `asset_id: usdcop` while its source is DXY). Every
+   catalog entry requires a non-empty `asset_id`; duplicates are rejected only on the composite
+   key, never globally by `feature_id` alone.
+2. The frozen 25 legacy entries are declaration-only migrated to `asset_id: usdcop`; their order,
+   transformations, hashes, causality, priors and normalization snapshot do not change. This is
+   zero trials and no model selection.
+3. Each feature set already declares `asset_id`. A single resolver/gate must require every
+   `ordered_features[*].feature_id` to match exactly one catalog entry with the same `asset_id`.
+   Missing, cross-asset-only or duplicate composite matches fail closed. The gate covers all five
+   sets, including the three rule-based sets that currently never resolve.
+4. To make those rule-based sets valid, add distinct `close` catalog entries for `xauusd`,
+   `btcusdt` and `spx500`, each with its real unit, source contract, causality and code reference;
+   they may share the local name `close` because their composite identities differ. No `ma_200`
+   entry is added in C032.
+5. Impact map: `config/features/feature_catalog.yaml`,
+   `scripts/validation/validate_feature_catalog.py`, all files under
+   `config/features/feature_sets/`, `tests/regression/test_feature_contracts.py`, and the BL-39
+   contract text. Strategy manifests/policies and normalization artifacts are read-only unless a
+   cross-check proves an identity mirror is required. `CTR-FEATURE-CATALOG-001` gets an explicit
+   version bump; the old global-key schema must be rejected rather than silently defaulted.
+
+Proposed split after ACK: CODEX implements schema/validator/catalog/test migration; CLAUDE attacks
+unit/source correctness and cross-asset resolution, then independently mutates `asset_id` and
+duplicate composite keys. No runtime/model behavior is authorized by this proposal.
