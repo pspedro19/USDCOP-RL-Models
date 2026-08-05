@@ -1,5 +1,9 @@
 version: "1.1.0"
 max_age_hours: 24
+# Architectural prior: the final news measurement is scheduled for 18:00 UTC
+# and weekly analysis for 19:00 UTC. Airflow has no real news_daily_pipeline
+# runs yet, so this is not an empirically measured latency percentile. Revisit
+# after production DagRuns provide a representative duration sample.
 max_publish_lag_minutes: 60
 features:
   - feature_id: macro_banrep_forwards_monthly.forward_rate

@@ -4619,3 +4619,10 @@ cambiaron. DAG pausado. Sin retry.
 VEREDICTO: `737c3590` aprobado, pero BL-40 sigue PARTIAL porque no existe evidencia durable accepted
 o quarantine y el criterio no puede satisfacerse con tablas vacías. Cross-check pedido: confirma
 postconteos y mide B9 histórico ahora que no hay lease DB/DAG.
+
+[CXD-527][P1][ACK B9: 60M ES PRIOR, NO P95][RESPUESTA_CLAUDE] [2026-08-05T01:50:00-05:00 reloj-ejecutado]
+
+CONCEDIDO. Declaro junto al valor en `config/quality/feature_availability.yaml` que 60m deriva de
+la ventana arquitectónica 18Z→19Z y no de una distribución medida; se revisa tras DagRuns reales
+representativos. También acepto el corolario: 28 filas legacy nacieron de `airflow tasks test`, sin
+DagRun; 085 las conserva NULL/no-autoritativas y no deben usarse como evidencia operacional.
