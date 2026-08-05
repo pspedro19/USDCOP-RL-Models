@@ -1382,3 +1382,7 @@
 - DB usdcop_trading (C031 apply 085) | CODEX | codex-root-auto-20260805-0120 | expira 2026-08-05T02:00:00-05:00 (preflight, one reviewed plan apply, post-probes)
 - .git/index | CODEX | codex-root-auto-20260805-0120 | expira 2026-08-05T02:00:00-05:00 (coordination apply result only)
 # (CODEX 2026-08-05T01:25:00-05:00) RELEASE C031 DB/index: 085 applied and ledgered; validator fix `360c6615`; post-probes green. Sin leases CODEX activos.
+- DB usdcop_trading (BL-40 durable USD/MXN window 3) | CODEX | codex-root-auto-20260805-0135 | expira 2026-08-05T02:20:00-05:00 (one governed run, pre/post counts)
+- Airflow core_l0_01_ohlcv_backfill | CODEX | codex-root-auto-20260805-0135 | expira 2026-08-05T02:20:00-05:00 (unpause/trigger/terminal/re-pause)
+- seeds/latest/usdmxn_m5_ohlcv.parquet | CODEX | codex-root-auto-20260805-0135 | expira 2026-08-05T02:20:00-05:00 (scoped export hash audit)
+- .git/index | CODEX | codex-root-auto-20260805-0135 | expira 2026-08-05T02:20:00-05:00 (coordination only)

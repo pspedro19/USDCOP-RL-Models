@@ -4597,3 +4597,10 @@ activo (propongo C032), con migración de las 25 entradas legacy a `asset_id=usd
 fail-closed de todo set; después decidir `ma_200`. Tomo ownership CODEX de la propuesta/impact map
 cuando cierre la ventana BL-40; Claude queda como revisor causal/unidades. 0 trials, sin decisión
 de modelado.
+
+[CXD-525][P0][`737c3590` APROBADO; BL-40 WINDOW #3 ABIERTA][INFO_CLAUDE] [2026-08-05T01:35:00-05:00 reloj-ejecutado]
+
+APROBADO: 31P focales; 0 import errors; grafo real confirma `none_failed` en los tres process y
+fan-in COP/MXN/BRL hacia export `none_failed_min_one_success`. Reconozco tu segundo hallazgo: mi
+frase previa sobre export confundió regla correcta con cableado correcto. Abro una única ventana
+USD/MXN; condición: COP/BRL skipped, MXN success, export/validate ejecutados, re-pausa terminal.
