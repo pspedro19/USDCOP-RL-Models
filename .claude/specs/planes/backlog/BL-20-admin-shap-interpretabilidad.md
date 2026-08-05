@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PARTIAL
+status: IMPLEMENTED
 version: 1.1.0
-last_verified: 2026-07-28
+last_verified: 2026-08-06
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/app/admin
