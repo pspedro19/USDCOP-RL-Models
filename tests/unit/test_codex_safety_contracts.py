@@ -1100,7 +1100,9 @@ def test_h5_identity_plan_is_ordered_review_gated_and_pinned(
     assert not module.plan_is_authorized("h5-identity-v1", changed_digest)
 
 
-def test_commerce_surface_plan_is_scoped_review_gated_and_unpinned() -> None:
+def test_commerce_surface_plan_is_scoped_review_gated_and_pinned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     import importlib.util
 
     path = Path("scripts/ops/db_migrate.py")
@@ -1116,11 +1118,22 @@ def test_commerce_surface_plan_is_scoped_review_gated_and_unpinned() -> None:
         "public.sb_users",
     )
     assert "commerce-surface-v1" in module.REVIEW_GATED_PLANS
-    assert "commerce-surface-v1" not in module.PINNED_PLAN_DIGESTS
-    assert not module.plan_is_authorized("commerce-surface-v1", None)
-    assert not module.plan_is_authorized(
-        "commerce-surface-v1", module.get_plan_digest("commerce-surface-v1")
+    reviewed_digest = (
+        "sha256:7c93d0dd3f242f8d9dc578d6fa56485975c49b900833b16e96408f298069e5ef"
     )
+    assert module.PINNED_PLAN_DIGESTS["commerce-surface-v1"] == reviewed_digest
+    assert module.get_plan_digest("commerce-surface-v1") == reviewed_digest
+    assert not module.plan_is_authorized("commerce-surface-v1", None)
+    assert module.plan_is_authorized("commerce-surface-v1", reviewed_digest)
+
+    original = module.MIGRATION_PLANS["commerce-surface-v1"][0]
+    changed = tmp_path / original.name
+    changed.write_bytes(original.read_bytes() + b"\n-- unauthorized byte change\n")
+    monkeypatch.setitem(module.MIGRATION_PLANS, "commerce-surface-v1", (changed,))
+    changed_digest = module.get_plan_digest("commerce-surface-v1")
+    assert changed_digest != reviewed_digest
+    assert not module.plan_is_authorized("commerce-surface-v1", reviewed_digest)
+    assert not module.plan_is_authorized("commerce-surface-v1", changed_digest)
     assert set(module.REQUIRED_TABLES_BY_PLAN["commerce-surface-v1"]) == {
         "public.user_watchlist",
         "public.user_cart",

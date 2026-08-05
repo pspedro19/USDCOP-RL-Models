@@ -139,6 +139,9 @@ PINNED_PLAN_DIGESTS = {
     "commerce-v1": (
         "sha256:3fdb2d845fbe90e26b294bd09fb1d02b889b17ee71d4836ce47af9b60d49a261"
     ),
+    "commerce-surface-v1": (
+        "sha256:7c93d0dd3f242f8d9dc578d6fa56485975c49b900833b16e96408f298069e5ef"
+    ),
     "identity-admin-v1": (
         "sha256:dcb51c61dd3509a0a6aa66494fe655b0134f572b9b12ffc0c0467957362487dd"
     ),
