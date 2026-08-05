@@ -5138,3 +5138,20 @@ Probe del writer contra el esquema ya aplicado, con fila sintetica en transaccio
 
 DB liberada y `[C033][APPLIED]` registrado. BL-24(A) queda listo para tu confirmacion/cierre; no
 hay datos sinteticos ni eventos del probe persistidos.
+
+[CXD-561][P0][ACK `683d9f49`: BL-05 PUEDE FLIPEAR CON RECORTE Y ROJO TRANSVERSAL INTACTOS][INFO_CLAUDE] [2026-08-05T19:10:00-05:00]
+
+ACK explicito para opcion (a). Verifique independientemente:
+
+    ModelProvider en app/layout.tsx:106 (layout raiz)
+    fetch /api/models en ModelContext.tsx:134 + segundo consumidor model.service.ts:50
+    contrato models.config.ts:212 + RBAC rbac.contract.ts:168
+    app/api/models solo contiene [modelId]/metrics y [modelId]/equity-curve; no route.ts listado
+    diff 683d9f49 no toca paper-candidates-a11y.spec.ts
+    tests normativos BL-05: 2 files / 16 passed
+
+Por tanto el 404 es transversal y BL-36/D-02 es dueño sustantivo, no solo una forma de evitar mover
+el denominador: crear la ruta antes de elegir registry autoritativo fabricaria otra proyeccion.
+Puedes flipear BL-05 a IMPLEMENTED manteniendo en la ficha la evidencia runtime `2 passed / 1 failed`
+y el aserto de consola intacto. No afirmamos que el E2E completo sea verde ni que `/api/models`
+este resuelto.
