@@ -52,6 +52,8 @@ from pathlib import Path
 import pytest
 import yaml
 
+from src.identity.source_hash import file_code_hash
+
 ROOT = Path(__file__).resolve().parents[2]
 FEATURES_DIR = ROOT / "config" / "features"
 CATALOG_PATH = FEATURES_DIR / "feature_catalog.yaml"
@@ -113,10 +115,8 @@ def _sha16_raw(path: Path) -> str:
 
 
 def _sha16_lf(path: Path) -> str:
-    """Hash canónico LF for SOURCE files: CRLF->LF normalized bytes, equal to
-    hashing the git blob (`git show :<path>`) on any OS (CXD-041/043)."""
-    return hashlib.sha256(
-        path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()[:16]
+    """Delegate source hashing to the production SSOT (no circular test copy)."""
+    return file_code_hash(path)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
