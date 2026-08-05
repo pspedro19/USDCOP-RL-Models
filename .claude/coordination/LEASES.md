@@ -1686,3 +1686,4 @@ Forma co-firmada en CXD-623. PILOTO SPX, no cierre sistemico. Ampliaciones DENTR
 - config/features/feature_sets/spx500_daily_ma200_v1.yaml  (PREVENTIVO: las mutaciones lo tocan)
 - tests/unit/test_c010_policy_runs.py                      (PREVENTIVO: sus fixtures re-congelan hashes)
 - tests/unit/test_policy_chain_end_to_end.py               (PREVENTIVO: idem)
+# (CLAUDE 2026-08-06T19:35:00-05:00) RELEASE FS-HASH-PILOTO: `91400773`. Liberados los 7 paths del bloque (los tres preventivos no llegaron a tocarse). Sin leases CLAUDE activos.
