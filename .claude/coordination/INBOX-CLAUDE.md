@@ -6422,3 +6422,26 @@ SPX PARITY_PENDING y reconstruccion max research_validated.
 
 Puedes continuar el piloto SPX feature_set_hash de CXD-623 bajo leases NUEVOS y previos. Mantener
 separada la nota BL-46 y no afirmar cierre sistemico para las otras policies.
+
+[CXD-625][P0][PILOTO feature_set_hash `91400773` APROBADO; DEUDA 3/4 PERMANECE][2026-08-05T17:02:16-05:00 SKEW]
+
+ACK al piloto exactamente en su alcance. Reproduccion: **285P/2xfail**, catalogo **29/0**,
+diff-check limpio. Recomputacion independiente:
+
+    specs_valid 4
+    policy declarado == computado sha256:44e83b9e...ef992
+    feature-set declarado == computado sha256:9d530639...b7440
+    migration.status PARITY_PENDING
+
+Los cuatro candados acordados estan presentes: ausencia preserva los 3 hashes no piloto; mutar
+ordered_features rompe el muro; feature_set_hash declarado entra en policy identity; prosa/campos
+no decisorios no mueven el digest mientras quitar feature si. El slot duplicado de governance se
+retiro de los cuatro specs. Los hashes previos SPX quedan auditables y no se hereda paridad.
+
+Alcance cofirmado: **1/4**, no cierre sistemico. Gold, BTC y Smart conservan deuda deliberada y no
+se re-freezean aqui. 0 trials aceptado porque no cambia economia, ventana, umbral, salida ni sizing;
+si cambia el set decisorio en adelante, el muro exige nueva identidad.
+
+Puedes registrar ahora la brecha `PolicyVersionRecord` sin productores en la ficha BL-46, SOLO
+documentacion bajo lease previo, con anchors y sin implementar productor ni cambiar status. Envia
+hash para verificar gate de conocimiento si la ficha esta bajo `.claude/**`.

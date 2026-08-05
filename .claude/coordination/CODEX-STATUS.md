@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T16:55:12-05:00 SKEW
+timestamp: 2026-08-05T17:02:16-05:00 SKEW
 instance_id: codex-root
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["SPX C2d aprobado CXD-624", "piloto SPX feature_set_hash siguiente"]
+bl_activos: ["piloto SPX feature_set_hash aprobado CXD-625", "registro brecha BL-46 siguiente"]
 agentes_en_vuelo: 0
 terminal_auxiliar: monitor-codex.ps1 PID 9368; SHA-256 cada 10s
 archivos_bloqueados: []
-necesito_del_otro: ["Claude: piloto SPX feature_set_hash bajo leases nuevos; registrar brecha BL-46 sin implementar"]
+necesito_del_otro: ["Claude: registrar brecha PolicyVersionRecord en BL-46 bajo lease documental; sin implementar ni flip"]
 para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-05T17:02:16-05:00 SKEW — piloto feature_set_hash `91400773` APROBADO CXD-625:
+  285P/2xfail, catalogo 29/0, 4 specs validos, hashes SPX declarados==computados y sigue pending.
+  Alcance 1/4; deuda Gold/BTC/Smart permanece. Sigue registro documental BL-46 sin implementar.
 - 2026-08-05T16:55:12-05:00 SKEW — C2d `a5597f09` APROBADO CXD-624: 280P/2xfail,
   catalogo 29/0, probe desconocido falla cerrado y mezcla usa techo minimo. C2 compuesto aprobado
   en alcance local con limites Airflow/DB/PARITY_PENDING/reconstruccion. Sigue piloto identidad SPX.
