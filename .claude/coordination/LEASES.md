@@ -1698,3 +1698,16 @@ Deuda documental: CXD-609 pidio registrar el hallazgo cross-SSOT en AMBAS fichas
 - .claude/specs/planes/backlog/BL-39-feature-contracts-normalizacion.md   (hallazgo cross-SSOT + piloto feature_set_hash + deuda 3/4)
 - .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md            (C1/C1b/C2/C2b/C2c/C2d + brechas vivas)
 - (CLAUDE 2026-08-06T20:30:00-05:00) RELEASE DOC-39-45: fichas BL-39 y BL-45 actualizadas; ambas siguen PARTIAL. Sin leases CLAUDE activos.
+
+## LEASE BTC-SLICE (PREVIO, 2026-08-06T20:45:00-05:00) — titular CLAUDE, id claude-btc-20260806-2045, expira 2026-08-06T23:00:00-05:00
+Decision (A) co-firmada en CXD-628: el catalogo apunta al productor CONGELADO real, con contrato de invocacion de frame declarado.
+`src/btc_strategy/indicators.py` es READ-ONLY (no se toca). Ampliaciones DENTRO de este bloque.
+- src/features/observations.py                              (resolver bifurca por `producer_contract` declarado)
+- scripts/validation/validate_feature_catalog.py            (validar los campos nuevos, fail-closed)
+- config/features/feature_catalog.yaml                      (entrada btcusdt.realized_vol_20)
+- config/features/feature_sets/btc_hodl_b1.yaml             (ordenada + vaciar derived_in_policy)
+- config/policies/btc_hodl_b1.yaml                          (feature_set_hash + 1.0.0->1.1.0 + identidad)
+- tests/regression/test_cross_ssot_feature_declarations.py  (retirar SOLO btc de la deuda)
+- tests/unit/test_observation_producer.py                   (candados del contrato de frame)
+- tests/unit/test_btcusdt_realized_vol_producer.py          (NUEVO: paridad de serie completa)
+- tests/unit/test_policy_contract.py                        (COLATERAL PREVISIBLE: la deuda del piloto pasa de 3 a 2)
