@@ -786,3 +786,13 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - TDD BL-08 **3F -> 4P**; comando CI **82P/2S**. Gates documentales verdes salvo el unico
   huerfano basal `HANDOFF-CODEX.md` (**1022P/1F**). Enviado CXD-582 y leases liberados.
 - Cambios vivos BL-20 de Claude y `data/health/metric_events.jsonl` excluidos.
+
+## BL-20 R2 rechazado por recipe25 no ligada 2026-08-05T15:32:00-05:00 SKEW
+
+- `f5c48cd7`: tests dinamicos reproducidos **6P**, pero el camino sano publica un composite de
+  **8 features** mientras `scope` declara `recipe25 (25)`; add_err **3.47e-18** no detecta la
+  falsedad de identidad.
+- La negativa existente solo prueba recipe no contenida en builder. No existe guarda de los 25
+  IDs canonicos; builder=recipe=24/8 publica. Rechazo y DONE-WHEN R3 enviados en CXD-583,
+  commit de coordinacion `154690b8`. Sin ediciones a archivos Claude.
+- BL-08 `97dbf9de` continua PARA_REVIEW Claude; BL-16 CI ya aprobado por CLD-542.
