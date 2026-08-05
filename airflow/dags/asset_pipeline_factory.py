@@ -130,9 +130,13 @@ def _make_verify(registry_root: str, registry_asset: str, strategy_ids: list[str
 #
 # Solo se emite para referencias declaradas en `policy_runs` cuyo
 # `migration.status` sea PARITY_GREEN o CUTOVER. `SPEC_ONLY`/`PARITY_PENDING`
-# producen CERO tareas -- no un skip verde. Con el arbol actual no hay ninguna
-# entrada declarada, asi que el grafo de tareas queda IDENTICO; esa ausencia de
-# delta no depende de criterio, sino de que no hay nada que declarar.
+# producen CERO tareas -- no un skip verde.
+#
+# ESTADO REAL (actualizado 2026-08-06, CLD-553/CXD-593): ya NO es cierto que no
+# haya entradas declaradas. `spx500` declara `policy_runs: [spx500_daily_ma200_v1]`
+# desde `04fa2dd2` y esa policy esta en PARITY_GREEN, o sea que ES elegible y SI
+# emite cadena. El comentario anterior seguia afirmando "cero entradas declaradas"
+# y su candado no podia desmentirlo porque leia un CONFIG_PATH inexistente en host.
 #
 # Promover un `migration.status` es acto EXCLUSIVO del operador (C-010 amendment):
 # este codigo solo lee el estado, nunca lo escribe ni lo infiere.
@@ -193,7 +197,25 @@ def resolve_policy_runs(spec: dict) -> list[dict]:
                 f"{policy_id}: engine.type {engine_type!r} elegible pero no soportado "
                 f"por la cadena gobernada (soportados: {sorted(SUPPORTED_ENGINE_TYPES)})"
             )
-        eligible.append({"policy_id": policy_id, "engine_type": engine_type})
+        # `retrain` decide si la cadena necesita una tarea de ENTRENAMIENTO. Hoy solo se
+        # sabe generar la cadena sin train (`never`), asi que cualquier otro valor **falla
+        # cerrado** en vez de omitirlo en silencio: omitir el train de una policy que SI lo
+        # necesita produciria decisiones con un modelo caducado y el grafo se veria sano.
+        # No entrenar es una decision declarada, no un hueco.
+        # OJO: `retrain` vive bajo `engine`, no en la raiz del spec (medido en los 4
+        # specs vigentes). Leerlo de la raiz daba None para TODOS y habria disparado un
+        # fail-closed espurio en cada policy elegible: una guarda que se activa siempre
+        # no protege, bloquea.
+        retrain = (policy_spec.get("engine") or {}).get("retrain")
+        if retrain != "never":
+            raise PolicyRunConfigError(
+                f"{policy_id}: retrain={retrain!r}; la cadena gobernada solo sabe generar "
+                f"policies con `retrain: never` (sin tarea de entrenamiento). Omitirlo "
+                f"silenciosamente entregaria decisiones con un modelo sin reentrenar"
+            )
+        eligible.append(
+            {"policy_id": policy_id, "engine_type": engine_type, "retrain": retrain}
+        )
     return eligible
 
 
@@ -215,8 +237,33 @@ def make_resolve_snapshot(policy_id: str):
     return _resolve
 
 
+def make_validate_inputs(policy_id: str):
+    """Tarea 2: aplicar los fallbacks DECLARADOS a los inputs, ANTES de evaluar.
+
+    Vive como tarea propia porque el pipeline declarado es
+    `resolve -> validate -> evaluate -> publish` y hasta ahora el segundo eslabon estaba
+    DENTRO del tercero: una validacion fallida no era observable: se veia como "evaluate
+    fallo". Devuelve `None` si los inputs valen (sigue la cadena) o la decision FLAT
+    degradada, que `evaluate` respeta en vez de recalcular.
+    """
+
+    def _validate(**context):
+        from src.policy_engine import validate_policy_inputs
+        from src.strategies.policies.loader import build_policy
+
+        ti = context["ti"]
+        snapshot = ti.xcom_pull(task_ids=f"policy_{policy_id}_resolve_snapshot")
+        if snapshot is None:
+            raise PolicyRunConfigError(f"{policy_id}: sin snapshot resuelto; no se valida")
+        return validate_policy_inputs(
+            build_policy(policy_id), snapshot, context.get("ctx")
+        )
+
+    return _validate
+
+
 def make_evaluate_policy(policy_id: str):
-    """Tarea 2: evaluar la politica sobre el snapshot ya acotado por cutoff."""
+    """Tarea 3: evaluar la politica sobre el snapshot ya acotado por cutoff."""
 
     def _evaluate(**context):
         from src.policy_engine import evaluate_policy
@@ -226,6 +273,11 @@ def make_evaluate_policy(policy_id: str):
         snapshot = ti.xcom_pull(task_ids=f"policy_{policy_id}_resolve_snapshot")
         if snapshot is None:
             raise PolicyRunConfigError(f"{policy_id}: sin snapshot resuelto; no se evalua")
+        # Si la validacion ya degrado a FLAT, esa ES la decision: recalcularla aqui haria
+        # que el eslabon de validacion fuera decorativo.
+        degraded = ti.xcom_pull(task_ids=f"policy_{policy_id}_validate_inputs")
+        if degraded is not None:
+            return degraded
         return evaluate_policy(build_policy(policy_id), snapshot, context.get("ctx"))
 
     return _evaluate
@@ -387,6 +439,10 @@ def _build_asset_dag(asset_id: str, spec: dict, registry_root: str) -> DAG:
                     python_callable=make_resolve_snapshot(policy_id),
                 ),
                 PythonOperator(
+                    task_id=f"policy_{policy_id}_validate_inputs",
+                    python_callable=make_validate_inputs(policy_id),
+                ),
+                PythonOperator(
                     task_id=f"policy_{policy_id}_evaluate",
                     python_callable=make_evaluate_policy(policy_id),
                 ),
@@ -395,7 +451,7 @@ def _build_asset_dag(asset_id: str, spec: dict, registry_root: str) -> DAG:
                     python_callable=make_publish_signal(policy_id),
                 ),
             ]
-            verify >> chain[0] >> chain[1] >> chain[2]
+            verify >> chain[0] >> chain[1] >> chain[2] >> chain[3]
 
     return dag
 

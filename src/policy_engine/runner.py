@@ -153,6 +153,49 @@ def _flat_decision(
     )
 
 
+def validate_policy_inputs(
+    policy: Policy,
+    snapshot: Mapping[str, Any],
+    context: PolicyContext,
+    *,
+    missing_input_policy: str = "FAIL_CLOSED",
+    stale_input_policy: str = "FAIL_CLOSED",
+) -> StrategyDecision | None:
+    """Aplica los fallbacks DECLARADOS a los inputs. Segundo eslabon de la cadena R3.
+
+    Devuelve ``None`` si los inputs son validos —o sea, «sigue adelante»—, una decision
+    ``FLAT`` explicita con su reason code si el fallback declarado es ``FLAT``, y **levanta**
+    si es ``FAIL_CLOSED``. Nunca adivina: invariante 9 (sin default, sin freeze).
+
+    Existe como funcion PROPIA porque el pipeline declarado es
+    ``resolve_feature_snapshot -> validate_policy_inputs -> evaluate_policy -> publish`` y
+    hasta ahora el segundo eslabon vivia **dentro** de :func:`evaluate_policy`: el factory no
+    tenia como ejecutarlo por separado, asi que una validacion fallida no era observable como
+    tarea propia — se veia como «evaluate fallo». Se extrae, NO se duplica: `evaluate_policy`
+    la llama, de modo que hay **una implementacion y dos consumidores** y no pueden divergir.
+    """
+    stale = context.extras.get("snapshot_is_stale", False)
+    if not isinstance(stale, bool):
+        raise ValueError(
+            f"context.extras['snapshot_is_stale'] must be a bool, got {stale!r}"
+        )
+    if stale:
+        if stale_input_policy == "FAIL_CLOSED":
+            raise ValueError(
+                "snapshot is stale and stale_input_policy=FAIL_CLOSED — not publishing"
+            )
+        return _flat_decision(policy, context, REASON_INPUT_STALE, "snapshot marked stale")
+
+    errors = policy.validate_inputs(snapshot)
+    if errors:
+        if missing_input_policy == "FAIL_CLOSED":
+            raise ValueError(f"invalid policy inputs: {'; '.join(errors)}")
+        return _flat_decision(
+            policy, context, REASON_INPUT_MISSING, "; ".join(errors)[:200]
+        )
+    return None
+
+
 def evaluate_policy(
     policy: Policy,
     snapshot: Mapping[str, Any],
@@ -181,25 +224,13 @@ def evaluate_policy(
     if not context.as_of:
         raise ValueError("context.as_of is required (decisions never carry an empty as_of)")
 
-    stale = context.extras.get("snapshot_is_stale", False)
-    if not isinstance(stale, bool):
-        raise ValueError(
-            f"context.extras['snapshot_is_stale'] must be a bool, got {stale!r}"
-        )
-    if stale:
-        if stale_input_policy == "FAIL_CLOSED":
-            raise ValueError(
-                "snapshot is stale and stale_input_policy=FAIL_CLOSED — not publishing"
-            )
-        return _flat_decision(policy, context, REASON_INPUT_STALE, "snapshot marked stale")
-
-    errors = policy.validate_inputs(snapshot)
-    if errors:
-        if missing_input_policy == "FAIL_CLOSED":
-            raise ValueError(f"invalid policy inputs: {'; '.join(errors)}")
-        return _flat_decision(
-            policy, context, REASON_INPUT_MISSING, "; ".join(errors)[:200]
-        )
+    degraded = validate_policy_inputs(
+        policy, snapshot, context,
+        missing_input_policy=missing_input_policy,
+        stale_input_policy=stale_input_policy,
+    )
+    if degraded is not None:
+        return degraded
 
     return policy.evaluate(snapshot, context)
 
