@@ -688,3 +688,14 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
   la ingesta macro no observa valores previos ni emite revisiones. Implementar un camino literal
   en tests seria sintetico; se espera acuerdo de contrato/prioridad con Claude antes de leases.
 - Arbol propio limpio salvo `data/health/metric_events.jsonl` runtime ajeno. Sin leases CODEX.
+
+## BL-24 desbloqueado + export lineage PARA_REVIEW 2026-08-05T09:27:32-05:00 SKEW
+
+- CLD-509 aprueba bilateralmente C032 `e36680cd` y fija BL-24 en orden (A) writer macro con lectura
+  previa, luego (C) verificador; (B) ledger servido requiere propuesta en CONTRACTS antes de tocarlo.
+- Arreglo aislado de `src.lineage.__all__` sellado en `b96172c7`; TDD **1F/5P -> 6P**. Pack
+  `reviews/BL-24-lineage-export.md` enviado a Claude en CXD-546 para re-ataque independiente.
+- Knowledge/frontmatter/manifests/layout verdes; grafo solo mantiene el huérfano basal
+  `HANDOFF-CODEX.md`. Los cambios vivos de Claude en BL-39 y el runtime metric_events se excluyen.
+- Siguiente: discovery exacto de BL-24(A), leases propios, TDD del writer transaccional; cero
+  cambios al ledger/dashboard hasta contrato bilateral.

@@ -1434,3 +1434,12 @@
 - tests/regression/test_feature_contracts.py | CODEX | codex-root-goal-c032-r3 | expira 2026-08-05T12:15:00-05:00 (red-first mutacion VIX->DXY + caso compartido legitimo)
 - .git/index | CODEX | codex-root-goal-c032-r3 | expira 2026-08-05T12:15:00-05:00 (commit aislado remedio CLD-508)
 # (CODEX 2026-08-05) RELEASE C032 R3 validator/tests/index: `e36680cd`; 33P/2S focal, validator 0 violations, manifests 24P. Sin leases C032 activos.
+- src/lineage/__init__.py | CODEX | codex-root-goal-bl24-lineage-export | expira 2026-08-05T10:10:00-05:00 (arreglo aislado solicitado en CLD-509: restaurar contrato publico completo)
+- tests/unit/test_lineage_path.py | CODEX | codex-root-goal-bl24-lineage-export | expira 2026-08-05T10:10:00-05:00 (regresion red-first del __all__ publico)
+- .git/index | CODEX | codex-root-goal-bl24-lineage-export | expira 2026-08-05T10:10:00-05:00 (commit --only arreglo aislado lineage; excluir cambios Claude y runtime)
+# (CODEX 2026-08-05T09:27:32-05:00 SKEW) RELEASE lineage export implementation/tests/index: `b96172c7`; 6P focal, monitores verdes salvo huérfano basal HANDOFF-CODEX. Sin leases de implementación activos.
+- .claude/coordination/reviews/BL-24-lineage-export.md | CODEX | codex-root-goal-bl24-lineage-export-review | expira 2026-08-05T10:10:00-05:00 (paquete inmutable del arreglo aislado para cross-review Claude)
+- .git/index | CODEX | codex-root-goal-bl24-lineage-export-review | expira 2026-08-05T10:10:00-05:00 (commit --only coordinación/review del arreglo aislado)
+# (CODEX 2026-08-05T09:27:32-05:00 SKEW) RELEASE review/coordination/index lineage export: pack preparado para commit; sin leases lineage activos.
+- usdcop-trading-dashboard/lib/config/execution/constants.ts | CLAUDE | claude-ws-20260805-1330 | expira 2026-08-05T15:00:00-05:00 (default de WS apunta a un puerto que el compose NO publica)
+- usdcop-trading-dashboard/lib/services/execution/signal-bridge.service.ts | CLAUDE | claude-ws-20260805-1330 | expira 2026-08-05T15:00:00-05:00 (idem, segundo default distinto)
