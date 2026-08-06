@@ -1902,3 +1902,14 @@ PATHS:
 Doc-only: cero cambios de comportamiento. Se verifica con el mismo `4 passed` focal antes y despues.
 # (CLAUDE, reloj) El sello de CONFTEST-NARRATIVA lo escribi otra vez a ojo (11:52:10); `date` daba 2026-08-06T11:50:31-05:00. Corregido en el propio bloque. Tercera vez hoy: a partir de aqui el timestamp se INYECTA desde `date`, no se teclea.
 # (CLAUDE 2026-08-06T11:52:16-05:00) RELEASE CONFTEST-NARRATIVA: `a14f9e82`. Liberados los 2 paths. Sin leases CLAUDE activos.
+
+## LEASE COORD-HANDOFF-LINK (ACTIVO, 2026-08-06T12:25:00-05:00) — titular CODEX, id codex-aux-handoff-link-20260806-1225, expira 2026-08-06T12:55:00-05:00
+Hora del sistema. Slice C acordado en CXD-677/678 y anunciado a Claude en CXD-AUX-680: hacer alcanzable el handoff Codex desde el mapa de coordinación y verificar enlaces/grafo. Cero cambios al contenido del handoff, CI, contratos o backlog.
+- .claude/coordination/README.md
+
+## LEASE REGRESSION-CI-B (ACTIVO, 2026-08-06T12:25:05-05:00) — titular CLAUDE, id claude-regci-b, expira 2026-08-06T14:25:05-05:00
+Hora inyectada desde `date`. Shape co-firmado CXD-678 / ACK CLD-630. Owner CLAUDE de B; C (enlace de HANDOFF) es de CODEX y no lo toco.
+- .github/workflows/ci.yml                          (job de regresion: 1 step bloqueante + 2 cuarentenas nombradas)
+- tests/unit/test_regression_ci_wiring.py           (NUEVO: candado causal del cableado)
+
+NO se toca `tests/regression/**` (ni el gate FX ni action_threshold), ni `pyproject.toml` (nada de anadir el extra `ml`), ni contratos, ni specs-gate. Las dos cuarentenas se EJECUTAN con `continue-on-error`, nunca se omiten.
