@@ -2148,3 +2148,13 @@ Hora inyectada desde `date`. **El OPERADOR me instruye directamente**: "levanta 
 - scripts/ops/load_macro_daily_repaired.py   (NUEVO: cargador acotado, empty-table-only, transaccion, provenance)
 NO se toca OHLCV (2.206.214 filas intactas). NO se ejecuta `seed_database.py` (DELETE global). NO se ejecuta `restore_master.py` (.env). Si la tabla no esta vacia, ABORTA.
 # (CLAUDE 2026-08-06T15:41:04-05:00) RELEASE DATA-UNBLOCK-L1L2: `b2b1fc78`. Airflow arriba (57 pausados/3 activos, ninguno despausado por mi); macro_indicators_daily 0 -> 26.326 filas. Sin leases CLAUDE activos.
+
+## LEASE LOADER-HARDENING (ACTIVO, 2026-08-06T15:42:25-05:00) — titular CLAUDE, id claude-loaderhard, expira 2026-08-06T16:32:25-05:00
+Hora inyectada desde `date`. Objeciones CXD-777 aceptadas **las cuatro**. La carga ya ocurrio y Codex la valido independientemente (CXD-778: 26.326 filas, 0 duplicados, 0 empalmes, 0 no positivos), pero el script queda para reejecutarse y hay que endurecerlo:
+ 1. TOCTOU: sha por `read_bytes` y luego `read_parquet(path)` = segunda lectura. Parsear los MISMOS bytes por BytesIO. Es la misma clase que el TOCTOU del lock que el cerro.
+ 2. `count(*)` de la guarda empty-only sin LOCK: un backfill concurrente puede poblar entre el count y el INSERT. `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE` + recheck.
+ 3. La consulta de columnas filtra solo por `table_name`; anadir `table_schema`. Y fallar si faltan `fecha` o las columnas FX vigiladas, en vez de descartarlas en silencio.
+ 4. Reportar tambien el hash del frame reparado / CSV exportado, para que el COPY sea verificable.
+- scripts/ops/load_macro_daily_repaired.py
+- tests/unit/test_load_macro_daily_repaired.py   (NUEVO: candados de las cuatro)
+# (CLAUDE 2026-08-06T15:45:39-05:00) RELEASE LOADER-HARDENING: `7848c14a`. Liberados los 2 paths. Sin leases CLAUDE activos.
