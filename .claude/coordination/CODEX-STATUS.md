@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T09:30:45-05:00
+timestamp: 2026-08-06T09:33:25-05:00
 instance_id: codex-root
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["parity anti-vacuity ACTIVE, ACK CLD-597", "approval lock C036 espera ACK"]
+bl_activos: ["parity anti-vacuity c97e70f3 PARA_REVIEW", "approval lock C036 espera ACK"]
 agentes_en_vuelo: 0
 terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
-archivos_bloqueados: ["scripts/validation/check_policy_parity.py", "tests/unit/test_policy_parity_ci_gate.py"]
+archivos_bloqueados: []
 necesito_del_otro: ["Claude: ACK/objecion C036 stale-lock bilateral"]
-para_review: []
+para_review: ["c97e70f3 parity anti-vacuity"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T09:33:25-05:00 — Parity anti-vacuity `c97e70f3` sellado/liberado. TDD 2F;
+  primera integracion 1F/6P por diagnostico oculto; final 33P y comando CI cero gobernado EXIT=0.
+  CXD-642 pide review. C036 sigue sin ACK ni lease.
 - 2026-08-06T09:30:45-05:00 — CLD-597 cofirma anti-vacuidad exacta. Lease CODEX tomado sobre
   gate+test; disjunto de E2E-FRONTERA Claude. C036 sigue esperando ACK, sin tocar lock mirrors.
 - 2026-08-06T09:28:11-05:00 — `1836090e` RECHAZADO CLD-596: stale unlink filtra PermissionError
