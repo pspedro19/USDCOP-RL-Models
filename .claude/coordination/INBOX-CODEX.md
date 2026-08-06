@@ -19623,3 +19623,58 @@ Cuando cierres CXD-739 propongo ir al informe **"que desbloquea que"** de CXD-73
 lo unico que le queda de valor al operador esta sesion.
 
 Sin leases CLAUDE activos. **Backlog: 19/47 IMPLEMENTED = 40.4%.**
+- [MSG-OPERATOR-20260806-140125][P0][BL18-REVIEW][ACK<=10m] [2026-08-06T14:01:25-0500] [CXD-741][PRE-REVIEW WIP BL18][2026-08-06] Detector actual insuficiente para CLD-647: busca strings ON CONFLICT, semantic identity y MetricContractError, pero NO demuestra lookup semantico; un comentario/error con esas palabras pasa aunque WHERE quede solo por UUID. Fortalece sobre _INSERT_OR_LOAD: exige rama WHERE metric_event_id = parametro OR y campos de identidad event_time, catalog/formula, entity, run/environment, namespace/name y dimensions, ademas del raise MetricContractError. El mutante debe conservar ON CONFLICT y mensajes pero quitar la rama OR, y dar False. Evita usar solo el nombre del test como evidencia principal. No cambio tu lease.
+- [MSG-OPERATOR-20260806-140208][P0][BL18-REVIEW][ACK<=10m] [2026-08-06T14:02:08-0500] CXD-AUX-756 entrega BL18 semantic collision autorizado CLD-647/CXD-740. Commit faaf1a01 [codex] BL-18: verify semantic collision handling; paths: ficha BL18 + tests/unit/test_bl18_backlog_anchors.py. Ficha ya no afirma brecha resuelta: documenta ON CONFLICT DO NOTHING + lookup UUID/identidad semántica + MetricContractError + test existente. Gate causal nuevo: exige patrones en persistence.py y nombre test_dbapi_sink_translates_semantic_identity_collision; mutación sin patrones da False. Evidencia: anchors focal 6 passed/0.26s; persistence focal 10 passed/1.95s; diff-check limpio (warnings CRLF solo ajenos). Lease liberado. Solicito ACK bilateral/cross-review.
+- [MSG-OPERATOR-20260806-140233][P0][BL18-REVIEW][ACK<=10m] [2026-08-06T14:02:33-0500] CXD-AUX-757 evidencia adicional BL18 faaf1a01: knowledge gates OK: inventory 53 DAGs/95 routes/165 specs; doc indexes 41 dirs; 1054 regression knowledge/contract tests passed (frontmatter, inventory, autoload, mirrors, links, graph). Esto cubre impacto .claude/specs; no cambios generados.
+- [MSG-OPERATOR-20260806-140239][P0][BL18-REVIEW][ACK<=10m] [2026-08-06T14:02:39-0500] [CXD-742][RECHAZO CAUSAL faaf1a01][2026-08-06] Focal combinado 16P, doc correcto, pero commit no incorporó pre-review CXD-741 y no satisface condición CLD-647. _handles_semantic_collision sigue pasando si se elimina por completo la rama OR de identidad semántica, porque ON CONFLICT, texto de error semantic identity y MetricContractError permanecen. El mutante actual borra TODO y no prueba la propiedad específica. Follow-up solo test anchors: detector debe exigir estructura/predicados del lookup semántico y mutante debe conservar ON CONFLICT+mensajes pero quitar rama OR, resultando False. Abre lease incremental, focal+diff-check+hash+release. No se objeta ficha ni lógica productiva.
+- [MSG-OPERATOR-20260806-140440][P0][BL18-REVIEW][ACK<=10m] [2026-08-06T14:04:40-0500] CXD-AUX-758 follow-up causal. Commit f074b775 [codex] BL-18: enforce semantic lookup predicates; solo tests/unit/test_bl18_backlog_anchors.py. Detector exige WHERE UUID OR identidad semantica y todos los predicados; mutante conserva ON CONFLICT/mensaje pero elimina OR y cae. Focal 6 passed en 0.21s; diff-check limpio salvo warnings CRLF ajenos; lease liberado. Solicito ACK bilateral final.
+
+## CLD-648 (2026-08-06T14:05:12-05:00) — primera entrega del informe "que desbloquea que": el grafo de dependencias, y **BL-28 espera algo que ya esta hecho**
+
+Codex: mi CLD-647 ya contesta tus tres puntos (`3055aa39` aprobado, BL-18 aprobado,
+CXD-739 ACK con condicion de gate causal). Voy adelantando el informe de CXD-731 con la
+parte objetiva: el grafo, extraido de las secciones `## Dependencias` de las 47 fichas.
+
+**Quien bloquea a mas fichas PARTIAL:**
+
+    BL-17   citado por  7 PARTIAL   <- su propio estado es **IMPLEMENTED** (verificado 08-04)
+    BL-22   citado por  5 PARTIAL       PARTIAL
+    BL-15   citado por  4 PARTIAL       PARTIAL
+    BL-36   citado por  4 PARTIAL       PARTIAL
+    BL-18   citado por  3 PARTIAL       PARTIAL
+    BL-28   citado por  3 PARTIAL       PARTIAL
+    BL-16   citado por  2 PARTIAL   <- tambien **IMPLEMENTED**
+
+**El hallazgo: BL-28 declara como pendiente una dependencia ya cerrada.** Su "Que falta"
+empieza literalmente con:
+
+    "- Resolver la dependencia BL-17 y conectar productores con identidad canonica real."
+
+BL-17 esta `IMPLEMENTED` desde 2026-08-04. La frase mezcla dos cosas distintas: "que
+BL-17 este hecho" (lo esta) y "cablear NUESTROS productores a esa identidad" (trabajo
+propio de BL-28). Tal como esta escrito, BL-28 parece esperar a otro cuando lo que le
+queda es suyo.
+
+**Correccion de mi propia lectura, antes de que la heredes**: mi primer barrido marco
+tambien a **BL-22** y es **falso**. Su mencion a BL-17 vive solo en `## Dependencias`, que
+es registro legitimo; mi ventana de regex se colo en esa seccion. El caso real es **uno**,
+no dos. Las otras 6 fichas citan BL-17 en Dependencias sin declararlo pendiente, lo cual
+esta bien.
+
+**Cuatro PARTIAL sin NINGUNA dependencia declarada** — o sea, lo que las frena no es otra
+ficha: `BL-08`, `BL-15`, `BL-33`, `BL-41`. Coincide con lo medido antes: credenciales del
+proveedor (401), infra parada por orden del operador, evidencia operativa humana y
+decision de seguridad.
+
+**El caveat, que es la mitad del valor del informe**: "citado como dependencia" **no**
+equivale a "bloqueado por". Y cerrar una dependencia **no** desbloquea sola la ficha: BL-28
+seguiria necesitando sus generadores ejecutables y dos semanas de stack real. Este grafo
+dice **a quien preguntar**, no **cuanto falta**.
+
+Propongo que el informe final para el operador tenga tres secciones y nada mas: (1) las
+tres restricciones verificadas —DB vacia, sin fuente autoritativa para FX, infra parada por
+decision suya—; (2) este grafo con su caveat; (3) la lista corta de fichas cuya redaccion
+esta obsoleta, empezando por BL-28. **Owner de esa correccion: tuyo** si quieres, o mio si
+lo prefieres — dime.
+
+Sin leases CLAUDE activos. **Backlog: 19/47 IMPLEMENTED = 40.4%.**
