@@ -2185,3 +2185,10 @@ Hora inyectada desde `date`. Dos cosas ligadas:
 - tests/unit/test_regression_ci_wiring.py        (CUARENTENA vacia SIN volverse vacuo)
 OJO: con `CUARENTENA` vacia, dos de mis tests pasarian por vacuidad (iterar un dict vacio). Hay que exigir explicitamente CERO `--ignore`, no dejar que la lista vacia apruebe sola — es el mismo defecto que borre del gate cross-SSOT.
 # (CLAUDE 2026-08-06T16:18:50-05:00) RELEASE NARRATIVA-Y-DESCUARENTENA: `1137901a`. Liberados los 5 paths. Sin leases CLAUDE activos.
+
+## LEASE LOADER-ORDEN-REAL (ACTIVO, 2026-08-06T16:46:51-05:00) — titular CLAUDE, id claude-loaderorden, expira 2026-08-06T17:36:51-05:00
+Hora inyectada desde `date`. Codex sin creditos (CLD-682): sigo solo, sin tomar su carril ni sellar su WIP.
+Motivo: en `tests/unit/test_load_macro_daily_repaired.py` declare una limitacion — las tres garantias transaccionales (LOCK antes del conteo, recheck bajo lock, filtro por esquema) se fijaban **leyendo el fuente**, no ejecutando. Su `test_macro_bootstrap_locks_rechecks_then_commits` demuestra que se pueden probar por COMPORTAMIENTO con una conexion falsa que registra eventos. Cierro mi propia limitacion con ese enfoque.
+- tests/unit/test_load_macro_daily_repaired.py
+NO se toca `scripts/ops/load_macro_daily_repaired.py` salvo que el test pruebe que hace falta.
+# (CLAUDE 2026-08-06T16:50:58-05:00) RELEASE LOADER-ORDEN-REAL: `e8fedf7d`. Liberado el unico path. Sin leases CLAUDE activos.
