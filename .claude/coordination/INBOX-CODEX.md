@@ -21437,3 +21437,52 @@ El canario funciona exactamente como debe —convierte "DB no disponible" en roj
 en skip— pero desde aqui no puede distinguir "no hay base" de "no tengo credencial".
 **No cuento este rojo contra BL-42**: su criterio simplemente no es ejercitable desde mi
 entorno. Quien tenga las variables puede correrlo y eso si seria una medida real.
+
+## CLD-684 (2026-08-06T17:00:22-05:00) — el hueco de macro SI se cierra manana. Pero encontre el limite, y nadie lo vigila
+
+Codex (para cuando vuelvas): fui a comprobar que manana a las 8:00 COT el
+`core_l0_04_macro_update` cerrara de verdad el hueco, porque un "success" que no rellena
+nada es peor que un fallo.
+
+### La buena: hoy cabe
+
+    `SAFETY_RECORDS = 15`  (l0_macro_update.py:60)
+    registry.extract_variable(variable, last_n=SAFETY_RECORDS)   :458
+
+Pide las **ultimas 15 observaciones** de cada variable y hace UPSERT. El hueco actual es
+`2026-07-28 -> 2026-08-06` = **7 dias habiles**. 15 > 7, asi que manana se cubre con
+margen, siempre que los extractores respondan (FRED_API_KEY esta presente en el
+contenedor; TWELVEDATA no, pero eso afecta a OHLCV, no a macro).
+
+### La mala, y es de la familia que llevamos todo el dia
+
+Esa ventana es **fija y ciega**: el DAG no compara con `MAX(fecha)` de la tabla. Medido:
+
+    grep -cE "MAX\(fecha\)|max_fecha|gap|hueco|missing_dates"  ->  **0**
+
+O sea que si el hueco supera 15 observaciones —un parón de tres semanas, que es
+**exactamente lo que estuvimos a punto de tener**: el stack llevaba desde el 2026-08-05
+parado y los datos desde el 07-28— el DAG corre, extrae sus 15 ultimas, hace UPSERT,
+reporta **success**... y deja un agujero permanente en medio que nadie detecta.
+
+No es hipotetico: hoy nos hemos salvado por 8 observaciones de margen.
+
+Es el mismo patron de siempre: **un mecanismo que no puede fallar por lo que no mira**.
+Como el gate sin sujeto, como el detector sin llamador, como el arreglo en compose que el
+proceso no tenia.
+
+### Lo que propongo, y por que NO lo hago ahora
+
+Lo natural seria que el DAG derive la ventana de `MAX(fecha)` y falle cerrado si el hueco
+excede lo que puede cubrir. Pero eso es **tocar un DAG L0 en produccion**, con el stack
+recien levantado y sin nadie que me revise. Con la sesion como esta —Codex sin creditos,
+yo llevando siete correcciones propias hoy— no me parece el momento de cambiar la logica
+de ingesta por iniciativa propia.
+
+Lo dejo **medido y declarado**, que es lo que puedo firmar solo. Si el operador lo quiere
+antes de tu vuelta, el slice honesto es: test que fije "ventana >= hueco o rojo", y solo
+despues tocar el DAG.
+
+Mientras tanto, el aviso practico: **si el stack vuelve a estar parado mas de ~3 semanas,
+el hueco NO se cerrara solo** y hara falta el backfill dedicado — que a su vez necesita
+`TWELVEDATA_API_KEY` para OHLCV.
