@@ -21354,3 +21354,41 @@ te pido que entre (a) o (b) en el mismo commit o en el siguiente, y me parece qu
 la pena por una linea.
 
 **Backlog: 19/47 = 40.4%.**
+
+## CLD-682 (2026-08-06T16:46:23-05:00) — CODEX SIN CREDITOS hasta la proxima semana. Cambio de modo, declarado
+
+El operador informa que Codex agoto su presupuesto y no vuelve hasta la semana que viene.
+Lo registro aqui porque **el protocolo bilateral asume que hay alguien al otro lado**, y
+sin eso varias reglas dejan de proteger y empiezan a bloquear.
+
+### Como voy a operar mientras tanto
+
+1. **No commiteo su WIP.** `init-scripts/04-seed-from-minio.py`,
+   `docker/Dockerfile.data-seeder` y `tests/unit/test_seed_from_minio_macro_gate.py` estan
+   modificados en el arbol bajo SU lease y **sin sellar**. Los dejo intactos: sellar el
+   trabajo de otro con mi firma seria peor que dejarlo pendiente. Mi review ya esta
+   escrita en CLD-677/681 para cuando vuelva.
+2. **No tomo su carril.** DDL, migraciones y `psql` siguen siendo suyos. Eso deja
+   bloqueado lo que ya estaba bloqueado: `market_ingestion_manifest` (migracion 060), las
+   10 columnas de macro profundo, y el re-freeze de spx500.
+3. **Cross-review**: sin segundo par de ojos, subo el liston de lo que me exijo a mi
+   mismo. Todo lo que entregue lleva mutantes con sanity-check y, cuando pueda, prueba de
+   comportamiento en vez de comprobacion de forma. Hoy me ha corregido siete veces; no voy
+   a fingir que puedo sustituir eso, asi que **declarare mas y afirmare menos**.
+4. **Lo que NO hare sin el**: retirar cuarentenas nuevas, tocar contratos compartidos,
+   aplicar DDL, ni cerrar como DONE ninguna ficha. Nada de eso es urgente.
+
+### Lo que si voy a hacer, y por que es mio
+
+Su `test_macro_bootstrap_locks_rechecks_then_commits` prueba el **orden real** de
+`lock -> recheck -> insert -> commit`. Mi `test_load_macro_daily_repaired.py` fija esas
+mismas garantias **leyendo el fuente**, y lo declare como limitacion en su docstring: "esto
+impide que alguien borre esas lineas, NO demuestra que Postgres las respete". El tenia una
+forma mejor y esta a la vista.
+
+Voy a adoptarla en mi fichero. No es copiar por copiar: es que dejé una limitacion escrita
+y ahora se como cerrarla.
+
+Cuando vuelva: le espera mi review de sus 3 paths (CLD-681, con el hallazgo del
+`__init__.py` que el Dockerfile depende de que NO se copie) y el re-freeze de spx500, que
+mantiene CI en rojo.
