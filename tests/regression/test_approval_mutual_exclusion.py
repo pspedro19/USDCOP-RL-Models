@@ -180,7 +180,12 @@ def test_old_orphan_lock_is_never_reclaimed_automatically(tmp_path):
 
 
 def test_old_live_lock_is_never_reclaimed_automatically(tmp_path):
-    """Un titular lento conserva exclusión aunque su mtime supere el umbral retirado."""
+    """Un titular lento conserva exclusión aunque su mtime supere el umbral retirado.
+
+    La mutación que reintroduce ``unlink`` es observable aquí en POSIX/CI. En Windows,
+    el handle abierto impide el borrado antes de que el código pueda robar el lock; el
+    detector portable de abajo cubre allí la decisión de intentar el reclaim.
+    """
     target = tmp_path / "approval_state.json"
     lock = Path(str(target) + store.LOCK_SUFFIX)
     lock.write_text(f'{{"pid": {os.getpid()}}}', encoding="utf-8")
@@ -193,6 +198,35 @@ def test_old_live_lock_is_never_reclaimed_automatically(tmp_path):
         assert lock.exists()
     finally:
         os.close(holder)
+
+
+def test_old_visible_lock_never_attempts_unlink(tmp_path, monkeypatch):
+    """C036 prohíbe incluso intentar reclamar por edad, con independencia del SO."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    lock.write_text('{"pid": 999999}', encoding="utf-8")
+    os.utime(lock, (1, 1))
+
+    original_unlink = Path.unlink
+    attempted_lock_unlinks: list[Path] = []
+
+    def spy_unlink(path: Path, *args, **kwargs):
+        if path == lock:
+            attempted_lock_unlinks.append(path)
+            # Hace determinista la observación también en POSIX: un reclaim
+            # defectuoso no llega a adquirir el lock después de registrarse.
+            raise PermissionError("simulated visible-lock sharing violation")
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", spy_unlink)
+    with pytest.raises(store.ApprovalLockTimeout):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un lock visible no puede reclamarse por edad")
+
+    assert attempted_lock_unlinks == [], (
+        "C036 prohíbe llamar unlink sobre un lock visible, no sólo que el SO rechace el borrado"
+    )
+
 
 _STORE = '''
 import json, os, sys, time
