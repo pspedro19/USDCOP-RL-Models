@@ -21,21 +21,41 @@ Aislado neutralizando esa única línea y restaurando por bytes:
     CON la línea:  contracts → src/contracts/__init__.py
     SIN la línea:  contracts → airflow/dags/contracts/__init__.py
 
-LO QUE COSTABA (la razón de que esto sea un candado y no un detalle de estilo)
------------------------------------------------------------------------------
+LO QUE COSTABA, DICHO CON PRECISIÓN
+-----------------------------------
 `test_all_layer_contracts.py` protege su import con un guard que hace `skip` si
-`contracts.l0_data_contracts` no está. Con el orden invertido, ese guard saltaba
-**siempre**: la suite daba `37 skipped` con `EXIT=0`. Treinta y siete tests reportando
-éxito sin ejecutarse ni una vez, y un CI que mire el código de salida los ve verdes.
-Su propio mensaje de skip ofrecía además una salida que no existe —"run this file in
-isolation"—: en aislamiento `tests/unit/conftest.py` se carga igual, así que salta igual.
+`contracts.l0_data_contracts` no está, y con el orden invertido ese guard saltaba. Pero
+**sólo al ejecutar ese fichero por su cuenta**:
 
-Sin la línea, esos mismos 37 pasan. No se relajó ninguna aserción para conseguirlo.
+    sólo ese fichero ............ 37 skipped, EXIT=0
+    suite `tests/unit` completa .. 37 passed
+
+O sea que **en CI corrían y pasaban**. Una versión anterior de este mismo docstring decía
+"37 tests reportando éxito sin ejecutarse, y un CI que mire el código de salida los ve
+verdes": era falso, lo escribí yo, y queda aquí dicho para que nadie lo vuelva a citar.
+
+Por qué en la suite sí: `tests/unit/airflow/` se colecta antes que los
+`tests/unit/test_*.py` —los directorios ordenan primero— y
+`tests/unit/airflow/test_sensors.py:20` inserta `airflow/dags` al frente durante la
+colección, compensando por casualidad. Tres ficheros: uno declara el orden, otro lo
+rompía, un tercero lo arreglaba sin saberlo, y nadie había declarado esa cadena.
+
+El daño real, entonces, no era "tests muertos" sino **dependencia del alcance**: el mismo
+fichero se ejecutaba o no según con quién se le corriera, y el modo que fallaba es
+justamente el que usa quien está depurándolo. Su mensaje de skip ofrecía encima una
+salida que no existe —"run this file in isolation"—: en aislamiento
+`tests/unit/conftest.py` se carga igual, así que saltaba igual.
 
 QUÉ FIJA ESTE FICHERO
 ---------------------
-El orden, la resolución que ese orden produce, y que los 37 sigan siendo ejecutables.
-No juzga a `FeatureBuilder` — eso es de sus propios tests.
+Dos cosas, y ninguna mirando el `sys.path` vivo — ver el docstring de
+`test_the_unit_conftest_does_not_push_src_to_the_front` para por qué eso no funcionaba:
+
+  1. que `tests/unit/conftest.py` no vuelva a adelantar `src` (estático, sobre la fuente);
+  2. que ejecutar `test_all_layer_contracts.py` en solitario no salte tests (subproceso);
+
+más la higiene de la fixture `feature_builder`. No juzga a `FeatureBuilder` — eso es de
+sus propios tests.
 """
 from __future__ import annotations
 

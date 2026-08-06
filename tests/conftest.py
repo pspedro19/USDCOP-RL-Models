@@ -995,30 +995,34 @@ def feature_builder():
 
     La ruta ``src`` se inserta SOLO durante el import y se retira siempre.
 
-    QUE ES ESTO Y QUE **NO** ES. Higiene: quien muta ``sys.path`` lo restaura. Antes
-    esta fixture hacia ``sys.path.insert(0, src)`` sin deshacerlo nunca, que es un
-    patron malo por si mismo. Pero **hoy este bloque es INERTE y conviene decirlo
-    aqui** en vez de dejar que el lector suponga que arregla algo:
-
-        ``src`` YA esta en ``sys.path`` (indice 1) antes de que corra ninguna
-        fixture, puesto ahi al importarse los conftest. Luego ``inserted`` es
-        SIEMPRE False, no se inserta nada y no hay nada que retirar.
-
-    Medido: mutar el ``finally`` de abajo NO pone rojo ningun test, precisamente
-    porque no se ejecuta. Se mantiene como defensa por si algun dia el path deja de
-    venir preparado, no como correccion de un defecto vivo.
-
-    DONDE ESTA EL DEFECTO DE VERDAD. Hay **dos** paquetes llamados ``contracts``:
+    POR QUE IMPORTA. Hay **dos** paquetes llamados ``contracts`` en el repo:
 
         src/contracts/                (contratos de dominio: policy, strategy_schema...)
         airflow/dags/contracts/       (dag_registry, l*_contracts)
 
-    y quien decide cual gana es ``tests/unit/conftest.py:11``, con un
-    ``sys.path.insert(0, src)`` **incondicional** que adelanta ``src`` por delante de
-    ``airflow/dags`` — invirtiendo el orden que este mismo fichero declara critico
-    veinte lineas mas arriba ("MUST BE FIRST"). Consecuencia medida:
-    ``tests/unit/test_all_layer_contracts.py`` da hoy 37 skipped / EXIT=0 y 37 passed
-    sin esa linea. Ver ``tests/unit/test_conftest_syspath_hygiene.py``.
+    y solo uno responde a ``import contracts``: gana el que este antes en ``sys.path``.
+    El bloque de arriba de este mismo fichero declara CRITICO que sea el de
+    ``airflow/dags``. Antes esta fixture hacia ``sys.path.insert(0, src)``
+    **incondicional** y sin deshacerlo: metia una copia de ``src`` en el indice 0 —por
+    delante de ``airflow/dags``— y la dejaba ahi para el RESTO de la sesion.
+
+    LAS DOS PIEZAS DE ABAJO NO VALEN LO MISMO, y conviene no confundirlas:
+
+        la guarda ``if inserted``  -> CARGA EL PESO. Es lo que impide la copia
+                                      duplicada al frente. Medido: con la version
+                                      anterior de esta fixture, el candado de
+                                      ``tests/unit/test_conftest_syspath_hygiene.py``
+                                      se pone ROJO.
+        el ``finally`` que retira  -> defensa INERTE hoy. ``src`` ya viene en el path
+                                      cuando corre la fixture, luego ``inserted`` es
+                                      False y esa rama no se alcanza. Se mantiene por
+                                      si algun dia el path deja de venir preparado.
+
+    Se dice explicito porque una version anterior de este docstring afirmaba que el
+    bloque entero era inerte — falso, y lo escribi yo.
+
+    Ver ``tests/unit/test_conftest_syspath_hygiene.py`` para el candado y para el otro
+    contaminador (``tests/unit/conftest.py``, ya corregido).
     """
     import sys
     from pathlib import Path
