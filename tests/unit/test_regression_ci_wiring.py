@@ -46,22 +46,25 @@ REPO = Path(__file__).resolve().parents[2]
 CI = REPO / ".github" / "workflows" / "ci.yml"
 JOB = "regression-test"
 
-#: Las únicas exclusiones admitidas, con el motivo por el que existen. Añadir otra hace
-#: fallar este fichero a propósito: la conversación tiene que pasar por aquí.
-CUARENTENA = {
-    "tests/regression/test_macro_clean_fx_scale.py":
-        "empalme de escala real en MACRO_DAILY_CLEAN/MASTER (USDMXN x10^4, USDCLP x10^2) "
-        "desde 2026-06-26/29; repair bloqueado porque la DB viva tiene 0 filas y no hay "
-        "fuente autoritativa de la que reparar sin inventar numeros",
-}
+#: Las únicas exclusiones admitidas. **Hoy está vacía, y eso es el estado deseado**: el
+#: step bloqueante corre `tests/regression/` entero, sin `--ignore`. Añadir una entrada
+#: aquí es lo que autoriza a excluir un fichero del YAML, y exige motivo, owner y
+#: condición de cancelación.
+CUARENTENA: dict[str, str] = {}
 
-#: Cuarentenas RETIRADAS porque su condición de cancelación se cumplió. Se dejan escritas
-#: —no borradas— para que el próximo que añada una vea que estas listas se vacían:
+#: Cuarentenas RETIRADAS al cumplirse su condición. Se dejan escritas —no borradas— porque
+#: el valor de una lista de excepciones está en que se vea que se vacía:
 #:
 #:   test_action_threshold_ssot.py — importar `src.training.config` (dataclass pura)
 #:       disparaba el `__init__` del paquete y con él `stable_baselines3`. Cerrada en
 #:       `9b67ffa8` volviendo los reexports lazy (PEP 562); el gate pasa 2/2 con sb3
-#:       genuinamente ausente. Verificado antes de retirarla, no asumido.
+#:       genuinamente ausente.
+#:
+#:   test_macro_clean_fx_scale.py — empalme de escala real (USDMXN ×10⁴, USDCLP ×10²)
+#:       desde 2026-06-26/29. Cerrada el 2026-08-06: se cargó `macro_indicators_daily`
+#:       con la reparación declarada, el backup se regeneró desde esa base sana y
+#:       `MACRO_DAILY_CLEAN` a su vez; el detector pasa con 0 empalmes. El dato no se
+#:       perdonó, se arregló — que es la única forma legítima de retirar una cuarentena.
 
 
 def _job() -> dict:
@@ -93,15 +96,44 @@ def _bloqueante() -> dict:
 def test_the_quarantined_files_actually_exist() -> None:
     """Anti-vacuidad: no se excluye lo que no existe.
 
-    Si un fichero en cuarentena se borra o se renombra, su exclusión pasa a proteger a
-    nadie y su step a no ejecutar nada — verde por vacío. Se exige que el sujeto exista
-    antes de dar por bueno el resto del candado.
+    Con `CUARENTENA` vacía este bucle no recorre nada, así que **no basta con él**: el
+    régimen sin cuarentenas lo cubre `test_with_no_quarantines_the_blocking_step_has_no_ignores`.
+    Se dice aquí porque un test que itera una lista vacía y pasa es justamente la forma de
+    verde que este fichero persigue.
     """
     for ruta in CUARENTENA:
         assert (REPO / ruta).is_file(), (
             f"{ruta} esta en cuarentena pero NO existe. Una exclusion sin sujeto es ruido "
             f"heredado: borrarla del workflow en vez de dejarla"
         )
+
+
+def test_with_no_quarantines_the_blocking_step_has_no_ignores() -> None:
+    """El régimen SIN cuarentenas se comprueba explícitamente, no por ausencia de tests.
+
+    Al vaciar `CUARENTENA` el 2026-08-06, dos comprobaciones se quedaron sin sujeto: el
+    bucle de existencia no recorría nada y el test parametrizado se **saltaba** con «got
+    empty parameter set». Tres tests dejaron de juzgar y el fichero seguía en verde — el
+    defecto exacto que persigue.
+
+    Así que el estado «cero cuarentenas» se afirma en positivo: si la lista está vacía, el
+    YAML no puede llevar NINGÚN `--ignore` ni ningún step de cuarentena.
+    """
+    if CUARENTENA:
+        pytest.skip("hay cuarentenas declaradas: las cubren los tests de su régimen")
+
+    run = _bloqueante()["run"]
+    assert "--ignore=" not in run, (
+        f"`CUARENTENA` está vacía pero el step bloqueante excluye ficheros: {run!r}. "
+        f"Una exclusión sin entrada en la lista es exactamente lo que este candado impide"
+    )
+    pasos_cuarentena = [
+        s for s in _steps_con_run() if (s.get("name") or "").upper().find("QUARANTINE") >= 0
+    ]
+    assert not pasos_cuarentena, (
+        f"quedan steps de cuarentena sin entrada en `CUARENTENA`: "
+        f"{[s.get('name') for s in pasos_cuarentena]}"
+    )
 
 
 def test_the_blocking_step_runs_the_whole_directory_not_a_handpicked_list() -> None:
@@ -220,8 +252,8 @@ def test_the_heavy_ml_extra_is_not_installed() -> None:
     )
 
 
-@pytest.mark.parametrize("ruta", sorted(CUARENTENA))
-def test_each_quarantined_file_is_still_executed_in_a_visible_step(ruta: str) -> None:
+@pytest.mark.parametrize("ruta", sorted(CUARENTENA) or [None])
+def test_each_quarantined_file_is_still_executed_in_a_visible_step(ruta) -> None:
     """Cada excluido se EJECUTA en su propio step nombrado y no bloqueante.
 
     Ésta es la aserción que separa "cuarentena" de "barrido bajo la alfombra". Excluir sin
@@ -229,7 +261,13 @@ def test_each_quarantined_file_is_still_executed_in_a_visible_step(ruta: str) ->
     porque no hay salida que mirar.
 
     Rojo con: borrar el step de cuarentena dejando el `--ignore` puesto.
+
+    Con la lista vacía `parametrize` recibiría un conjunto vacío y pytest **saltaría** el
+    test sin decir nada útil; se le pasa `[None]` para que exista un caso y se declare por
+    qué no juzga, en vez de desaparecer.
     """
+    if ruta is None:
+        pytest.skip("sin cuarentenas declaradas — lo cubre el test del régimen vacío")
     steps = [s for s in _steps_con_run() if ruta in s["run"] and s.get("continue-on-error")]
     assert len(steps) == 1, (
         f"{ruta} esta excluido del step bloqueante pero no tiene UN step propio "

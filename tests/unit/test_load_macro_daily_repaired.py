@@ -3,8 +3,8 @@
 
 QUÉ SE PUEDE Y QUÉ NO SE PUEDE PROBAR AQUÍ, dicho antes que nada
 ----------------------------------------------------------------
-El camino **puro** —leer, reparar, hashear, exportar— se ejercita de verdad: se llama al
-script y se comprueba el resultado.
+El camino **puro** —leer, validar (reparando lo que el manifiesto declare, hoy nada),
+hashear, exportar— se ejercita de verdad: se llama al script y se comprueba el resultado.
 
 El camino que **toca la base** no. Desde este entorno Postgres no es alcanzable (los tests
 que lo intentan reportan `postgres unreachable`), así que sus tres garantías —LOCK antes

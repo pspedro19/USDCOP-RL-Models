@@ -209,34 +209,19 @@ jobs:
           pip install -e ".[dev,forecasting,database,data]"
           pip install pytest pytest-asyncio
 
-      # El step BLOQUEANTE. Corre el directorio COMPLETO menos los ficheros en
-      # cuarentena declarada — hoy uno —, cada uno con su step visible mas abajo.
-      # Sin `continue-on-error`, sin `|| true`: si algo aqui cae, el job cae.
+      # El step BLOQUEANTE, y desde 2026-08-06 ya no tiene excepciones: corre el
+      # directorio COMPLETO. Hubo dos cuarentenas y las dos se retiraron al cumplirse su
+      # condicion de cancelacion, que es como debian morir:
+      #   * action threshold SSOT  -> `9b67ffa8` volvio lazy los reexports de training,
+      #     el gate pasa 2/2 sin `stable_baselines3`.
+      #   * FX scale splice        -> la macro se cargo reparada, el backup se regenero
+      #     desde la base sana y `MACRO_DAILY_CLEAN` se regenero a su vez; el detector
+      #     pasa con 0 empalmes. El dato no se "perdono": se arreglo.
+      # Si vuelve a hacer falta una, se anade AQUI con motivo, owner y condicion de
+      # cancelacion, y en `CUARENTENA` de tests/unit/test_regression_ci_wiring.py.
       - name: Run regression gates (blocking)
         run: |
-          pytest tests/regression/ \
-            --ignore=tests/regression/test_macro_clean_fx_scale.py \
-            -q --tb=short
-
-      # CUARENTENA 1 — rojo ESPERADO y VISIBLE, no un silencio.
-      #   motivo: MACRO_DAILY_CLEAN/MASTER traen un empalme de escala en
-      #           USDMXN (x10^4) y USDCLP (x10^2) desde 2026-06-26/29. El fix de
-      #           2026-07-21 reparo CLEAN pero no MASTER, y una regeneracion
-      #           posterior lo devolvio. El dato malo es real; el detector acierta.
-      #   owner: CODEX (raiz en fuente) + CLAUDE (diagnostico, CLD-627/628/629)
-      #   cancelacion: se BORRA este step cuando haya repair autoritativo y el
-      #           test pase. Hoy esta bloqueado: la DB viva tiene 0 filas, asi que
-      #           no existe fuente de la que reparar sin inventar numeros.
-      - name: 'QUARANTINE (non-blocking): FX scale splice in MACRO_DAILY_CLEAN'
-        continue-on-error: true
-        run: pytest tests/regression/test_macro_clean_fx_scale.py -q --tb=short
-
-      # Aqui hubo una CUARENTENA 2 para `test_action_threshold_ssot.py`: importar
-      # `src.training.config` —una dataclass pura— disparaba el `__init__` del
-      # paquete, que arrastraba engine/environments/trainers y con ellos
-      # `stable_baselines3`, ausente en este job. Se retira porque su condicion de
-      # cancelacion SE CUMPLIO: `9b67ffa8` volvio esos reexports lazy (PEP 562) y el
-      # gate pasa 2/2 con sb3 genuinamente ausente. Vuelve al step bloqueante.
+          pytest tests/regression/ -q --tb=short
 
   # ===========================================================================
   # Integration Tests

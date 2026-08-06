@@ -9,11 +9,17 @@ POR QUÉ EXISTE ESTE SCRIPT Y NO SE REUSA OTRO
   por un seed de 98.160 de un solo activo. Queda PROHIBIDO para restore en vivo.
 * `scripts/ops/backup/restore_master.py` carga `.env` y trunca en su fallback CSV.
 * `init-scripts/04-data-seeding.py::seed_macro_data` sí es *empty-only* + `ON CONFLICT DO
-  NOTHING`, pero lee el backup **tal cual**, y ese fichero contiene las 15 celdas con el
-  empalme de escala. Insertaría el daño en la base.
+  NOTHING`, pero lee el backup **tal cual**. Cuando esto se escribió, ese fichero traía 15
+  celdas con el empalme de escala e insertarlas habría metido el daño en la base.
 
 De ahí este cargador acotado: hace una sola cosa, sobre una sola tabla, y **pasa por
 `validate_and_repair_macro_scale` antes del INSERT**.
+
+ESTADO HOY: el backup se regeneró desde la base ya reparada y **no tiene empalmes**, así
+que el manifiesto vigente declara cero celdas y este cargador **audita sin reparar** —
+exporta 0 celdas reparadas. Eso no lo vuelve inútil: la validación fail-closed sigue
+corriendo, y si la fuente vuelve a romperse, para la carga en vez de escribir datos
+sucios. Ya pasó una vez en junio y volvió a pasar en julio.
 
 GARANTÍAS
 ---------
@@ -23,8 +29,8 @@ GARANTÍAS
    carga en vez de escribir datos sucios (ver `src/data_quality/macro_scale.py`).
 3. **Transacción única**: o entran todas las filas o ninguna.
 4. `ON CONFLICT (fecha) DO NOTHING`, así que reejecutarlo no duplica.
-5. **Provenance por stdout**: fichero de origen, sha256, filas leídas/insertadas y las
-   celdas reparadas con su factor.
+5. **Provenance por stdout**: fichero de origen, sha256 del origen y del frame resultante,
+   filas leídas/insertadas y —si las hubiera— las celdas reparadas con su factor.
 
 Uso:
     python scripts/ops/load_macro_daily_repaired.py [--dry-run]
