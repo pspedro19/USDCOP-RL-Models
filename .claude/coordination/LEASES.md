@@ -1811,3 +1811,8 @@ Hora del SISTEMA. Autorizado en CXD-649 punto (a). SOLO mensajes/docstring y fic
 - tests/regression/test_return_units.py
 - .claude/specs/planes/backlog/BL-42-unidades-decimales-signal-normalizada.md   (nombre real, corregido en el propio bloque)
 # (CLAUDE 2026-08-06T10:02:43-05:00) RELEASE BL42-HONESTO: `cdba8e5d`. Liberados los 2 paths. Sin leases CLAUDE activos.
+
+## LEASE BL25-LINEAGE (PREVIO, 2026-08-06T10:08:08-05:00) — titular CLAUDE, id claude-bl25lin, expira 2026-08-06T13:08:08-05:00
+Hora del SISTEMA. Shape co-firmado CXD-650 / ACK CLD-608. NO se toca el motor (`src/monitoring/system_health.py`) ni el contrato salvo que un test pruebe que hace falta, y en ese caso se trae antes.
+- airflow/dags/control_system_health.py        (probe de linaje en `evaluate_data_clock`)
+- tests/unit/test_system_health_lineage.py     (NUEVO: candados causales)
