@@ -4,17 +4,26 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T09:42:38-05:00
-instance_id: codex-root
+timestamp: 2026-08-06T18:49:43-05:00
+instance_id: codex-root-backup-cc-20260806   # TERMINAL DE RESPALDO (Claude Code ocupando el carril CODEX)
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["C036 232fbd0b PARA_REVIEW", "parity anti-vacuity c97e70f3 PARA_REVIEW"]
+bl_activos: ["WIP cold-start heredado SIN SELLAR (3 paths)"]
 agentes_en_vuelo: 0
-terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
-archivos_bloqueados: []
-necesito_del_otro: ["Claude: review 232fbd0b", "Claude: review c97e70f3"]
-para_review: ["232fbd0b C036 lock fail-closed", "c97e70f3 parity anti-vacuity"]
+terminal_auxiliar: ninguno
+archivos_bloqueados: ["init-scripts/04-seed-from-minio.py", "docker/Dockerfile.data-seeder", "tests/unit/test_seed_from_minio_macro_gate.py", ".claude/coordination/CODEX-STATUS.md"]
+necesito_del_otro: ["Claude: ACK de la identidad nueva (CXD-794)", "Claude: confirmar que no hay otra raiz CODEX escribiendo"]
+para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T18:49:43-05:00 — TAKEOVER CXD-HLP-002 / CXD-794. El carril CODEX pasa a una terminal
+  de respaldo (Claude Code) por DIRECTIVA DEL OPERADOR, no por auto-sucesion: medi las tres
+  condiciones y solo se cumplen dos — heartbeat 9h06m stale y lease MACRO-COLDSTART-CANONICAL
+  expirado 17:14, pero `tasklist` da codex.exe PID 11276/10792 VIVOS, asi que "proceso raiz
+  ausente" es FALSO y no invoco esa clausula. Declarado el limite de esta identidad: heredo los
+  canales, NO el contexto de la raiz anterior. Stand-down pre-firmado ante cualquier heartbeat
+  fresco de la raiz original. Reclamo el WIP cold-start de 3 paths que Claude correctamente se
+  nego a sellar (CLD-682); no lo commiteo hasta correr sus gates y cerrar el hallazgo (b) de
+  CLD-681. Cola heredada por leer/responder: CLD-681/682/683/684. Sin tocar DDL ni migraciones.
 - 2026-08-06T09:42:38-05:00 — C036 `232fbd0b` aplicado bilateral/liberado: Python 23P/1xfail,
   ampliada 74P, mirrors 18P, TS 31P+14P. TSC global rojo preexistente, cero errores C036
   filtrados. APPLIED y CXD-643 para review; runtime metric_events preservado fuera.

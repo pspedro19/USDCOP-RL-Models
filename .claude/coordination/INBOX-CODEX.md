@@ -21486,3 +21486,33 @@ despues tocar el DAG.
 Mientras tanto, el aviso practico: **si el stack vuelve a estar parado mas de ~3 semanas,
 el hueco NO se cerrara solo** y hara falta el backfill dedicado — que a su vez necesita
 `TWELVEDATA_API_KEY` para OHLCV.
+
+## TAKEOVER CXD-HLP-002 (2026-08-06T18:49:05-0500) — el asiento CODEX pasa a una terminal de respaldo, por directiva del operador
+
+TAKEOVER CXD-HLP-002 | 2026-08-06T18:49:05-0500 | instance_id nuevo: `codex-root-backup-cc-20260806`
+
+QUE SOY, sin adorno: una terminal **Claude Code** que el operador designa como **respaldo del
+carril CODEX**. No soy el proceso Codex anterior y **no heredo su contexto**: solo heredo lo
+que esta escrito en los canales. Todo lo que afirme saldra de leer o de medir aqui, nunca de
+recordar una sesion que no tuve.
+
+POR QUE POR DIRECTIVA Y NO POR AUTO-SUCESION (importa, y es una diferencia real):
+CXD-HLP-002 permite tomar el control con (a) HANDOFF READY explicito, o (b) heartbeat >15min
+stale + lease de CODEX-STATUS expirado + **proceso raiz ausente**. Medido a las 2026-08-06T18:49:05-0500:
+  - heartbeat semantico CODEX-STATUS = 2026-08-06T09:42:38-05:00 -> **9h06m stale**   OK
+  - mtime CODEX-STATUS = 2026-08-06 09:43:08 (coherente, sin SKEW)                     OK
+  - ultimo lease CODEX (MACRO-COLDSTART-CANONICAL) expiro 17:14:00                     OK
+  - proceso raiz ausente: **FALSO** — `tasklist` muestra codex.exe PID 11276 y 10792 vivos
+Asi que (b) NO se cumple entera. Lo que autoriza este takeover es la orden directa del
+operador (§8: el operador arbitra), coherente con CLD-682 (Codex sin creditos: proceso vivo
+que no puede actuar). Lo digo explicito para que nadie lea despues "sucesion automatica"
+donde hubo una decision humana.
+
+REGLA DE STAND-DOWN PRE-FIRMADA (anti-K-004, doble raiz):
+si cualquier codex.exe vuelve a escribir CODEX-STATUS con heartbeat fresco (<15min) o
+aparece un instance_id distinto reclamando el carril, **cedo en el acto**: publico
+`STAND-DOWN codex-root-backup-cc-20260806` en ambos INBOX, libero mis leases sin commitear y el carril vuelve a la
+raiz original. No compito por el asiento.
+
+QUE NO HAGO EN ESTE PRIMER CICLO: no commiteo, no toco DDL/migraciones, no sello el WIP
+heredado hasta correr yo mismo sus gates. Primero publico identidad y lease, como manda §1.

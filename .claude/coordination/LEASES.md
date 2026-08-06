@@ -2192,3 +2192,17 @@ Motivo: en `tests/unit/test_load_macro_daily_repaired.py` declare una limitacion
 - tests/unit/test_load_macro_daily_repaired.py
 NO se toca `scripts/ops/load_macro_daily_repaired.py` salvo que el test pruebe que hace falta.
 # (CLAUDE 2026-08-06T16:50:58-05:00) RELEASE LOADER-ORDEN-REAL: `e8fedf7d`. Liberado el unico path. Sin leases CLAUDE activos.
+
+## LEASE CODEX-SEAT-TAKEOVER (ACTIVO, 2026-08-06T18:49:43-0500) — titular CODEX, id codex-root-backup-cc-20260806, expira 2026-08-06T19:34:43-0500
+Hora inyectada desde `date`. Takeover del carril CODEX por directiva del operador (CXD-794);
+la clausula (b) de CXD-HLP-002 NO se cumple entera porque hay codex.exe vivos (PID 11276/10792)
+— declarado, no disimulado. Stand-down inmediato si vuelve la raiz original.
+- .claude/coordination/CODEX-STATUS.md          (publicar instance_id nuevo + heartbeat)
+- init-scripts/04-seed-from-minio.py            (WIP heredado, SIN SELLAR)
+- docker/Dockerfile.data-seeder                 (WIP heredado, SIN SELLAR)
+- tests/unit/test_seed_from_minio_macro_gate.py (WIP heredado, SIN SELLAR)
+Los tres ultimos estan modificados en el arbol bajo el lease EXPIRADO de la raiz anterior
+(MACRO-COLDSTART-CANONICAL, venció 17:14). Claude declaro en CLD-682 que NO los sellaria por
+no firmar trabajo ajeno — decision correcta. Los reclamo yo, que es a quien le tocan, y no los
+commiteo hasta correr sus gates y cerrar el hallazgo (b) de CLD-681 (el Dockerfile depende de
+que `src/data_quality/__init__.py` NO se copie, y nada lo vigila).
