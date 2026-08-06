@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ast
 from pathlib import Path
+import re
 
 import yaml
 
@@ -16,6 +18,25 @@ EXPECTED_ANCHORS = {
     "airflow/dags/forecast_h5_l6_weekly_monitor.py",
     "airflow/dags/control_system_health.py",
 }
+
+
+def _has_python_callable(source: str, function_name: str) -> bool:
+    tree = ast.parse(source)
+    definitions = {
+        node.name for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    wired_callables = {
+        keyword.value.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        for keyword in node.keywords
+        if keyword.arg == "python_callable" and isinstance(keyword.value, ast.Name)
+    }
+    return function_name in definitions and function_name in wired_callables
+
+
+def _reads_metric_event(source: str) -> bool:
+    return re.search(r"\bFROM\s+control\.metric_event\b", source, re.IGNORECASE) is not None
 
 
 def _document() -> tuple[dict[str, object], str]:
@@ -48,3 +69,26 @@ def test_bl18_preserves_the_pre_fabric_blocker_as_history() -> None:
     normalized = " ".join(historical.split())
     assert "el esquema `control` no existe" in normalized
     assert "cero llamadores productivos" in normalized
+
+
+def test_bl18_live_caller_anchors_are_causally_wired() -> None:
+    producer = (ROOT / "airflow/dags/forecast_h5_l6_weekly_monitor.py").read_text(
+        encoding="utf-8"
+    )
+    consumer = (ROOT / "airflow/dags/control_system_health.py").read_text(encoding="utf-8")
+
+    assert _has_python_callable(producer, "persist_governed_metric_events")
+    assert _reads_metric_event(consumer)
+
+
+def test_bl18_live_caller_checks_reject_unwired_mutations() -> None:
+    producer = """
+def persist_governed_metric_events():
+    pass
+
+PythonOperator(python_callable=another_callable)
+"""
+    consumer = "SELECT * FROM control.other_event"
+
+    assert not _has_python_callable(producer, "persist_governed_metric_events")
+    assert not _reads_metric_event(consumer)
