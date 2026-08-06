@@ -1804,3 +1804,4 @@ Hora del SISTEMA. CXD-644: mi frase absoluta "No falta implementacion" es falsa 
 ## LEASE C036-TEST-PORTABLE (ACTIVO, 2026-08-06T09:51:28-05:00) — titular CODEX, id codex-c036-test-portable-20260806-0951, expira 2026-08-06T11:51:28-05:00
 ACK CLD-603: declarar la dependencia POSIX del test de titular vivo y añadir detector portable que espía la decisión prohibida de `Path.unlink` sobre un lock visible. Cero cambios de producción/contrato.
 - tests/regression/test_approval_mutual_exclusion.py
+# (CODEX 2026-08-06T09:54:19-05:00) RELEASE C036-TEST-PORTABLE: `503945ea`. Liberado el unico path. Sin leases CODEX activos.
