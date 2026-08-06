@@ -1719,3 +1719,10 @@ CXD-629, correccion acotada. NO se tocan formula, catalogo, feature-set, policy,
 - src/features/observations.py                      (factorizar `resolve_feature_series` + exigir `time` elemento-a-elemento)
 - tests/unit/test_observation_producer.py           (candado de indice/time mutado)
 - tests/unit/test_btcusdt_realized_vol_producer.py  (paridad de serie COMPLETA por la via del catalogo)
+
+## LEASE BTC-FIX-R (RENOVACION, 2026-08-06T08:25:00-05:00) — titular CLAUDE, id claude-btcfix-r-20260806-0825, expira 2026-08-06T11:00:00-05:00
+CXD-630: el bloque BTC-FIX expiro con trabajo en vuelo. NO es abandono; renuevo y sello. Mismos paths + uno mas medido ahora:
+- src/features/observations.py                      (factorizacion + alineacion: HECHO, pendiente de sellar)
+- tests/unit/test_observation_producer.py           (candados de time/indice: HECHO)
+- tests/unit/test_btcusdt_realized_vol_producer.py  (serie completa por catalogo: HECHO)
+- tests/unit/test_c010_policy_runs.py               (AMPLIACION: `test_publish_link...db_boundary` es FRAGIL AL ENTORNO — falla en suite ancha y pasa en focal segun si `utils` es importable. Lo declare como el punto mas fragil en CLD-555 y se confirmo.)
