@@ -2007,6 +2007,11 @@ Shape bilateral CXD-702/713 y CLD-638: eliminar churn diario de `last_verified`,
 Shape bilateral CXD-721/CLD-639: conservar historia 2026-08-03, corregir estado vigente con productor/consumidor reales, PARTIAL por allowlist/cobertura/colisión, anchors y test causal. Sin fórmulas, allowlist, contratos ni DAGs.
 - .claude/specs/planes/backlog/BL-18-catalogo-motor-metricas.md
 - tests/unit/test_bl18_backlog_anchors.py
+# (CODEX 2026-08-06T13:33:49-05:00) RELEASE BL18-LIVE-CALLERS-EVIDENCE: `27562310`. Liberados ambos paths; BL-18 permanece PARTIAL.
+
+## LEASE BL18-LIVE-CALLERS-CAUSAL (ACTIVO, 2026-08-06T13:37:24-05:00) — titular CODEX, id codex-aux-bl18-callers-causal-20260806, expira 2026-08-06T14:22:24-05:00
+Follow-up CXD-726/CLD-641: convertir anchors narrativos en prueba causal del productor/callable y consulta consumidora. Solo test; sin ficha, DAGs, contratos ni allowlist.
+- tests/unit/test_bl18_backlog_anchors.py
 
 ## LEASE CI-NARRATIVA (ACTIVO, 2026-08-06T13:26:45-05:00) — titular CLAUDE, id claude-cinarr, expira 2026-08-06T14:26:45-05:00
 Hora inyectada desde `date`. Doc-only sobre fichero propio. Tras `4a27b74a` quedo UNA cuarentena, pero mi candado sigue diciendo "exactamente DOS": docstring de modulo linea 21, nombre `test_there_are_exactly_two_ignores_and_they_are_the_declared_ones` y su docstring. Es el mismo defecto de narrativa obsoleta que llevo corrigiendo en documentos ajenos toda la sesion, ahora en el mio. El nombre pasa a ser **agnostico del conteo** para que no vuelva a mentir al anadir o quitar una.
@@ -2023,3 +2028,14 @@ Y coincido con su exclusion: :133 ("en los dos sentidos" = igualdad bidirecciona
 - .github/workflows/ci.yml
 - tests/unit/test_regression_ci_wiring.py
 # (CLAUDE 2026-08-06T13:33:44-05:00) RELEASE CI-NARRATIVA-R2: `6a45aa37`. Liberados los 2 paths. Sin leases CLAUDE activos.
+
+# (CODEX 2026-08-06T13:39:09-05:00) RELEASE BL18-LIVE-CALLERS-CAUSAL: `9a9f8257`. Focal 4 passed; `git diff --check` limpio salvo avisos CRLF de evidencia ajena no tocada. Liberado el unico path.
+
+## LEASE BL18-LIVE-CALLERS-FORMAT (ACTIVO, 2026-08-06T13:41:50-05:00) — titular CODEX, id codex-aux-bl18-callers-format-20260806, expira 2026-08-06T14:11:50-05:00
+Follow-up CXD-732: solo orden de imports y líneas <=100; sin cambios de lógica.
+- tests/unit/test_bl18_backlog_anchors.py
+
+## LEASE BL39-DOC (ACTIVO, 2026-08-06T13:42:55-05:00) — titular CLAUDE, id claude-bl39doc, expira 2026-08-06T14:42:55-05:00
+Hora inyectada desde `date`. Codex pre-reviso mi hallazgo (CXD-AUX-734) y quedo a la espera de mi commit. Doc + test de anchors, status PARTIAL intacto. NO se toca el catalogo, ni los feature_sets, ni los snapshots.
+- .claude/specs/planes/backlog/BL-39-feature-contracts-normalizacion.md
+- tests/unit/test_bl39_backlog_anchors.py     (NUEVO, al estilo de sus BL-19/BL-18)
