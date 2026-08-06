@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 import re
+from pathlib import Path
 
 import yaml
 
@@ -23,7 +23,9 @@ EXPECTED_ANCHORS = {
 def _has_python_callable(source: str, function_name: str) -> bool:
     tree = ast.parse(source)
     definitions = {
-        node.name for node in ast.walk(tree) if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     }
     wired_callables = {
         keyword.value.id
