@@ -187,3 +187,52 @@ Cerrado **sólo para `spx500_daily_ma200_v1`**. `gold_trend_simple`, `btc_hodl_b
 sin declararlo. **Esto no es cierre sistémico de la identidad de feature-set** y no debe leerse así.
 
 **BL-39 sigue `PARTIAL`.**
+
+## Deuda cross-SSOT ejecutable = CERO (2026-08-06)
+
+Cerradas las tres policies construibles, cada una con la forma que su caso pedía — **no la misma
+receta tres veces**:
+
+| policy | huérfanas | forma | commit |
+|---|---|---|---|
+| `spx500_daily_ma200_v1` | `ma_200` | **no existía productor**: se escribió uno y el harness dejó de tener su copia | `97ebb4c9` + `76423175` |
+| `btc_hodl_b1` | `realized_vol_20` | **productor congelado ya existente**: el catálogo apunta a `build_daily_features`, con contrato de invocación declarado | `f7109afd` + `080305b5` |
+| `gold_trend_simple` | `sma_63/126/252`, `realized_vol_20` | **MIXTO**: la vol tenía productor congelado; las tres SMA no existían en ninguna parte | `773c7ccb` |
+
+**Lo que hizo falta para que fuera honesto en los tres casos:**
+
+* **cero fórmulas nuevas donde ya había una congelada.** En BTC y en la vol de Gold el
+  `code_reference` apunta al código congelado real, así que el `sha256_16` congela **la fórmula**.
+  Yo había propuesto un adaptador que delegara; con él, el hash habría congelado el adaptador y la
+  fórmula habría quedado **fuera del muro**.
+* **contrato de invocación DECLARADO, no inferido.** `build_daily_features(df) -> df` calcula ~10
+  features de golpe; `compute_ma_200(close) -> Series` es otra convención. El catálogo declara
+  `producer_contract` + `output_column` y el resolver ramifica por ese valor: inferir por firma
+  haría que renombrar un argumento cambiara cómo se invoca a un productor congelado.
+* **ninguna feature con ventana parametrizable.** Una `sma(close, window=63)` permitiría publicar
+  la media de 63 bajo la identidad de la de 126 —mismo `series_id`, mismo hash, valor distinto—.
+  Las ventanas van hard-coded y la identidad la fija `output_column`. Candados **por firma**.
+* **misma `feature_id`, distinta receta por activo**: `realized_vol_20` usa √365 en BTC (24/7) y
+  √252 en Gold (calendario de bolsa). El `transformation` los separa (`_ann365` / `_ann252`): con
+  el mismo nombre parecerían una sola receta, y copiar el reloj equivocado movería la exposición
+  ~20% sin que nada fallara. El candado lo comprueba **sobre los datos**, no sobre la etiqueta.
+* **0 trials probado, no declarado**: paridad de serie completa por `resolve_feature_series` —la
+  misma función que usa producción— contra la referencia legacy reescrita a mano, más el harness
+  real de decisión (Gold 5618 barras y BTC 3239, exposición idéntica en float64).
+
+### El gate perdió su allowlist, a propósito
+
+Mientras hubo deuda, el gate llevaba allowlist con `xfail(strict=True)` por policy. Con la deuda a
+cero esa forma se vuelve **peligrosa**: una lista vacía **pasa por vacuidad**, un `xfail` sin
+sujeto no juzga nada, y la excepción quedaría para que una regresión futura la reutilizara. Ahora
+es **un juez directo** sobre toda policy construible, con su propia guarda anti-vacuidad.
+
+### Piloto `feature_set_hash`: 3 de 4, y la cuarta NO debe cerrarse
+
+`smart_simple_v11` conserva el hueco **deliberadamente**. Medido: `engine.type: composite` y
+`retrain: weekly` —la cadena rechaza ambos—, su módulo de implementación **no existe**, sus tres
+requeridas **no están en el catálogo** y su spec declara `required_features_verified: false`.
+Firmar un `feature_set_hash` sobre un contrato de inputs que el propio spec declara **no
+verificado** daría apariencia de garantía donde no la hay.
+
+**BL-39 sigue `PARTIAL`.**

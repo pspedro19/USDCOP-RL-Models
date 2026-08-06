@@ -36,6 +36,28 @@ code_anchors:
 
 ---
 
+### Abierto: correr la suite reescribe evidencia TRACKEADA (2026-08-06)
+
+Correr `pytest tests/unit tests/regression` deja modificados tres ficheros **versionados**:
+
+    .claude/codex/evidence/acquisition-backups-audit.json
+    .claude/codex/evidence/market-data-statistics.json
+    .claude/codex/evidence/seed-backup-reconciliation.json
+
+**Diff medido: `1 1` en cada uno — sólo el campo `generated_at`.** El contenido decisorio (los
+snapshots, los conteos, las reconciliaciones) queda **idéntico**; lo único que cambia es la marca
+de tiempo de regeneración.
+
+**Por qué está aquí y no en CI.** No es un fallo de test: es que **basta ejecutar la suite para
+que `git status` salga sucio** sin que nadie haya decidido nada. En este repo eso tiene un coste
+concreto y ya cobrado: el árbol sucio es la señal que los agentes usan para detectar trabajo sin
+lease, y ha producido **dos falsas alarmas** de protocolo. Además, un timestamp que cambia solo
+puede **enmascarar un cambio real de contenido** en el mismo commit.
+
+**Estado**: registrado, no corregido. Los ficheros viven bajo `.claude/codex/**` y su corrección
+—escribir sólo si el contenido decisorio cambia, o excluir el campo del artefacto versionado— es
+decisión de ese carril, no de éste.
+
 ## 2. Historial de versiones (condensado)
 
 | Track | Estrategia | Retorno 2025 | Sharpe | p-value | $10K → | Estado |

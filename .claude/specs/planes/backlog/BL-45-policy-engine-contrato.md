@@ -547,3 +547,44 @@ los candados por-eslabón no podían ver el defecto de R3 porque cada uno recib�
 necesitaba.
 
 **BL-45 sigue `PARTIAL`.**
+
+## Cadena probada en las TRES policies construibles (2026-08-06, `573afd43`)
+
+`tests/unit/test_policy_chain_end_to_end.py` recorre
+`build_observations → resolve_feature_snapshot → validate_policy_inputs → evaluate_policy` con los
+**seeds reales**, cruzando el catálogo y `resolve_feature_series` —la misma función que usa
+producción—, para `spx500_daily_ma200_v1`, `btc_hodl_b1` y `gold_trend_simple`.
+
+**Por qué hacía falta**: hasta ese commit la cadena sólo se ejercitaba con SPX, que es
+**declarativa** y usa el contrato `series_close_v1`. Gold y BTC son `coded_policy` y sus features
+salen por `ohlcv_frame_v1`: **el otro motor y el otro contrato no tenían prueba de extremo a
+extremo**. Una cadena que sólo se ejercita con un motor no está probada, está muestreada. La
+mutación M56 (colapsar la vía de frame) tumba Gold y BTC y deja SPX en pie — ésa es la medida de
+que la cobertura es nueva y no decorativa.
+
+Detalles que hacen que el verde signifique algo:
+
+* los specs se promueven y re-congelan **sólo en memoria**; el fichero no se toca, porque
+  re-promover el spec real para dar sujeto a una suite es justo lo que la democión impide;
+* la ausencia de un seed es **FALLO, no `skip`**: los tres están versionados, así que saltar
+  ocultaría que la cobertura afirmada desapareció (probado quitando físicamente uno: 1 failed,
+  cero skips);
+* la decisión de Gold se juzga **contra su regla** (voto 2-de-3; hoy 0/3 ⇒ FLAT con
+  `SMA_VOTES_LT_MIN`) y se exige que no lleve `INPUT_MISSING` ni `INPUT_STALE`: un FLAT degradado y
+  un FLAT decidido no son lo mismo, y confundirlos es como una cadena rota parece sana;
+* la matriz tiene su propia guarda anti-vacuidad: conjunto exacto de policies/activos y **ambos**
+  motores representados.
+
+### Las fronteras que este trabajo NO cruza — siguen ABIERTAS
+
+1. **`publish` no se ha recorrido extremo a extremo** contra `reference.instrument`.
+2. **Nada ha corrido en Airflow real**: no hay contenedor (sí `postgres`, `redis`, `trading-api`,
+   `signalbridge`).
+3. Las tres policies están en **`PARITY_PENDING`**: no emiten cadena hasta que el operador
+   re-promueva. Es el estado correcto, no un bloqueo a saltar.
+
+Un candado del propio fichero verifica esa frontera **por AST** —imports y llamadas, no
+subcadenas— para que no se erosione en silencio: si alguien importara el eslabón de publicación o
+`airflow` ahí, el fichero estaría afirmando más de lo que hace.
+
+**Esto es cobertura E2E local, NO cierre productivo. BL-45 sigue `PARTIAL`.**
