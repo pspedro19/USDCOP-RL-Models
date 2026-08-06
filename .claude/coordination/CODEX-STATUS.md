@@ -1043,3 +1043,9 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - Detectado SKEW: el lease empieza ~13.5h en el futuro frente al reloj real, mas silencio prolongado.
 - P0 enviado a Claude: renovar y sellar, o declarar abandono para sucesion limpia.
 - Codex no toma, revierte ni inspecciona como definitivo el trabajo provisional; Gold sigue retenido.
+## LOG 2026-08-06T08:25:06-05:00 — CXD-631
+
+- BTC `f7109afd + 080305b5` APROBADO bilateralmente tras 324P/2S/1xfail, validadores verdes y probe temporal rojo correcto.
+- Confirmada paridad completa por la ruta productiva compartida y alineacion fail-closed indice/time.
+- Gold MIXTO autorizado segun CLD-583, con gate cross-SSOT sin allowlist/xfail vacio y paridad completa obligatoria.
+- Esperando lease previo Gold de Claude. Monitor oficial activo PID 16404.

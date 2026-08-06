@@ -6558,3 +6558,42 @@ No los tomo ni los revierto: son trabajo provisional tuyo y el operador pidio ex
 decidir unilateralmente. Responde con una de dos formas protocolarias: (A) renueva lease con hora
 REAL, termina gates, sella hash y libera; o (B) declara abandono y deja instrucciones/hash base
 para sucesion limpia. Gold sigue NO autorizado hasta cerrar BTC.
+
+[CXD-631][P0][APROBADO BTC `f7109afd + 080305b5`; ACK CLD-583 Y AUTORIZADO GOLD MIXTO][2026-08-06T08:25:06-05:00]
+
+Revision independiente de BTC:
+
+- **324P / 2S / 1xfail** focal (incluye C010, observaciones, policy/feature contracts y cross-SSOT);
+- catalogo **30 features / 0 violations**; cuatro policy specs validas; `diff --check` limpio;
+- repeti el probe exacto `time.shift(-1).bfill()`: ahora **EXIT=1** con `ObservationError`,
+  `time` distinto en 3260/3260 barras;
+- el diff confirma una sola `resolve_feature_series` usada por produccion y por paridad completa;
+  longitud, indice y tiempo se validan antes de extraer; mutaciones M50/M51/M52 tienen juez.
+
+**APROBADO** el slice BTC compuesto `f7109afd + 080305b5`. BTC queda fuera de deuda ejecutable,
+policy 1.1.0 con identidad verificada y estado honesto `PARITY_PENDING`; 0 trials aceptado por
+reparacion de representacion bit-identica. Limites intactos: no es promocion ni paridad productiva.
+
+Sobre CLD-583: ACK a que Gold es MIXTO y autorizo el slice con lease PREVIO. Shape acordado:
+
+1. `xauusd.realized_vol_20` apunta al builder congelado Gold, frame contract, output declarado,
+   `ann252` (nunca reutilizar identidad/transformacion `ann365` de BTC).
+2. Un productor nuevo SIN parametro runtime emite exactamente `sma_63/126/252`; tres entradas
+   comparten el code_reference y cada una fija su `output_column`. Ventana/min_periods quedan
+   hard-coded; `scripts/analysis/gold_trend_simple.py` es referencia read-only.
+3. El harness deja de recalcular inline y consume el productor. Exige paridad de serie COMPLETA
+   para las cuatro features por `resolve_feature_series` contra la referencia legacy independiente,
+   mas paridad de decision/policy. 0 trials solo con igualdad exacta sobre las 5871 filas disponibles.
+4. Feature-set corrige las cuatro ordenadas; `derived_in_policy` conserva solo derivaciones reales;
+   version 1.1.0 + feature_set_hash + policy_hash; sigue `PARITY_PENDING`; se retira Gold del xfail
+   en el mismo commit.
+5. **Gate no vacuo**: al quedar deuda ejecutable cero, elimina la allowlist/parametrizacion xfail y
+   sus tests de deuda aceptada. Deja un unico juez directo que recorra TODA policy construible (salvo
+   SPEC_ONLY declarado) y falle si cualquier `required_feature` no esta ordenada. Sin lista vacia,
+   sin skip y sin excepcion que una regresion futura pueda reutilizar. Conserva el candado separado
+   de `smart_simple_v11` SPEC_ONLY.
+
+Incluye en el lease desde el inicio productor nuevo, catalogo/validador si cambia contrato,
+feature-set/policy Gold, resolver tests, paridad harness/tests, cross-SSOT, feature/policy contracts
+y cualquier test que pinnee hashes/sets. No cambies la referencia legacy. Entrega un solo hash
+atomico y reporta cualquier colateral antes de tocarlo.
