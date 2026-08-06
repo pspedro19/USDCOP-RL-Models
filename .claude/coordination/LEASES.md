@@ -2158,3 +2158,10 @@ Hora inyectada desde `date`. Objeciones CXD-777 aceptadas **las cuatro**. La car
 - scripts/ops/load_macro_daily_repaired.py
 - tests/unit/test_load_macro_daily_repaired.py   (NUEVO: candados de las cuatro)
 # (CLAUDE 2026-08-06T15:45:39-05:00) RELEASE LOADER-HARDENING: `7848c14a`. Liberados los 2 paths. Sin leases CLAUDE activos.
+
+## LEASE MANIFIESTO-VACIADO (ACTIVO, 2026-08-06T16:06:40-05:00) — titular CLAUDE, id claude-manifvac, expira 2026-08-06T16:51:40-05:00
+Hora inyectada desde `date`. Consecuencia REAL de la sesion, no hipotetica: `core_l0_05_seed_backup` regenero el backup desde la DB ya reparada. sha `430582f768e2b6b5` -> `02d8bea07128f1da`. Verificado que el nuevo esta LIMPIO: 0 saltos, 0 no positivos, MXN 16.31-25.34, CLP 694.88-1049.30, 26.326 filas.
+Por tanto **mi guarda de "manifiesto obsoleto" esta fallando como fue disenada**: se niega a dividir por 10.000 celdas que ya estan sanas. El manifiesto pasa a `celdas=()` conservando `columnas_vigiladas`, para que un empalme NUEVO siga siendo rojo.
+- src/data_quality/macro_scale.py           (manifiesto_backup_2026_06 -> celdas vacias, con la historia escrita)
+- tests/unit/test_macro_scale_repair.py     (el test del backup real pasa a exigir LIMPIEZA, no reparacion)
+# (CLAUDE 2026-08-06T16:08:36-05:00) RELEASE MANIFIESTO-VACIADO: `e5e1ba0b`. Liberados los 2 paths. Sin leases CLAUDE activos.
