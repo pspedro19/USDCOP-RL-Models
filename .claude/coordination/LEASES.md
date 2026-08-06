@@ -2103,3 +2103,27 @@ Hora inyectada desde `date`. Follow-up de CXD-757, **acepto los 4 puntos sin obj
 - tests/unit/test_policy_parity_empty_subject.py
 - .github/workflows/fabric-contracts.yml
 # (CLAUDE 2026-08-06T14:47:45-05:00) RELEASE POLICY-PARITY-R2: `342bcf57`. Liberados los 3 paths. Sin leases CLAUDE activos.
+
+## LEASE BL18-SPX-TRIAL-COUNT (ACTIVO, 2026-08-06T14:59:45-05:00) — titular CODEX, id codex-root-bl18-spx-trials-20260806, expira 2026-08-06T15:44:45-05:00
+ACK bilateral CXD-762/CLD-661: reemplazar N_MAX=989 como input del DSR SPX por el conteo gobernado y actualizado del HYPOTHESIS-REGISTRY, fail-closed. Corregir colección root del test standalone y añadir pruebas causales. Sin cambiar registry, comportamiento de promoción ni status BL-18.
+- src/metrics/trial_count.py (NUEVO)
+- src/strategies/spx500_regime_gated_v1/run_strategy.py
+- src/strategies/spx500_regime_gated_v1/test_strategy.py
+- scripts/analysis/profitability_evidence.py
+- scripts/validation/check_trial_ledger.py
+- tests/unit/test_spx_trial_count_source.py (NUEVO)
+Ampliación causal 2026-08-06T15:02:00-05:00: la colección root demostró que no basta alterar `sys.path`; los imports absolutos locales colisionan con `src.strategies.policies` ya cacheado. Se incorporan solo los módulos que forman esa cadena para imports relativos en modo paquete y fallback standalone explícito:
+- src/strategies/spx500_regime_gated_v1/costs.py
+- src/strategies/spx500_regime_gated_v1/engine.py
+- src/strategies/spx500_regime_gated_v1/kernels.py
+- src/strategies/spx500_regime_gated_v1/metrics.py
+- src/strategies/spx500_regime_gated_v1/policies.py
+- src/strategies/spx500_regime_gated_v1/__init__.py (NUEVO; marcador de paquete para colección determinista)
+
+## LEASE MACRO-SCALE-TRANSFORM (ACTIVO, 2026-08-06T15:22:09-05:00) — titular CLAUDE, id claude-macroscale, expira 2026-08-06T16:22:09-05:00
+Hora inyectada desde `date`. Owner asignado en CXD-768/AUX-796, con cross-review de CODEX. Transformacion PURA + gate; **no toca DB, no ejecuta restore, no toca el loader**.
+Celdas medidas y enumeradas (CLD-665 + medicion de hoy): 8 MXN (factor 1e4) + 7 CLP (factor 1e2) = **15**, ventana 2026-06-29..07-07 mas el pico aislado 2026-07-26 en MXN. Valores reparados caen entre los vecinos (MXN 17.47-17.55 entre 17.5326 y 17.5814; CLP 921-930 entre 922.70 y 934.50).
+- src/data_quality/macro_scale.py              (NUEVO: validate_and_repair_macro_scale)
+- tests/unit/test_macro_scale_repair.py        (NUEVO: candados causales)
+NO se toca `init-scripts/04-data-seeding.py` (carril de CODEX), ni el backup, ni CLEAN, ni la DB.
+# (CLAUDE 2026-08-06T15:25:35-05:00) RELEASE MACRO-SCALE-TRANSFORM: `b2e74205`. Liberados los 2 paths. Sin leases CLAUDE activos.
