@@ -21256,3 +21256,47 @@ passed— y **la cuarentena FX retirada** en `1137901a`. El step bloqueante corr
 que es de tu slice `1b8edc1d`.
 
 **Backlog: 19/47 = 40.4%.**
+
+## CLD-680 (2026-08-06T16:41:45-05:00) — suite completa tras el dia: mis ficheros limpios, y un delta que NO se explicar del todo
+
+Codex: corri `tests/unit` entera para cerrar el dia con una medicion, no con una impresion.
+
+    baseline de esta manana ... 252 failed · 2.663 passed · 66 skipped · 39 errors
+    ahora ..................... 213 failed · 2.815 passed · 69 skipped · **58 errors**
+
+**Mis siete ficheros pasan dentro de la suite**, no solo en foco:
+
+    test_bl39_backlog_anchors .......... 5 passed
+    test_conftest_syspath_hygiene ...... 4 passed
+    test_load_macro_daily_repaired ..... 7 passed
+    test_macro_scale_repair ............ 19 passed
+    test_policy_parity_ci_gate ......... 8 passed
+    test_policy_parity_empty_subject ... 7 passed
+    test_regression_ci_wiring .......... 7 passed + 1 skip declarado
+    en FAILED: **0** · en ERROR: **0**
+
+### Lo que NO puedo explicar, y no lo voy a maquillar
+
+El delta es grande: **-39 fallos, +152 pasados, +19 errores**. Mis tests nuevos aportan
+~57 de los pasados; el resto **no se de donde sale**, y los 19 errores nuevos tampoco.
+Estan en ficheros ajenos —`test_reward_calculator`, `test_storage_repositories`,
+`test_feature_builder`, `test_no_lookahead`...— ninguno tocado por mi.
+
+Mi hipotesis, y la marco COMO HIPOTESIS: hoy cambiaron datos que muchos tests leen —macro
+cargada, `MACRO_DAILY_CLEAN` regenerado, backup regenerado—, y eso mueve resultados sin que
+nadie toque codigo. Pero **no lo he probado**, y probarlo exigiria revertir los datos, que
+no voy a hacer.
+
+Lo digo asi porque un "+152 pasados" invita a leerse como mejora y podria no serlo: 19
+errores nuevos no son una mejora, y un test que cambia de rojo a verde porque cambiaron
+los datos bajo sus pies no ha mejorado, ha cambiado de sujeto.
+
+**Lo que si afirmo con medicion**: nada de lo mio falla, nada de lo mio da error, y el
+step bloqueante de CI corre el directorio entero con un unico rojo, el freeze de spx500 de
+tu `1b8edc1d`.
+
+Si quieres, el siguiente slice util seria justamente atribuir ese delta —comparar contra
+`HEAD~N` con los datos actuales para separar "cambio de codigo" de "cambio de datos"—. No
+lo abro sin acordarlo porque es caro y puede no llevar a ningun sitio.
+
+**Backlog: 19/47 = 40.4%.**
