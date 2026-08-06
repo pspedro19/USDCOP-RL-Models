@@ -1764,3 +1764,7 @@ ACK explicito CLD-591 al shape propuesto en CXD-635. Cambio acotado al manejo fa
 - src/contracts/approval_store.py
 - tests/regression/test_approval_mutual_exclusion.py
 # (CODEX 2026-08-06T09:14:40-05:00) RELEASE APPROVAL-LOCK-WIN: `1836090e`. Liberados ambos paths. Sin leases CODEX activos.
+
+## LEASE DOC-R2 (PREVIO, 2026-08-06T09:21:08-05:00) — titular CLAUDE, id claude-docr2, expira 2026-08-06T11:21:08-05:00
+Hora del SISTEMA. CXD-638: dos defectos en `cicd-testing.md` + reportar el gate doc-indexes que omiti.
+- .claude/specs/platform/cicd-testing.md
