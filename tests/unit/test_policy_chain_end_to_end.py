@@ -51,11 +51,22 @@ SPEC_PATH = REPO / "config" / "policies" / "spx500_daily_ma200_v1.yaml"
 CUTOFF = "2026-07-29T00:00:00+00:00"
 
 
+#: Los tres seeds estan VERSIONADOS (`git ls-files` lo confirma). Su ausencia por
+#: tanto NO es "no se puede probar aqui": es que la cobertura que estos tests afirman
+#: **desaparecio**, y eso tiene que ponerse rojo. Un `skip` sobre un fichero que el
+#: repo garantiza es exactamente el falso verde que esta suite existe para desmontar
+#: (CXD-634).
+def _leer_seed(ruta: Path) -> pd.DataFrame:
+    assert ruta.is_file(), (
+        f"falta el seed VERSIONADO {ruta.name}. No se salta: sin el, esta cadena deja "
+        f"de estar probada y el verde de la suite dejaria de significar lo que dice"
+    )
+    return pd.read_parquet(ruta)
+
+
 @pytest.fixture(scope="module")
 def bars() -> pd.DataFrame:
-    if not SEED.is_file():
-        pytest.skip(f"falta el seed del índice oficial: {SEED}")
-    return pd.read_parquet(SEED)
+    return _leer_seed(SEED)
 
 
 @pytest.fixture(scope="module")
@@ -171,3 +182,170 @@ def test_a_stale_snapshot_degrades_the_whole_chain_to_the_declared_flat(spec, ba
     )
     assert degradada is not None and degradada.direction == "FLAT"
     assert "INPUT_STALE" in degradada.reason_codes
+
+
+# --- La cadena, sobre las TRES policies construibles --------------------------
+#
+# Hasta aquí sólo se probaba con `spx500_daily_ma200_v1`, que es DECLARATIVA y usa el
+# contrato de productor `series_close_v1`. Eso dejaba sin cubrir la mitad del sistema:
+# Gold y BTC son `coded_policy` y sus features salen por `ohlcv_frame_v1`. Una cadena
+# que sólo se ejercita con un motor y un contrato no está probada, está muestreada.
+
+TRES = [
+    # (policy_id, seed, motor esperado)
+    ("spx500_daily_ma200_v1", "spx500", "declarative"),
+    ("btc_hodl_b1", "btcusdt", "coded_policy"),
+    ("gold_trend_simple", "xauusd", "coded_policy"),
+]
+CUTOFF_3 = "2026-07-30T00:00:00+00:00"
+
+
+def _promovida(policy_id: str) -> dict:
+    """El spec REAL, promovido y re-congelado **sólo en memoria**.
+
+    Las tres están en `PARITY_PENDING` por decisión de gobierno. Promover el fichero
+    para que una suite tenga sujeto sería justo lo que la democión existe para impedir.
+    """
+    import copy
+
+    doc = copy.deepcopy(
+        load_policy_spec(REPO / "config" / "policies" / f"{policy_id}.yaml")
+    )
+    doc["migration"]["status"] = "PARITY_GREEN"
+    doc["governance"]["policy_hash"] = canonical_policy_hash(doc)
+    return doc
+
+
+@pytest.mark.parametrize("policy_id,seed,motor", TRES, ids=[t[0] for t in TRES])
+def test_the_chain_traverses_for_every_buildable_policy(policy_id, seed, motor) -> None:
+    """`produce → resolve → validate → evaluate` en las tres, con datos reales.
+
+    Cada eslabón consume lo que produjo el anterior. Y se comprueba el MOTOR además del
+    resultado: si mañana alguien colapsara las tres al camino declarativo, el test
+    seguiría verde mirando sólo la decisión.
+    """
+    ruta = REPO / "seeds" / "latest" / f"{seed}_daily_ohlcv.parquet"
+    spec = _promovida(policy_id)
+    assert spec["engine"]["implementation"]["mode"] == motor, (
+        f"{policy_id}: el motor declarado cambió a "
+        f"{spec['engine']['implementation']['mode']!r}; este candado cubre AMBOS "
+        f"caminos y hay que revisar cuál quedó sin ejercitar"
+    )
+
+    bars = _leer_seed(ruta).sort_values("time").reset_index(drop=True)
+    observations = build_observations(spec, bars, decision_cutoff=CUTOFF_3)
+    requeridas = set(spec["inputs"]["required_features"])
+    assert requeridas <= set(observations), (
+        f"{policy_id}: el productor no materializó {sorted(requeridas - set(observations))}"
+    )
+
+    snapshot = resolve_feature_snapshot(observations, decision_cutoff=CUTOFF_3)
+    ctx = PolicyContext(as_of=CUTOFF_3, extras={"snapshot_is_stale": False})
+    fallbacks = {
+        "missing_input_policy": spec["policy"]["missing_input_policy"],
+        "stale_input_policy": spec["policy"]["stale_input_policy"],
+    }
+    assert validate_policy_inputs(build_policy(spec), snapshot, ctx, **fallbacks) is None
+
+    decision = evaluate_policy(build_policy(spec), snapshot, ctx, **fallbacks)
+    assert decision.direction in {"LONG", "FLAT", "SHORT"}
+    assert decision.reason_codes, "una decisión sin reason code no es auditable"
+    # Y NO se acepta un FLAT degradado colado como decisión de la regla.
+    assert "INPUT_MISSING" not in decision.reason_codes
+    assert "INPUT_STALE" not in decision.reason_codes
+
+
+def test_the_gold_vote_decides_the_direction_not_a_fallback() -> None:
+    """La decisión de Gold se juzga contra SU regla: voto 2-de-3 sobre las SMA.
+
+    Con los datos de hoy el cierre está por DEBAJO de las tres medias ⇒ 0/3 votos ⇒
+    FLAT con `SMA_VOTES_LT_MIN`. Se comprueba el conteo y el reason code, no sólo que
+    "devuelva algo": un FLAT puede venir de la regla o de un fallback degradado, y
+    confundirlos es exactamente cómo una cadena rota parece sana.
+    """
+    ruta = REPO / "seeds" / "latest" / "xauusd_daily_ohlcv.parquet"
+    spec = _promovida("gold_trend_simple")
+    bars = _leer_seed(ruta).sort_values("time").reset_index(drop=True)
+    snapshot = resolve_feature_snapshot(
+        build_observations(spec, bars, decision_cutoff=CUTOFF_3), decision_cutoff=CUTOFF_3
+    )
+    votos = sum(snapshot["close"] > snapshot[f"sma_{w}"] for w in (63, 126, 252))
+    decision = evaluate_policy(
+        build_policy(spec), snapshot,
+        PolicyContext(as_of=CUTOFF_3, extras={"snapshot_is_stale": False}),
+        missing_input_policy="FAIL_CLOSED", stale_input_policy="FLAT",
+    )
+    esperado = "LONG" if votos >= 2 else "FLAT"
+    assert decision.direction == esperado, (
+        f"votos={votos}/3 ⇒ esperado {esperado}, obtenido {decision.direction} "
+        f"({decision.reason_codes})"
+    )
+    if votos < 2:
+        assert "SMA_VOTES_LT_MIN" in decision.reason_codes, (
+            f"FLAT sin el reason code de la regla: {decision.reason_codes}. Un FLAT "
+            f"degradado y un FLAT decidido no son lo mismo"
+        )
+
+
+def test_the_three_policy_matrix_is_exactly_what_it_claims_to_cover() -> None:
+    """Anti-vacuidad de la parametrizacion (CXD-634).
+
+    `TRES` podria quedarse en una entrada —o en ninguna— y los tests de arriba
+    seguirian "pasando" habiendo cubierto la mitad del sistema. Se exige el conjunto
+    EXACTO de policies y activos, y que **ambos motores** esten representados: el valor
+    de este fichero es precisamente cubrir `declarative` y `coded_policy`, y una matriz
+    que perdiera uno de los dos dejaria de justificar su propia existencia.
+    """
+    ids = {p for p, _, _ in TRES}
+    activos = {a for _, a, _ in TRES}
+    motores = {m for _, _, m in TRES}
+    assert ids == {"spx500_daily_ma200_v1", "btc_hodl_b1", "gold_trend_simple"}, ids
+    assert activos == {"spx500", "btcusdt", "xauusd"}, activos
+    assert motores == {"declarative", "coded_policy"}, (
+        f"la matriz solo cubre {motores}: el sentido de este fichero es ejercitar los "
+        f"DOS motores y los dos contratos de productor"
+    )
+
+
+def test_the_frontier_this_file_does_NOT_cross_is_declared() -> None:
+    """Lo que estos tests NO prueban, escrito y comprobable.
+
+    Es facil leer "cadena end-to-end en verde" como "la cadena corre en produccion".
+    No corre: falta `publish` —necesita `reference.instrument` viva— y falta Airflow.
+    Este candado existe para que esa frontera no se erosione en silencio: si alguien
+    importara o llamara el eslabon de publicacion aqui, el fichero estaria afirmando
+    mas de lo que hace.
+
+    Se inspecciona el AST y no el texto: la primera version buscaba subcadenas y se
+    ponia roja por su PROPIO docstring, que nombra `publish` para declarar la
+    frontera. Confundir prosa con codigo es la version tonta del mismo error que este
+    fichero persigue -- afirmar sobre lo que no se midio.
+    """
+    import ast
+
+    arbol = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    importados: set[str] = set()
+    llamados: set[str] = set()
+    for nodo in ast.walk(arbol):
+        if isinstance(nodo, ast.ImportFrom):
+            importados |= {a.name for a in nodo.names}
+            if nodo.module:
+                importados.add(nodo.module)
+        elif isinstance(nodo, ast.Import):
+            importados |= {a.name for a in nodo.names}
+        elif isinstance(nodo, ast.Call):
+            f = nodo.func
+            nombre = getattr(f, "id", None) or getattr(f, "attr", None)
+            if nombre:
+                llamados.add(nombre)
+
+    prohibidos = {"make_publish_signal", "publish_signal", "make_produce_observations"}
+    cruzados = (importados | llamados) & prohibidos
+    assert not cruzados, (
+        f"este fichero importa o llama {sorted(cruzados)}: si de verdad cruza la "
+        f"frontera de publicacion, hay que reescribir su docstring y la ficha de "
+        f"BL-45, que la declaran ABIERTA"
+    )
+    assert "airflow" not in {i.split(".")[0] for i in importados}, (
+        "este fichero importa airflow: entonces ya no es 'sin scheduler'"
+    )
