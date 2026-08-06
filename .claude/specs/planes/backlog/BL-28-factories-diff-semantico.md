@@ -33,7 +33,7 @@ campos estructurales no volátiles produzcan hashes distintos. Esto hace falso e
 
 ## Qué falta exactamente
 
-- Resolver la dependencia BL-17 y conectar productores con identidad canónica real.
+- BL-17 ya está `IMPLEMENTED`; queda conectar los productores propios con identidad canónica real.
 - Sustituir los `candidate_generator: null` del plan strangler por generadores ejecutables,
   capa por capa y sin apagar el camino legacy.
 - Ejecutar ambos caminos contra el stack Airflow y registrar el diff semántico prospectivo.
