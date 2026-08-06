@@ -3,15 +3,20 @@
 
 Un transformador que "limpia datos sucios" es peligroso por defecto: en cuanto acepta
 decidir solo, se convierte en una licencia para dividir números por 10.000 sin que nadie
-mire. Por eso lo que se fija aquí no es que repare —eso es lo fácil— sino sus tres formas
-de negarse:
+mire. Por eso lo que se fija aquí no es que repare —eso es lo fácil— sino **cada una de sus
+formas de negarse**:
 
-  * un empalme que nadie declaró          → error
-  * una declaración que ya no hace falta  → error
-  * una reparación que no arregla la serie → error
+  * un empalme que nadie declaró             → error
+  * una declaración que ya no hace falta     → error
+  * una reparación que no arregla la serie   → error
+  * un valor no finito, <= 0 o no numérico   → error
+  * la misma (columna, fecha) declarada dos veces → error
+  * un factor <=0, ==1 o no finito, o una celda sin evidencia → error
+  * una fecha duplicada en el frame          → error
 
-El caso del manifiesto obsoleto es el que suele faltar. Sin él, la lista de excepciones
-sobrevive a su motivo y nadie se entera de que dejó de ser necesaria.
+Los tres últimos grupos llegaron en R2, tras la revisión CXD-771. El caso del manifiesto
+obsoleto es el que suele faltar: sin él, la lista de excepciones sobrevive a su motivo y
+nadie se entera de que dejó de ser necesaria.
 """
 from __future__ import annotations
 
@@ -163,3 +168,100 @@ def test_the_declared_manifest_matches_the_real_backup() -> None:
     clp = pd.to_numeric(out["fxrt_spot_usdclp_chl_d_usdclp"], errors="coerce").dropna()
     assert 10 < mxn.max() < 40, f"USD/MXN fuera de rango plausible: max={mxn.max()}"
     assert 400 < clp.max() < 1500, f"USD/CLP fuera de rango plausible: max={clp.max()}"
+
+
+# ---------------------------------------------------------------------------
+# R2 (CXD-771): bypasses del fail-closed que la primera version dejaba pasar
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "valor, motivo",
+    [
+        (-5.0, "negativo: log da NaN y NaN > umbral es False -> NO se detectaba"),
+        (0.0, "cero: log da -inf"),
+        (float("inf"), "infinito"),
+    ],
+)
+def test_non_positive_or_non_finite_values_are_refused(valor, motivo) -> None:
+    """Un valor imposible para un precio para la función, no la atraviesa.
+
+    El caso negativo es el que de verdad se colaba: `np.log(-5)` es NaN y toda comparación
+    con NaN es False, así que la fila pasaba el detector como si fuese sana. Medido antes
+    de escribir esto, no supuesto.
+    """
+    df = _serie_limpia()
+    df.loc[7, COL] = valor
+    with pytest.raises(MacroScaleError, match="no finitos o <= 0"):
+        validate_and_repair_macro_scale(df, ManifiestoEscala((), (COL,)))
+
+
+def test_non_numeric_values_are_refused_instead_of_dropped() -> None:
+    """Una cotización que llegó como texto se denuncia; no se descarta en silencio.
+
+    `to_numeric(errors="coerce")` + `dropna()` la haría desaparecer y la serie parecería
+    completa — la misma familia de silencio que este módulo existe para cerrar.
+    """
+    df = _serie_limpia().astype({COL: object})
+    df.loc[7, COL] = "17,53"
+    with pytest.raises(MacroScaleError, match="no numéricos"):
+        validate_and_repair_macro_scale(df, ManifiestoEscala((), (COL,)))
+
+
+def test_a_duplicated_declaration_is_refused() -> None:
+    """Declarar dos veces la misma (columna, fecha) es ambigüedad, no redundancia.
+
+    Un dict dejaría ganar a la última y la otra —quizá con otro factor— desaparecería.
+    """
+    dup = ManifiestoEscala(
+        celdas=(
+            CeldaDeclarada(COL, date(2026, 6, 6), 1e4, "a"),
+            CeldaDeclarada(COL, date(2026, 6, 6), 1e2, "b"),
+        ),
+        columnas_vigiladas=(COL,),
+    )
+    with pytest.raises(MacroScaleError, match="declarada dos veces"):
+        validate_and_repair_macro_scale(_con_empalme(5, 8), dup)
+
+
+@pytest.mark.parametrize("factor", [0.0, -10.0, 1.0, float("nan")])
+def test_an_unusable_factor_is_refused(factor) -> None:
+    """Factor <=0, ==1 o no finito: no repara nada o produce imposibles."""
+    mal = ManifiestoEscala(
+        celdas=(CeldaDeclarada(COL, date(2026, 6, 6), factor, "prueba"),),
+        columnas_vigiladas=(COL,),
+    )
+    with pytest.raises(MacroScaleError):
+        validate_and_repair_macro_scale(_con_empalme(5, 8), mal)
+
+
+def test_a_declaration_without_evidence_is_refused() -> None:
+    """Sin motivo escrito no es una excepción declarativa, es una heredada."""
+    sin_ev = ManifiestoEscala(
+        celdas=(CeldaDeclarada(COL, date(2026, 6, 6), 1e4, "   "),),
+        columnas_vigiladas=(COL,),
+    )
+    with pytest.raises(MacroScaleError, match="SIN evidencia"):
+        validate_and_repair_macro_scale(_con_empalme(5, 8), sin_ev)
+
+
+def test_a_duplicated_date_in_the_frame_is_refused() -> None:
+    """Si la fecha aparece dos veces, se repararían dos filas y el reporte contaría una.
+
+    La provenance mentiría sobre su propio alcance, que es peor que no tenerla.
+    """
+    df = _con_empalme(5, 8)
+    df = pd.concat([df, df.iloc[[6]]], ignore_index=True)
+    fechas = ["2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09"]
+    with pytest.raises(MacroScaleError, match="debe afectar exactamente a 1"):
+        validate_and_repair_macro_scale(df, _manifiesto(fechas))
+
+
+def test_the_report_carries_row_counts() -> None:
+    """La provenance declara cardinalidad de entrada y salida, no sólo celdas."""
+    df = _con_empalme(5, 8)
+    fechas = ["2026-06-06", "2026-06-07", "2026-06-08", "2026-06-09"]
+    _, reporte = validate_and_repair_macro_scale(df, _manifiesto(fechas))
+    assert reporte["n_filas_entrada"] == len(df)
+    assert reporte["n_filas_salida"] == len(df)
+    assert all(c["n_filas_afectadas"] == 1 for c in reporte["celdas_reparadas"])

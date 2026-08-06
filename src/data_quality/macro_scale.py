@@ -26,6 +26,8 @@ Esa asimetría es deliberada:
   * celda declarada y efectivamente rota  → se repara
   * salto NO declarado                    → `MacroScaleError` (fail-closed)
   * celda declarada que NO está rota      → `MacroScaleError` (el manifiesto envejeció)
+  * valor no numérico, no finito o <= 0   → `MacroScaleError` (R2, ver `_serie`)
+  * manifiesto ambiguo o sin evidencia    → `MacroScaleError` (R2, ver `validar`)
 
 El tercer caso importa tanto como el segundo. Un manifiesto que sigue declarando
 reparaciones ya innecesarias es una licencia abierta para dividir números por 10.000, y
@@ -78,14 +80,78 @@ class ManifiestoEscala:
         return tuple(sorted(declaradas | set(self.columnas_vigiladas)))
 
     def para(self, columna: str) -> dict[date, CeldaDeclarada]:
-        return {c.fecha: c for c in self.celdas if c.columna == columna}
+        """Celdas de una columna, indexadas por fecha, rechazando duplicados.
+
+        Un dict silenciaría una segunda declaración de la misma `(columna, fecha)`: la
+        última ganaría y la otra —quizá con otro factor— desaparecería sin aviso.
+        """
+        propias = [c for c in self.celdas if c.columna == columna]
+        indexadas: dict[date, CeldaDeclarada] = {}
+        for celda in propias:
+            if celda.fecha in indexadas:
+                raise MacroScaleError(
+                    f"{columna}: la fecha {celda.fecha} está declarada dos veces "
+                    f"(factores {indexadas[celda.fecha].factor} y {celda.factor}). Un "
+                    f"manifiesto ambiguo no se resuelve eligiendo uno"
+                )
+            indexadas[celda.fecha] = celda
+        return indexadas
+
+    def validar(self) -> None:
+        """Metadata utilizable: factor finito, > 0 y != 1; evidencia no vacía.
+
+        Un factor 1 no repara nada y haría creer que sí; uno <= 0 o no finito produce
+        valores imposibles. Y una entrada sin evidencia es una excepción sin motivo, que
+        es como empiezan las allowlist que nadie sabe por qué existen.
+        """
+        for celda in self.celdas:
+            f = celda.factor
+            if not isinstance(f, (int, float)) or isinstance(f, bool) or not np.isfinite(f):
+                raise MacroScaleError(f"{celda.columna} {celda.fecha}: factor no numérico/finito: {f!r}")
+            if f <= 0 or f == 1:
+                raise MacroScaleError(
+                    f"{celda.columna} {celda.fecha}: factor {f} inservible (<=0 o ==1: no repara nada)"
+                )
+            if not str(celda.evidencia).strip():
+                raise MacroScaleError(
+                    f"{celda.columna} {celda.fecha}: celda declarada SIN evidencia. Una "
+                    f"excepción sin motivo escrito no es declarativa, es heredada"
+                )
 
 
 def _serie(frame: pd.DataFrame, columna: str, col_fecha: str) -> pd.DataFrame:
-    s = frame[[col_fecha, columna]].dropna().copy()
-    s[columna] = pd.to_numeric(s[columna], errors="coerce")
-    s = s.dropna().sort_values(col_fecha).reset_index(drop=True)
-    return s
+    """Serie numérica ordenada, con las filas inservibles RECHAZADAS, no descartadas.
+
+    `pd.to_numeric(errors="coerce")` convierte en NaN lo que no es número y un `dropna()`
+    lo hace desaparecer sin ruido — una cotización que llegó como `"17,53"` o vacía se
+    esfumaría y la serie parecería sana. Peor aún con valores ≤ 0: `np.log(-5)` da NaN, y
+    `NaN > 0.7` es **False**, así que un precio negativo NO dispara el detector y pasa
+    como bueno. Medido, no supuesto (CXD-771).
+
+    Aquí las filas presentes tienen que ser numéricas, finitas y positivas; si no, se para.
+    """
+    s = frame[[col_fecha, columna]].copy()
+    presentes = s[columna].notna()
+    crudo = s.loc[presentes, columna]
+    numerico = pd.to_numeric(crudo, errors="coerce")
+    no_numericas = crudo[numerico.isna()]
+    if len(no_numericas):
+        muestra = [repr(v) for v in no_numericas.head(3)]
+        raise MacroScaleError(
+            f"{columna}: {len(no_numericas)} valores no numéricos (p.ej. {muestra}). "
+            f"Descartarlos en silencio dejaría una serie que parece sana"
+        )
+    malos = numerico[~np.isfinite(numerico) | (numerico <= 0)]
+    if len(malos):
+        muestra = [float(v) for v in malos.head(3)]
+        raise MacroScaleError(
+            f"{columna}: {len(malos)} valores no finitos o <= 0 (p.ej. {muestra}). Un "
+            f"precio negativo produce log-ret NaN y NaN > umbral es False: pasaría el "
+            f"detector sin que nadie lo viera"
+        )
+    s = s.loc[presentes].copy()
+    s[columna] = numerico
+    return s.sort_values(col_fecha).reset_index(drop=True)
 
 
 def _saltos(serie: pd.Series) -> list[int]:
@@ -115,9 +181,15 @@ def validate_and_repair_macro_scale(
     if col_fecha not in frame.columns:
         raise MacroScaleError(f"el frame no trae la columna de fecha {col_fecha!r}")
 
+    manifiesto.validar()
     out = frame.copy()
     out[col_fecha] = pd.to_datetime(out[col_fecha])
-    reporte: dict = {"columnas_auditadas": [], "celdas_reparadas": [], "sin_reparar": []}
+    reporte: dict = {
+        "n_filas_entrada": int(len(frame)),
+        "columnas_auditadas": [],
+        "celdas_reparadas": [],
+        "sin_reparar": [],
+    }
 
     for columna in manifiesto.columnas():
         if columna not in out.columns:
@@ -173,7 +245,17 @@ def validate_and_repair_macro_scale(
             fila = indices_por_fecha[fecha]
             antes = float(serie[columna].iloc[fila])
             despues = antes / celda.factor
-            mascara = out[col_fecha].dt.date == fecha
+            mascara = (out[col_fecha].dt.date == fecha) & out[columna].notna()
+            n_filas = int(mascara.sum())
+            if n_filas != 1:
+                # Una fecha que aparece dos veces repararía dos filas mientras el reporte
+                # cuenta una: la provenance mentiría sobre su propio alcance. Y una fecha
+                # que no aparece señala un manifiesto desalineado con el frame.
+                raise MacroScaleError(
+                    f"{columna} {fecha}: la reparación afectaría a {n_filas} filas y debe "
+                    f"afectar exactamente a 1. Con fechas duplicadas el reporte contaría "
+                    f"menos celdas de las que toca"
+                )
             out.loc[mascara, columna] = despues
             reporte["celdas_reparadas"].append(
                 {
@@ -182,6 +264,7 @@ def validate_and_repair_macro_scale(
                     "factor": celda.factor,
                     "antes": antes,
                     "despues": despues,
+                    "n_filas_afectadas": n_filas,
                     "evidencia": celda.evidencia,
                 }
             )
@@ -199,6 +282,14 @@ def validate_and_repair_macro_scale(
             )
 
     reporte["n_celdas_reparadas"] = len(reporte["celdas_reparadas"])
+    reporte["n_filas_salida"] = int(len(out))
+    if reporte["n_filas_salida"] != reporte["n_filas_entrada"]:
+        # La reparación cambia VALORES, nunca la cardinalidad. Si el conteo se movió,
+        # algo perdió o duplicó filas y el frame ya no es el que entró.
+        raise MacroScaleError(
+            f"la reparación cambió el número de filas: "
+            f"{reporte['n_filas_entrada']} -> {reporte['n_filas_salida']}"
+        )
     return out, reporte
 
 
