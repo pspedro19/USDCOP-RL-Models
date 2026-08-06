@@ -135,12 +135,20 @@ def parity_gold_trend_simple(spec: dict):
     legacy = np.roll(legacy_run["position"].to_numpy(float), -1)
     legacy[-1] = np.nan                      # última decisión no observable
 
+    from src.features.xauusd_trend_smas import build_trend_smas
+
     d = legacy_run.reset_index(drop=True)
+    # Las SMA YA NO se recalculan aqui. Antes esta funcion tenia su propia copia de
+    # `close.rolling(w).mean()` para 63/126/252 -- identica a la del voto legacy pero
+    # por casualidad, no por contrato, y ninguna declarada como feature. Ahora consume
+    # el productor UNICO (`xauusd.sma_*`, catalogo BL-39), que es lo que convierte esta
+    # paridad en una prueba de la feature publicada y no de una copia local suya.
+    con_smas = build_trend_smas(d)
     frame = pd.DataFrame({
         "close": d["close"].to_numpy(float),
-        "sma_63": d["close"].rolling(63).mean().to_numpy(float),
-        "sma_126": d["close"].rolling(126).mean().to_numpy(float),
-        "sma_252": d["close"].rolling(252).mean().to_numpy(float),
+        "sma_63": con_smas["sma_63"].to_numpy(float),
+        "sma_126": con_smas["sma_126"].to_numpy(float),
+        "sma_252": con_smas["sma_252"].to_numpy(float),
         "realized_vol_20": d["realized_vol_20"].to_numpy(float),
     })
     stamps = [str(t)[:10] for t in d["time"]]

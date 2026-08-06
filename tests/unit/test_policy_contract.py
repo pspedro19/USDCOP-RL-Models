@@ -1411,9 +1411,10 @@ class TestFeatureSetHashPilot:
     """
 
     PILOTO = "spx500_daily_ma200_v1"
-    #: `btc_hodl_b1` salio de aqui el 2026-08-06: su slice declara
-    #: `inputs.feature_set_hash`. Quedan DOS con el hueco, no tres.
-    SIN_PILOTO = ("gold_trend_simple", "smart_simple_v11")
+    #: Salieron `btc_hodl_b1` y `gold_trend_simple` (sus slices declaran
+    #: `inputs.feature_set_hash`). Queda UNA con el hueco: `smart_simple_v11`, que
+    #: ademas es SPEC_ONLY. La deuda ya no es "3 de 4" sino la ultima.
+    SIN_PILOTO = ("smart_simple_v11",)
 
     def _spec(self, policy_id: str) -> dict:
         import yaml
@@ -1524,7 +1525,7 @@ class TestFeatureSetHashPilot:
         """
         pendientes = [p for p in self.SIN_PILOTO
                       if "feature_set_hash" not in (self._spec(p).get("inputs") or {})]
-        assert len(pendientes) == 2, (
+        assert len(pendientes) == 1, (
             f"la deuda cambió: {pendientes}. Si se cerró alguna, quítala de SIN_PILOTO "
             f"en el mismo commit; si apareció otra policy sin hash, decláralo"
         )

@@ -91,11 +91,10 @@ RULE_BASED_MINIMAL = {
     # `BtcHodlB1Policy` declara `required = ("realized_vol_20",)` y
     # `GoldTrendSimplePolicy` consume sus tres SMA — ninguna las deriva.
     #
-    # `btcusdt` ya esta corregido (slice BTC, decision A CXD-628): su set ordena la
-    # vol y el catalogo apunta al productor CONGELADO real. Gold sigue con el hueco,
-    # con deuda declarada y xfail en el gate; su entrada aqui documenta el estado
-    # ACTUAL, no el correcto.
-    "xauusd": ("gold_trend_simple", ["close"]),          # DEUDA: faltan sus 4
+    # `btcusdt` y `xauusd` ya estan corregidos (slices BTC y Gold): sus sets ordenan
+    # lo que las policies consumen. Ya NO queda deuda ejecutable, asi que el gate
+    # cross-SSOT perdio su allowlist y pasa a ser un juez directo sobre todas.
+    "xauusd": ("gold_trend_simple", ["close", "sma_63", "sma_126", "sma_252", "realized_vol_20"]),
     "btcusdt": ("btc_hodl_b1", ["close", "realized_vol_20"]),
     "spx500": ("spx500_regime_gated_v1", ["close"]),     # la CODED: si deriva dentro
 }

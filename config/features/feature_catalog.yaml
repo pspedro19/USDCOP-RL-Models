@@ -100,6 +100,100 @@ features:
   sign_prior_note: nivel crudo de XAUUSD; sin prior direccional
   is_active: true
 
+
+# Las CUATRO que `gold_trend_simple` EXIGE y su feature-set no declaraba (slice Gold,
+# CXD-631). Caso MIXTO: la vol tiene productor congelado (`src/gold_rl/indicators.py`),
+# las tres SMA no existian en ninguna parte -- se calculaban dentro del voto legacy y
+# otra vez en el harness de paridad, dos copias por casualidad y ninguna declarada.
+- asset_id: xauusd
+  feature_id: realized_vol_20
+  series_id: xauusd.realized_vol_20
+  unit: annualized_stdev
+  feature_group: volatility
+  causality_policy: same_bar
+  source_contract: market.canonical_bar[asset_id=xauusd]
+  transformation: realized_vol_20d_ann252
+  lookback: P20D
+  lookback_note: >-
+    Ventana DURA de 20 sesiones (min_periods=20). Anualizacion sqrt(252) — el oro cotiza
+    en calendario de bolsa. NO es la misma receta que `btcusdt.realized_vol_20`, que usa
+    sqrt(365) por ser 24/7: mismo `feature_id`, DISTINTA transformacion, y por eso el
+    nombre de `transformation` las separa (`_ann252` vs `_ann365`). Llamarlas igual
+    sugeriria una sola receta y ahi es donde alguien copiaria el reloj equivocado.
+  compute_location: python
+  code_reference: {file: src/gold_rl/indicators.py, symbol: build_daily_features, sha256_16: a84eac441f5aa98f}
+  producer_contract: ohlcv_frame_v1
+  output_column: realized_vol_20
+  sign_prior: ambiguous
+  sign_prior_note: >-
+    La volatilidad no predice signo. Su prior es de SIZING (mas vol => menos exposicion,
+    `TARGET_VOL / realized_vol_20`) y vive en la politica, no en la feature.
+  is_active: true
+- asset_id: xauusd
+  feature_id: sma_63
+  series_id: xauusd.sma_63
+  unit: usd_per_troy_ounce
+  feature_group: trend
+  causality_policy: same_bar
+  source_contract: market.canonical_bar[asset_id=xauusd]
+  transformation: sma_63
+  lookback: P63D
+  lookback_note: >-
+    P63D expresa 63 SESIONES del calendario del oro, no dias naturales (el schema solo
+    admite P<n>D). Ventana DURA con min_periods=63: sin 63 sesiones el valor es NaN.
+  compute_location: python
+  code_reference: {file: src/features/xauusd_trend_smas.py, symbol: build_trend_smas, sha256_16: 25900213a7ddc096}
+  producer_contract: ohlcv_frame_v1
+  output_column: sma_63
+  sign_prior: ambiguous
+  sign_prior_note: >-
+    Una media movil no tiene prior direccional por si misma. El prior economico esta en
+    la REGLA (voto 2-de-3: cierre por encima => tendencia), no en la feature.
+  is_active: true
+
+- asset_id: xauusd
+  feature_id: sma_126
+  series_id: xauusd.sma_126
+  unit: usd_per_troy_ounce
+  feature_group: trend
+  causality_policy: same_bar
+  source_contract: market.canonical_bar[asset_id=xauusd]
+  transformation: sma_126
+  lookback: P126D
+  lookback_note: >-
+    P126D expresa 126 SESIONES del calendario del oro, no dias naturales (el schema solo
+    admite P<n>D). Ventana DURA con min_periods=126: sin 126 sesiones el valor es NaN.
+  compute_location: python
+  code_reference: {file: src/features/xauusd_trend_smas.py, symbol: build_trend_smas, sha256_16: 25900213a7ddc096}
+  producer_contract: ohlcv_frame_v1
+  output_column: sma_126
+  sign_prior: ambiguous
+  sign_prior_note: >-
+    Una media movil no tiene prior direccional por si misma. El prior economico esta en
+    la REGLA (voto 2-de-3: cierre por encima => tendencia), no en la feature.
+  is_active: true
+
+- asset_id: xauusd
+  feature_id: sma_252
+  series_id: xauusd.sma_252
+  unit: usd_per_troy_ounce
+  feature_group: trend
+  causality_policy: same_bar
+  source_contract: market.canonical_bar[asset_id=xauusd]
+  transformation: sma_252
+  lookback: P252D
+  lookback_note: >-
+    P252D expresa 252 SESIONES del calendario del oro, no dias naturales (el schema solo
+    admite P<n>D). Ventana DURA con min_periods=252: sin 252 sesiones el valor es NaN.
+  compute_location: python
+  code_reference: {file: src/features/xauusd_trend_smas.py, symbol: build_trend_smas, sha256_16: 25900213a7ddc096}
+  producer_contract: ohlcv_frame_v1
+  output_column: sma_252
+  sign_prior: ambiguous
+  sign_prior_note: >-
+    Una media movil no tiene prior direccional por si misma. El prior economico esta en
+    la REGLA (voto 2-de-3: cierre por encima => tendencia), no en la feature.
+  is_active: true
 - asset_id: btcusdt
   feature_id: close
   series_id: btcusdt.close
