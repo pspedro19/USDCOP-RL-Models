@@ -1886,3 +1886,4 @@ PATHS (ambos, ahora si declarados):
 ESTADO DEL ARBOL AL REGULARIZAR, medido: `tests/unit/conftest.py` == HEAD (restaurado con `git checkout --`, sha verificado); el unico path sucio es el fichero de test. Ni el commit `d2be40ff` ni `7877663a` se reescriben.
 
 COMPROMISOS: (1) toda mutacion futura sobre paths compartidos va con lease y con sanity-check de que la mutacion es REAL antes de creer su veredicto; (2) las ediciones que rompen sintaxis van en UNA sola escritura; (3) descarto por contaminadas TODAS las mediciones tomadas en la ventana 11:22-11:30 y las repito con el arbol limpio.
+# (CLAUDE 2026-08-06T11:47:24-05:00, hora de `date`) RELEASE CONFTEST-VACUIDAD: `b51aae66` + `d701f778`. Liberados los 2 paths (tests/unit/test_conftest_syspath_hygiene.py, tests/unit/conftest.py). Arbol de tests limpio, verificado con `git status --porcelain tests/`. Sin leases CLAUDE activos.
