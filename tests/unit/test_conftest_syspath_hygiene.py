@@ -39,7 +39,8 @@ No juzga a `FeatureBuilder` — eso es de sus propios tests.
 """
 from __future__ import annotations
 
-import importlib.util
+import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -52,8 +53,8 @@ import pytest
 from _pytest.fixtures import FixtureLookupError
 
 REPO = Path(__file__).resolve().parents[2]
-SRC = str((REPO / "src").resolve())
-DAGS = str((REPO / "airflow" / "dags").resolve())
+# Nota: aquí había `SRC` y `DAGS` para comparar índices de `sys.path` en vivo. Se fueron
+# con ese candado — ver el docstring de `test_the_unit_conftest_does_not_push_src_to_the_front`.
 
 
 def test_both_contracts_packages_exist() -> None:
@@ -66,61 +67,80 @@ def test_both_contracts_packages_exist() -> None:
     assert (REPO / "airflow" / "dags" / "contracts" / "__init__.py").is_file()
 
 
-def test_both_paths_are_actually_on_sys_path() -> None:
-    """Anti-vacuidad del candado de orden.
+def test_the_unit_conftest_does_not_push_src_to_the_front() -> None:
+    """El candado de orden, hecho ESTÁTICO sobre la fuente. Y por qué no es dinámico.
 
-    El test de abajo compara dos índices. Si una de las dos rutas no estuviera en
-    `sys.path`, ese test no tendría nada que comparar y habría que decidir qué hacer
-    —no pasar de largo—. Así que la precondición se exige aquí, aparte y explícita.
+    La primera versión comparaba `sys.path.index(DAGS) < sys.path.index(SRC)` sobre el
+    path VIVO. Pasaba en foco y **fallaba en la suite completa**: allí `src` acababa en
+    el índice 4 y `airflow/dags` en el 66, porque decenas de módulos de test insertan
+    rutas al importarse. O sea, un candado cuyo veredicto dependía de con qué otros
+    ficheros se le ejecutara — la misma clase de fragilidad que este fichero denuncia,
+    reproducida por mí al escribirlo.
+
+    `sys.path` es un global que casi todo el mundo muta; no es donde se fija un contrato.
+    Lo que sí es estable es la FUENTE: `tests/unit/conftest.py` no debe adelantar `src`.
+    Eso se comprueba aquí, y la consecuencia observable —que los 37 se ejecuten— se
+    comprueba abajo en un subproceso limpio.
+
+    Rojo con: devolver cualquier `sys.path.insert(0, ...)` a `tests/unit/conftest.py`.
     """
-    assert DAGS in sys.path, (
-        "`airflow/dags` no está en sys.path: `import contracts` no puede resolver al "
-        "paquete que `tests/conftest.py` declara necesario"
-    )
-    assert SRC in sys.path, "`src` no está en sys.path: los imports de dominio fallarán"
-
-
-def test_airflow_dags_precedes_src_as_the_parent_conftest_declares() -> None:
-    """EL candado. `airflow/dags` delante de `src`, que es lo declarado CRÍTICO.
-
-    Rojo con: devolver el `sys.path.insert(0, src)` incondicional a
-    `tests/unit/conftest.py` (medido: invierte los dos índices).
-    """
-    i_dags, i_src = sys.path.index(DAGS), sys.path.index(SRC)
-    assert i_dags < i_src, (
-        f"`src` ({i_src}) precede a `airflow/dags` ({i_dags}) en sys.path, al revés de "
-        f"lo que `tests/conftest.py` declara CRÍTICO. `import contracts` resolverá a "
-        f"`src/contracts` y los 37 tests de test_all_layer_contracts.py volverán a "
-        f"saltar en bloque con EXIT=0"
-    )
-
-
-def test_import_contracts_resolves_to_the_airflow_package() -> None:
-    """La consecuencia del orden, comprobada donde de verdad se nota.
-
-    El test anterior mira índices; éste mira lo único que le importa a quien escribe
-    `import contracts`. Se fijan los dos porque un cambio en `importmode` de pytest, o
-    un `.pth` nuevo, podría respetar el orden y aun así cambiar la resolución.
-    """
-    spec = importlib.util.find_spec("contracts")
-    assert spec is not None and spec.origin is not None, "`contracts` no resuelve a nada"
-    assert Path(spec.origin).resolve().parent.parent == Path(DAGS), (
-        f"`import contracts` resuelve a {spec.origin} en vez de al paquete de "
-        f"`airflow/dags`, que es el que `tests/conftest.py` declara necesario"
+    fuente = (REPO / "tests" / "unit" / "conftest.py").read_text(encoding="utf-8")
+    ofensivas = [
+        linea.strip()
+        for linea in fuente.splitlines()
+        if "sys.path.insert" in linea and not linea.lstrip().startswith("#")
+    ]
+    assert not ofensivas, (
+        f"`tests/unit/conftest.py` vuelve a adelantar rutas: {ofensivas}. "
+        f"`tests/conftest.py` declara CRÍTICO que `airflow/dags` vaya ANTES que `src` "
+        f"(dos paquetes `contracts`); insertar al frente aquí lo invierte y los 37 tests "
+        f"de test_all_layer_contracts.py vuelven a saltar en bloque con EXIT=0. Si hace "
+        f"falta que `src` esté disponible, `append` basta: disponible ≠ delante"
     )
 
 
-def test_the_thirty_seven_layer_contract_tests_are_executable() -> None:
-    """Que los 37 no vuelvan a estar verdes por no ejecutarse.
+def test_the_layer_contract_tests_run_when_invoked_on_their_own() -> None:
+    """La consecuencia observable, medida en un SUBPROCESO limpio.
 
-    `test_all_layer_contracts.py` hace `skip` si este import falla. Un `skip` masivo se
-    ve idéntico a un verde en el código de salida, así que el import se comprueba aquí
-    **sin guard**: si un día vuelve a fallar, se entera alguien.
+    Por qué subproceso y no `find_spec` aquí: dentro de esta sesión, `contracts` ya está
+    resuelto y cacheado en `sys.modules` por quien haya importado antes, así que
+    comprobarlo en proceso mide el estado ambiente, no el contrato. Medido: en la suite
+    completa esa comprobación pasaba por caché mientras el orden real estaba invertido.
+
+    Lo que se fija es lo que le ocurre a una persona que abre ese fichero para depurarlo:
+    ejecutarlo SOLO debe correr sus tests, no saltárselos. Antes daba `37 skipped` con
+    `EXIT=0` —y su mensaje sugería "run this file in isolation", que es justo lo que no
+    funcionaba—; sólo se salvaba si `tests/unit/airflow/` se colectaba antes y arreglaba
+    el path por casualidad.
+
+    No se fija el número 37: eso es cuántos tests tiene hoy ese fichero y cambiará. Se
+    fija que **no haya saltados** y que haya un número razonable de ejecutados.
+
+    Rojo con: `sys.path.insert(0, src)` de vuelta en `tests/unit/conftest.py` (medido:
+    vuelve a `37 skipped`).
     """
-    assert importlib.util.find_spec("contracts.l0_data_contracts") is not None, (
-        "`contracts.l0_data_contracts` no es importable: los 37 tests de "
-        "test_all_layer_contracts.py están saltando en bloque y su EXIT=0 no significa "
-        "que pasen, significa que no corren"
+    proc = subprocess.run(
+        [
+            sys.executable, "-m", "pytest",
+            "tests/unit/test_all_layer_contracts.py",
+            "-q", "--no-header", "-p", "no:randomly",
+        ],
+        cwd=str(REPO), capture_output=True, text=True, timeout=300,
+    )
+    salida = proc.stdout + proc.stderr
+    resumen = next(
+        (l for l in reversed(salida.strip().splitlines()) if " in " in l and "=" in l),
+        salida[-200:],
+    )
+    assert "skipped" not in resumen, (
+        f"ejecutado en solitario, `test_all_layer_contracts.py` salta tests: {resumen!r}. "
+        f"Un skip masivo se ve idéntico a un verde en el código de salida — EXIT=0 no "
+        f"significaría que pasan, significaría que no corren"
+    )
+    ejecutados = re.search(r"(\d+) passed", resumen)
+    assert ejecutados and int(ejecutados.group(1)) >= 20, (
+        f"apenas se ejecutaron tests: {resumen!r}. Sin sujeto, este candado dejaría de "
+        f"significar algo (ese fichero tenía 37 cuando se escribió esto)"
     )
 
 
