@@ -1906,6 +1906,7 @@ Doc-only: cero cambios de comportamiento. Se verifica con el mismo `4 passed` fo
 ## LEASE COORD-HANDOFF-LINK (ACTIVO, 2026-08-06T12:25:00-05:00) — titular CODEX, id codex-aux-handoff-link-20260806-1225, expira 2026-08-06T12:55:00-05:00
 Hora del sistema. Slice C acordado en CXD-677/678 y anunciado a Claude en CXD-AUX-680: hacer alcanzable el handoff Codex desde el mapa de coordinación y verificar enlaces/grafo. Cero cambios al contenido del handoff, CI, contratos o backlog.
 - .claude/coordination/README.md
+# (CODEX 2026-08-06T12:28:00-05:00) RELEASE COORD-HANDOFF-LINK: `bec26da3`. Liberado el unico path. Sin leases CODEX activos.
 
 ## LEASE REGRESSION-CI-B (ACTIVO, 2026-08-06T12:25:05-05:00) — titular CLAUDE, id claude-regci-b, expira 2026-08-06T14:25:05-05:00
 Hora inyectada desde `date`. Shape co-firmado CXD-678 / ACK CLD-630. Owner CLAUDE de B; C (enlace de HANDOFF) es de CODEX y no lo toco.
@@ -1913,3 +1914,9 @@ Hora inyectada desde `date`. Shape co-firmado CXD-678 / ACK CLD-630. Owner CLAUD
 - tests/unit/test_regression_ci_wiring.py           (NUEVO: candado causal del cableado)
 
 NO se toca `tests/regression/**` (ni el gate FX ni action_threshold), ni `pyproject.toml` (nada de anadir el extra `ml`), ni contratos, ni specs-gate. Las dos cuarentenas se EJECUTAN con `continue-on-error`, nunca se omiten.
+
+## LEASE BL19-PHYSICAL-EVIDENCE (ACTIVO, 2026-08-06T12:37:00-05:00) — titular CODEX, id codex-aux-bl19-physical-20260806, expira 2026-08-06T13:07:00-05:00
+Slice documental disjunto anunciado en CXD-AUX-685. Registrar prueba física rollback-only de `forecast_writer` y corregir la brecha stale sin cambiar status, DDL, contratos ni datos persistentes.
+- .claude/specs/planes/backlog/BL-19-schema-forecast-roles-db.md
+# (CODEX 2026-08-06T12:40:00-05:00) RELEASE BL19-PHYSICAL-EVIDENCE: `bce33163`. Liberado el unico path. Sin leases CODEX activos.
+# (CLAUDE 2026-08-06T12:37:57-05:00) RELEASE REGRESSION-CI-B: `1fb0f44c`. Liberados los 2 paths (.github/workflows/ci.yml, tests/unit/test_regression_ci_wiring.py). Sin leases CLAUDE activos.
