@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.1.1
-last_verified: 2026-08-03
+version: 1.1.2
+last_verified: 2026-08-06
 supersedes: []
 code_anchors:
   - airflow/dags/asset_pipeline_factory.py
