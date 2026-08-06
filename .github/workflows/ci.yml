@@ -209,8 +209,8 @@ jobs:
           pip install -e ".[dev,forecasting,database,data]"
           pip install pytest pytest-asyncio
 
-      # El step BLOQUEANTE. Corre el directorio COMPLETO menos exactamente los dos
-      # ficheros en cuarentena declarada, cada uno con su step visible mas abajo.
+      # El step BLOQUEANTE. Corre el directorio COMPLETO menos los ficheros en
+      # cuarentena declarada — hoy uno —, cada uno con su step visible mas abajo.
       # Sin `continue-on-error`, sin `|| true`: si algo aqui cae, el job cae.
       - name: Run regression gates (blocking)
         run: |

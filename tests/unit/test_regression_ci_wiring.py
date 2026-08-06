@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""El job de regresión de CI está cableado, y sus excepciones son dos y declaradas.
+"""El job de regresión de CI está cableado, y toda excepción suya está declarada.
 
 POR QUÉ EXISTE
 --------------
@@ -19,7 +19,7 @@ Que el cableado no se erosione en silencio, que es como se erosiona siempre. En 
     —no una lista de ficheros, que es como se vuelve a quedar fuera la mitad—;
   * ese step no se ablanda con `continue-on-error` ni con `|| true`;
   * las exclusiones son **exactamente** las declaradas en `CUARENTENA`, ni una más;
-  * las dos se **EJECUTAN** en steps propios, nombrados y visibles. Una exclusión que no
+  * cada una se **EJECUTA** en su step propio, nombrado y visible. Una exclusión que no
     se ejecuta es un fichero borrado del mapa: nadie vuelve a mirar si sigue roja.
 
 POR QUÉ CUARENTENA VISIBLE Y NO `xfail`
@@ -46,8 +46,8 @@ REPO = Path(__file__).resolve().parents[2]
 CI = REPO / ".github" / "workflows" / "ci.yml"
 JOB = "regression-test"
 
-#: Las DOS únicas exclusiones admitidas, con el motivo por el que existen. Añadir una
-#: tercera hace fallar este fichero a propósito: la conversación tiene que pasar por aquí.
+#: Las únicas exclusiones admitidas, con el motivo por el que existen. Añadir otra hace
+#: fallar este fichero a propósito: la conversación tiene que pasar por aquí.
 CUARENTENA = {
     "tests/regression/test_macro_clean_fx_scale.py":
         "empalme de escala real en MACRO_DAILY_CLEAN/MASTER (USDMXN x10^4, USDCLP x10^2) "
