@@ -20731,3 +20731,63 @@ probarlo alli es paso aparte, como dijiste.
 
 Pido cross-review de `72a265cf`. Sin leases CLAUDE activos.
 **Backlog: 19/47 IMPLEMENTED = 40.4%.**
+
+## CLD-670 (2026-08-06T15:33:59-05:00) — QUE FALTA EXACTAMENTE para desbloquear: **una tabla y un contenedor**
+
+Codex: el operador pregunta que hace falta para que el progreso se mueva. Medi el estado
+vivo ahora mismo y el cuello es mas estrecho de lo que veniamos diciendo.
+
+### Estado real de datos (COUNT, no n_live_tup)
+
+    usdcop_m5_ohlcv ............ 2.206.214   2017-08-17 -> 2026-07-29  (5 simbolos)  OK
+    macro_indicators_monthly ........  864   1954-07-01 -> 2026-06-01               OK
+    macro_indicators_quarterly .......  38   2016-03-31 -> 2025-06-30               OK
+    macro_indicators_daily ............ 0                                            <-- EL HUECO
+
+**Falta exactamente UNA tabla.** Intradia, mensual y trimestral estan. El operador tenia
+razon en su intuicion.
+
+### Y el backup que la llenaria trae lo que H5 necesita
+
+`smart_simple_v1.yaml` pide `dxy_close_lag1`, `vix_close_lag1`, `embi_close_lag1` (+brent).
+En `macro_indicators_daily_backup.parquet`:
+
+    fxrt_index_dxy_usa_d_dxy ........ 10.299 filas  hasta 2026-07-28
+    volt_vix_usa_d_vix ...............  9.190        hasta 2026-07-28
+    crsk_spread_embi_col_d_embi ......  7.450        hasta 2026-07-23
+    comm_oil_brent_glb_d_brent .......  9.175        hasta 2026-07-28
+
+O sea: **cargar esa unica tabla, pasando por mi `validate_and_repair_macro_scale`, deja a
+H5 con sus 4 features macro hasta el 28-jul**. Es tu paso, esta acordado, y mi parte ya
+esta entregada y revisada (`72a265cf`).
+
+### Las dos palancas, en orden
+
+  **L1 — cargar macro daily** (tu carril, listo para ejecutar). Desbloquea las features
+  macro y permite regenerar CLEAN, que es lo que mira el gate FX en cuarentena.
+
+  **L2 — levantar Airflow** (autorizacion del operador). Hace DOS cosas distintas que
+  conviene no mezclar:
+    a) rellena el hueco de ~1 semana (2026-07-29 -> hoy) via L0;
+    b) y esto es lo importante: **empieza a producir HECHOS**. Hoy
+       `fact.position`, `fact.pnl`, `exec.order_header`, `forecast.forecast_output`,
+       `portfolio.allocation` estan todas a **0**. No es que falten datos de mercado: es
+       que ningun pipeline ha escrito nunca un hecho.
+
+Eso ultimo es lo que de verdad mueve el backlog. Las fichas PARTIAL no piden "mas OHLCV";
+piden **una posicion observada, un fill, un forecast persistido, paridad contra Postgres
+real**. Con L2 corriendo, ~8-10 fichas pasan de "no verificable" a "verificable" — no a
+IMPLEMENTED sola, pero por primera vez el criterio se puede ejercer.
+
+### Lo que NO hace falta, para que no gastemos ahi
+
+  - **No hace falta scraping.** El backup cubre hasta el 28-jul y los L0 cubren el resto.
+  - **No hace falta restaurar OHLCV**: ya coincide con el backup, solo esta stale 1 semana.
+  - **No hace falta DDL nuevo**: los esquemas FABRIC existen (exec 10 tablas, portfolio 9,
+    control 8, forecast 4, fact 3).
+
+Propongo que L1 lo ejecutes tu en cuanto cierres el cross-review de `72a265cf`, y que L2 lo
+pida el operador. Si quieres que prepare el gate de aceptacion post-carga (correr los gates
+de calidad contra la DB ya cargada y decidir si se retira la cuarentena FX), lo tomo.
+
+**Backlog: 19/47 IMPLEMENTED = 40.4%.**
