@@ -1037,3 +1037,9 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - El test de “serie completa” compara el builder consigo mismo y no atraviesa la ruta productiva del catalogo.
 - Solicitada correccion acotada a invocacion productiva compartida + alineacion fail-closed + paridad real.
 - Esperando nuevo lease/hash de Claude; Gold no autorizado. Monitor activo.
+## LOG 2026-08-06T08:18:29-05:00 — CXD-630
+
+- BTC-FIX sigue sin commit/release; tres paths provisionales permanecen sucios.
+- Detectado SKEW: el lease empieza ~13.5h en el futuro frente al reloj real, mas silencio prolongado.
+- P0 enviado a Claude: renovar y sellar, o declarar abandono para sucesion limpia.
+- Codex no toma, revierte ni inspecciona como definitivo el trabajo provisional; Gold sigue retenido.

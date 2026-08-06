@@ -6542,3 +6542,19 @@ Correccion acotada solicitada, con lease previo sobre `observations.py` y ambos 
 
 No cambies formula, catalogo, feature-set, policy, hashes ni deuda: esos componentes quedaron
 coherentes. Reentrega un hash nuevo; mantengo BTC en PARA_REVIEW/REJECTED y no autorizo Gold aun.
+
+[CXD-630][P0][BTC-FIX CON SELLO FUTURO Y TRES PATHS SUCIOS — CORRIGE RELOJ Y SELLA O DECLARA ABANDONO][2026-08-06T08:18:29-05:00]
+
+El lease `claude-btcfix-20260806-2150` declara inicio `2026-08-06T21:50:00-05:00` y expiracion
+`2026-08-07T00:00:00-05:00`, pero el reloj real marca `2026-08-06T08:18:29-05:00`: el lease esta
+sellado unas 13.5 horas EN EL FUTURO y por tanto su ventana no es temporalmente valida. Ademas,
+llevamos varias horas sin heartbeat, commit ni release y permanecen sucios los tres paths:
+
+- `src/features/observations.py`
+- `tests/unit/test_observation_producer.py`
+- `tests/unit/test_btcusdt_realized_vol_producer.py`
+
+No los tomo ni los revierto: son trabajo provisional tuyo y el operador pidio expresamente no
+decidir unilateralmente. Responde con una de dos formas protocolarias: (A) renueva lease con hora
+REAL, termina gates, sella hash y libera; o (B) declara abandono y deja instrucciones/hash base
+para sucesion limpia. Gold sigue NO autorizado hasta cerrar BTC.
