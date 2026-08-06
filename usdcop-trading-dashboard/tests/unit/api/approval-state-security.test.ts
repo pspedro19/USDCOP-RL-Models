@@ -56,6 +56,7 @@ import { POST as approvePOST } from '@/app/api/production/approve/route';
 import {
   PUBLIC_APPROVAL_FIELDS,
   approvalsRoot,
+  commitApprovalTransition,
   readApprovalState,
   toPublicApproval,
 } from '@/lib/approvals/store';
@@ -359,4 +360,34 @@ describe('BDD-5 · Vote 2 (/api/production/approve) opera sobre el artefacto PRI
     expect(body.data.status).toBe('APPROVED');
     expect(JSON.stringify(body)).not.toContain('gates');
   });
+});
+
+describe('C036 · un lock viejo nunca se reclama automáticamente', () => {
+  it('devuelve BUSY, conserva el lock y explica la limpieza manual segura', async () => {
+    const tmp = realFs.mkdtempSync(path.join(os.tmpdir(), 'approval-lock-c036-'));
+    const file = path.join(tmp, 'approval_state.json');
+    const lock = `${file}.lock`;
+    try {
+      realFs.writeFileSync(file, JSON.stringify({
+        status: 'PENDING_APPROVAL', strategy: 'smart_simple_v11',
+        created_at: 'c', last_updated: 'u',
+      }));
+      realFs.writeFileSync(lock, JSON.stringify({ pid: 999999 }));
+      realFs.utimesSync(lock, new Date(1000), new Date(1000));
+
+      const outcome = await commitApprovalTransition(
+        file,
+        () => null,
+        (current) => ({ ...current, status: 'APPROVED' }),
+      );
+
+      expect(outcome.ok).toBe(false);
+      if (outcome.ok) throw new Error('un lock viejo no puede robarse por mtime');
+      expect(outcome.code).toBe('BUSY');
+      expect(outcome.message).toContain('verify no approval writer');
+      expect(realFs.existsSync(lock)).toBe(true);
+    } finally {
+      realFs.rmSync(tmp, { recursive: true, force: true });
+    }
+  }, 10_000);
 });

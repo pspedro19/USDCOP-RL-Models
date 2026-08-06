@@ -165,6 +165,35 @@ def test_permission_error_without_visible_lock_is_not_disguised(tmp_path, monkey
         with store.acquire_approval_lock(target, timeout_s=0):
             pytest.fail("un path sin permisos no puede adquirirse")
 
+
+def test_old_orphan_lock_is_never_reclaimed_automatically(tmp_path):
+    """Un huérfano visible queda fail-closed hasta una operación comprobada."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    lock.write_text('{"pid": 999999}', encoding="utf-8")
+    os.utime(lock, (1, 1))
+
+    with pytest.raises(store.ApprovalLockTimeout, match="verify no approval writer"):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un lock viejo no puede robarse por mtime")
+    assert lock.exists(), "el lock huérfano solo se retira tras comprobar writers vivos"
+
+
+def test_old_live_lock_is_never_reclaimed_automatically(tmp_path):
+    """Un titular lento conserva exclusión aunque su mtime supere el umbral retirado."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    lock.write_text(f'{{"pid": {os.getpid()}}}', encoding="utf-8")
+    os.utime(lock, (1, 1))
+    holder = os.open(lock, os.O_RDONLY)
+    try:
+        with pytest.raises(store.ApprovalLockTimeout):
+            with store.acquire_approval_lock(target, timeout_s=0):
+                pytest.fail("un titular vivo no puede perder el lock por mtime")
+        assert lock.exists()
+    finally:
+        os.close(holder)
+
 _STORE = '''
 import json, os, sys, time
 sys.path.insert(0, os.environ["REPO_ROOT"])
@@ -343,22 +372,16 @@ def test_node_is_excluded_by_the_python_lock(tmp_path):
     assert r.stdout.strip() == "HELD", (r.returncode, r.stdout, r.stderr)
 
 
-def test_lock_timings_are_identical_on_both_sides():
-    """El sufijo compartido no basta: las VENTANAS también tienen que coincidir.
-
-    Ambos lados retiran un lock que consideran "viejo" (solo puede venir de un proceso
-    muerto). Si Python considerase viejo a los 5 s lo que Node aún sostiene a los 30 s,
-    Python **borraría un lock vivo** y volvería a haber dos escritores — exclusión rota
-    con los dos ficheros diciendo `.lock`. Igual con la espera máxima: si un lado
-    esperase mucho menos, degradaría a 409/BUSY donde el otro sí espera.
-    """
+def test_lock_protocol_is_identical_on_both_sides():
+    """Ambos lados esperan igual y ninguno roba locks por una edad ambigua."""
     ts = STORE_TS.read_text(encoding="utf-8")
-    stale_ms = int(re.search(r"LOCK_STALE_MS = ([\d_]+)", ts).group(1).replace("_", ""))
     wait_ms = int(re.search(r"LOCK_WAIT_MS = ([\d_]+)", ts).group(1).replace("_", ""))
     retry_ms = int(re.search(r"LOCK_RETRY_MS = ([\d_]+)", ts).group(1).replace("_", ""))
-    assert stale_ms / 1000.0 == store._LOCK_STALE_S, (stale_ms, store._LOCK_STALE_S)
     assert wait_ms / 1000.0 == store._LOCK_WAIT_S, (wait_ms, store._LOCK_WAIT_S)
     assert f"time.sleep({retry_ms / 1000.0})" in \
+        (REPO / "src" / "contracts" / "approval_store.py").read_text(encoding="utf-8")
+    assert "LOCK_STALE" not in ts
+    assert "_LOCK_STALE" not in \
         (REPO / "src" / "contracts" / "approval_store.py").read_text(encoding="utf-8")
 
 

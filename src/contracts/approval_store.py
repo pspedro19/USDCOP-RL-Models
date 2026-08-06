@@ -58,7 +58,6 @@ MAX_APPROVAL_BYTES = 2 * 1024 * 1024
 #: ``lib/approvals/store.ts``**: el Voto 2 (Node) y el export (Python) escriben el MISMO
 #: artefacto y solo se excluyen si nombran el mismo lock.
 LOCK_SUFFIX = ".lock"
-_LOCK_STALE_S = 30.0
 _LOCK_WAIT_S = 4.0
 
 #: Raíz del repo: ``src/contracts/approval_store.py`` → ``<repo>``.
@@ -236,16 +235,14 @@ def acquire_approval_lock(path: Path, timeout_s: float = _LOCK_WAIT_S):
                     if not self._lock.exists():
                         raise
 
-                # Se libera siempre en ``__exit__``: un lock viejo solo puede venir
-                # de un proceso muerto.
-                try:
-                    if time.time() - self._lock.stat().st_mtime > _LOCK_STALE_S:
-                        self._lock.unlink(missing_ok=True)
-                        continue
-                except FileNotFoundError:
-                    continue
+                # C036: la edad NO demuestra que el titular murió. En POSIX se puede
+                # borrar un fichero abierto; reclamarlo por mtime permitiría que un
+                # segundo escritor entrase mientras el primero sigue vivo.
                 if time.monotonic() >= deadline:
-                    raise ApprovalLockTimeout(f"approval state busy: {path.name}")
+                    raise ApprovalLockTimeout(
+                        f"approval state busy: {path.name}; lock is not auto-reclaimed — "
+                        "verify no approval writer is running before manual cleanup"
+                    )
                 time.sleep(0.015)
 
         def __exit__(self, *exc: Any) -> None:

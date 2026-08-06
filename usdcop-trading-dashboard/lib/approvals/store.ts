@@ -145,8 +145,6 @@ export async function readApprovalState(sid?: string | null): Promise<ApprovalRe
 
 /** Sufijo del lockfile interproceso. Espejo en `src/contracts/approval_store.py`. */
 export const LOCK_SUFFIX = '.lock';
-/** Un lock más viejo que esto solo puede venir de un escritor que murió. */
-const LOCK_STALE_MS = 30_000;
 /** Espera máxima por el lock: pasado esto se responde 409, nunca se escribe a ciegas. */
 const LOCK_WAIT_MS = 4_000;
 const LOCK_RETRY_MS = 15;
@@ -172,19 +170,13 @@ async function acquireLock(file: string): Promise<() => Promise<void>> {
       };
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
-      // Se libera SIEMPRE en `finally`, así que un lock presente y viejo solo puede
-      // venir de un proceso muerto: se retira una vez y se reintenta.
-      try {
-        const st = await fs.stat(lock);
-        if (Date.now() - st.mtimeMs > LOCK_STALE_MS) {
-          await fs.rm(lock, { force: true });
-          continue;
-        }
-      } catch {
-        continue; // el titular lo soltó entre el EEXIST y el stat
-      }
+      // C036: la edad NO demuestra que el titular murió. En POSIX se puede borrar
+      // un fichero abierto; reclamarlo por mtime permitiría dos secciones críticas.
       if (Date.now() >= deadline) {
-        throw new ApprovalLockTimeout(`approval state busy: ${path.basename(file)}`);
+        throw new ApprovalLockTimeout(
+          `approval state busy: ${path.basename(file)}; lock is not auto-reclaimed — ` +
+          'verify no approval writer is running before manual cleanup',
+        );
       }
       await new Promise((r) => setTimeout(r, LOCK_RETRY_MS));
     }
@@ -247,7 +239,12 @@ export async function commitApprovalTransition(
     release = await acquireLock(file);
   } catch (e) {
     if (e instanceof ApprovalLockTimeout) {
-      return { ok: false, code: 'BUSY', status: null, message: 'Another approval transition is in progress. Retry.' };
+      return {
+        ok: false,
+        code: 'BUSY',
+        status: null,
+        message: 'Another approval transition is in progress. If this persists, verify no approval writer is running before manual cleanup.',
+      };
     }
     throw e;
   }
