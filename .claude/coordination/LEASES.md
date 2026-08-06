@@ -1740,3 +1740,7 @@ Shape co-firmado en CXD-631. `scripts/analysis/gold_trend_simple.py` y `src/gold
 - tests/unit/test_policy_contract.py                        (COLATERAL: deuda del piloto 2 -> 1)
 - tests/regression/test_feature_contracts.py                (COLATERAL: RULE_BASED_MINIMAL de xauusd)
 # (CLAUDE 2026-08-06T10:05:00-05:00) RELEASE GOLD-SLICE: `773c7ccb`. Liberados los 9 paths. Deuda cross-SSOT ejecutable = CERO. Sin leases CLAUDE activos.
+
+## LEASE E2E-3POLICIES (PREVIO, 2026-08-06T10:25:00-05:00) — titular CLAUDE, id claude-e2e3-20260806-1025, expira 2026-08-06T13:00:00-05:00
+Aditivo: hoy la cadena end-to-end solo se prueba con SPX (declarativa). Medido que funciona tambien con Gold y BTC (coded) y con los DOS contratos de productor; se fija como candado.
+- tests/unit/test_policy_chain_end_to_end.py   (extender a las tres policies y ambos motores)
