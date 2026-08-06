@@ -143,27 +143,43 @@ def test_the_function_does_not_mutate_its_input() -> None:
 
 
 @pytest.mark.skipif(not BACKUP.is_file(), reason="backup ausente en este checkout")
-def test_the_declared_manifest_matches_the_real_backup() -> None:
-    """El manifiesto no es teórico: se ejerce contra el fichero real.
+def test_the_real_backup_needs_no_repair_and_the_manifest_says_so() -> None:
+    """El backup vigente está LIMPIO, y el manifiesto no declara reparaciones.
 
-    Los tests de arriba usan series sintéticas, que prueban la lógica pero no que las 15
-    celdas declaradas sean las que de verdad están mal. Esto último sólo lo demuestra el
-    backup, y si algún día se regenera con otro daño, este test lo dice.
+    Este test exigía lo contrario: que las 15 celdas declaradas fueran las que de verdad
+    estaban rotas. Cambió por un hecho, no por conveniencia — el 2026-08-06
+    `core_l0_05_seed_backup` regeneró el backup desde la base ya reparada
+    (`430582f768e2b6b5` → `02d8bea07128f1da`) y el daño desapareció de la fuente.
+
+    Lo que fija ahora son las dos mitades de esa situación:
+
+      * el manifiesto no declara celdas —si volviera a declararlas sobre un fichero sano,
+        la guarda de obsolescencia lo pararía, y este test lo dice antes—;
+      * y el fichero **de verdad** está limpio, para que «cero reparaciones» signifique
+        «no hace falta» y no «dejamos de mirar».
     """
-    df = pd.read_parquet(BACKUP)
-    out, reporte = validate_and_repair_macro_scale(df, manifiesto_backup_2026_06())
-
-    assert reporte["n_celdas_reparadas"] == 15, (
-        f"se repararon {reporte['n_celdas_reparadas']} celdas y el manifiesto declara 15"
+    manifiesto = manifiesto_backup_2026_06()
+    assert manifiesto.celdas == (), (
+        f"el manifiesto declara {len(manifiesto.celdas)} celdas sobre un backup que ya no "
+        f"las necesita: eso autoriza dividir valores sanos"
     )
+    assert manifiesto.columnas_vigiladas, (
+        "sin columnas vigiladas nadie audita las series: vaciar reparaciones no es dejar "
+        "de mirar"
+    )
+
+    df = pd.read_parquet(BACKUP)
+    out, reporte = validate_and_repair_macro_scale(df, manifiesto)
+    assert reporte["n_celdas_reparadas"] == 0
+    assert reporte["n_filas_entrada"] == reporte["n_filas_salida"]
+
     for columna in reporte["columnas_auditadas"]:
         s = out[["fecha", columna]].dropna().copy()
         s[columna] = pd.to_numeric(s[columna], errors="coerce")
         s = s.dropna().sort_values("fecha")
         r = (np.log(s[columna].astype(float)) - np.log(s[columna].astype(float).shift(1))).abs()
-        assert int((r > 0.7).sum()) == 0, f"{columna} conserva empalmes tras reparar"
+        assert int((r > 0.7).sum()) == 0, f"{columna} trae empalmes sin declarar"
 
-    # Rangos plausibles: sin esto, dividir por 10^6 también daría «cero saltos».
     mxn = pd.to_numeric(out["fxrt_spot_usdmxn_mex_d_usdmxn"], errors="coerce").dropna()
     clp = pd.to_numeric(out["fxrt_spot_usdclp_chl_d_usdclp"], errors="coerce").dropna()
     assert 10 < mxn.max() < 40, f"USD/MXN fuera de rango plausible: max={mxn.max()}"

@@ -294,34 +294,30 @@ def validate_and_repair_macro_scale(
 
 
 def manifiesto_backup_2026_06() -> ManifiestoEscala:
-    """El manifiesto medido sobre `macro_indicators_daily_backup.parquet`.
+    """Hoy: **cero celdas**. Se vigila, no se repara — y esa es la historia completa.
 
-    Quince celdas: 8 en MXN (×10⁴) y 7 en CLP (×10²). La ventana 2026-06-29..07-07 más el
-    día suelto 2026-07-26 en MXN — que importa porque prueba que la fuente **seguía**
-    produciendo el bug a finales de julio: reparar el pasado sin arreglar el extractor lo
-    repetiría.
+    Nació con quince: 8 en USD/MXN (×10⁴) y 7 en USD/CLP (×10²), ventana 2026-06-29..07-07
+    más un día suelto el 2026-07-26. Se usaron una vez, el 2026-08-06, para cargar
+    `macro_indicators_daily` sin meter el empalme en la base.
 
-    Evidencia del factor, y es lo que lo hace declarable en vez de adivinado: los valores
-    reparados caen entre los vecinos sanos. MXN pasa a 17.39–17.55 con 17.5326 el día antes
-    y 17.5814 el día después; CLP a 921–930 con 922.70 antes y 934.50 después.
+    Y ahí se acabó su motivo: horas después, `core_l0_05_seed_backup` regeneró el backup
+    **desde esa base ya reparada** —sha `430582f768e2b6b5` → `02d8bea07128f1da`— y las
+    quince celdas dejaron de estar rotas. Medido sobre el fichero nuevo: 0 saltos, 0
+    valores no positivos, MXN 16.31–25.34, CLP 694.88–1049.30.
+
+    La guarda de manifiesto obsoleto **falló cerrado sola**, sin que nadie fuera a
+    revisarlo: se negó a dividir por 10.000 unos valores que ya estaban sanos. Por eso las
+    celdas se retiran en vez de dejarlas «por si acaso» — que es exactamente la licencia
+    abierta que esa guarda existe para impedir.
+
+    `columnas_vigiladas` se conserva: las dos series siguen auditándose, así que un
+    empalme NUEVO seguirá siendo rojo. Vaciar la lista de reparaciones no es dejar de
+    mirar.
     """
-    mxn = "fxrt_spot_usdmxn_mex_d_usdmxn"
-    clp = "fxrt_spot_usdclp_chl_d_usdclp"
-    ventana = ["2026-06-29", "2026-06-30", "2026-07-01", "2026-07-02",
-               "2026-07-03", "2026-07-06", "2026-07-07"]
-    ev_mxn = ("separador decimal perdido (4 decimales); reparado cae entre 17.5326 del "
-              "2026-06-26 y 17.5814 del 2026-07-08")
-    ev_clp = ("separador decimal perdido (2 decimales); reparado cae entre 922.70 del "
-              "2026-06-26 y 934.50 del 2026-07-08")
-    celdas: list[CeldaDeclarada] = []
-    for f in ventana:
-        celdas.append(CeldaDeclarada(mxn, date.fromisoformat(f), 1e4, ev_mxn))
-        celdas.append(CeldaDeclarada(clp, date.fromisoformat(f), 1e2, ev_clp))
-    celdas.append(
-        CeldaDeclarada(
-            mxn, date(2026, 7, 26), 1e4,
-            "pico aislado de un solo día, mismo factor; prueba que el extractor seguía "
-            "produciendo el defecto un mes después del primer tramo",
-        )
+    return ManifiestoEscala(
+        celdas=(),
+        columnas_vigiladas=(
+            "fxrt_spot_usdmxn_mex_d_usdmxn",
+            "fxrt_spot_usdclp_chl_d_usdclp",
+        ),
     )
-    return ManifiestoEscala(celdas=tuple(celdas), columnas_vigiladas=(mxn, clp))
