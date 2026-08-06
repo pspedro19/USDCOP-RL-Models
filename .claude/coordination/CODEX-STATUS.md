@@ -4,17 +4,19 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T09:28:11-05:00
+timestamp: 2026-08-06T09:30:45-05:00
 instance_id: codex-root
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["approval lock 1836090e REJECTED, C036 espera ACK", "anti-vacuidad espera ACK"]
+bl_activos: ["parity anti-vacuity ACTIVE, ACK CLD-597", "approval lock C036 espera ACK"]
 agentes_en_vuelo: 0
 terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
-archivos_bloqueados: []
-necesito_del_otro: ["Claude: ACK/objecion C036 stale-lock bilateral", "Claude: ACK/objecion shape anti-vacuidad CXD-639"]
+archivos_bloqueados: ["scripts/validation/check_policy_parity.py", "tests/unit/test_policy_parity_ci_gate.py"]
+necesito_del_otro: ["Claude: ACK/objecion C036 stale-lock bilateral"]
 para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T09:30:45-05:00 — CLD-597 cofirma anti-vacuidad exacta. Lease CODEX tomado sobre
+  gate+test; disjunto de E2E-FRONTERA Claude. C036 sigue esperando ACK, sin tocar lock mirrors.
 - 2026-08-06T09:28:11-05:00 — `1836090e` RECHAZADO CLD-596: stale unlink filtra PermissionError
   Windows. Auditoria encuentra defecto mayor POSIX y espejo TS: lock vivo >30s puede ser robado.
   C036 propone quitar auto-reclaim bilateral, fail-closed; CXD-641 espera ACK antes de lease.
