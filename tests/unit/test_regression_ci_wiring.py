@@ -53,11 +53,15 @@ CUARENTENA = {
         "empalme de escala real en MACRO_DAILY_CLEAN/MASTER (USDMXN x10^4, USDCLP x10^2) "
         "desde 2026-06-26/29; repair bloqueado porque la DB viva tiene 0 filas y no hay "
         "fuente autoritativa de la que reparar sin inventar numeros",
-    "tests/regression/test_action_threshold_ssot.py":
-        "importar `src.training.config` dispara `src/training/__init__.py`, que arrastra "
-        "el stack RL y con el `stable_baselines3`; ese paquete vive solo en el extra `ml`, "
-        "que este job no instala",
 }
+
+#: Cuarentenas RETIRADAS porque su condición de cancelación se cumplió. Se dejan escritas
+#: —no borradas— para que el próximo que añada una vea que estas listas se vacían:
+#:
+#:   test_action_threshold_ssot.py — importar `src.training.config` (dataclass pura)
+#:       disparaba el `__init__` del paquete y con él `stable_baselines3`. Cerrada en
+#:       `9b67ffa8` volviendo los reexports lazy (PEP 562); el gate pasa 2/2 con sb3
+#:       genuinamente ausente. Verificado antes de retirarla, no asumido.
 
 
 def _job() -> dict:

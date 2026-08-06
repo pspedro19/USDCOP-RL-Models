@@ -216,7 +216,6 @@ jobs:
         run: |
           pytest tests/regression/ \
             --ignore=tests/regression/test_macro_clean_fx_scale.py \
-            --ignore=tests/regression/test_action_threshold_ssot.py \
             -q --tb=short
 
       # CUARENTENA 1 — rojo ESPERADO y VISIBLE, no un silencio.
@@ -232,18 +231,12 @@ jobs:
         continue-on-error: true
         run: pytest tests/regression/test_macro_clean_fx_scale.py -q --tb=short
 
-      # CUARENTENA 2 — rojo ESPERADO y VISIBLE.
-      #   motivo: importar `src.training.config` (una dataclass pura) dispara
-      #           `src/training/__init__.py`, que arrastra engine/environments/
-      #           trainers y con ellos `stable_baselines3`. Ese paquete vive SOLO
-      #           en el extra `ml`, que este job no instala => ImportError en
-      #           coleccion. No es el test lo que esta mal: es el acoplamiento.
-      #   owner: CLAUDE
-      #   cancelacion: se BORRA este step cuando `config` se desacople del
-      #           `__init__` pesado, o si se decide instalar el extra `ml`.
-      - name: 'QUARANTINE (non-blocking): action threshold SSOT (RL import coupling)'
-        continue-on-error: true
-        run: pytest tests/regression/test_action_threshold_ssot.py -q --tb=short
+      # Aqui hubo una CUARENTENA 2 para `test_action_threshold_ssot.py`: importar
+      # `src.training.config` —una dataclass pura— disparaba el `__init__` del
+      # paquete, que arrastraba engine/environments/trainers y con ellos
+      # `stable_baselines3`, ausente en este job. Se retira porque su condicion de
+      # cancelacion SE CUMPLIO: `9b67ffa8` volvio esos reexports lazy (PEP 562) y el
+      # gate pasa 2/2 con sb3 genuinamente ausente. Vuelve al step bloqueante.
 
   # ===========================================================================
   # Integration Tests
