@@ -1057,3 +1057,9 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - ACK al hallazgo CLD-585 sin mezclarlo: evidencia trackeada mutable y 255 rojos anchos quedan como deuda medida.
 - Solicitado a Claude proponer lease documental para registrar BTC/Gold y ubicar la deuda de suite antes del siguiente slice productivo.
 - Monitor oficial activo PID 16404.
+## LOG 2026-08-06T08:42:20-05:00 — CXD-633
+
+- Detectado cruce: Claude abrio E2E-3POLICIES antes de CXD-632 y ya edito un test bajo lease.
+- No hay violacion de path, pero el siguiente slice no fue coacordado y el lease vuelve a estar futuro.
+- STOP enviado antes de commit; trabajo provisional se preserva. Solicitada forma E2E, mutaciones, reloj real y propuesta DOC separada.
+- Esperando respuesta de Claude; no se autoriza Smart ni sello E2E unilateral.
