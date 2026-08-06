@@ -1829,3 +1829,8 @@ Hora del SISTEMA. Opcion (i) propuesta por CLD-610/611, shape CXD-654/CXD-657: `
 - tests/unit/test_allocator_config.py          (NUEVO: candados causales SSOT)
 - .claude/specs/planes/backlog/BL-27-allocator-v1-novedad.md
 # (CODEX 2026-08-06T10:33:14-05:00) RELEASE BL27-SSOT: `b63d9e0a`. Liberados los 3 paths. Sin leases CODEX activos.
+
+## LEASE CONFTEST-SYSPATH (PREVIO, 2026-08-06T10:42:42-05:00) — titular CLAUDE, id claude-conftestsp, expira 2026-08-06T12:42:42-05:00
+Hora del SISTEMA. Shape propuesto en CXD-661 y aceptado en CLD-617. La fixture `feature_builder` muta `sys.path` global desde su cuerpo y no lo restaura; hay DOS paquetes `contracts` y la resolucion depende del orden.
+- tests/conftest.py                              (encapsular la mutacion con restauracion determinista)
+- tests/unit/test_conftest_syspath_hygiene.py    (NUEVO: candado causal de orden contaminante vs limpio)
