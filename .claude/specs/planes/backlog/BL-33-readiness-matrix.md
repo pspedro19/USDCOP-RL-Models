@@ -58,9 +58,10 @@ El corte factual adicional produjo:
 Los tres fallos amplios pertenecen al corte original y no se maquillan como fallos de BL-33.
 Dos mostraban deriva del constructor de `MetricEngine`; la secuencia `bf1e02f8`, `89a7732d` y
 `2fea6f7e` migró los fixtures afectados a `MetricEngine.from_asset_registry`, y el gate de seguridad
-fue revalidado en **35 passed** el 2026-08-06. `RISK-06` sigue `PARTIAL` por los huecos vigentes de BL-18: falta un productor y
-consumidor productivos del evento persistido, el allowlist heredado conserva entradas y queda por
-decidir la colisión de identidad semántica. El tercer fallo histórico —el digest divergente de
+fue revalidado en **35 passed** el 2026-08-06. BL-18 ya tiene el productor
+`persist_governed_metric_events` y un consumidor de `control.metric_event`; `RISK-06` sigue `PARTIAL`
+porque esa costura no está generalizada, el allowlist heredado conserva entradas y queda por decidir
+la colisión de identidad semántica. El tercer fallo histórico —el digest divergente de
 `fabric-v1`— permanece visible en `TECH-06`.
 
 ## Qué falta para cierre

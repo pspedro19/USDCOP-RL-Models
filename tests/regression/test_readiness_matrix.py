@@ -297,8 +297,10 @@ def test_risk06_reports_current_metric_engine_gaps() -> None:
     risk06 = next(row for row in _register() if row["Control ID"] == "RISK-06")
     evidence = risk06["Observed evidence"].lower()
 
-    assert "productor" in evidence and "consumidor" in evidence
+    assert "persist_governed_metric_events" in evidence
+    assert "control.metric_event" in evidence
     assert "allowlist" in evidence
+    assert "colisión" in evidence
     assert "falla hoy" not in evidence
     assert "annualization_by_asset" not in evidence
 
@@ -309,7 +311,15 @@ def test_removed_metric_engine_constructor_argument_is_not_reintroduced() -> Non
         for path in (ROOT / base).rglob("*.py"):
             tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
             for node in ast.walk(tree):
-                if isinstance(node, ast.Call) and any(
+                if not isinstance(node, ast.Call):
+                    continue
+                is_metric_engine = (
+                    isinstance(node.func, ast.Name) and node.func.id == "MetricEngine"
+                ) or (
+                    isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "MetricEngine"
+                )
+                if is_metric_engine and any(
                     keyword.arg == "annualization_by_asset" for keyword in node.keywords
                 ):
                     offenders.append(str(path.relative_to(ROOT)))
