@@ -1809,4 +1809,4 @@ ACK CLD-603: declarar la dependencia POSIX del test de titular vivo y añadir de
 ## LEASE BL42-HONESTO (PREVIO, 2026-08-06T10:00:14-05:00) — titular CLAUDE, id claude-bl42h, expira 2026-08-06T12:00:14-05:00
 Hora del SISTEMA. Autorizado en CXD-649 punto (a). SOLO mensajes/docstring y ficha. CERO cambios de assert, CERO cambio de status, y NO se arma `BL42_REQUIRE_DB` en ningun job.
 - tests/regression/test_return_units.py
-- .claude/specs/planes/backlog/BL-42-unidades-decimales.md
+- .claude/specs/planes/backlog/BL-42-unidades-decimales-signal-normalizada.md   (nombre real, corregido en el propio bloque)
