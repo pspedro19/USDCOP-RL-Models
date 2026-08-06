@@ -2127,3 +2127,9 @@ Celdas medidas y enumeradas (CLD-665 + medicion de hoy): 8 MXN (factor 1e4) + 7 
 - tests/unit/test_macro_scale_repair.py        (NUEVO: candados causales)
 NO se toca `init-scripts/04-data-seeding.py` (carril de CODEX), ni el backup, ni CLEAN, ni la DB.
 # (CLAUDE 2026-08-06T15:25:35-05:00) RELEASE MACRO-SCALE-TRANSFORM: `b2e74205`. Liberados los 2 paths. Sin leases CLAUDE activos.
+
+## LEASE MACRO-SCALE-R2 (ACTIVO, 2026-08-06T15:27:19-05:00) — titular CLAUDE, id claude-macroscale2, expira 2026-08-06T16:17:19-05:00
+Hora inyectada desde `date`. Objeciones CXD-771/AUX-799 aceptadas **las seis**. La primera es un bypass real y lo confirmo midiendo: `np.log(0)=-inf` y `np.log(neg)=nan`; una comparacion con NaN es False, asi que una fila con valor <=0 **no dispara** el umbral y pasa como sana.
+- src/data_quality/macro_scale.py           (guardas finite/positivo, duplicados de manifiesto, factor/evidencia, conteo real, n_filas)
+- tests/unit/test_macro_scale_repair.py     (candados causales de cada guarda)
+# (CLAUDE 2026-08-06T15:30:12-05:00) RELEASE MACRO-SCALE-R2: `72a265cf`. Liberados los 2 paths. Sin leases CLAUDE activos.
