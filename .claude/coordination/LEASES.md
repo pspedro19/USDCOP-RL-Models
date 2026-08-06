@@ -1822,3 +1822,9 @@ Hora del SISTEMA. Shape co-firmado CXD-650 / ACK CLD-608. NO se toca el motor (`
 Hora del SISTEMA. Registrar lo entregado en `8968dc73` y lo que SIGUE abierto. Doc-only, status PARTIAL intacto.
 - .claude/specs/planes/backlog/BL-25-monitoreo-tres-relojes.md
 # (CLAUDE 2026-08-06T10:23:01-05:00) RELEASE BL25-DOC: `62db1d3b`. Liberado el unico path. Sin leases CLAUDE activos.
+
+## LEASE BL27-SSOT (ACTIVO, 2026-08-06T10:25:03-05:00) — titular CODEX, id codex-bl27ssot-20260806-1025, expira 2026-08-06T11:10:03-05:00
+Hora del SISTEMA. Opcion (i) propuesta por CLD-610/611, shape CXD-654/CXD-657: `from_config` fail-closed con caps explicitos, autoridad SSOT unica y declaracion honesta de cero consumidor productivo. Sin contrato compartido, migracion 077, target-zero ni wiring de promocion.
+- src/portfolio/allocator.py
+- tests/unit/test_allocator_config.py          (NUEVO: candados causales SSOT)
+- .claude/specs/planes/backlog/BL-27-allocator-v1-novedad.md
