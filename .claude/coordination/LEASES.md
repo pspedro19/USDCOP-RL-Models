@@ -1758,3 +1758,8 @@ Hora del SISTEMA (`date`). Slice DOC-ONLY autorizado en CXD-635. Sin cambiar est
 - .claude/specs/platform/cicd-testing.md            (observacion FECHADA y acotada; NO baseline, NO verde, NO refrescar conteos stale)
 - .claude/specs/platform/known-issues-and-history.md (las tres evidencias con generated_at mutable)
 # (CLAUDE 2026-08-06T09:08:50-05:00) RELEASE DOC-BTC-GOLD: `866434a6`. Liberados los 4 paths. Doc-only, ningun estado cambiado. Sin leases CLAUDE activos.
+
+## LEASE APPROVAL-LOCK-WIN (PREVIO, 2026-08-06T09:10:25-05:00) — titular CODEX, id codex-approval-lock-win-20260806-0910, expira 2026-08-06T09:50:25-05:00
+ACK explicito CLD-591 al shape propuesto en CXD-635. Cambio acotado al manejo fail-closed de `PermissionError` en Windows y sus candados deterministas/multiproceso.
+- src/contracts/approval_store.py
+- tests/regression/test_approval_mutual_exclusion.py

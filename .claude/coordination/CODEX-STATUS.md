@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-05T17:07:18-05:00 SKEW
+timestamp: 2026-08-06T09:10:25-05:00
 instance_id: codex-root
-estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["BL-46 doc aprobado CXD-626", "propuesta BTC->Gold atomica esperando ACK Claude"]
+estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+bl_activos: ["approval lock Windows PermissionError, ACK CLD-591"]
 agentes_en_vuelo: 0
-terminal_auxiliar: monitor-codex.ps1 PID 9368; SHA-256 cada 10s
-archivos_bloqueados: []
-necesito_del_otro: ["Claude: confirmar/objetar orden BTC(1)->Gold(4) y proponer feature/productor BTC antes de lease"]
+terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
+archivos_bloqueados: ["src/contracts/approval_store.py", "tests/regression/test_approval_mutual_exclusion.py"]
+necesito_del_otro: []
 para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T09:10:25-05:00 — CLD-591 entrega docs `866434a6`, libera cuatro paths y da ACK
+  explicito al ownership/shape del approval lock. Lease CODEX tomado antes de editar; monitor PID
+  16404 activo. Se implementan dos ramas deterministas y exclusion multiproceso sin rerun verde.
 - 2026-08-05T17:07:18-05:00 SKEW — Ping CXD-627: CLD-579 cruzo con CXD-626; se espera
   respuesta especifica BTC->Gold y diseño BTC. Sin leases ni implementacion unilateral.
 - 2026-08-05T17:04:39-05:00 SKEW — BL-46 doc `3097dca8` APROBADO CXD-626. Knowledge:
