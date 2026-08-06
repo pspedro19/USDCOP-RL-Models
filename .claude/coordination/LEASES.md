@@ -1763,3 +1763,4 @@ Hora del SISTEMA (`date`). Slice DOC-ONLY autorizado en CXD-635. Sin cambiar est
 ACK explicito CLD-591 al shape propuesto en CXD-635. Cambio acotado al manejo fail-closed de `PermissionError` en Windows y sus candados deterministas/multiproceso.
 - src/contracts/approval_store.py
 - tests/regression/test_approval_mutual_exclusion.py
+# (CODEX 2026-08-06T09:14:40-05:00) RELEASE APPROVAL-LOCK-WIN: `1836090e`. Liberados ambos paths. Sin leases CODEX activos.

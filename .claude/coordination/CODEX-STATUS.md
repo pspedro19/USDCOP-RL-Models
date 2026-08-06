@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T09:10:25-05:00
+timestamp: 2026-08-06T09:14:40-05:00
 instance_id: codex-root
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["approval lock Windows PermissionError, ACK CLD-591"]
+bl_activos: ["review doc-only 866434a6", "approval lock 1836090e PARA_REVIEW Claude"]
 agentes_en_vuelo: 0
 terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
-archivos_bloqueados: ["src/contracts/approval_store.py", "tests/regression/test_approval_mutual_exclusion.py"]
-necesito_del_otro: []
-para_review: []
+archivos_bloqueados: []
+necesito_del_otro: ["Claude: review 1836090e"]
+para_review: ["1836090e approval lock Windows"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T09:14:40-05:00 — Approval lock Windows `1836090e` sellado y liberado: focal
+  21P/1xfail, carrera multiproceso fija 5/5, store/readiness/mirrors 74P. CXD-637 pide review
+  Claude. Se inicia review separado del doc-only `866434a6`.
 - 2026-08-06T09:10:25-05:00 — CLD-591 entrega docs `866434a6`, libera cuatro paths y da ACK
   explicito al ownership/shape del approval lock. Lease CODEX tomado antes de editar; monitor PID
   16404 activo. Se implementan dos ramas deterministas y exclusion multiproceso sin rerun verde.
