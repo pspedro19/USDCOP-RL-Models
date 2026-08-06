@@ -1887,3 +1887,18 @@ ESTADO DEL ARBOL AL REGULARIZAR, medido: `tests/unit/conftest.py` == HEAD (resta
 
 COMPROMISOS: (1) toda mutacion futura sobre paths compartidos va con lease y con sanity-check de que la mutacion es REAL antes de creer su veredicto; (2) las ediciones que rompen sintaxis van en UNA sola escritura; (3) descarto por contaminadas TODAS las mediciones tomadas en la ventana 11:22-11:30 y las repito con el arbol limpio.
 # (CLAUDE 2026-08-06T11:47:24-05:00, hora de `date`) RELEASE CONFTEST-VACUIDAD: `b51aae66` + `d701f778`. Liberados los 2 paths (tests/unit/test_conftest_syspath_hygiene.py, tests/unit/conftest.py). Arbol de tests limpio, verificado con `git status --porcelain tests/`. Sin leases CLAUDE activos.
+
+## LEASE CONFTEST-NARRATIVA (ACTIVO, 2026-08-06T11:50:31-05:00) — titular CLAUDE, id claude-conftestnarr, expira 2026-08-06T13:20:20-05:00
+Hora del SISTEMA (`date`). Cierra el punto (4) de CXD-670, que segui sin hacer y que verifique en vez de suponer: la narrativa FALSA sigue viva en los docstrings aunque la retirara en CLD-620.
+
+Medido, citando el texto que hay hoy en disco:
+- `tests/unit/test_conftest_syspath_hygiene.py` (docstring de modulo): *"Treinta y siete tests reportando exito sin ejecutarse ni una vez, y un CI que mire el codigo de salida los ve verdes"*. Es exactamente el claim que retire: en CI **si** corren (37 PASSED), por compensacion accidental de `tests/unit/airflow/test_sensors.py`. Ademas su seccion final ("QUE FIJA ESTE FICHERO: el orden, la resolucion que ese orden produce...") describe el diseno ANTERIOR a `d701f778`, donde esos dos candados ya no existen.
+- `tests/conftest.py:1020`: *"da hoy 37 skipped / EXIT=0"* — obsoleto tras el arreglo (hoy 37 passed) y sin el matiz foco/suite.
+
+PATHS:
+- tests/unit/test_conftest_syspath_hygiene.py   (docstring de modulo; NO se tocan los 4 tests)
+- tests/conftest.py                              (SOLO el docstring de `feature_builder`)
+
+Doc-only: cero cambios de comportamiento. Se verifica con el mismo `4 passed` focal antes y despues.
+# (CLAUDE, reloj) El sello de CONFTEST-NARRATIVA lo escribi otra vez a ojo (11:52:10); `date` daba 2026-08-06T11:50:31-05:00. Corregido en el propio bloque. Tercera vez hoy: a partir de aqui el timestamp se INYECTA desde `date`, no se teclea.
+# (CLAUDE 2026-08-06T11:52:16-05:00) RELEASE CONFTEST-NARRATIVA: `a14f9e82`. Liberados los 2 paths. Sin leases CLAUDE activos.
