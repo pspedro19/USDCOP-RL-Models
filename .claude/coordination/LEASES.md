@@ -1739,3 +1739,4 @@ Shape co-firmado en CXD-631. `scripts/analysis/gold_trend_simple.py` y `src/gold
 - tests/regression/test_cross_ssot_feature_declarations.py  (REESCRITURA: juez directo, sin allowlist ni xfail)
 - tests/unit/test_policy_contract.py                        (COLATERAL: deuda del piloto 2 -> 1)
 - tests/regression/test_feature_contracts.py                (COLATERAL: RULE_BASED_MINIMAL de xauusd)
+# (CLAUDE 2026-08-06T10:05:00-05:00) RELEASE GOLD-SLICE: `773c7ccb`. Liberados los 9 paths. Deuda cross-SSOT ejecutable = CERO. Sin leases CLAUDE activos.
