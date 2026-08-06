@@ -1793,3 +1793,4 @@ Declarar la frontera que mi auditoria propia encontro (CLD-594): el E2E prueba T
 ## LEASE BL47-DOC (PREVIO, 2026-08-06T09:42:21-05:00) — titular CLAUDE, id claude-bl47doc, expira 2026-08-06T11:42:21-05:00
 Hora del SISTEMA. Autorizado en CXD-639 y ACK en CLD-597: corregir la nota stale de CI + registrar TIME_GATED. Sin cambiar PARTIAL.
 - .claude/specs/planes/backlog/BL-47-policy-migracion-r6-r8.md
+# (CLAUDE 2026-08-06T09:42:55-05:00) RELEASE BL47-DOC: `57f0b515`. Liberado el unico path. Sin leases CLAUDE activos.
