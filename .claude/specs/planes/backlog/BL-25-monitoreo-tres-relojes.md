@@ -51,3 +51,54 @@ existe, no que el umbral fuera 3. Ahora el 3 queda **acotado por arriba y por ab
 
 ## Notas constitución
 El retiro se dispara por protocolo, nunca por cómo se sienta el mes.
+
+## El reloj de DATOS ya mira el linaje (2026-08-06, `8968dc73`)
+
+**El defecto que cerró.** `evaluate_data_clock` medía frescura de **fuentes** —OHLCV m5, macro
+diario, seeds— y **no consultaba `lineage.node` ni `lineage.strategy_node`**, aunque BL-24 ya había
+entregado `status VALID/STALE/INVALIDATED` y los roles por estrategia. Consecuencia concreta: **un
+dato fresco cuyo nodo estaba `INVALIDATED` pasaba como «ok»**. El reloj daba verde sobre linaje
+degradado, que es justo lo que FABRIC §23 quiere impedir.
+
+Ahora consulta los nodos enlazados a `H5_PRODUCTION_STRATEGY_ID` y cualquiera en
+`STALE`/`INVALIDATED` produce un `DataProbe` **activo**; el motor existente lo convierte en
+`FAIL_CLOSED` + `BLOCK_SIGNAL` sin cambios (el motor y el contrato **no se tocaron**).
+
+### Sólo `INPUT` y `SIGNAL`, y es deliberado
+
+Son los roles que el sistema **materializa hoy** — medido en la DB viva: 3 `INPUT` + 1 `SIGNAL`.
+`FEATURE` y `MODEL` están en el `CHECK` de la tabla pero **nadie los enlaza**: exigirlos pondría
+rojo algo que nadie ha prometido, y **un rojo falso gasta la misma credibilidad que un verde
+falso** — la misma razón por la que `smart_simple_v11` quedó fuera del gate cross-SSOT. El día que
+se enlacen, un candado obliga a decidirlo a conciencia en vez de heredarlo.
+
+**Anti-vacuidad**: la ausencia de un rol produce `missing` **activo**, no silencio. Sin eso, perder
+los links daría verde — el probe no encontraría nada degradado *porque no encontraría nada*.
+
+| mutación | rojos |
+|---|---|
+| saltarse el rol ausente (verde por vacío) | 3 |
+| marcar el probe como diagnóstico | 3 |
+| ignorar `INVALIDATED` | 2 |
+| interpolar el `strategy_id` en el SQL | 1 |
+
+### Una confusión que conviene dejar escrita
+
+`smart_simple_v11` es **dos cosas**: el id de la estrategia de **producción** del track H5
+(`h5_strategy_identity.py`) y un **policy spec `SPEC_ONLY`** en `config/policies/`. Los nodos de
+linaje pertenecen al **pipeline vivo**, no a la migración pendiente al motor de políticas. Ambos
+agentes lo confundimos al discutir el shape, y el nombre compartido lo invita.
+
+### Lo que SIGUE abierto
+
+1. **Reloj de MODELO** (diario, PSI > 0.25 congela promociones) — no tocado.
+2. **Reloj de PnL** (semanal, dispara `REDUCED`) — no tocado.
+3. **`facts`** no existe en la DB (medido); el motor único sobre `facts + metric_event` que la
+   ficha pide sigue dependiendo de esa migración.
+4. `lineage.revision_event` está a **0**: el productor existe y está cableado
+   (`macro_revision.py` ← `upsert_service` ← `l0_macro_update`, schedule `0 13-17 * * 1-5`), pero
+   **aún no se ha observado ninguna revisión real**. El probe está probado contra transiciones que
+   el sistema sabe hacer, no contra transiciones que ya haya hecho.
+
+**BL-25 sigue `PARTIAL`**: esto cierra el reloj de datos en su dimensión de linaje, no los tres
+relojes.
