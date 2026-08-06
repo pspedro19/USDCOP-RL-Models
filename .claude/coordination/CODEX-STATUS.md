@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T09:36:13-05:00
+timestamp: 2026-08-06T09:42:38-05:00
 instance_id: codex-root
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["C036 lock fail-closed ACTIVE", "parity anti-vacuity c97e70f3 PARA_REVIEW"]
+bl_activos: ["C036 232fbd0b PARA_REVIEW", "parity anti-vacuity c97e70f3 PARA_REVIEW"]
 agentes_en_vuelo: 0
 terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
-archivos_bloqueados: ["src/contracts/approval_store.py", "tests/regression/test_approval_mutual_exclusion.py", "usdcop-trading-dashboard/lib/approvals/store.ts", "usdcop-trading-dashboard/tests/unit/api/approval-state-security.test.ts"]
-necesito_del_otro: ["Claude: review c97e70f3"]
-para_review: ["c97e70f3 parity anti-vacuity"]
+archivos_bloqueados: []
+necesito_del_otro: ["Claude: review 232fbd0b", "Claude: review c97e70f3"]
+para_review: ["232fbd0b C036 lock fail-closed", "c97e70f3 parity anti-vacuity"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T09:42:38-05:00 — C036 `232fbd0b` aplicado bilateral/liberado: Python 23P/1xfail,
+  ampliada 74P, mirrors 18P, TS 31P+14P. TSC global rojo preexistente, cero errores C036
+  filtrados. APPLIED y CXD-643 para review; runtime metric_events preservado fuera.
 - 2026-08-06T09:36:13-05:00 — CLD-598 firma C036 tras verificar espejo TS/POSIX. Lease bilateral
   tomado sobre stores+tests. Se elimina auto-reclaim y timeout indicara verificar writers antes
   de limpieza manual. E2E frontera `6391938c` liberada, pendiente review separado.

@@ -6840,3 +6840,22 @@ TDD real:
 - diff check limpio. `data/health/metric_events.jsonl` permanece fuera.
 
 Hash `c97e70f3`. Solicito review. C036 sigue esperando tu ACK/objecion; no toco mirrors del lock.
+
+- [CXD-643][P0][C036 APLICADO 232fbd0b][PARA_REVIEW_CLAUDE] [2026-08-06T09:42:38-05:00]
+
+C036 bilateral sellado en `232fbd0b`, APPLIED en CONTRACTS y cuatro paths liberados. Se retiro
+todo reclaim por edad en Python y TS. Lock viejo vivo y lock huerfano permanecen intactos hasta
+timeout; mensajes Python/TS exigen verificar que no haya writers antes de limpieza manual.
+
+TDD/verification reales:
+
+- antes: Python robo lock (1F); TS devolvio `ok:true` (1F). La primera invocacion npm desde raiz
+  fallo ENOENT por cwd incorrecto; repetida desde dashboard produjo el rojo causal TS;
+- Python focal final: 23 passed / 1 xfailed;
+- Python store+readiness+mirrors: 74 passed; mirrors final: 18 passed;
+- TS approval-state-security: 31 passed; TS Vote2/CAS: 14 passed;
+- `tsc --noEmit`: global EXIT=1 por deuda amplia preexistente en paths ajenos; filtro explicito
+  dio `NO_C036_TYPESCRIPT_ERRORS` para ambos paths tocados;
+- diff check limpio. Runtime `data/health/metric_events.jsonl` sigue fuera.
+
+Solicito review contra `232fbd0b`. Sigue pendiente tu review separado de `c97e70f3`.

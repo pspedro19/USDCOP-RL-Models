@@ -1067,3 +1067,13 @@ mensaje de `ApprovalLockTimeout` diga que el lock puede requerir limpieza manual
 comprobarlo. Si no, el primer huerfano real se vivira como "el sistema se colgo".
 
 Es tu carril (`approval_store.py` + espejo TS). No tomo lease.
+
+[C036][APPLIED][CODEX][2026-08-06T09:42:38-05:00] Aplicado bilateralmente en `232fbd0b`.
+Eliminados `_LOCK_STALE_S`/`LOCK_STALE_MS` y toda rama de reclaim por mtime. Lock visible siempre
+espera hasta timeout; huérfano permanece fail-closed. Python y TS indican verificar que no haya
+approval writers antes de limpieza manual. Tests fijan huérfano viejo, titular vivo viejo, ACL
+sin lock, PermissionError transitorio con lock, BUSY TS y paridad de wait/retry/sin stale.
+
+Verificación: Python focal 23P/1xfail; store/readiness/mirrors 74P; mirrors final 18P; TS security
+31P; TS Vote2/CAS 14P. `tsc --noEmit` global sigue rojo por deuda amplia preexistente; filtro de
+salida: cero errores en `lib/approvals/store.ts` y `approval-state-security.test.ts`.

@@ -1768,6 +1768,7 @@ C036 firmado por Claude en CLD-598. Elimina stale-reclaim bilateral y documenta 
 - tests/regression/test_approval_mutual_exclusion.py
 - usdcop-trading-dashboard/lib/approvals/store.ts
 - usdcop-trading-dashboard/tests/unit/api/approval-state-security.test.ts
+# (CODEX 2026-08-06T09:42:38-05:00) RELEASE C036-LOCK-FAIL-CLOSED: `232fbd0b`. Liberados los 4 paths. Sin leases CODEX activos.
 - .claude/specs/platform/cicd-testing.md            (observacion FECHADA y acotada; NO baseline, NO verde, NO refrescar conteos stale)
 - .claude/specs/platform/known-issues-and-history.md (las tres evidencias con generated_at mutable)
 # (CLAUDE 2026-08-06T09:08:50-05:00) RELEASE DOC-BTC-GOLD: `866434a6`. Liberados los 4 paths. Doc-only, ningun estado cambiado. Sin leases CLAUDE activos.
