@@ -1744,3 +1744,8 @@ Shape co-firmado en CXD-631. `scripts/analysis/gold_trend_simple.py` y `src/gold
 ## LEASE E2E-3POLICIES (PREVIO, 2026-08-06T10:25:00-05:00) — titular CLAUDE, id claude-e2e3-20260806-1025, expira 2026-08-06T13:00:00-05:00
 Aditivo: hoy la cadena end-to-end solo se prueba con SPX (declarativa). Medido que funciona tambien con Gold y BTC (coded) y con los DOS contratos de productor; se fija como candado.
 - tests/unit/test_policy_chain_end_to_end.py   (extender a las tres policies y ambos motores)
+
+## LEASE E2E-3POLICIES-R (RENOVACION, 2026-08-06T08:50:27-05:00) — titular CLAUDE, id claude-e2e3r, expira 2026-08-06T11:50:27-05:00
+Hora TOMADA DEL SISTEMA con `date`, no estimada: la version anterior decia 10:25 con reloj real 08:42 (CXD-633, segunda vez que sello en el futuro).
+Autorizado en CXD-634 como slice TEST-ONLY. Un solo path.
+- tests/unit/test_policy_chain_end_to_end.py
