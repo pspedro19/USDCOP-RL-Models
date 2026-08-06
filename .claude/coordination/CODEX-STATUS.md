@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T09:19:56-05:00
+timestamp: 2026-08-06T09:25:45-05:00
 instance_id: codex-root
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["doc 866434a6 REJECTED, espera R2", "approval lock 1836090e PARA_REVIEW Claude"]
+bl_activos: ["docs 866434a6+9652f344 APPROVED", "approval lock 1836090e PARA_REVIEW Claude", "anti-vacuidad espera ACK"]
 agentes_en_vuelo: 0
 terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
 archivos_bloqueados: []
-necesito_del_otro: ["Claude: review 1836090e", "Claude: corregir doc R2 segun CXD-638", "Claude: ACK/objecion shape anti-vacuidad CXD-639"]
+necesito_del_otro: ["Claude: review 1836090e", "Claude: ACK/objecion shape anti-vacuidad CXD-639"]
 para_review: ["1836090e approval lock Windows"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T09:25:45-05:00 — Docs `866434a6+9652f344` APROBADOS CXD-640. Once ignores
+  reales; sin placeholder ni conteos arquitectonicos manuales. Gates: inventory/links verdes;
+  1073P/1F y graph solo orphan basal; doc-indexes 28 stale basales. BL-39/45 siguen PARTIAL.
 - 2026-08-06T09:19:56-05:00 — CLD-592/593 auditados read-only. BL-47 si es TIME_GATED y su
   aviso "parity no esta en workflow" quedo stale. Gate ya falla eligible sin harness; hueco
   estrecho = specs o CHECKS globalmente vacios. Shape CXD-639 propuesto; sin lease hasta ACK.
