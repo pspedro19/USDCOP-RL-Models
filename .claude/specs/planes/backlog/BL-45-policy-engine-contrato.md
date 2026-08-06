@@ -575,6 +575,21 @@ Detalles que hacen que el verde signifique algo:
 * la matriz tiene su propia guarda anti-vacuidad: conjunto exacto de policies/activos y **ambos**
   motores representados.
 
+### Frontera menos obvia: el E2E prueba TRÁNSITO y REGLA, no exactitud numérica
+
+Encontrado en una auditoría propia (sabotear cada módulo y ver qué ficheros de test se enteran):
+poner `ma_200` —o las tres SMA de Gold— a `0.0` **no pone rojo** `test_policy_chain_end_to_end.py`.
+La razón es de diseño: cada test compara la decisión contra **la regla aplicada al mismo snapshot
+que recibió**, así que un valor corrupto produce una comparación *self-consistente* y verde.
+
+La exactitud numérica la cubren los **tests de productor**, que sí detectan los tres sabotajes
+porque comparan la serie completa contra una referencia legacy **independiente**. La división es
+deliberada: duplicar esa comparación en el E2E crearía una **segunda fuente de verdad sobre la
+fórmula**, que es exactamente lo que los slices de SPX/BTC/Gold eliminaron.
+
+Queda escrito porque la frase «la decisión se juzga contra su regla» —cierta— se lee fácilmente
+como «verifica los números», y no los verifica.
+
 ### Las fronteras que este trabajo NO cruza — siguen ABIERTAS
 
 1. **`publish` no se ha recorrido extremo a extremo** contra `reference.instrument`.

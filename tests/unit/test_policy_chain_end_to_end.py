@@ -9,6 +9,19 @@ decisión con su `rule_trace`. Cada eslabón consume literalmente lo que produjo
 anterior: nada se fabrica a mano por el camino, que es la diferencia entre probar la
 cadena y probar cuatro funciones que casualmente encajan.
 
+**NO prueba que los VALORES sean correctos.** Esta es la frontera menos obvia y la que
+más fácil se lee de más. Cada test compara la decisión contra **la regla aplicada al
+mismo snapshot que recibió**: si `ma_200` llegara corrupto —digamos, cero—, el test
+calcularía `close > 0 ⇒ LONG` y la policy diría LONG también. **Self-consistente, y
+verde.** Medido: sabotear `compute_ma_200` o `build_trend_smas` a `0.0` **no pone rojo
+este fichero**; sí ponen rojo los tests de productor.
+
+Es decir: aquí se verifica **tránsito y aplicación de la regla**, no exactitud numérica.
+La exactitud vive —y debe seguir viviendo— en los tests de productor, que comparan la
+serie completa contra una referencia legacy **independiente**. Duplicar esa comparación
+aquí crearía una segunda fuente de verdad sobre la fórmula, que es justo lo que los
+slices de SPX/BTC/Gold eliminaron.
+
 **NO prueba que la cadena corra en Airflow.** No hay contenedor de Airflow en este
 entorno (sí hay `postgres`, `redis`, `trading-api` y `signalbridge`), así que lo que
 se ejercita es la lógica de los cuatro eslabones sin el scheduler y sin el fetch de
