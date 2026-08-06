@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import os
 import sys
 from pathlib import Path
@@ -95,10 +96,15 @@ def main() -> int:
     if not ORIGEN.is_file():
         print(f"[FAIL] no existe el origen {ORIGEN}")
         return 1
-    sha = hashlib.sha256(ORIGEN.read_bytes()).hexdigest()
+    # UNA sola lectura: el hash y el parseo salen de los MISMOS bytes. Leer el fichero
+    # dos veces —una para el sha, otra para `read_parquet(ruta)`— deja una ventana en la
+    # que alguien lo sustituye y acabaríamos publicando la provenance de un fichero que no
+    # es el que cargamos. Mismo TOCTOU que cerramos en el lock de aprobaciones (CXD-728).
+    crudo = ORIGEN.read_bytes()
+    sha = hashlib.sha256(crudo).hexdigest()
     print(f"[origen] {ORIGEN.relative_to(REPO)}  sha256={sha[:16]}")
 
-    frame = pd.read_parquet(ORIGEN)
+    frame = pd.read_parquet(io.BytesIO(crudo))
     print(f"[origen] {len(frame):,} filas, {len(frame.columns)} columnas")
 
     try:
@@ -116,9 +122,15 @@ def main() -> int:
         print(f"    {celda['fecha']}  {celda['columna']}  "
               f"{celda['antes']:,.4f} / {celda['factor']:g} = {celda['despues']:,.4f}")
 
+    # Hash de lo que REALMENTE se va a cargar. Sin esto, la provenance identifica el
+    # origen pero no el resultado, y el COPY no es verificable contra nada.
+    csv_bytes = reparado.to_csv(index=False).encode("utf-8")
+    sha_reparado = hashlib.sha256(csv_bytes).hexdigest()
+    print(f"[reparado] sha256={sha_reparado[:16]}  ({len(csv_bytes):,} bytes CSV)")
+
     if args.export_csv:
         destino = Path(args.export_csv)
-        reparado.to_csv(destino, index=False)
+        destino.write_bytes(csv_bytes)
         print(f"[export] {len(reparado):,} filas -> {destino}")
         print("[export] la base NO se ha tocado; cargar con COPY desde el contenedor")
         return 0
@@ -126,6 +138,11 @@ def main() -> int:
     conexion = _conexion()
     try:
         with conexion, conexion.cursor() as cur:
+            # El LOCK va ANTES del conteo. Sin él, un backfill concurrente puede poblar la
+            # tabla entre el `count` y el `INSERT`, y la guarda empty-only habría mirado un
+            # estado que ya no existe cuando escribimos. SHARE ROW EXCLUSIVE bloquea otros
+            # escritores sin impedir lecturas.
+            cur.execute(f"LOCK TABLE {TABLA} IN SHARE ROW EXCLUSIVE MODE")
             cur.execute(f"SELECT count(*) FROM {TABLA}")
             existentes = cur.fetchone()[0]
             if existentes:
@@ -133,12 +150,26 @@ def main() -> int:
                       f"sólo para arranque: no sincroniza ni repara historia existente.")
                 return 1
 
+            # `table_name` a secas casaría con una tabla homónima de OTRO esquema y
+            # daríamos por buena una lista de columnas que no es la de destino.
             cur.execute(
                 "SELECT column_name FROM information_schema.columns "
-                "WHERE table_name = %s",
+                "WHERE table_name = %s AND table_schema = current_schema()",
                 (TABLA,),
             )
             columnas_tabla = {r[0] for r in cur.fetchall()}
+            if not columnas_tabla:
+                raise SystemExit(
+                    f"[FAIL] {TABLA} no existe en current_schema(): no hay destino"
+                )
+            obligatorias = ("fecha",) + tuple(manifiesto_backup_2026_06().columnas())
+            faltan = [c for c in obligatorias if c not in columnas_tabla]
+            if faltan:
+                raise SystemExit(
+                    f"[FAIL] la tabla no tiene {faltan}. Cargar sin la clave o sin las "
+                    f"columnas FX vigiladas dejaría datos que ningún gate puede revisar; "
+                    f"descartarlas en silencio sería peor que no cargar"
+                )
             columnas = [c for c in reparado.columns if c in columnas_tabla]
             ausentes = sorted(set(reparado.columns) - columnas_tabla)
             if ausentes:
@@ -151,6 +182,12 @@ def main() -> int:
                 print(f"[dry-run] se insertarían {len(filas):,} filas en {TABLA} "
                       f"({len(columnas)} columnas). Base NO tocada.")
                 return 0
+
+            # Recheck bajo el lock, justo antes de escribir: barato, y convierte la
+            # guarda en una garantía en vez de en una foto.
+            cur.execute(f"SELECT count(*) FROM {TABLA}")
+            if cur.fetchone()[0]:
+                raise SystemExit(f"[ABORTA] {TABLA} dejó de estar vacía bajo el lock")
 
             marcas = ", ".join(["%s"] * len(columnas))
             nombres = ", ".join(f'"{c}"' for c in columnas)
