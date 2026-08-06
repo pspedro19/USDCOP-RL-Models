@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.3.0
-last_verified: 2026-07-31
+version: 1.4.0
+last_verified: 2026-08-06
 supersedes: []
 code_anchors:
   - .claude/specs/planes/03-institutional-readiness.md
@@ -55,13 +55,13 @@ El corte factual adicional produjo:
 - links relativos: `664 internal links resolve`;
 - contrato RBAC y cobertura RBAC: verdes.
 
-Los tres fallos amplios se preservan como evidencia adversa, no se maquillan como fallo de BL-33:
-
-1. dos consumidores de `MetricEngine` siguen pasando `annualization_by_asset` a un constructor que
-   ya no acepta ese argumento;
-2. el plan `fabric-v1` ya no coincide con su digest pinneado.
-
-La matriz los registra como `RISK-06` y `TECH-06`, ambos `PARTIAL`.
+Los tres fallos amplios pertenecen al corte original y no se maquillan como fallos de BL-33.
+Dos mostraban deriva del constructor de `MetricEngine`; la secuencia `bf1e02f8`, `89a7732d` y
+`2fea6f7e` migró los fixtures afectados a `MetricEngine.from_asset_registry`, y el gate de seguridad
+fue revalidado en **35 passed** el 2026-08-06. `RISK-06` sigue `PARTIAL` por los huecos vigentes de BL-18: falta un productor y
+consumidor productivos del evento persistido, el allowlist heredado conserva entradas y queda por
+decidir la colisión de identidad semántica. El tercer fallo histórico —el digest divergente de
+`fabric-v1`— permanece visible en `TECH-06`.
 
 ## Qué falta para cierre
 

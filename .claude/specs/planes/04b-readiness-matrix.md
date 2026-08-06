@@ -1,8 +1,8 @@
 ---
 kind: audit
 status: PARTIAL
-version: 1.2.0
-last_verified: 2026-07-31
+version: 1.3.0
+last_verified: 2026-08-06
 supersedes: []
 code_anchors:
   - tests/regression/test_readiness_matrix.py
@@ -58,7 +58,7 @@ en el mismo review; esto evita convertir “archivo presente” en “afirmació
 | RISK-03 | Risk | Disciplina anti-selección y cobro de trials | Ledger encadenado, familias completas, conteos DSR reconciliados y ningún juez reanclado | [Gate del trial ledger](../../../tests/regression/test_trial_ledger.py) y [constitución quant](../../rules/quant-constitution.md) fijan el control del repositorio | VERIFIED_REPO | Shared / quant governance | 2026-07-31 |
 | RISK-04 | Risk | Snapshot de portfolio y allocator fail-closed | Partición causal de señales, políticas coherentes, optimización acotada y fallback seguro | [BL-26](backlog/BL-26-portfolio-snapshot.md) y [BL-27](backlog/BL-27-allocator-v1-novedad.md) registran gaps de identidad, política y persistencia | PARTIAL | CODEX / BL-26,27 | 2026-07-31 |
 | RISK-05 | Risk | Riesgo de contraparte, liquidez y capacidad | Exposición por broker, cash/margin, impacto, concentración, límites de volumen y stress verificable | [Plan institucional](03-institutional-readiness.md) define el control; no existe cobertura operativa integral en el corte | NOT_EVIDENCED | Portfolio + risk | 2026-07-31 |
-| RISK-06 | Risk | API e identidad del motor de métricas | Constructor, catálogo, annualización e identidad permanecen alineados y los consumidores instancian el contrato vigente | [BL-18](backlog/BL-18-catalogo-motor-metricas.md) sigue PARTIAL y [su prueba de seguridad](../../../tests/unit/test_codex_safety_contracts.py) falla hoy porque aún pasa `annualization_by_asset` a una API que ya no lo acepta | PARTIAL | CODEX / BL-18 | 2026-07-31 |
+| RISK-06 | Risk | API e identidad del motor de métricas | Constructor, catálogo, annualización e identidad permanecen alineados y los consumidores instancian el contrato vigente | [BL-18](backlog/BL-18-catalogo-motor-metricas.md) sigue PARTIAL: falta un productor y consumidor productivos del evento persistido y el allowlist heredado conserva entradas; la [prueba de seguridad](../../../tests/unit/test_codex_safety_contracts.py) usa ya el registro gobernado | PARTIAL | CODEX / BL-18 | 2026-08-06 |
 | EXEC-01 | Execution | Idempotencia, fencing y compare-and-swap | Reintento conserva identidad, lease impide doble dispatcher y transición obsoleta falla cerrada | [Pruebas de seguridad](../../../tests/unit/test_codex_safety_contracts.py) cubren fronteras; [BL-30](backlog/BL-30-execution-service-externo.md) mantiene el servicio externo incompleto | PARTIAL | CODEX / BL-30 | 2026-07-31 |
 | EXEC-02 | Execution | Órdenes event-sourced y reconciliación firmada | Comandos/eventos inmutables, fills y posiciones conciliados, correcciones enlazadas y cierre EOD | [BL-21](backlog/BL-21-event-sourcing-exec.md) y [BL-22](backlog/BL-22-fact-position-pnl.md) siguen PARTIAL por persistencia e integración real | PARTIAL | CODEX / BL-21,22 | 2026-07-31 |
 | EXEC-03 | Execution | Doble voto y revalidación server-side | Voto humano separado, revalidación al ejecutar, RBAC y rechazo de estado stale | [Approval gates](../../rules/approval-gates.md) y [gate de store privado](../../../tests/regression/test_approval_store_private.py) prueban piezas; SEC-02 impide afirmar cuatro ojos institucional | PARTIAL | CLAUDE / governance | 2026-07-31 |
@@ -113,10 +113,13 @@ cuenta como verde.
 - Cross-review `CLD-267`: reemplazar `INV-04` por un enlace existente a `LICENSE` dejó el gate
   anterior verde. El R2 pinnea los targets revisados de todas las filas; gate ampliado `5 passed` y
   la misma sustitución ahora produce un error de correspondencia sobre `INV-04`.
-- Batería factual amplia (segunda invocación): `199 passed, 3 failed, 1 skipped`; sumada al gate
-  propio anterior, el agregado es `202 passed, 3 failed, 1 skipped`. Los fallos no se atribuyen a
-  BL-33: dos exponen deriva del constructor de `MetricEngine` y uno expone drift del digest
-  `fabric-v1`. Quedan visibles en `RISK-06` y `TECH-06`.
+- Batería factual amplia del corte original: `199 passed, 3 failed, 1 skipped`; sumada al gate
+  propio anterior, el agregado fue `202 passed, 3 failed, 1 skipped`. Dos fallos exponían deriva
+  del constructor de `MetricEngine`; la secuencia `bf1e02f8`, `89a7732d` y `2fea6f7e` migró los
+  fixtures afectados al registro gobernado, y la prueba de seguridad fue revalidada en **35 passed**
+  el 2026-08-06. `RISK-06` permanece `PARTIAL`
+  por las brechas productivas y el allowlist de BL-18, no por aquel argumento retirado. El fallo
+  histórico restante exponía el drift del digest `fabric-v1`, visible en `TECH-06`.
 - Focal exacto de pre-trade, idempotencia, broker timeout, kill actions y fencing: `7 passed`.
 - Contrato RBAC y cobertura RBAC: verdes. Frontmatter: `992 passed`. Enlaces relativos:
   `664 internal links resolve`.
