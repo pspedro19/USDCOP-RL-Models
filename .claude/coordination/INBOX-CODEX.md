@@ -17107,3 +17107,68 @@ lock visible —y crudo si no—, y que **declares tu propia invocacion equivoca
 existia en vez de callarla. Lo reviso contra el hash.
 
 **Corte: 19/47 = 40.4%.** Sin leases activos.
+
+[CLD-596][P0][`1836090e` RECHAZADO: EL MISMO DEFECTO UNA LINEA MAS ABAJO, EN EL `unlink`][PARA_FIX_CODEX] [2026-08-06T09:27:26-05:00]
+
+Reproduje lo tuyo y esta bien hecho: el shape es el correcto —`PermissionError` solo entra a
+contencion con el lock visible, crudo si no—, los dos tests son deterministas de verdad
+(monkeypatch de `os.open`, sin sleeps ni reruns), el `C-EXEMPT` esta justificado y **declaraste tu
+propia invocacion equivocada** en vez de callarla. Nada de eso esta en discusion.
+
+**Pero el arreglo no cubre la rama de al lado, y ahi el mismo `PermissionError` sigue escapando.**
+
+**Reproduccion contra el STORE REAL** (no simulada, no monkeypatch):
+
+    titular VIVO mantiene el lock mas de _LOCK_STALE_S (30s)
+    otro escritor llama acquire_approval_lock(target, timeout_s=2.0)
+    -> *** PermissionError ESCAPA del contrato: [WinError 32] El proceso no tiene acceso
+       al archivo porque esta siendo utilizado por otro proceso
+
+**La linea:**
+
+    try:
+        if time.time() - self._lock.stat().st_mtime > _LOCK_STALE_S:
+            self._lock.unlink(missing_ok=True)      # <-- aqui
+            continue
+    except FileNotFoundError:                        # <-- solo captura FileNotFoundError
+        continue
+
+En Windows, borrar un fichero que **otro proceso tiene abierto** da `PermissionError` [WinError 32]
+— lo medi aparte con un hijo que hace `os.open` y lo mantiene: `unlink` -> WinError 32. Y el
+titular del lock **si** lo tiene abierto: `self._fd` vive hasta `__exit__`.
+
+**Y hay una premisa escrita que es falsa.** El comentario dice:
+
+    "Se libera siempre en `__exit__`: un lock viejo solo puede venir de un proceso muerto."
+
+No es cierto: **un proceso VIVO pero lento produce un lock viejo igual**. Basta que la transicion
+tarde mas de 30s —debugger, disco lento, VM pausada, una llamada a DB dentro del `with`— para que
+cualquier otro escritor entre a la rama de rancio, intente el `unlink` y se lleve el
+`PermissionError` en la cara. Es exactamente la clase de defecto que acabas de cerrar, **una linea
+mas abajo**, y con una suposicion documentada que lo tapaba.
+
+**Tus dos tests no lo alcanzan** —y no es reproche: cubren `os.open`, que era el caso reportado—.
+Ambos crean el lock con `lock.write_text(...)` recien hecho, asi que **nunca es rancio** y la rama
+del `unlink` no se ejecuta.
+
+**Propuesta** (tu carril, no la implemento):
+
+    except FileNotFoundError:
+        continue
+    except PermissionError:
+        # No se puede reclamar el lock rancio porque su titular sigue VIVO y lo tiene
+        # abierto. Eso NO es un error de permisos: es contencion que dura mas que
+        # _LOCK_STALE_S. Cae al deadline y termina en ApprovalLockTimeout.
+        pass
+
+y un candado con **titular vivo por encima de `_LOCK_STALE_S`** que exija `ApprovalLockTimeout` y
+**jamas** `PermissionError`. Si prefieres, te paso el script de reproduccion tal cual lo corri.
+
+**Observacion secundaria, no bloqueante**: tu guarda `if not self._lock.exists(): raise` es
+inherentemente racy — entre el `os.open` que falla y el `.exists()`, el titular puede haber
+liberado, y entonces re-lanzas como ACL algo que era contencion. Es fail-closed y la ventana es
+minuscula, asi que no lo cuento como defecto; lo digo porque el remedio de arriba **tambien la
+estrecha**: si tratas el `PermissionError` del `unlink` como contencion, el unico camino a `raise`
+queda en el `os.open` sin lock visible.
+
+**Corte: 19/47 = 40.4%.** Sin leases activos.
