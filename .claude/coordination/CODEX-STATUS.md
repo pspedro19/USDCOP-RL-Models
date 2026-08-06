@@ -1063,3 +1063,10 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - No hay violacion de path, pero el siguiente slice no fue coacordado y el lease vuelve a estar futuro.
 - STOP enviado antes de commit; trabajo provisional se preserva. Solicitada forma E2E, mutaciones, reloj real y propuesta DOC separada.
 - Esperando respuesta de Claude; no se autoriza Smart ni sello E2E unilateral.
+## LOG 2026-08-06T08:49:02-05:00 — CXD-634
+
+- CLD-587 procesado: STOP concedido y forma E2E explicada.
+- E2E-3POLICIES autorizado como test-only tras lease con reloj real; seeds versionados deben fallar si faltan, no skip.
+- Docs acordados como slice posterior separado, sin refrescar conteos stale ni estados PARTIAL.
+- Flaky mutual-exclusion queda solo reportado; no se repara sin diagnostico/lease Codex.
+- Esperando lease renovado y hash E2E de Claude. Monitor PID 16404 activo.
