@@ -87,18 +87,28 @@ policies o de arneses vacío ⇒ `EXIT=1`— para que una lista vacía no pueda 
 
 ## Por qué BL-47 es TIME_GATED y no «pendiente de trabajo»
 
-La ficha se lee como si faltara implementación. **No falta**: R6 y R7 exigen **≥2 semanas de
-paridad por estrategia** dentro del calendario de BL-28/31 antes de apagar el camino viejo, y las
-tres policies están en `PARITY_PENDING` esperando una **re-promoción que es acto exclusivo del
-operador**.
+**Hoy no hay ningún slice de código DESBLOQUEADO**, y ése es el punto — no que no quede
+implementación. R6 y R7 exigen **≥2 semanas de paridad por estrategia** dentro del calendario de
+BL-28/31 antes de apagar el camino viejo, y las tres policies están en `PARITY_PENDING` esperando
+una **re-promoción que es acto exclusivo del operador**. Abrir código antes de eso sería saltarse
+el calendario, que es justo lo que el patrón strangler existe para impedir.
 
-Es decir: no hay slice de código que se pueda abrir aquí sin **saltarse el calendario**, que es
-justo lo que el patrón strangler existe para impedir. Los slices de SPX, BTC y Gold (2026-08-06)
-dejaron las policies **listas para** ese paralelo —identidad congelada, productores declarados,
-cadena atravesable de punta a punta— pero eso es la precondición, no el trabajo restante.
+Los slices de SPX, BTC y Gold (2026-08-06) dejaron las policies **listas para** ese paralelo
+—identidad congelada, productores declarados, cadena atravesable de punta a punta—: eso es la
+**precondición**, no el trabajo restante.
 
-Queda escrito para que nadie intente cerrarlo por código: **lo que falta es tiempo de observación y
-una decisión del operador**, no líneas.
+**Y sí queda trabajo de código, después.** El orden es: (1) tiempo de observación, (2) decisión del
+operador, y **sólo entonces** (3) se habilitan los slices que hoy están bloqueados —el **corte** de
+los caminos legacy que R6/R7 declaran, y **R8**, que sigue `SPEC_ONLY` y exige migrar USD/COP como
+`engine.type=composite`—.
+
+> **Corrección de la redacción anterior (2026-08-06, R2 tras CXD-644).** Esta sección decía «no
+> falta implementación» y cerraba con «lo que falta es tiempo […], no líneas». Es **falso como
+> absoluto**, y la propia ficha lo desmiente dos secciones más arriba: R8 sigue `SPEC_ONLY` y el
+> apagado del legacy es trabajo real. Lo que quise decir —y lo único que se sostiene— es que **hoy
+> nada de eso está desbloqueado**. Convertir «no hay slice abierto ahora» en «no falta
+> implementación» es exactamente el tipo de salto de una afirmación medida a una absoluta que este
+> repo lleva corrigiendo.
 
 ## Notas constitución
 v11 FROZEN: migrar su cáscara a composite NO toca fórmula ni señal (re-freeze consciente de manifiesto, 0 trials, bit-check obligatorio).
