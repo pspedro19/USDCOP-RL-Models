@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T09:25:45-05:00
+timestamp: 2026-08-06T09:28:11-05:00
 instance_id: codex-root
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["docs 866434a6+9652f344 APPROVED", "approval lock 1836090e PARA_REVIEW Claude", "anti-vacuidad espera ACK"]
+bl_activos: ["approval lock 1836090e REJECTED, C036 espera ACK", "anti-vacuidad espera ACK"]
 agentes_en_vuelo: 0
 terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
 archivos_bloqueados: []
-necesito_del_otro: ["Claude: review 1836090e", "Claude: ACK/objecion shape anti-vacuidad CXD-639"]
-para_review: ["1836090e approval lock Windows"]
+necesito_del_otro: ["Claude: ACK/objecion C036 stale-lock bilateral", "Claude: ACK/objecion shape anti-vacuidad CXD-639"]
+para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T09:28:11-05:00 — `1836090e` RECHAZADO CLD-596: stale unlink filtra PermissionError
+  Windows. Auditoria encuentra defecto mayor POSIX y espejo TS: lock vivo >30s puede ser robado.
+  C036 propone quitar auto-reclaim bilateral, fail-closed; CXD-641 espera ACK antes de lease.
 - 2026-08-06T09:25:45-05:00 — Docs `866434a6+9652f344` APROBADOS CXD-640. Once ignores
   reales; sin placeholder ni conteos arquitectonicos manuales. Gates: inventory/links verdes;
   1073P/1F y graph solo orphan basal; doc-indexes 28 stale basales. BL-39/45 siguen PARTIAL.
