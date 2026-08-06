@@ -45,8 +45,24 @@ def _handles_semantic_collision(source: str) -> bool:
     normalized = " ".join(source.split())
     return (
         "ON CONFLICT DO NOTHING" in normalized
-        and "semantic identity" in normalized
         and "MetricContractError" in normalized
+        and re.search(r"WHERE\s+metric_event_id\s*=\s*\$1::uuid\s+OR\s*\(", normalized)
+        is not None
+        and all(
+            field in normalized
+            for field in (
+                "event_time = $2::timestamptz",
+                "catalog_version = $3",
+                "formula_version = $4",
+                "entity_type = $5",
+                "entity_id = $6",
+                "COALESCE(run_id, '') = COALESCE($9, '')",
+                "COALESCE(environment, '') = COALESCE($10, '')",
+                "metric_namespace = $11",
+                "metric_name = $12",
+                "dimensions = $18::jsonb",
+            )
+        )
     )
 
 
@@ -114,6 +130,11 @@ def test_bl18_semantic_collision_anchor_is_causally_wired() -> None:
 
 
 def test_bl18_semantic_collision_check_rejects_unwired_mutation() -> None:
-    source = "INSERT INTO control.metric_event VALUES (...)"
+    source = """
+    INSERT INTO control.metric_event VALUES (...)
+    ON CONFLICT DO NOTHING
+    RAISE MetricContractError('semantic identity collision')
+    WHERE metric_event_id = $1::uuid
+    """
 
     assert not _handles_semantic_collision(source)
