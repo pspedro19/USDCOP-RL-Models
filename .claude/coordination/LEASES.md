@@ -2003,10 +2003,17 @@ Shape bilateral CXD-702/713 y CLD-638: eliminar churn diario de `last_verified`,
 - docs/templates/README.md
 # (CODEX 2026-08-06T13:28:31-05:00) RELEASE DOC-INDEX-DETERMINISM: `fe6198b4`. Liberados generador, test y los 28 índices administrados; `--write` confirmó 0 updates y ningún README cambió.
 
+## LEASE APPROVAL-LOCK-WINDOWS-TOCTOU (ACTIVO, 2026-08-06T13:43:20-05:00) — titular CODEX, id codex-approval-lock-toctou-20260806, expira 2026-08-06T15:43:20-05:00
+Shape bilateral CXD-728/CLD-644/CXD-734. Un único retry ante `PermissionError` transitorio sin lock visible, preservando denegación ACL fail-closed y pruebas anti-vacuidad por conteo real.
+- src/contracts/approval_store.py
+- tests/regression/test_approval_mutual_exclusion.py
+
 ## LEASE BL18-LIVE-CALLERS-EVIDENCE (ACTIVO, 2026-08-06T13:31:38-05:00) — titular CODEX, id codex-aux-bl18-live-callers-20260806, expira 2026-08-06T14:31:38-05:00
 Shape bilateral CXD-721/CLD-639: conservar historia 2026-08-03, corregir estado vigente con productor/consumidor reales, PARTIAL por allowlist/cobertura/colisión, anchors y test causal. Sin fórmulas, allowlist, contratos ni DAGs.
 - .claude/specs/planes/backlog/BL-18-catalogo-motor-metricas.md
 - tests/unit/test_bl18_backlog_anchors.py
+
+# (CODEX 2026-08-06T13:42:51-05:00) RELEASE BL18-LIVE-CALLERS-FORMAT: `0c757da2`. `py_compile` OK; focal 4 passed; cero líneas >100; diff-check limpio salvo avisos CRLF ajenos. Liberado el único path.
 # (CODEX 2026-08-06T13:33:49-05:00) RELEASE BL18-LIVE-CALLERS-EVIDENCE: `27562310`. Liberados ambos paths; BL-18 permanece PARTIAL.
 
 ## LEASE BL18-LIVE-CALLERS-CAUSAL (ACTIVO, 2026-08-06T13:37:24-05:00) — titular CODEX, id codex-aux-bl18-callers-causal-20260806, expira 2026-08-06T14:22:24-05:00
@@ -2039,3 +2046,6 @@ Follow-up CXD-732: solo orden de imports y líneas <=100; sin cambios de lógica
 Hora inyectada desde `date`. Codex pre-reviso mi hallazgo (CXD-AUX-734) y quedo a la espera de mi commit. Doc + test de anchors, status PARTIAL intacto. NO se toca el catalogo, ni los feature_sets, ni los snapshots.
 - .claude/specs/planes/backlog/BL-39-feature-contracts-normalizacion.md
 - tests/unit/test_bl39_backlog_anchors.py     (NUEVO, al estilo de sus BL-19/BL-18)
+
+# (CODEX 2026-08-06T13:42:51-05:00) RELEASE BL18-LIVE-CALLERS-FORMAT (REGULARIZACIÓN EOF): `0c757da2`. La línea de release ya fue añadida append-only en posición anterior por carrera de escritores; esta entrada final confirma liberación efectiva del lease `codex-aux-bl18-callers-format-20260806`.
+# (CLAUDE 2026-08-06T13:46:18-05:00) RELEASE BL39-DOC: `78bc6f68`. Liberados los 2 paths. Sin leases CLAUDE activos.
