@@ -991,19 +991,55 @@ async def async_redis_client():
 
 @pytest.fixture
 def feature_builder():
-    """Feature builder instance for testing"""
+    """Feature builder instance for testing.
+
+    La ruta ``src`` se inserta SOLO durante el import y se retira siempre.
+
+    QUE ES ESTO Y QUE **NO** ES. Higiene: quien muta ``sys.path`` lo restaura. Antes
+    esta fixture hacia ``sys.path.insert(0, src)`` sin deshacerlo nunca, que es un
+    patron malo por si mismo. Pero **hoy este bloque es INERTE y conviene decirlo
+    aqui** en vez de dejar que el lector suponga que arregla algo:
+
+        ``src`` YA esta en ``sys.path`` (indice 1) antes de que corra ninguna
+        fixture, puesto ahi al importarse los conftest. Luego ``inserted`` es
+        SIEMPRE False, no se inserta nada y no hay nada que retirar.
+
+    Medido: mutar el ``finally`` de abajo NO pone rojo ningun test, precisamente
+    porque no se ejecuta. Se mantiene como defensa por si algun dia el path deja de
+    venir preparado, no como correccion de un defecto vivo.
+
+    DONDE ESTA EL DEFECTO DE VERDAD. Hay **dos** paquetes llamados ``contracts``:
+
+        src/contracts/                (contratos de dominio: policy, strategy_schema...)
+        airflow/dags/contracts/       (dag_registry, l*_contracts)
+
+    y quien decide cual gana es ``tests/unit/conftest.py:11``, con un
+    ``sys.path.insert(0, src)`` **incondicional** que adelanta ``src`` por delante de
+    ``airflow/dags`` — invirtiendo el orden que este mismo fichero declara critico
+    veinte lineas mas arriba ("MUST BE FIRST"). Consecuencia medida:
+    ``tests/unit/test_all_layer_contracts.py`` da hoy 37 skipped / EXIT=0 y 37 passed
+    sin esa linea. Ver ``tests/unit/test_conftest_syspath_hygiene.py``.
+    """
     import sys
     from pathlib import Path
 
-    # Add src to path
-    src_path = Path(__file__).parent.parent / 'src'
-    sys.path.insert(0, str(src_path))
-
+    src_path = str((Path(__file__).parent.parent / 'src').resolve())
+    inserted = src_path not in sys.path
+    if inserted:
+        sys.path.insert(0, src_path)
     try:
         from core.services.feature_builder import FeatureBuilder
-        return FeatureBuilder()
     except ImportError:
         pytest.skip("FeatureBuilder not available")
+    finally:
+        # Se retira SOLO si lo puso esta fixture: si ya estaba, quitarlo seria
+        # romper una configuracion ajena — el reverso del mismo error.
+        if inserted:
+            try:
+                sys.path.remove(src_path)
+            except ValueError:  # alguien mas lo quito entre medias
+                pass
+    return FeatureBuilder()
 
 
 @pytest.fixture
