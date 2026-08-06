@@ -160,6 +160,84 @@ jobs:
           retention-days: 7
 
   # ===========================================================================
+  # Regression Gates
+  # ---------------------------------------------------------------------------
+  # POR QUE EXISTE ESTE JOB. `tests/regression/` tiene 66 ficheros y hasta ahora
+  # CI solo nombraba 13, repartidos entre fabric-contracts.yml y specs-gate.yml.
+  # Los otros 53 no los ejecutaba NADIE: gates escritos, funcionando, y sin
+  # llamador. Uno de ellos —test_macro_clean_fx_scale— llevaba detectando un
+  # empalme de escala real en USDMXN/USDCLP sin que nadie lo viera.
+  #
+  # El directorio entero es el sujeto. Si algun dia hay que excluir algo, se
+  # excluye POR NOMBRE, con motivo, owner y condicion que lo cancela — nunca en
+  # silencio. `tests/unit/test_regression_ci_wiring.py` lo vigila.
+  # ===========================================================================
+  regression-test:
+    name: Regression Gates
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-regression-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-regression-
+
+      # Mismas extras que el job de tests. NO se anade `ml`: arrastraria torch a
+      # cada corrida de CI, y esa es una decision de coste que no toma este slice.
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev,forecasting,database]"
+          pip install pytest pytest-asyncio
+
+      # El step BLOQUEANTE. Corre el directorio COMPLETO menos exactamente los dos
+      # ficheros en cuarentena declarada, cada uno con su step visible mas abajo.
+      # Sin `continue-on-error`, sin `|| true`: si algo aqui cae, el job cae.
+      - name: Run regression gates (blocking)
+        run: |
+          pytest tests/regression/ \
+            --ignore=tests/regression/test_macro_clean_fx_scale.py \
+            --ignore=tests/regression/test_action_threshold_ssot.py \
+            -q --tb=short
+
+      # CUARENTENA 1 — rojo ESPERADO y VISIBLE, no un silencio.
+      #   motivo: MACRO_DAILY_CLEAN/MASTER traen un empalme de escala en
+      #           USDMXN (x10^4) y USDCLP (x10^2) desde 2026-06-26/29. El fix de
+      #           2026-07-21 reparo CLEAN pero no MASTER, y una regeneracion
+      #           posterior lo devolvio. El dato malo es real; el detector acierta.
+      #   owner: CODEX (raiz en fuente) + CLAUDE (diagnostico, CLD-627/628/629)
+      #   cancelacion: se BORRA este step cuando haya repair autoritativo y el
+      #           test pase. Hoy esta bloqueado: la DB viva tiene 0 filas, asi que
+      #           no existe fuente de la que reparar sin inventar numeros.
+      - name: 'QUARANTINE (non-blocking): FX scale splice in MACRO_DAILY_CLEAN'
+        continue-on-error: true
+        run: pytest tests/regression/test_macro_clean_fx_scale.py -q --tb=short
+
+      # CUARENTENA 2 — rojo ESPERADO y VISIBLE.
+      #   motivo: importar `src.training.config` (una dataclass pura) dispara
+      #           `src/training/__init__.py`, que arrastra engine/environments/
+      #           trainers y con ellos `stable_baselines3`. Ese paquete vive SOLO
+      #           en el extra `ml`, que este job no instala => ImportError en
+      #           coleccion. No es el test lo que esta mal: es el acoplamiento.
+      #   owner: CLAUDE
+      #   cancelacion: se BORRA este step cuando `config` se desacople del
+      #           `__init__` pesado, o si se decide instalar el extra `ml`.
+      - name: 'QUARANTINE (non-blocking): action threshold SSOT (RL import coupling)'
+        continue-on-error: true
+        run: pytest tests/regression/test_action_threshold_ssot.py -q --tb=short
+
+  # ===========================================================================
   # Integration Tests
   # ===========================================================================
   integration-test:
