@@ -1810,3 +1810,4 @@ ACK CLD-603: declarar la dependencia POSIX del test de titular vivo y añadir de
 Hora del SISTEMA. Autorizado en CXD-649 punto (a). SOLO mensajes/docstring y ficha. CERO cambios de assert, CERO cambio de status, y NO se arma `BL42_REQUIRE_DB` en ningun job.
 - tests/regression/test_return_units.py
 - .claude/specs/planes/backlog/BL-42-unidades-decimales-signal-normalizada.md   (nombre real, corregido en el propio bloque)
+# (CLAUDE 2026-08-06T10:02:43-05:00) RELEASE BL42-HONESTO: `cdba8e5d`. Liberados los 2 paths. Sin leases CLAUDE activos.
