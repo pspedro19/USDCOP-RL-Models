@@ -222,18 +222,35 @@ def acquire_approval_lock(path: Path, timeout_s: float = _LOCK_WAIT_S):
         def __enter__(self) -> "_Lock":
             deadline = time.monotonic() + timeout_s
             while True:
-                try:
-                    self._fd = os.open(str(self._lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                    os.write(self._fd, f'{{"pid": {os.getpid()}}}'.encode())
-                    return self
-                except FileExistsError:
-                    pass
-                except PermissionError:
-                    # Windows puede devolver EACCES durante la carrera en que otro
-                    # proceso libera un lock existente. Solo esa forma observable es
-                    # contencion; sin lock visible es un error real de permisos.
-                    if not self._lock.exists():
+                acquired_fd = None
+                for permission_attempt in range(2):
+                    try:
+                        acquired_fd = os.open(
+                            str(self._lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY
+                        )
+                    except FileExistsError:
+                        break
+                    except PermissionError:
+                        # Windows puede devolver EACCES mientras otro proceso termina
+                        # de liberar el lock. Si ya desapareció, una única reapertura
+                        # distingue esa carrera de una denegación ACL persistente.
+                        if self._lock.exists():
+                            break
+                        if permission_attempt == 1:
+                            raise
+                    else:
+                        break
+
+                if acquired_fd is not None:
+                    self._fd = acquired_fd
+                    try:
+                        os.write(self._fd, f'{{"pid": {os.getpid()}}}'.encode())
+                    except BaseException:
+                        os.close(self._fd)
+                        self._fd = None
+                        self._lock.unlink(missing_ok=True)
                         raise
+                    return self
 
                 # C036: la edad NO demuestra que el titular murió. En POSIX se puede
                 # borrar un fichero abierto; reclamarlo por mtime permitiría que un

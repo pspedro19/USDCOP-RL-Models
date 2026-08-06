@@ -153,17 +153,60 @@ def test_windows_permission_error_with_visible_lock_is_contention(tmp_path, monk
             pytest.fail("un lock en contencion no puede adquirirse")
 
 
+def test_transient_windows_permission_error_retries_once(tmp_path, monkeypatch):
+    """Si el lock desaparece durante EACCES, una reapertura adquiere sin falso ACL."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    real_open = store.os.open
+    attempts = 0
+
+    def transient(path, flags, *args, **kwargs):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            lock.unlink(missing_ok=True)
+            raise PermissionError("simulated Windows lock release race")
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(store.os, "open", transient)
+    with store.acquire_approval_lock(target, timeout_s=0):
+        assert lock.exists()
+
+    assert attempts == 2, "el caso causal debe ejercer exactamente una reapertura"
+    assert not lock.exists()
+
+
+def test_lock_write_failure_closes_and_removes_lock(tmp_path, monkeypatch):
+    """Una falla al publicar el PID no deja descriptor ni lock huérfanos."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+
+    def denied(*args, **kwargs):
+        raise PermissionError("simulated lock write denial")
+
+    monkeypatch.setattr(store.os, "write", denied)
+    with pytest.raises(PermissionError, match="simulated lock write denial"):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un lock cuyo PID no se publicó no puede adquirirse")
+
+    assert not lock.exists()
+
+
 def test_permission_error_without_visible_lock_is_not_disguised(tmp_path, monkeypatch):
     """Un ACL/EACCES real conserva PermissionError; no se convierte en BUSY."""
     target = tmp_path / "approval_state.json"
+    attempts = 0
 
     def denied(*args, **kwargs):
+        nonlocal attempts
+        attempts += 1
         raise PermissionError("simulated ACL denial")
 
     monkeypatch.setattr(store.os, "open", denied)
     with pytest.raises(PermissionError, match="simulated ACL denial"):
         with store.acquire_approval_lock(target, timeout_s=0):
             pytest.fail("un path sin permisos no puede adquirirse")
+    assert attempts == 2, "un ACL persistente debe confirmarse con una sola reapertura"
 
 
 def test_old_orphan_lock_is_never_reclaimed_automatically(tmp_path):
