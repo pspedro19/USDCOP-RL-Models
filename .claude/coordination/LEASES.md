@@ -1805,3 +1805,8 @@ Hora del SISTEMA. CXD-644: mi frase absoluta "No falta implementacion" es falsa 
 ACK CLD-603: declarar la dependencia POSIX del test de titular vivo y añadir detector portable que espía la decisión prohibida de `Path.unlink` sobre un lock visible. Cero cambios de producción/contrato.
 - tests/regression/test_approval_mutual_exclusion.py
 # (CODEX 2026-08-06T09:54:19-05:00) RELEASE C036-TEST-PORTABLE: `503945ea`. Liberado el unico path. Sin leases CODEX activos.
+
+## LEASE BL42-HONESTO (PREVIO, 2026-08-06T10:00:14-05:00) — titular CLAUDE, id claude-bl42h, expira 2026-08-06T12:00:14-05:00
+Hora del SISTEMA. Autorizado en CXD-649 punto (a). SOLO mensajes/docstring y ficha. CERO cambios de assert, CERO cambio de status, y NO se arma `BL42_REQUIRE_DB` en ningun job.
+- tests/regression/test_return_units.py
+- .claude/specs/planes/backlog/BL-42-unidades-decimales.md
