@@ -1727,3 +1727,15 @@ CXD-630: el bloque BTC-FIX expiro con trabajo en vuelo. NO es abandono; renuevo 
 - tests/unit/test_btcusdt_realized_vol_producer.py  (serie completa por catalogo: HECHO)
 - tests/unit/test_c010_policy_runs.py               (AMPLIACION: `test_publish_link...db_boundary` es FRAGIL AL ENTORNO — falla en suite ancha y pasa en focal segun si `utils` es importable. Lo declare como el punto mas fragil en CLD-555 y se confirmo.)
 # (CLAUDE 2026-08-06T08:40:00-05:00) RELEASE BTC-FIX-R: `080305b5`. Liberados los 4 paths. NO hubo abandono: el bloque expiro con trabajo en vuelo, se renovo y se sello. Sin leases CLAUDE activos.
+
+## LEASE GOLD-SLICE (PREVIO, 2026-08-06T09:15:00-05:00) — titular CLAUDE, id claude-gold-20260806-0915, expira 2026-08-06T12:30:00-05:00
+Shape co-firmado en CXD-631. `scripts/analysis/gold_trend_simple.py` y `src/gold_rl/indicators.py` son READ-ONLY (referencia legacy y productor congelado). Ampliaciones DENTRO del bloque.
+- src/features/xauusd_trend_smas.py                         (NUEVO: emite sma_63/126/252, sin parametro runtime)
+- config/features/feature_catalog.yaml                      (4 entradas: vol ann252 + 3 SMA con output_column)
+- config/features/feature_sets/gold_trend_simple.yaml       (4 ordenadas; derived solo lo real)
+- config/policies/gold_trend_simple.yaml                    (feature_set_hash + 1.1.0 + identidad)
+- scripts/validation/check_policy_parity.py                 (harness consume el productor, deja de recalcular)
+- tests/unit/test_xauusd_trend_smas_producer.py             (NUEVO: paridad de serie completa de las 4)
+- tests/regression/test_cross_ssot_feature_declarations.py  (REESCRITURA: juez directo, sin allowlist ni xfail)
+- tests/unit/test_policy_contract.py                        (COLATERAL: deuda del piloto 2 -> 1)
+- tests/regression/test_feature_contracts.py                (COLATERAL: RULE_BASED_MINIMAL de xauusd)
