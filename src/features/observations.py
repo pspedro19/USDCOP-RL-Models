@@ -157,6 +157,93 @@ def _resolve_producer(entry: Mapping[str, Any]) -> Callable[[pd.Series], pd.Seri
     return fn
 
 
+def resolve_feature_series(
+    entry: Mapping[str, Any], productor, df: pd.DataFrame, close: pd.Series
+) -> pd.Series:
+    """`entry + productor + frame -> Series`. **La** invocación, no una de dos.
+
+    Se factoriza porque el test de paridad de serie completa tiene que atravesar
+    EXACTAMENTE lo que atraviesa producción. Antes, el único test que cruzaba
+    `build_observations` comparaba **una sola barra**, y el que decía "serie completa"
+    llamaba a `build_daily_features` contra sí mismo — o sea, demostraba que el
+    builder es determinista consigo mismo, no que la vía del catálogo lo reproduzca
+    (CXD-629 §2). Y yo afirmé paridad de serie entera por esa vía en el handoff.
+    Una implementación paralela para el test habría dejado el mismo hueco.
+    """
+    feature_id = str(entry.get("feature_id"))
+    if productor is None:
+        if feature_id not in df.columns:
+            raise ObservationError(
+                f"{feature_id} es passthrough (sin `code_reference`) pero `bars` no "
+                f"trae la columna {feature_id!r}. Columnas: {sorted(df.columns)}. "
+                f"No se sustituye por otra"
+            )
+        return df[feature_id].astype(float)
+
+    contrato = entry.get("producer_contract", CONTRATO_SERIES)
+    if contrato not in CONTRATOS_SOPORTADOS:
+        raise ObservationError(
+            f"{feature_id}: producer_contract {contrato!r} no soportado (soportados: "
+            f"{CONTRATOS_SOPORTADOS}). Un contrato sin declarar NO se degrada al de "
+            f"por defecto"
+        )
+    if contrato == CONTRATO_SERIES:
+        return productor(close)
+
+    faltan = [c for c in COLUMNAS_FRAME if c not in df.columns]
+    if faltan:
+        raise ObservationError(
+            f"{feature_id}: el contrato {contrato!r} entrega {list(COLUMNAS_FRAME)} y "
+            f"`bars` no trae {faltan}"
+        )
+    columna = entry.get("output_column")
+    if not isinstance(columna, str) or not columna:
+        raise ObservationError(
+            f"{feature_id}: contrato de frame sin `output_column` declarada; no se "
+            f"adivina cuál de las salidas es esta feature"
+        )
+    entrada = df[list(COLUMNAS_FRAME)]
+    salida = productor(entrada)
+    if not isinstance(salida, pd.DataFrame):
+        raise ObservationError(
+            f"{feature_id}: el productor de frame devolvió {type(salida).__name__}, "
+            f"no un DataFrame"
+        )
+    if columna not in salida.columns:
+        raise ObservationError(
+            f"{feature_id}: el productor no emitió la columna declarada {columna!r} "
+            f"(emitió: {sorted(salida.columns)[:12]})"
+        )
+
+    # ALINEACIÓN, ANTES de extraer nada (CXD-629 §1). Comparar sólo `len` y hacer
+    # `reset_index(drop=True)` aceptaba una salida REORDENADA en el tiempo: un
+    # productor con la misma longitud y `time` desplazado una barra publicaba su valor
+    # bajo los timestamps de entrada, sin error. Probado por CODEX con
+    # `time.shift(-1).bfill()`: EXIT=0 y valor publicado. El `reset_index` no arreglaba
+    # el desalineo — lo BORRABA, que es peor, porque destruye la evidencia de que
+    # existía.
+    if len(salida) != len(entrada):
+        raise ObservationError(
+            f"{feature_id}: el productor devolvió {len(salida)} filas para "
+            f"{len(entrada)} barras; alinear por posición series de distinta longitud "
+            f"desplazaría la barra de decisión"
+        )
+    if not salida.index.equals(entrada.index):
+        raise ObservationError(
+            f"{feature_id}: el índice de la salida no coincide con el de la entrada"
+        )
+    t_in = pd.to_datetime(entrada["time"], utc=True).to_numpy()
+    t_out = pd.to_datetime(salida["time"], utc=True).to_numpy()
+    if not (t_in == t_out).all():
+        difs = int((t_in != t_out).sum())
+        raise ObservationError(
+            f"{feature_id}: el productor devolvió `time` distinto en {difs} de "
+            f"{len(t_in)} barras. Publicar esa salida bajo los timestamps de entrada "
+            f"sería atribuir un valor a una barra que no le corresponde"
+        )
+    return salida[columna].astype(float)
+
+
 def build_observations(
     policy_spec: Mapping[str, Any],
     bars: pd.DataFrame,
@@ -217,72 +304,9 @@ def build_observations(
                 f"catálogo: no hay productor ni contrato de causalidad declarados"
             )
         productor = _resolve_producer(entrada)
-        if productor is None:
-            # PASSTHROUGH: la columna que se llama COMO LA FEATURE, no `close`.
-            #
-            # Aquí ponía `serie = close` para todo passthrough. El catálogo declara
-            # `open`, `high` y `low` como passthrough para usdcop, y los sets de
-            # smart_simple los ordenan — así que este productor genérico habría
-            # publicado el CIERRE bajo las identidades `open/high/low`, con el
-            # `series_id` de cada una y sin fallar (CXD-620 §1). No era un riesgo
-            # futuro: esas entradas existen hoy. Un valor plausible bajo la identidad
-            # equivocada es indistinguible de un dato bueno aguas abajo.
-            if feature_id not in df.columns:
-                raise ObservationError(
-                    f"{asset_id}.{feature_id} es passthrough (sin `code_reference`) "
-                    f"pero `bars` no trae la columna {feature_id!r}. Columnas: "
-                    f"{sorted(df.columns)}. No se sustituye por otra"
-                )
-            serie = df[feature_id].astype(float)
-        else:
-            contrato = entrada.get("producer_contract", CONTRATO_SERIES)
-            if contrato not in CONTRATOS_SOPORTADOS:
-                raise ObservationError(
-                    f"{asset_id}.{feature_id}: producer_contract {contrato!r} no "
-                    f"soportado (soportados: {CONTRATOS_SOPORTADOS}). Un contrato sin "
-                    f"declarar NO se degrada al de por defecto"
-                )
-            if contrato == CONTRATO_SERIES:
-                # `fn(close) -> Series` — el contrato historico (`compute_ma_200`).
-                serie = productor(close)
-            else:
-                # `fn(df) -> df` — productor de FRAME. Es el caso de
-                # `build_daily_features`, el codigo CONGELADO del track BTC que
-                # calcula ~10 features de golpe: se le entrega el frame REAL completo
-                # y se toma la columna que el catalogo declara. Apuntar al congelado
-                # en vez de reescribir su formula es lo que impide que exista una
-                # segunda definicion de una feature ya congelada (CXD-628, decision A).
-                faltan = [c for c in COLUMNAS_FRAME if c not in df.columns]
-                if faltan:
-                    raise ObservationError(
-                        f"{asset_id}.{feature_id}: el contrato {contrato!r} entrega "
-                        f"{list(COLUMNAS_FRAME)} y `bars` no trae {faltan}"
-                    )
-                columna = entrada.get("output_column")
-                if not isinstance(columna, str) or not columna:
-                    raise ObservationError(
-                        f"{asset_id}.{feature_id}: contrato de frame sin "
-                        f"`output_column` declarada; no se adivina cual de las "
-                        f"salidas es esta feature"
-                    )
-                salida = productor(df[list(COLUMNAS_FRAME)])
-                if not isinstance(salida, pd.DataFrame):
-                    raise ObservationError(
-                        f"{asset_id}.{feature_id}: el productor de frame devolvio "
-                        f"{type(salida).__name__}, no un DataFrame"
-                    )
-                if columna not in salida.columns:
-                    raise ObservationError(
-                        f"{asset_id}.{feature_id}: el productor no emitio la columna "
-                        f"declarada {columna!r} (emitio: {sorted(salida.columns)[:12]})"
-                    )
-                if len(salida) != len(df):
-                    raise ObservationError(
-                        f"{asset_id}.{feature_id}: el productor devolvio {len(salida)} "
-                        f"filas para {len(df)} barras; alinear por posicion series de "
-                        f"distinta longitud desplazaria la barra de decision"
-                    )
-                serie = salida[columna].astype(float).reset_index(drop=True)
+        serie = resolve_feature_series(
+            {**entrada, "feature_id": feature_id}, productor, df, close
+        )
 
         # La barra de decisión es la ÚLTIMA cuyo available_at no excede el cutoff.
         disponibles = tiempos + RECONSTRUCTION_LAG

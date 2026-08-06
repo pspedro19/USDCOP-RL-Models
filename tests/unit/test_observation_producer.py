@@ -15,6 +15,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -445,3 +446,84 @@ def test_an_unknown_producer_contract_fails_closed_at_the_resolver(monkeypatch) 
     })
     with pytest.raises(ObservationError, match="no soportado"):
         build_observations(spec, bars, decision_cutoff=CUTOFF)
+
+
+def _frame_ohlc(n: int = 40) -> pd.DataFrame:
+    fechas = pd.date_range("2026-06-01", periods=n, freq="D", tz="UTC")
+    return pd.DataFrame({
+        "time": fechas,
+        "open": np.arange(n, dtype=float) + 1.0,
+        "high": np.arange(n, dtype=float) + 3.0,
+        "low": np.arange(n, dtype=float),
+        "close": np.arange(n, dtype=float) + 2.0,
+    })
+
+
+def test_a_producer_that_reorders_time_is_rejected_before_the_value_is_taken() -> None:
+    """`time` desplazado con la MISMA longitud: rechazado (CXD-629 §1).
+
+    EL DEFECTO, reproducido por CODEX: el resolver comparaba sólo `len(salida)` y hacía
+    `reset_index(drop=True)`. Un productor con igual número de filas y `time` corrido
+    una barra —`time.shift(-1).bfill()`— **se aceptaba**: EXIT=0 y valor publicado bajo
+    los timestamps de ENTRADA. El `reset_index` no arreglaba el desalineo, lo **borraba**,
+    que es peor: destruía la evidencia de que existía.
+
+    Publicar una salida temporalmente reordenada bajo los tiempos de entrada es atribuir
+    un valor a una barra que no le corresponde — look-ahead con formato válido.
+
+    Rojo con: quitar la comparación elemento-a-elemento de `time`.
+    """
+    from src.features.observations import resolve_feature_series
+
+    frame = _frame_ohlc()
+    entrada = {"feature_id": "x", "producer_contract": "ohlcv_frame_v1",
+               "output_column": "x"}
+
+    def _desplaza_time(df):
+        out = df.copy()
+        out["x"] = out["close"] * 2.0
+        out["time"] = out["time"].shift(-1).bfill()
+        return out
+
+    with pytest.raises(ObservationError, match="`time` distinto"):
+        resolve_feature_series(entrada, _desplaza_time, frame, frame["close"])
+
+
+def test_a_producer_that_changes_the_index_is_rejected() -> None:
+    """Mismo `time` pero índice distinto: también se rechaza.
+
+    Se vigilan las dos cosas por separado porque fallan por separado: un `reindex` o un
+    `sort_values` sin `reset_index` deja el tiempo intacto y el índice movido, y
+    entonces la extracción por posición vuelve a poder desalinearse.
+    """
+    from src.features.observations import resolve_feature_series
+
+    frame = _frame_ohlc()
+    entrada = {"feature_id": "x", "producer_contract": "ohlcv_frame_v1",
+               "output_column": "x"}
+
+    def _mueve_indice(df):
+        out = df.copy()
+        out["x"] = out["close"] * 2.0
+        out.index = out.index + 100
+        return out
+
+    with pytest.raises(ObservationError, match="indice|índice"):
+        resolve_feature_series(entrada, _mueve_indice, frame, frame["close"])
+
+
+def test_a_well_aligned_frame_producer_is_accepted() -> None:
+    """La otra mitad del par: alineado correctamente, pasa.
+
+    Sin esto, cablear el resolver a `raise` pasaría los dos candados de arriba y la vía
+    de frame quedaría muerta sin que nada lo dijera.
+    """
+    from src.features.observations import resolve_feature_series
+
+    frame = _frame_ohlc()
+    entrada = {"feature_id": "x", "producer_contract": "ohlcv_frame_v1",
+               "output_column": "x"}
+    serie = resolve_feature_series(
+        entrada, lambda df: df.assign(x=df["close"] * 2.0), frame, frame["close"]
+    )
+    assert np.array_equal(serie.to_numpy(), (frame["close"] * 2.0).to_numpy())

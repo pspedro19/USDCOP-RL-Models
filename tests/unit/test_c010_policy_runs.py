@@ -861,10 +861,23 @@ def test_publish_link_resolves_its_spec_and_only_stops_at_the_db_boundary(factor
             ti=ti, data_interval_start="2026-07-17T00:00:00+00:00", **CTX_INTERVALO
         )
     tipo, mensaje = type(exc.value).__name__, str(exc.value)
-    assert tipo == "ModuleNotFoundError" and "utils" in mensaje, (
-        f"publish fallo ANTES de la frontera de DB: {tipo}: {mensaje[:200]}. Si el "
-        f"error es AttributeError('str' object...) o FileNotFoundError, la resolucion "
-        f"de spec/activo volvio a romperse."
+    # Se afirma por NEGACION, no por el error concreto. La version anterior exigia
+    # `ModuleNotFoundError: utils`, y eso ataba el candado al ENTORNO: en la suite
+    # ANCHA algo pone `airflow/dags` en `sys.path`, `utils` SI importa, publish avanza
+    # mas alla de la frontera de DB y el test fallaba con otro error. Pasaba en focal y
+    # fallaba en ancha -- yo mismo declare esta fragilidad en CLD-555 como el punto mas
+    # debil de la entrega, y se confirmo.
+    #
+    # Lo que este candado vigila es que NO se rompa la resolucion de spec/activo; que
+    # despues muera en el import de DB o mas alla depende de si hay stack, y eso no es
+    # asunto suyo.
+    prohibidos = ("'str' object has no attribute 'get'", "No such file or directory")
+    assert not any(p in mensaje for p in prohibidos), (
+        f"publish fallo por resolucion de spec/activo, que es lo que este candado "
+        f"vigila: {tipo}: {mensaje[:200]}"
+    )
+    assert tipo != "PolicyRunConfigError" or "sin observaciones" not in mensaje, (
+        "el gate del techo corto antes: este candado mira mas abajo"
     )
 
 

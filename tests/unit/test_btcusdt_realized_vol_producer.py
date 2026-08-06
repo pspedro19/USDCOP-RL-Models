@@ -85,23 +85,49 @@ def test_the_catalog_path_reproduces_the_frozen_builder_bit_for_bit(spec, bars) 
     )
 
 
-def test_the_whole_series_matches_not_just_the_decision_bar(bars) -> None:
-    """Y coincide en TODAS las filas, no sólo en la que se publica.
+def test_the_WHOLE_series_matches_through_the_catalog_path(bars) -> None:
+    """Serie COMPLETA, y atravesando la vía del catálogo — no el builder contra sí mismo.
 
-    Una coincidencia en una fila puede ser suerte; el compromiso de 0 trials es sobre
-    la fórmula, no sobre un punto. Se recorre la serie entera con igualdad exacta y se
-    exige que el warm-up caiga donde el contrato dice (20 barras duras).
+    LA VERSIÓN ANTERIOR NO PROBABA ESTO. Hacía `a = build_daily_features(frame)` y
+    `b = build_daily_features(frame.copy())`: demostraba que el builder es determinista
+    **consigo mismo**, no que la invocación declarada en el catálogo reproduzca la
+    serie. El único test que cruzaba `build_observations` comparaba **una sola barra**,
+    y aun así el handoff afirmaba paridad de serie entera por la vía del catálogo
+    (CXD-629 §2). El nombre del test prometía más de lo que verificaba.
+
+    Ahora se llama a `resolve_feature_series` —**la misma** función que usa
+    `build_observations`, no una implementación paralela— con la entrada REAL del
+    catálogo, y se compara la serie entera contra el builder congelado.
     """
-    frame = bars[["time", "open", "high", "low", "close"]]
-    a = build_daily_features(frame)["realized_vol_20"]
-    b = build_daily_features(frame.copy())["realized_vol_20"]   # determinismo
+    import yaml
 
-    validos = ~a.isna()
+    from src.features.observations import _resolve_producer, resolve_feature_series
+
+    doc = yaml.safe_load(CATALOGO.read_text(encoding="utf-8"))
+    entrada = next(
+        e for e in doc["features"]
+        if e.get("asset_id") == "btcusdt" and e.get("feature_id") == "realized_vol_20"
+    )
+    frame = bars[["time", "open", "high", "low", "close"]].reset_index(drop=True)
+
+    por_catalogo = resolve_feature_series(
+        entrada, _resolve_producer(entrada), frame, frame["close"].astype(float)
+    )
+    congelado = build_daily_features(frame)["realized_vol_20"].astype(float)
+
+    assert len(por_catalogo) == len(frame)
+    assert por_catalogo.isna().equals(congelado.isna()), "el warm-up no coincide"
+    validos = ~congelado.isna()
     assert validos.sum() == len(frame) - 20, (
         f"válidas={validos.sum()} no cuadra con len-20: el warm-up no es la ventana "
         f"dura de 20 que declara el catálogo"
     )
-    assert np.array_equal(a[validos].to_numpy(), b[validos].to_numpy())
+    assert np.array_equal(
+        por_catalogo[validos].to_numpy(), congelado[validos].to_numpy()
+    ), (
+        "la vía del catálogo NO reproduce el builder congelado en toda la serie: no "
+        "sería reparación de representación y no podría declararse 0 trials"
+    )
 
 
 def test_the_annualization_is_crypto_not_equity() -> None:
@@ -162,5 +188,5 @@ def test_a_frame_producer_without_its_declared_column_fails_closed(spec, bars, m
     ))
     from src.features.observations import ObservationError
 
-    with pytest.raises(ObservationError, match="no emitio la columna"):
+    with pytest.raises(ObservationError, match="columna declarada"):
         build_observations(spec, bars, decision_cutoff="2026-07-30T00:00:00+00:00")
