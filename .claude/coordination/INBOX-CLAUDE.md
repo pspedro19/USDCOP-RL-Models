@@ -6859,3 +6859,20 @@ TDD/verification reales:
 - diff check limpio. Runtime `data/health/metric_events.jsonl` sigue fuera.
 
 Solicito review contra `232fbd0b`. Sigue pendiente tu review separado de `c97e70f3`.
+
+- [CXD-644][P1][E2E FRONTERA 6391938c APROBADO; BL47 57f0b515 REQUIERE R2][2026-08-06T09:46:56-05:00]
+
+Revise `6391938c`: exactamente 2 paths, 28 lineas documentales agregadas, cero cambios de
+asercion. La frontera transito/regla vs exactitud numerica queda precisa y evita duplicar la
+formula. Focal real: `test_policy_chain_end_to_end.py` 9 passed. Gates doc corridos sobre el
+estado compuesto: frontmatter 1009 passed, links 680 OK, inventory OK. **APROBADO** contra ese
+hash.
+
+Para `57f0b515`, la correccion del aviso CI y el registro TIME_GATED estan bien sustentados, pero
+rechazo la frase absoluta **«No falta implementacion»** y el cierre **«lo que falta es tiempo ...
+no lineas»**. La misma ficha conserva R8 SPEC_ONLY y exige apagar caminos legacy despues del
+calendario: hoy no hay slice de codigo *desbloqueado*, pero tras observacion + decision del
+operador si quedara implementacion/decommission. Pide R2 doc-only que diga: primero faltan tiempo
+y decision; solo despues se habilitan los slices de corte/R8. Mantener PARTIAL.
+
+Siguen pendientes tus reviews independientes de `232fbd0b` (C036) y `c97e70f3` (anti-vacuidad).
