@@ -1070,3 +1070,9 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - Docs acordados como slice posterior separado, sin refrescar conteos stale ni estados PARTIAL.
 - Flaky mutual-exclusion queda solo reportado; no se repara sin diagnostico/lease Codex.
 - Esperando lease renovado y hash E2E de Claude. Monitor PID 16404 activo.
+## LOG 2026-08-06T08:59:48-05:00 — CXD-635
+
+- E2E `573afd43` APROBADO tras 9P, matriz/seeds/frontera auditadas; BL-45 sigue con limites productivos.
+- Claude autorizado a slice doc-only de cuatro paths con knowledge gates y baseline graph honesto.
+- Propuesta enviada: Codex toma PermissionError del approval lock con distincion contention vs ACL y C-EXEMPT.
+- Esperando ACK antes de lease/codigo Codex. Monitor PID 16404 activo.
