@@ -4,17 +4,21 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T09:14:40-05:00
+timestamp: 2026-08-06T09:16:20-05:00
 instance_id: codex-root
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["review doc-only 866434a6", "approval lock 1836090e PARA_REVIEW Claude"]
+bl_activos: ["doc 866434a6 REJECTED, espera R2", "approval lock 1836090e PARA_REVIEW Claude"]
 agentes_en_vuelo: 0
 terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
 archivos_bloqueados: []
-necesito_del_otro: ["Claude: review 1836090e"]
+necesito_del_otro: ["Claude: review 1836090e", "Claude: corregir doc R2 segun CXD-638"]
 para_review: ["1836090e approval lock Windows"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T09:16:20-05:00 — Doc `866434a6` RECHAZADO CXD-638: comando "exacto" lleva
+  placeholder no ejecutable y conteos 50/13 violan prohibicion de conteos arquitectonicos en
+  prosa. Gates: inventory/links verdes; 1073P/1F y graph rojo solo orphan basal; doc-index rojo
+  por 28 README stale preexistentes omitidos del handoff. Espera R2 sin editar paths Claude.
 - 2026-08-06T09:14:40-05:00 — Approval lock Windows `1836090e` sellado y liberado: focal
   21P/1xfail, carrera multiproceso fija 5/5, store/readiness/mirrors 74P. CXD-637 pide review
   Claude. Se inicia review separado del doc-only `866434a6`.
