@@ -437,10 +437,12 @@ Non-CI orchestrators for whole-system acceptance (live `docker compose` stack, n
 > su fecha, registrada porque el número no vive en ningún otro sitio. No autoriza a tratar los
 > fallos como aceptados ni a re-ejecutar hasta que pasen.
 
-**Comando exacto** (host Windows, deps de RL/Airflow **no** instaladas):
+**Comando** (host Windows, deps de RL/Airflow **no** instaladas). Los `--ignore` son los **11**
+módulos cuyo import falla en este host — se listan enteros porque un comando con un placeholder
+no es reproducible, y etiquetarlo «exacto» sería afirmar más de lo que se puede repetir:
 
 ```
-python -m pytest tests/unit tests/regression -q --no-header -p no:randomly   --ignore=<10 módulos con import roto>
+python -m pytest tests/unit tests/regression -q --no-header -p no:randomly   --ignore=tests/unit/test_calculators.py   --ignore=tests/unit/test_date_parser.py   --ignore=tests/unit/test_hash_utils.py   --ignore=tests/unit/test_model_registry.py   --ignore=tests/unit/test_no_lookahead.py   --ignore=tests/unit/test_p0_7_ml_workflow.py   --ignore=tests/unit/test_public_snapshot_acquisition.py   --ignore=tests/unit/test_reward_calculator.py   --ignore=tests/unit/test_storage_repositories.py   --ignore=tests/unit/test_trading_flags_redis.py   --ignore=tests/regression/test_action_threshold_ssot.py
 ```
 
 **Resultado (2026-08-06)**: `255 failed, 4402 passed, 144 skipped, 2 xfailed, 31 errors`.
@@ -454,8 +456,10 @@ Clasificación de los 255, medida sobre el output y no estimada:
 | Otros | 2 | + 31 errores de colección, mismos módulos ausentes |
 
 **Lo que esta observación dice, y lo que no.** Dice que **CI corre una selección curada de
-ficheros**, así que este conjunto **nunca se mira**: los 50 `runs-on` de los 13 workflows son
-`ubuntu-latest` y la mayoría de estos módulos ni se instalan. **No dice** que los 41 sean bugs
+ficheros**, así que este conjunto **nunca se mira**: los workflows corren en runners Linux
+(`ubuntu-latest`) y la mayoría de estos módulos ni se instalan allí. *(Sin conteos de workflows en
+prosa: los cuenta `.claude/generated/inventory.json::workflows`, y un número escrito a mano aquí
+sería una segunda fuente que se desincroniza — AGENTS.md lo prohíbe por eso.)* **No dice** que los 41 sean bugs
 nuevos — son coherentes con que el track RL esté despriorizado (`CLAUDE.md`), y no se han
 diagnosticado uno a uno. Tampoco dice que haya que ponerlos verdes: muchos no pueden correr aquí.
 
