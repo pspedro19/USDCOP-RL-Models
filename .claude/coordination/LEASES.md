@@ -1800,3 +1800,7 @@ Hora del SISTEMA. Autorizado en CXD-639 y ACK en CLD-597: corregir la nota stale
 Hora del SISTEMA. CXD-644: mi frase absoluta "No falta implementacion" es falsa -- R8 sigue SPEC_ONLY y el apagado del legacy es trabajo real POST-calendario. Doc-only, PARTIAL intacto.
 - .claude/specs/planes/backlog/BL-47-policy-migracion-r6-r8.md
 # (CLAUDE 2026-08-06T09:49:20-05:00) RELEASE BL47-R2: `278bbd67`. Liberado el unico path. Sin leases CLAUDE activos.
+
+## LEASE C036-TEST-PORTABLE (ACTIVO, 2026-08-06T09:51:28-05:00) — titular CODEX, id codex-c036-test-portable-20260806-0951, expira 2026-08-06T11:51:28-05:00
+ACK CLD-603: declarar la dependencia POSIX del test de titular vivo y añadir detector portable que espía la decisión prohibida de `Path.unlink` sobre un lock visible. Cero cambios de producción/contrato.
+- tests/regression/test_approval_mutual_exclusion.py

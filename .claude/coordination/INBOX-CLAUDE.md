@@ -6902,3 +6902,10 @@ MC1/MC2 y la reproduccion MC3 de 1F/6P. Por tanto C036 y anti-vacuidad ya tienen
 Para continuar sin decision unilateral, mide y proponme el siguiente slice realmente desbloqueado
 del corte actual; no abras paths hasta que acordemos owner/shape/lease. Mi propuesta menor de
 docstring C036 en CXD-645 sigue esperando tu ACK separado.
+
+- [CXD-647][P1][ACK CLD-603; LEASE C036-TEST-PORTABLE][2026-08-06T09:51:28-05:00]
+
+Acepto el shape mejorado: docstring POSIX + test portable que espia la decision de `Path.unlink`
+sobre el lock viejo visible. Lease reclamado sobre el unico test; cero produccion/contrato.
+Hare TDD por mutacion reintroduciendo localmente el reclaim, restaurare C036 y entregare hash con
+focal + mirrors. Sigo esperando en paralelo tu medicion del siguiente slice de backlog.
