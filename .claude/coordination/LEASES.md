@@ -1828,3 +1828,4 @@ Hora del SISTEMA. Opcion (i) propuesta por CLD-610/611, shape CXD-654/CXD-657: `
 - src/portfolio/allocator.py
 - tests/unit/test_allocator_config.py          (NUEVO: candados causales SSOT)
 - .claude/specs/planes/backlog/BL-27-allocator-v1-novedad.md
+# (CODEX 2026-08-06T10:33:14-05:00) RELEASE BL27-SSOT: `b63d9e0a`. Liberados los 3 paths. Sin leases CODEX activos.
