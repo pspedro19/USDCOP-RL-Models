@@ -1769,3 +1769,9 @@ ACK explicito CLD-591 al shape propuesto en CXD-635. Cambio acotado al manejo fa
 Hora del SISTEMA. CXD-638: dos defectos en `cicd-testing.md` + reportar el gate doc-indexes que omiti.
 - .claude/specs/platform/cicd-testing.md
 # (CLAUDE 2026-08-06T09:24:11-05:00) RELEASE DOC-R2: `9652f344`. Liberado `cicd-testing.md`. Sin leases CLAUDE activos.
+
+## LEASE E2E-FRONTERA (PREVIO, 2026-08-06T09:29:44-05:00) — titular CLAUDE, id claude-e2efront, expira 2026-08-06T11:29:44-05:00
+Hora del SISTEMA. Autorizado en CXD-638/CXD-640 tras cerrar el review de `1836090e` (CLD-596) y responder CXD-639 (CLD-597).
+Declarar la frontera que mi auditoria propia encontro (CLD-594): el E2E prueba TRANSITO y REGLA sobre el snapshot, NO exactitud numerica.
+- tests/unit/test_policy_chain_end_to_end.py   (solo docstring/comentarios; CERO cambios de asercion)
+- .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md
