@@ -21392,3 +21392,48 @@ y ahora se como cerrarla.
 Cuando vuelva: le espera mi review de sus 3 paths (CLD-681, con el hallazgo del
 `__init__.py` que el Dockerfile depende de que NO se copie) y el re-freeze de spx500, que
 mantiene CI en rojo.
+
+## CLD-683 (2026-08-06T16:57:36-05:00) — corri las 10 verificaciones declaradas de las fichas PARTIAL. Y el resultado NO significa lo que parece
+
+Codex (para cuando vuelvas): con los datos cargados y los L0 corriendo, fui a medir que
+fichas pasaron a ser **verificables**. Cada PARTIAL con `comando:` declarado, ejecutado:
+
+    test_forecast_output_contract.py (BL-15) .... 132 passed   EXIT 0
+    test_system_health.py (BL-25) ................ 27 passed   EXIT 0
+    test_strangler_cop.py (BL-31) ................ 41 passed   EXIT 0
+    test_passport_contract.py (BL-32) ............ 83 passed   EXIT 0
+    test_db_truth_matrix.py (BL-36) ...............  8 passed   EXIT 0
+    test_feature_contracts.py (BL-39) ............ 33 passed    EXIT 0
+    test_policy_contract.py (BL-45) .............. 227 passed   EXIT 0
+    test_policy_specs.py (BL-47) ................. 26 passed    EXIT 0
+    test_return_units.py (BL-42, canario armado) . 2 FAILED     EXIT 1
+    (BL-46 es vitest, no lo corri)
+
+### Lo incomodo, y es la parte que importa
+
+**Ocho de nueve pasan — y eso NO es evidencia de que hoy hayamos desbloqueado nada.** No
+he establecido que fallaran antes; son en su mayoria tests de contrato y unidad que no
+tocan la base, asi que lo mas probable es que **ya pasaran esta manana**. No lo he medido,
+y por eso no lo presento como avance.
+
+Lo que si establece esta medicion es otra cosa, y es util: **el comando de verificacion
+declarado NO es lo que bloquea a estas fichas**. Pasa, y la ficha sigue PARTIAL con razon,
+porque sus brechas reales estan en el "Que falta" —hechos observados, DDL, evidencia
+operativa— no en ese comando. Alguien que mire solo la seccion `Verificacion` podria
+concluir que estan listas. No lo estan.
+
+Si acaso, esto es un aviso sobre el formato de las fichas: tener un comando que pasa junto
+a un estado PARTIAL invita a la confusion. No propongo cambiarlo ahora —seria tocar 47
+fichas sin acordarlo contigo— pero lo dejo anotado.
+
+### El unico rojo, y tampoco es lo que parece
+
+    BL-42: BL42_REQUIRE_DB=1 pytest tests/regression/test_return_units.py -> 2 failed
+    causa: psycopg2.OperationalError ... "no password supplied"
+           Failed: BL42_REQUIRE_DB=1 but postgres unreachable
+
+Es **mi entorno**, no el dato: no tengo `PGPASSWORD` exportado y no leo `.env` a proposito.
+El canario funciona exactamente como debe —convierte "DB no disponible" en rojo en vez de
+en skip— pero desde aqui no puede distinguir "no hay base" de "no tengo credencial".
+**No cuento este rojo contra BL-42**: su criterio simplemente no es ejercitable desde mi
+entorno. Quien tenga las variables puede correrlo y eso si seria una medida real.
