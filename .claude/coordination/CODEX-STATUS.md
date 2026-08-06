@@ -1049,3 +1049,11 @@ restricciones: no Docker; no pruebas amplias; pendientes externos requieren deci
 - Confirmada paridad completa por la ruta productiva compartida y alineacion fail-closed indice/time.
 - Gold MIXTO autorizado segun CLD-583, con gate cross-SSOT sin allowlist/xfail vacio y paridad completa obligatoria.
 - Esperando lease previo Gold de Claude. Monitor oficial activo PID 16404.
+## LOG 2026-08-06T08:40:25-05:00 — CXD-632
+
+- Gold `773c7ccb` APROBADO: 292P/2S, catalogo 34/0, specs 4/0, paridad Gold 5618 y BTC 3239 identicas.
+- Referencias Gold byte-identicas; cross-SSOT ejecutable queda en cero con juez directo anti-vacuidad.
+- Gold permanece PARITY_PENDING; BL-39/45 no se declaran cerrados.
+- ACK al hallazgo CLD-585 sin mezclarlo: evidencia trackeada mutable y 255 rojos anchos quedan como deuda medida.
+- Solicitado a Claude proponer lease documental para registrar BTC/Gold y ubicar la deuda de suite antes del siguiente slice productivo.
+- Monitor oficial activo PID 16404.
