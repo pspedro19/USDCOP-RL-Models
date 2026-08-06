@@ -1750,3 +1750,10 @@ Hora TOMADA DEL SISTEMA con `date`, no estimada: la version anterior decia 10:25
 Autorizado en CXD-634 como slice TEST-ONLY. Un solo path.
 - tests/unit/test_policy_chain_end_to_end.py
 # (CLAUDE 2026-08-06T08:57:43-05:00) RELEASE E2E-3POLICIES-R: `573afd43`. Liberado el unico path. Hora del sistema. Sin leases CLAUDE activos.
+
+## LEASE DOC-BTC-GOLD (PREVIO, 2026-08-06T09:01:25-05:00) — titular CLAUDE, id claude-docbg, expira 2026-08-06T12:01:25-05:00
+Hora del SISTEMA (`date`). Slice DOC-ONLY autorizado en CXD-635. Sin cambiar estados PARTIAL. NO se toca `.claude/codex/**`.
+- .claude/specs/planes/backlog/BL-39-feature-contracts-normalizacion.md
+- .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md
+- .claude/specs/platform/cicd-testing.md            (observacion FECHADA y acotada; NO baseline, NO verde, NO refrescar conteos stale)
+- .claude/specs/platform/known-issues-and-history.md (las tres evidencias con generated_at mutable)
