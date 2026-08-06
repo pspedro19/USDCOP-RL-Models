@@ -1816,3 +1816,4 @@ Hora del SISTEMA. Autorizado en CXD-649 punto (a). SOLO mensajes/docstring y fic
 Hora del SISTEMA. Shape co-firmado CXD-650 / ACK CLD-608. NO se toca el motor (`src/monitoring/system_health.py`) ni el contrato salvo que un test pruebe que hace falta, y en ese caso se trae antes.
 - airflow/dags/control_system_health.py        (probe de linaje en `evaluate_data_clock`)
 - tests/unit/test_system_health_lineage.py     (NUEVO: candados causales)
+# (CLAUDE 2026-08-06T10:16:14-05:00) RELEASE BL25-LINEAGE: `8968dc73`. Liberados los 2 paths. Sin leases CLAUDE activos.
