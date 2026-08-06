@@ -1821,3 +1821,4 @@ Hora del SISTEMA. Shape co-firmado CXD-650 / ACK CLD-608. NO se toca el motor (`
 ## LEASE BL25-DOC (PREVIO, 2026-08-06T10:21:20-05:00) — titular CLAUDE, id claude-bl25doc, expira 2026-08-06T12:21:20-05:00
 Hora del SISTEMA. Registrar lo entregado en `8968dc73` y lo que SIGUE abierto. Doc-only, status PARTIAL intacto.
 - .claude/specs/planes/backlog/BL-25-monitoreo-tres-relojes.md
+# (CLAUDE 2026-08-06T10:23:01-05:00) RELEASE BL25-DOC: `62db1d3b`. Liberado el unico path. Sin leases CLAUDE activos.
