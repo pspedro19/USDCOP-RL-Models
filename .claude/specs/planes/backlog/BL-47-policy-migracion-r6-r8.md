@@ -70,11 +70,35 @@ así que el mensaje del fallo no es "un assert falló" sino el conteo exacto de 
 divergentes, la primera posición y los dos valores enfrentados. Un candado de paridad que se
 compare contra un fixture propio es el mismo defecto circular que se encontró en BL-13.
 
-**Aviso de CI declarado (CLD-216) — importante y NO resuelto**: `check_policy_parity.py`
-**no está en ningún workflow**. `fabric-contracts.yml` solo corre `validate_policy_specs.py`,
-que **quedó VERDE con la mutación de Gold dentro**. La red que hoy salva a BL-47 es
-`tests/unit` vía `ci.yml`, por rebote. Mientras el arnés no entre en CI, esta garantía depende
-de que alguien lo ejecute a mano.
+**Aviso de CI (CLD-216) — RESUELTO el 2026-08-03, nota corregida el 2026-08-06.** Decía que
+`check_policy_parity.py` «no está en ningún workflow» y que la garantía dependía de que alguien lo
+ejecutara a mano. **Ya no es cierto**: `fabric-contracts.yml` lo ejecuta con `--ci-eligible` desde
+`041cb287`, y bajo esa bandera un `DataUnavailable` es **`[FAIL]`, no `[SKIP]`** — la red ya no
+depende de nadie.
+
+Lo que el aviso sí acertó y sigue vigente: la mutación de Gold quedaba verde para
+`validate_policy_specs.py`, porque ese validador comprueba la **forma** del spec, no la paridad
+numérica. Son dos gates distintos y el segundo es el que faltaba.
+
+**Estado actual del gate, medido**: hoy devuelve `EXIT=0` con «0 specs elegibles — nada
+verificado», porque las tres policies construibles están en `PARITY_PENDING` tras las demociones de
+identidad. Ese cero es **por gobierno**, y `c97e70f3` lo separó del cero **por rotura** —registro de
+policies o de arneses vacío ⇒ `EXIT=1`— para que una lista vacía no pueda pasar por vacuidad.
+
+## Por qué BL-47 es TIME_GATED y no «pendiente de trabajo»
+
+La ficha se lee como si faltara implementación. **No falta**: R6 y R7 exigen **≥2 semanas de
+paridad por estrategia** dentro del calendario de BL-28/31 antes de apagar el camino viejo, y las
+tres policies están en `PARITY_PENDING` esperando una **re-promoción que es acto exclusivo del
+operador**.
+
+Es decir: no hay slice de código que se pueda abrir aquí sin **saltarse el calendario**, que es
+justo lo que el patrón strangler existe para impedir. Los slices de SPX, BTC y Gold (2026-08-06)
+dejaron las policies **listas para** ese paralelo —identidad congelada, productores declarados,
+cadena atravesable de punta a punta— pero eso es la precondición, no el trabajo restante.
+
+Queda escrito para que nadie intente cerrarlo por código: **lo que falta es tiempo de observación y
+una decisión del operador**, no líneas.
 
 ## Notas constitución
 v11 FROZEN: migrar su cáscara a composite NO toca fórmula ni señal (re-freeze consciente de manifiesto, 0 trials, bit-check obligatorio).
