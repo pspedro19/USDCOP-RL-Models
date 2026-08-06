@@ -206,12 +206,18 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.ci_eligible:
         specs = load_all_policy_specs()
+        if not specs:
+            print("[FAIL] registro de policies vacío — directorio/loader roto, no cero gobernado")
+            return 1
         targets = [
             str(spec["id"])
             for spec in specs
             if (spec.get("migration") or {}).get("status") in {"PARITY_GREEN", "CUTOVER"}
         ]
         if not targets:
+            if not CHECKS:
+                print("[FAIL] registro de arneses vacío — paridad no observable")
+                return 1
             print("[OK] 0 specs elegibles — nada verificado (SPEC_ONLY/PARITY_PENDING son inertes)")
             return 0
     else:

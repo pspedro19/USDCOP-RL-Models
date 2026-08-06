@@ -28,6 +28,27 @@ def test_ci_zero_eligible_is_explicitly_inert(monkeypatch, capsys):
     assert "0 specs elegibles" in capsys.readouterr().out
 
 
+def test_ci_empty_policy_registry_is_red(monkeypatch, capsys):
+    """Cero por registro/directorio roto no es cero gobernado."""
+    monkeypatch.setattr(gate, "load_all_policy_specs", lambda: [])
+
+    assert gate.main(["--ci-eligible"]) == 1
+    assert "registro de policies vacío" in capsys.readouterr().out
+
+
+def test_ci_empty_harness_registry_is_red_even_without_eligible(monkeypatch, capsys):
+    """Perder todos los arneses no puede pasar porque hoy todo esté pendiente."""
+    monkeypatch.setattr(
+        gate,
+        "load_all_policy_specs",
+        lambda: [_spec("record_only", "SPEC_ONLY"), _spec("pending", "PARITY_PENDING")],
+    )
+    monkeypatch.setattr(gate, "CHECKS", {})
+
+    assert gate.main(["--ci-eligible"]) == 1
+    assert "registro de arneses vacío" in capsys.readouterr().out
+
+
 def test_ci_eligible_policy_without_harness_is_red(monkeypatch, capsys):
     monkeypatch.setattr(
         gate, "load_all_policy_specs", lambda: [_spec("unharnessed", "PARITY_GREEN")]
