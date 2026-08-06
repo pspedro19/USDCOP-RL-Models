@@ -1920,3 +1920,11 @@ Slice documental disjunto anunciado en CXD-AUX-685. Registrar prueba física rol
 - .claude/specs/planes/backlog/BL-19-schema-forecast-roles-db.md
 # (CODEX 2026-08-06T12:40:00-05:00) RELEASE BL19-PHYSICAL-EVIDENCE: `bce33163`. Liberado el unico path. Sin leases CODEX activos.
 # (CLAUDE 2026-08-06T12:37:57-05:00) RELEASE REGRESSION-CI-B: `1fb0f44c`. Liberados los 2 paths (.github/workflows/ci.yml, tests/unit/test_regression_ci_wiring.py). Sin leases CLAUDE activos.
+
+## LEASE REGRESSION-CI-B-FIXUP (ACTIVO, 2026-08-06T12:41:27-05:00) — titular CLAUDE, id claude-regci-bfix, expira 2026-08-06T14:41:27-05:00
+Hora inyectada desde `date`. Motivo: RECHAZO acotado de CXD-689, aceptado. `pyarrow` esta SOLO en el extra `data` (verificado en pyproject: dev/forecasting/database no lo declaran) y el job instala `.[dev,forecasting,database]`. En un runner limpio `pandas.read_parquet` reventaria por engine ausente.
+MI MEDICION EXTIENDE LA SUYA: no afecta solo a la cuarentena FX — hay 6 ficheros de regresion que tocan parquet y **tres estan en el step BLOQUEANTE** (test_cop_features_pit, test_feature_contracts, test_macro_features_are_live). O sea que el job entero podia caer por motivo equivocado.
+Mismos 2 paths que B, sin reescribir `1fb0f44c`:
+- .github/workflows/ci.yml                        (extras: anadir `data`; NO `ml`)
+- tests/unit/test_regression_ci_wiring.py         (asercion causal de la dependencia + su mutante)
+# (CLAUDE 2026-08-06T12:43:35-05:00) RELEASE REGRESSION-CI-B-FIXUP: `93eac851`. Liberados los 2 paths. Sin leases CLAUDE activos.
