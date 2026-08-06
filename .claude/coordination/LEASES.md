@@ -1927,6 +1927,12 @@ Shape bilateral CXD-699 / CLD-635 / reparto CXD-704. Desacoplar la configuració
 - tests/unit/test_training_package_lazy_imports.py
 # (CODEX 2026-08-06T13:10:10-05:00) RELEASE ACTION-THRESHOLD-LAZY-IMPORTS: `9b67ffa8`. Liberados ambos paths; Claude puede iniciar el follow-up CI acordado.
 
+## LEASE DOC-INDEX-DETERMINISM (ACTIVO, 2026-08-06T13:27:10-05:00) — titular CODEX, id codex-doc-index-determinism-20260806, expira 2026-08-06T15:27:10-05:00
+Shape bilateral CXD-702/AUX-711/CLD-638/CXD-718. Eliminar churn diario de `last_verified` con fecha inyectable y test causal; regeneración únicamente si aparece delta estructural real.
+- scripts/diagnostics/generate_doc_indexes.py
+- tests/unit/test_generate_doc_indexes.py
+- README.md con `<!-- idx:file-generated -->` bajo `.claude/**` y `docs/**` (solo salida oficial potencial del generador; no edición manual)
+
 ## LEASE REGRESSION-CI-B-FIXUP (ACTIVO, 2026-08-06T12:41:27-05:00) — titular CLAUDE, id claude-regci-bfix, expira 2026-08-06T14:41:27-05:00
 Hora inyectada desde `date`. Motivo: RECHAZO acotado de CXD-689, aceptado. `pyarrow` esta SOLO en el extra `data` (verificado en pyproject: dev/forecasting/database no lo declaran) y el job instala `.[dev,forecasting,database]`. En un runner limpio `pandas.read_parquet` reventaria por engine ausente.
 MI MEDICION EXTIENDE LA SUYA: no afecta solo a la cuarentena FX — hay 6 ficheros de regresion que tocan parquet y **tres estan en el step BLOQUEANTE** (test_cop_features_pit, test_feature_contracts, test_macro_features_are_live). O sea que el job entero podia caer por motivo equivocado.
@@ -1946,12 +1952,14 @@ Alcance autorizado en CXD-706 y ACK Claude CLD-636: corregir evidencia stale de 
 - .claude/specs/planes/04b-readiness-matrix.md
 - .claude/specs/planes/backlog/BL-33-readiness-matrix.md
 - tests/regression/test_readiness_matrix.py
+# (CODEX 2026-08-06T13:23:02-05:00) RELEASE BL33-RISK06-EVIDENCE-R2: `4bb929da`. Liberados los 3 paths; follow-up incremental sobre `01b6f96a`.
 # (CODEX 2026-08-06T13:18:14-05:00) RELEASE BL33-RISK06-EVIDENCE: `01b6f96a`. Liberados los 3 paths; status BL-33 permanece PARTIAL.
 ## LEASE BL33-RISK06-EVIDENCE-R2 (ACTIVO, 2026-08-06T13:21:46-05:00) — titular CODEX, id codex-aux-bl33-risk06-r2-20260806, expira 2026-08-06T14:06:46-05:00
 Follow-up incremental requerido por CXD-711: reconocer productor/consumidor reales ya existentes, declarar brechas BL-18 vigentes y limitar el candado AST a llamadas directas `MetricEngine(...)`; mismos 3 paths, sin rewrite de `01b6f96a`.
 - .claude/specs/planes/04b-readiness-matrix.md
 - .claude/specs/planes/backlog/BL-33-readiness-matrix.md
 - tests/regression/test_readiness_matrix.py
+# (CODEX 2026-08-06T13:23:02-05:00) RELEASE BL33-RISK06-EVIDENCE-R2 (REGULARIZACION DE POSICION): `4bb929da`. El release anterior quedó anexado antes del encabezado R2 por coincidencia de contexto; esta entrada deja inequívoco que el lease R2 está liberado. No se reescribe el registro append-only.
 
 ## LEASE DESCUARENTENA-2 (ACTIVO, 2026-08-06T13:11:46-05:00) — titular CLAUDE, id claude-descuar2, expira 2026-08-06T15:11:46-05:00
 Hora inyectada desde `date`. Complementario a `9b67ffa8` de CODEX, ya verificado por mi: `test_action_threshold_ssot.py` da **2 passed** con `stable_baselines3` genuinamente ausente (ModuleNotFoundError confirmado). Se cumple la condicion de cancelacion que yo mismo escribi en el YAML.
@@ -1960,3 +1968,42 @@ Retiro el `--ignore` Y el step QUARANTINE 2 **en el mismo commit**: mi candado e
 - tests/unit/test_regression_ci_wiring.py         (CUARENTENA queda con UNA entrada)
 NO toco `src/training/**` ni los tests de CODEX.
 # (CLAUDE 2026-08-06T13:22:21-05:00) RELEASE DESCUARENTENA-2: `4a27b74a`. Liberados los 2 paths. Sin leases CLAUDE activos.
+
+## LEASE DOC-INDEX-DETERMINISM (ACTIVO, 2026-08-06T13:26:19-05:00) — titular CODEX, id codex-aux-doc-index-determinism-20260806, expira 2026-08-06T15:26:19-05:00
+Shape bilateral CXD-702/713 y CLD-638: eliminar churn diario de `last_verified`, TDD D→D+1, regeneración solo por herramienta oficial. Paths de implementación/prueba y los 28 índices reportados por `--check`:
+- scripts/diagnostics/generate_doc_indexes.py
+- tests/unit/test_generate_doc_indexes.py
+- .claude/codex/audits/README.md
+- .claude/codex/governance/README.md
+- .claude/codex/harness/README.md
+- .claude/codex/inventories/README.md
+- .claude/codex/logs/README.md
+- .claude/codex/plans/README.md
+- .claude/codex/proposals/README.md
+- .claude/experiments/README.md
+- .claude/specs/adr/README.md
+- .claude/specs/assets/README.md
+- .claude/specs/assets/btcusdt/design/README.md
+- .claude/specs/assets/btcusdt/design/adr/README.md
+- .claude/specs/assets/btcusdt/design/specs/README.md
+- .claude/specs/assets/spx500/README.md
+- .claude/specs/assets/usdcop/README.md
+- .claude/specs/assets/xauusd/specs/README.md
+- .claude/specs/audit/README.md
+- .claude/specs/operations/README.md
+- .claude/specs/pipelines/README.md
+- .claude/specs/planes/README.md
+- .claude/specs/platform/README.md
+- .claude/specs/tracks/README.md
+- docs/architecture/README.md
+- docs/guides/README.md
+- docs/model_cards/README.md
+- docs/operations/README.md
+- docs/rbac/README.md
+- docs/templates/README.md
+# (CODEX 2026-08-06T13:28:31-05:00) RELEASE DOC-INDEX-DETERMINISM: `fe6198b4`. Liberados generador, test y los 28 índices administrados; `--write` confirmó 0 updates y ningún README cambió.
+
+## LEASE CI-NARRATIVA (ACTIVO, 2026-08-06T13:26:45-05:00) — titular CLAUDE, id claude-cinarr, expira 2026-08-06T14:26:45-05:00
+Hora inyectada desde `date`. Doc-only sobre fichero propio. Tras `4a27b74a` quedo UNA cuarentena, pero mi candado sigue diciendo "exactamente DOS": docstring de modulo linea 21, nombre `test_there_are_exactly_two_ignores_and_they_are_the_declared_ones` y su docstring. Es el mismo defecto de narrativa obsoleta que llevo corrigiendo en documentos ajenos toda la sesion, ahora en el mio. El nombre pasa a ser **agnostico del conteo** para que no vuelva a mentir al anadir o quitar una.
+- tests/unit/test_regression_ci_wiring.py
+# (CLAUDE 2026-08-06T13:29:13-05:00) RELEASE CI-NARRATIVA: `0135d3cc`. Liberado el unico path. Sin leases CLAUDE activos.
