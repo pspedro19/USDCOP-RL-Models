@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.2
-last_verified: 2026-08-05
+version: 1.1.0
+last_verified: 2026-08-06
 supersedes: []
 code_anchors:
   - config/features/feature_catalog.yaml
@@ -20,8 +20,35 @@ code_anchors:
 ## Estado actual (as-built/perfil 2026-07-27)
 config.feature_definitions (30) mezcla definición+normalización+código: z-scores con media/sigma HARDCODEADAS ((vix-21.16)/7.89 — dependen del período de entrenamiento), python_function/sql_formula como strings no autoritativos, source_table apuntando a tablas por renombrar. El contrato de 20 del RL es el patrón correcto a generalizar.
 
-## Qué falta exactamente
-Catálogo estable (feature_id, causality_policy, source_contract, transformation, lookback, code_reference+code_hash) en Git; feature_set(strategy_version, feature_id, order, required) por estrategia; normalization_snapshot_id → artefacto MinIO/MLflow (mean, std, training_cutoff, semantic_hash). La matriz por estrategia de §41-47 se convierte en fixture de CI (v11 = 25 feats; las rule-based declaran su set mínimo — MA200 solo close).
+## Qué falta exactamente (medido 2026-08-06, no heredado)
+
+La redacción anterior pedía como pendientes tres cosas y **dos ya estaban entregadas**.
+Se corrige aquí en vez de arrastrarla: una ficha que reclama trabajo hecho hace perder el
+tiempo al siguiente que la lea y esconde cuál es la brecha real.
+
+**Ya entregado** (verificado sobre HEAD, no sobre la narrativa):
+
+| Lo que pedía la versión anterior | Estado medido |
+|---|---|
+| Catálogo estable en Git con `feature_id`, `causality_policy`, `source_contract`, `transformation`, `lookback`, `code_reference`+hash | **Completo: 34/34 features tienen los seis campos.** `validate_feature_catalog.py` → `[OK] 34 features, 0 violations` |
+| `feature_set(..., feature_id, order, required)` por estrategia | **6 feature_sets** con `ordered_features` (`feature_id`/`order`/`required`). Matiz: la cabecera identifica con `strategy_id`, no `strategy_version` |
+
+**Brecha real que queda**:
+
+1. **Cobertura del snapshot de normalización: 1 de 6.** Sólo
+   `usdcop_smart_simple_v11_dag_legacy23` referencia un id
+   (`usdcop_h5_scaler_legacy_v1`, que **sí** tiene su artefacto en
+   `config/features/normalization_snapshots/`); los otros cinco declaran el campo en
+   `null`. *No se afirma "no hay artefacto"*: el único id poblado lo tiene. Lo que falta
+   es poblar los cinco restantes con su artefacto (mean, std, training_cutoff,
+   semantic_hash).
+2. **Consumo del id: no probado en ninguna dirección.** Que exista el campo no demuestra
+   que alguien lo lea al construir features. Medirlo es trabajo aparte y no se da por
+   hecho aquí.
+3. **La matriz por estrategia de §41-47 como fixture de CI** sigue pendiente
+   (v11 = 25 features; las rule-based declaran su set mínimo — MA200 sólo `close`).
+
+Por (1)-(3) el BL sigue **PARTIAL**. Corregir la redacción no promueve el estado.
 
 ## Impacto frontend
 La vista SHAP admin (BL-20) consume el feature_set versionado.
