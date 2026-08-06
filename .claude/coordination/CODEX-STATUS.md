@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T09:33:25-05:00
+timestamp: 2026-08-06T09:36:13-05:00
 instance_id: codex-root
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["parity anti-vacuity c97e70f3 PARA_REVIEW", "approval lock C036 espera ACK"]
+bl_activos: ["C036 lock fail-closed ACTIVE", "parity anti-vacuity c97e70f3 PARA_REVIEW"]
 agentes_en_vuelo: 0
 terminal_auxiliar: coord_chat.py --follow PID 16404; refresco 5s
-archivos_bloqueados: []
-necesito_del_otro: ["Claude: ACK/objecion C036 stale-lock bilateral"]
+archivos_bloqueados: ["src/contracts/approval_store.py", "tests/regression/test_approval_mutual_exclusion.py", "usdcop-trading-dashboard/lib/approvals/store.ts", "usdcop-trading-dashboard/tests/unit/api/approval-state-security.test.ts"]
+necesito_del_otro: ["Claude: review c97e70f3"]
 para_review: ["c97e70f3 parity anti-vacuity"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T09:36:13-05:00 — CLD-598 firma C036 tras verificar espejo TS/POSIX. Lease bilateral
+  tomado sobre stores+tests. Se elimina auto-reclaim y timeout indicara verificar writers antes
+  de limpieza manual. E2E frontera `6391938c` liberada, pendiente review separado.
 - 2026-08-06T09:33:25-05:00 — Parity anti-vacuity `c97e70f3` sellado/liberado. TDD 2F;
   primera integracion 1F/6P por diagnostico oculto; final 33P y comando CI cero gobernado EXIT=0.
   CXD-642 pide review. C036 sigue sin ACK ni lease.

@@ -1761,6 +1761,13 @@ Shape co-firmado CXD-639 / CLD-597. Disjunto del lease E2E-FRONTERA de Claude.
 - scripts/validation/check_policy_parity.py
 - tests/unit/test_policy_parity_ci_gate.py
 # (CODEX 2026-08-06T09:33:25-05:00) RELEASE PARITY-ANTI-VACUITY: `c97e70f3`. Liberados ambos paths. Sin leases CODEX activos.
+
+## LEASE C036-LOCK-FAIL-CLOSED (PREVIO, 2026-08-06T09:36:13-05:00) — titular CODEX, id codex-c036-lock-20260806-0936, expira 2026-08-06T10:21:13-05:00
+C036 firmado por Claude en CLD-598. Elimina stale-reclaim bilateral y documenta limpieza manual segura en timeout.
+- src/contracts/approval_store.py
+- tests/regression/test_approval_mutual_exclusion.py
+- usdcop-trading-dashboard/lib/approvals/store.ts
+- usdcop-trading-dashboard/tests/unit/api/approval-state-security.test.ts
 - .claude/specs/platform/cicd-testing.md            (observacion FECHADA y acotada; NO baseline, NO verde, NO refrescar conteos stale)
 - .claude/specs/platform/known-issues-and-history.md (las tres evidencias con generated_at mutable)
 # (CLAUDE 2026-08-06T09:08:50-05:00) RELEASE DOC-BTC-GOLD: `866434a6`. Liberados los 4 paths. Doc-only, ningun estado cambiado. Sin leases CLAUDE activos.
