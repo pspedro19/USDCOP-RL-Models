@@ -94,8 +94,11 @@ def test_what_the_ficha_declares_delivered_is_actually_delivered() -> None:
     palabras correctas.
     """
     catalogo = _catalogo()
-    assert len(catalogo) >= 34, (
-        f"el catálogo tiene {len(catalogo)} features; la ficha declara 34 entregadas"
+    assert len(catalogo) == 34, (
+        f"el catálogo tiene {len(catalogo)} features y la ficha declara 34. Es `==` y no "
+        f"`>=` a propósito (CXD-737): con `>=`, añadir una feature dejaría la cifra de la "
+        f"ficha obsoleta sin que nada lo notase — el mismo defecto que este fichero nació "
+        f"para cerrar. Si el catálogo crece, actualizar BL-39 en el mismo commit"
     )
     for campo in CAMPOS_EXIGIDOS:
         faltan = [f.get("feature_id", "?") for f in catalogo if campo not in f]
@@ -105,7 +108,10 @@ def test_what_the_ficha_declares_delivered_is_actually_delivered() -> None:
         )
 
     sets = sorted(FEATURE_SETS.glob("*.yaml"))
-    assert len(sets) >= 6, f"BL-39 declara 6 feature_sets entregados, hay {len(sets)}"
+    assert len(sets) == 6, (
+        f"BL-39 declara 6 feature_sets entregados y hay {len(sets)}. `==` por la misma "
+        f"razón que arriba: la ficha afirma una cardinalidad y debe moverse con ella"
+    )
     for ruta in sets:
         doc = yaml.safe_load(ruta.read_text(encoding="utf-8"))
         ordenadas = doc.get("ordered_features") or []
