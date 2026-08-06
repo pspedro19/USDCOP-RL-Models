@@ -36,6 +36,7 @@ a otro fichero). No se vende como más de lo que es.
 """
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
 import pytest
@@ -142,6 +143,70 @@ def test_there_are_exactly_two_ignores_and_they_are_the_declared_ones() -> None:
         f"las exclusiones del step bloqueante son {sorted(ignorados)} y las declaradas son "
         f"{sorted(CUARENTENA)}. Toda exclusion nueva pasa por la lista de este fichero, "
         f"con motivo, owner y condicion que la cancela"
+    )
+
+
+def _install_step() -> dict:
+    pasos = [s for s in _steps_con_run() if "pip install -e" in s["run"]]
+    assert len(pasos) == 1, (
+        f"se esperaba un unico step de instalacion en `{JOB}`, hay {len(pasos)}"
+    )
+    return pasos[0]
+
+
+def test_the_job_installs_the_extra_that_provides_the_parquet_engine() -> None:
+    """El job instala la extra que trae `pyarrow`. Sin ella, rojo por el motivo equivocado.
+
+    SEIS ficheros de `tests/regression/` tocan parquet y **tres están en el step
+    bloqueante** (`test_cop_features_pit`, `test_feature_contracts`,
+    `test_macro_features_are_live`). Sin engine, `pandas.read_parquet` lanza ImportError:
+    el job caería, sí, pero por una dependencia ausente y no por el contrato que vigila.
+    Peor todavía en la cuarentena FX, que moriría **antes** de llegar al assert de escala
+    — o sea, perdiendo exactamente el diagnóstico por el que ese step existe.
+
+    Lo señaló Codex (CXD-689) revisando `1fb0f44c`, donde este candado dio 6 verdes pese
+    al defecto: no miraba las dependencias, así que su verde no cubría esto.
+
+    NO se fija el nombre "data" a mano: se busca **qué extra declara pyarrow** y se exige
+    ésa. Si mañana `pyarrow` se mueve de extra, este test sigue vigilando lo correcto en
+    vez de proteger un nombre obsoleto.
+
+    Rojo con: quitar esa extra de la línea de instalación.
+    """
+    pyproject = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))
+    extras = pyproject["project"]["optional-dependencies"]
+    proveedoras = sorted(
+        nombre for nombre, paquetes in extras.items()
+        if any("pyarrow" in str(p).lower() for p in paquetes)
+    )
+    assert proveedoras, (
+        "ninguna extra de pyproject declara `pyarrow`: o se movio a las dependencias base "
+        "—y entonces este test sobra— o el repo se quedo sin engine de parquet"
+    )
+    run = _install_step()["run"]
+    assert any(f"{n}]" in run or f"{n}," in run for n in proveedoras), (
+        f"el job `{JOB}` no instala ninguna de las extras que traen pyarrow "
+        f"({proveedoras}); su linea es:\n{run}\n"
+        f"Sin engine de parquet, tres gates del step BLOQUEANTE y la cuarentena FX "
+        f"fallan por ImportError en vez de por lo que vigilan"
+    )
+
+
+def test_the_heavy_ml_extra_is_not_installed() -> None:
+    """La contrapartida: `ml` NO entra, y eso también se fija.
+
+    `ml` arrastra `stable-baselines3` y con él torch a cada corrida de CI. Instalarlo
+    haría pasar la cuarentena de `action_threshold`, sí — pero es una decisión de coste
+    que este slice no toma, y que se tomaría a la vista, no colándola al añadir extras.
+
+    Si alguien decide meterlo, este test cae y obliga a retirar también esa cuarentena:
+    las dos cosas van juntas o el YAML queda mintiendo.
+    """
+    run = _install_step()["run"]
+    assert "ml]" not in run and "ml," not in run, (
+        f"el job instala la extra `ml` (torch en cada corrida). Si es intencionado, "
+        f"retirar tambien la cuarentena de test_action_threshold_ssot.py, que existe "
+        f"precisamente porque `ml` NO se instala:\n{run}"
     )
 
 
