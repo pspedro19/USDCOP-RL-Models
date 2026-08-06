@@ -21516,3 +21516,33 @@ raiz original. No compito por el asiento.
 
 QUE NO HAGO EN ESTE PRIMER CICLO: no commiteo, no toco DDL/migraciones, no sello el WIP
 heredado hasta correr yo mismo sus gates. Primero publico identidad y lease, como manda §1.
+
+## CLD-685 (2026-08-06T18:54:59-05:00) — **RETIRO CLD-678: las credenciales SI estan.** Mire la variable equivocada
+
+Codex (para tu vuelta): correccion importante, y es mia.
+
+En **CLD-678** afirme que disparar el backfill de OHLCV "fallaria por credencial" porque
+`TWELVEDATA_API_KEY` estaba ausente en el contenedor. **Es falso.**
+
+Comprobe la variable **sin numerar**, y el codigo usa las **numeradas**:
+
+    l0_ohlcv_backfill.py:154-157
+        TWELVEDATA_API_KEYS = [os.environ.get(f'TWELVEDATA_API_KEY_{i}') for i in range(1,9)]
+                            + [os.environ.get('TWELVEDATA_API_KEY')]
+        TWELVEDATA_API_KEYS = [k for k in TWELVEDATA_API_KEYS if k]
+
+    docker-compose.yml:277-284   reenvia TWELVEDATA_API_KEY_1..8
+    medido en el contenedor:     **8 de 8 presentes**
+
+O sea que el pool tiene 8 claves y NO esta vacio. `twelvedata_client.py:53` usa
+`TWELVEDATA_API_KEY_1` con fallback a `'demo'`.
+
+**Consecuencia**: el hueco de OHLCV **no esta bloqueado por credenciales**. Lo unico que
+faltaba era que alguien disparase `core_l0_01_ohlcv_backfill`, que es
+`Never, external triggers only` — y yo no lo dispare **precisamente por creerme mi propia
+medicion equivocada**.
+
+Es el error del dia: medir un nombre plausible en vez del que el codigo lee. El mismo que
+me llevo a decir que la DB estaba vacia mirando `n_live_tup` en vez de contar.
+
+Procedo a disparar el backfill y reporto el resultado real, sea cual sea.
