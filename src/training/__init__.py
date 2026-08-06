@@ -1,5 +1,4 @@
-"""
-Training Module
+"""Training Module
 ===============
 Professional training infrastructure for USDCOP RL models.
 
@@ -37,6 +36,11 @@ Usage:
     )
 """
 
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Any
+
 # Config SSOT imports (PRIMARY SOURCE)
 from .config import (
     DATA_SPLIT_CONFIG,
@@ -62,59 +66,58 @@ from .config import (
     validate_config,
 )
 
-# Engine - UNIFIED TRAINING (replaces train_ssot, training_pipeline)
-from .engine import (
-    TrainingEngine,
-    TrainingRequest,
-    run_training,
-)
-from .engine import (
-    TrainingResult as EngineTrainingResult,
-)
+# Non-config exports stay public but load only when requested.  This keeps pure
+# configuration imports dependency-light without hiding errors when callers actually
+# request the RL stack.
+_LAZY_EXPORTS: dict[str, tuple[str, str]] = {
+    "TrainingEngine": (".engine", "TrainingEngine"),
+    "TrainingRequest": (".engine", "TrainingRequest"),
+    "run_training": (".engine", "run_training"),
+    "EngineTrainingResult": (".engine", "TrainingResult"),
+    "DefaultRewardStrategy": (".environments", "DefaultRewardStrategy"),
+    "EnvironmentFactory": (".environments", "EnvironmentFactory"),
+    "EnvObservationBuilder": (".environments", "EnvObservationBuilder"),
+    "PortfolioState": (".environments", "PortfolioState"),
+    "Position": (".environments", "Position"),
+    "RewardStrategy": (".environments", "RewardStrategy"),
+    "RewardStrategyAdapter": (".environments", "RewardStrategyAdapter"),
+    "RewardStrategyRegistry": (".environments", "RewardStrategyRegistry"),
+    "StepResult": (".environments", "StepResult"),
+    "TradingAction": (".environments", "TradingAction"),
+    "TradingEnvConfig": (".environments", "TradingEnvConfig"),
+    "TradingEnvironment": (".environments", "TradingEnvironment"),
+    "create_training_env": (".environments", "create_training_env"),
+    "MultiSeedConfig": (".multi_seed_trainer", "MultiSeedConfig"),
+    "MultiSeedResult": (".multi_seed_trainer", "MultiSeedResult"),
+    "MultiSeedTrainer": (".multi_seed_trainer", "MultiSeedTrainer"),
+    "train_with_multiple_seeds": (".multi_seed_trainer", "train_with_multiple_seeds"),
+    "RewardCalculator": (".reward_calculator", "RewardCalculator"),
+    "RewardConfig": (".reward_calculator", "RewardConfig"),
+    "ActionDistributionCallback": (".trainers", "ActionDistributionCallback"),
+    "MetricsCallback": (".trainers", "MetricsCallback"),
+    "PPOConfig": (".trainers", "PPOConfig"),
+    "PPOTrainer": (".trainers", "PPOTrainer"),
+    "ProgressCallback": (".trainers", "ProgressCallback"),
+    "TrainingResult": (".trainers", "TrainingResult"),
+    "train_ppo": (".trainers", "train_ppo"),
+    "compute_file_hash": (".utils", "compute_file_hash"),
+    "compute_json_hash": (".utils", "compute_json_hash"),
+    "set_reproducible_seeds": (".utils", "set_reproducible_seeds"),
+}
 
-# Environment imports
-from .environments import (
-    DefaultRewardStrategy,
-    EnvironmentFactory,
-    EnvObservationBuilder,
-    PortfolioState,
-    Position,
-    RewardStrategy,
-    RewardStrategyAdapter,
-    RewardStrategyRegistry,
-    StepResult,
-    TradingAction,
-    TradingEnvConfig,
-    TradingEnvironment,
-    create_training_env,
-)
 
-# Multi-seed training for variance reduction
-from .multi_seed_trainer import (
-    MultiSeedConfig,
-    MultiSeedResult,
-    MultiSeedTrainer,
-    train_with_multiple_seeds,
-)
-from .reward_calculator import RewardCalculator, RewardConfig
+def __getattr__(name: str) -> Any:
+    try:
+        module_name, attribute_name = _LAZY_EXPORTS[name]
+    except KeyError as exc:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from exc
+    value = getattr(import_module(module_name, __name__), attribute_name)
+    globals()[name] = value
+    return value
 
-# Trainer imports
-from .trainers import (
-    ActionDistributionCallback,
-    MetricsCallback,
-    PPOConfig,
-    PPOTrainer,
-    ProgressCallback,
-    TrainingResult,
-    train_ppo,
-)
 
-# Reproducibility utilities
-from .utils import (
-    compute_file_hash,
-    compute_json_hash,
-    set_reproducible_seeds,
-)
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))
 
 __all__ = [
     # Engine (UNIFIED TRAINING)
