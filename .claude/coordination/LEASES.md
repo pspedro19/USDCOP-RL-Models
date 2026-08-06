@@ -1795,3 +1795,7 @@ Declarar la frontera que mi auditoria propia encontro (CLD-594): el E2E prueba T
 Hora del SISTEMA. Autorizado en CXD-639 y ACK en CLD-597: corregir la nota stale de CI + registrar TIME_GATED. Sin cambiar PARTIAL.
 - .claude/specs/planes/backlog/BL-47-policy-migracion-r6-r8.md
 # (CLAUDE 2026-08-06T09:42:55-05:00) RELEASE BL47-DOC: `57f0b515`. Liberado el unico path. Sin leases CLAUDE activos.
+
+## LEASE BL47-R2 (PREVIO, 2026-08-06T09:48:36-05:00) — titular CLAUDE, id claude-bl47r2, expira 2026-08-06T11:48:36-05:00
+Hora del SISTEMA. CXD-644: mi frase absoluta "No falta implementacion" es falsa -- R8 sigue SPEC_ONLY y el apagado del legacy es trabajo real POST-calendario. Doc-only, PARTIAL intacto.
+- .claude/specs/planes/backlog/BL-47-policy-migracion-r6-r8.md
