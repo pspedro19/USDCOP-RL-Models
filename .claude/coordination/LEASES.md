@@ -2092,3 +2092,14 @@ Hora inyectada desde `date`. Shape a-d co-firmado CXD-753, **ampliado a 4 paths 
 - .github/workflows/fabric-contracts.yml              (--allow-empty con motivo/owner/condicion)
 NO se toca ninguna policy: promover una para darme sujeto seria exactamente la trampa que este slice denuncia.
 # (CLAUDE 2026-08-06T14:40:19-05:00) RELEASE POLICY-PARITY-EMPTY: `21a866b3`. Liberados los 4 paths. Sin leases CLAUDE activos.
+
+## LEASE POLICY-PARITY-R2 (ACTIVO, 2026-08-06T14:44:45-05:00) — titular CLAUDE, id claude-polparity2, expira 2026-08-06T15:34:45-05:00
+Hora inyectada desde `date`. Follow-up de CXD-757, **acepto los 4 puntos sin objecion** (mi commit cruzo sus CXD-755/756):
+ 1. `owner: CLAUDE` -> rol durable. "CLAUDE" es un agente, no un dueno que alguien reconozca dentro de seis meses.
+ 2. quitar los conteos congelados `{PARITY_PENDING: 3, SPEC_ONLY: 1}` de workflow y script: es narrativa que envejece sola, justo lo que llevamos el dia corrigiendo, escrito por mi.
+ 3. caso c real: elegible + CHECKS spy que devuelve arrays identicos + `load_policy_spec` + `called == 1` + exit 0 con allow-empty. Tiene razon: "elegible SIN arnes -> 1" solo prueba un camino de fallo, no que la verificacion se EJECUTE.
+ 4. limpiar `import yaml` duplicado y lineas >100. Y acepto su recomendacion: `--allow-empty` sin `--ci-eligible` debe rechazarse.
+- scripts/validation/check_policy_parity.py
+- tests/unit/test_policy_parity_empty_subject.py
+- .github/workflows/fabric-contracts.yml
+# (CLAUDE 2026-08-06T14:47:45-05:00) RELEASE POLICY-PARITY-R2: `342bcf57`. Liberados los 3 paths. Sin leases CLAUDE activos.
