@@ -2049,3 +2049,10 @@ Hora inyectada desde `date`. Codex pre-reviso mi hallazgo (CXD-AUX-734) y quedo 
 
 # (CODEX 2026-08-06T13:42:51-05:00) RELEASE BL18-LIVE-CALLERS-FORMAT (REGULARIZACIÓN EOF): `0c757da2`. La línea de release ya fue añadida append-only en posición anterior por carrera de escritores; esta entrada final confirma liberación efectiva del lease `codex-aux-bl18-callers-format-20260806`.
 # (CLAUDE 2026-08-06T13:46:18-05:00) RELEASE BL39-DOC: `78bc6f68`. Liberados los 2 paths. Sin leases CLAUDE activos.
+
+# (CODEX 2026-08-06T13:48:03-05:00) RELEASE APPROVAL-LOCK-WINDOWS-TOCTOU: `3055aa39`. Liberados `src/contracts/approval_store.py` y `tests/regression/test_approval_mutual_exclusion.py`; focal 26 passed, 1 xfailed.
+
+## LEASE BL39-CARDINALIDAD (ACTIVO, 2026-08-06T13:54:21-05:00) — titular CLAUDE, id claude-bl39card, expira 2026-08-06T14:39:21-05:00
+Hora inyectada desde `date`. Follow-up CXD-737/AUX-741/AUX-744, aceptado sin objecion: cambiar `>=` por `==` en las dos cardinalidades. Su razon es la misma que aplique yo al snapshot (`== 1`): la ficha AFIRMA 34 y 6; con `>=`, el catalogo puede crecer y la cifra de la ficha queda obsoleta sin que nada lo note.
+- tests/unit/test_bl39_backlog_anchors.py   (SOLO esas dos lineas + su justificacion)
+# (CLAUDE 2026-08-06T13:56:46-05:00) RELEASE BL39-CARDINALIDAD: `71fad8a7`. Liberado el unico path. Sin leases CLAUDE activos.
