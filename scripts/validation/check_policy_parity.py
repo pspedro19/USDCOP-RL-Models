@@ -202,6 +202,15 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="verifica estrictamente solo PARITY_GREEN/CUTOVER; nunca convierte SKIP en verde",
     )
+
+    ap.add_argument(
+        "--allow-empty",
+        action="store_true",
+        help=(
+            "acepta 0 specs elegibles como verde. Se exige explícito para que un gate "
+            "sin sujeto sea una DECISIÓN visible en el llamador y no un silencio"
+        ),
+    )
     args = ap.parse_args(argv)
 
     if args.ci_eligible:
@@ -218,7 +227,26 @@ def main(argv: list[str] | None = None) -> int:
             if not CHECKS:
                 print("[FAIL] registro de arneses vacío — paridad no observable")
                 return 1
-            print("[OK] 0 specs elegibles — nada verificado (SPEC_ONLY/PARITY_PENDING son inertes)")
+            # Cero sujetos NO es verde. El mensaje de abajo era honesto —decía que no
+            # había verificado nada— pero CI lee el EXIT CODE, no el texto: el paso
+            # corría, salía en verde y no comprobaba una sola policy. Estado real que lo
+            # produjo: {PARITY_PENDING: 3, SPEC_ONLY: 1}, cero elegibles, y así habría
+            # seguido indefinidamente.
+            #
+            # Ahora el vacío es rojo salvo que el llamador lo DECLARE con `--allow-empty`.
+            # No se trata de tener sujeto a toda costa: promover una policy para darle
+            # trabajo al gate sería la trampa que esto denuncia.
+            if not args.allow_empty:
+                print(
+                    "[FAIL] 0 specs elegibles y --allow-empty no fue declarado. "
+                    "Un gate sin sujeto no prueba nada: o hay una policy en "
+                    "PARITY_GREEN/CUTOVER, o el llamador declara que hoy no la hay"
+                )
+                return 1
+            print(
+                "[OK] 0 specs elegibles — nada verificado, VACÍO DECLARADO por "
+                "--allow-empty (SPEC_ONLY/PARITY_PENDING son inertes)"
+            )
             return 0
     else:
         targets = [args.policy] if args.policy else list(CHECKS)
