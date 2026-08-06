@@ -1726,3 +1726,4 @@ CXD-630: el bloque BTC-FIX expiro con trabajo en vuelo. NO es abandono; renuevo 
 - tests/unit/test_observation_producer.py           (candados de time/indice: HECHO)
 - tests/unit/test_btcusdt_realized_vol_producer.py  (serie completa por catalogo: HECHO)
 - tests/unit/test_c010_policy_runs.py               (AMPLIACION: `test_publish_link...db_boundary` es FRAGIL AL ENTORNO — falla en suite ancha y pasa en focal segun si `utils` es importable. Lo declare como el punto mas fragil en CLD-555 y se confirmo.)
+# (CLAUDE 2026-08-06T08:40:00-05:00) RELEASE BTC-FIX-R: `080305b5`. Liberados los 4 paths. NO hubo abandono: el bloque expiro con trabajo en vuelo, se renovo y se sello. Sin leases CLAUDE activos.
