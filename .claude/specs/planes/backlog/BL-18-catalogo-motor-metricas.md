@@ -1,12 +1,17 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.1.0
-last_verified: 2026-08-04
+version: 1.2.0
+last_verified: 2026-08-06
 supersedes: []
 code_anchors:
-  - services/common/metrics.py
-  - config/assets/pipelines.yaml
+  - config/metrics/catalog.yaml
+  - config/metrics/legacy_bypass_allowlist.yaml
+  - src/metrics/engine.py
+  - src/metrics/persistence.py
+  - database/migrations/070_fabric_control_plane.sql
+  - airflow/dags/forecast_h5_l6_weekly_monitor.py
+  - airflow/dags/control_system_health.py
 ---
 
 # BL-18 — Catálogo de métricas + motor único + metric_event
@@ -46,9 +51,17 @@ rechazo de colisión por UUID funcionan; las sondas de verificación se hicieron
 transacciones revertidas. `f7f853e6` normaliza el string ISO contractual a `datetime` UTC-aware en
 la frontera asyncpg y evita falsas colisiones cuando dos offsets representan el mismo instante.
 
-El BL permanece **PARTIAL**. Todavía no existe un productor y consumidor productivos que usen el
-evento persistido, ni se ha reducido a cero el allowlist de cálculos heredados. Además, la tabla
-tiene una identidad semántica única adicional: si un reintento conserva el payload pero regenera
+El cableado productivo mínimo existe desde `55cda935`:
+
+- `forecast_h5_l6_weekly_monitor.py::persist_governed_metric_events` calcula mediante
+  `MetricEngine.from_asset_registry`, persiste el evento y está enlazado en el DAG semanal;
+- `control_system_health.py` consume la métrica con `SELECT ... FROM control.metric_event` para el
+  estado de salud del track paper.
+
+El BL permanece **PARTIAL** porque esa costura no generaliza todavía el motor a todos los
+consumidores, la cobertura sigue siendo parcial y el allowlist de cálculos heredados permanece por
+encima de cero. Además, la tabla tiene
+una identidad semántica única adicional: si un reintento conserva el payload pero regenera
 `metric_event_id`, el `ON CONFLICT` actual no captura esa restricción y puede filtrar una excepción
-del driver. Debe decidirse y probarse explícitamente si esa condición se traduce a
-`MetricContractError` o permanece fail-loud; no se declara resuelta por el arreglo temporal.
+del driver. Debe decidirse y probarse explícitamente si esa colisión se traduce a
+`MetricContractError` o permanece fail-loud; no se declara resuelta por el cableado existente.
