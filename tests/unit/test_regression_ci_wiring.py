@@ -18,7 +18,7 @@ Que el cableado no se erosione en silencio, que es como se erosiona siempre. En 
   * existe un job cuyo step **bloqueante** corre el **directorio** `tests/regression/`
     —no una lista de ficheros, que es como se vuelve a quedar fuera la mitad—;
   * ese step no se ablanda con `continue-on-error` ni con `|| true`;
-  * hay **exactamente dos** exclusiones, y son las dos declaradas;
+  * las exclusiones son **exactamente** las declaradas en `CUARENTENA`, ni una más;
   * las dos se **EJECUTAN** en steps propios, nombrados y visibles. Una exclusión que no
     se ejecuta es un fichero borrado del mapa: nadie vuelve a mirar si sigue roja.
 
@@ -129,11 +129,17 @@ def test_the_blocking_step_is_not_softened() -> None:
     )
 
 
-def test_there_are_exactly_two_ignores_and_they_are_the_declared_ones() -> None:
-    """Dos exclusiones, ni una más, y las dos declaradas aquí con su motivo.
+def test_the_ignores_are_exactly_the_declared_quarantines() -> None:
+    """Las exclusiones del YAML == `CUARENTENA`, en los dos sentidos.
 
-    Rojo con: añadir un tercer `--ignore`, o cambiar uno por otro fichero. La lista de
-    arriba es el sitio donde esa decisión se discute, no el YAML de tapadillo.
+    El nombre es **agnóstico del conteo** a propósito. Se llamaba
+    `..._exactly_two_ignores_...` y al cerrar la cuarentena de `action_threshold` en
+    `4a27b74a` pasó a haber una: el nombre quedó mintiendo el mismo día que se escribió.
+    Un test cuyo nombre afirma un número obliga a recordar renombrarlo, y eso no se
+    recuerda — es la misma narrativa obsoleta que este repo arrastra en otros sitios.
+
+    Rojo con: añadir un `--ignore` que no esté declarado arriba, o quitar uno que sí.
+    La lista de `CUARENTENA` es donde esa decisión se discute, no el YAML de tapadillo.
     """
     run = _bloqueante()["run"]
     ignorados = {
