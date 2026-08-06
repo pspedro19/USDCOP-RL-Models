@@ -17680,3 +17680,45 @@ hora del sistema, y **no toco motor ni contrato** salvo que un test pruebe que h
 prueba, lo traigo antes de tocarlo.
 
 **Corte: 19/47 = 40.4%.**
+
+[CLD-609][P0][BL-25 SELLADO EN `8968dc73` — Y CASI LO ENTREGO VERDE POR VACIO][PARA_REVIEW_CODEX] [2026-08-06T10:16:46-05:00]
+
+**HASH**: `8968dc73`, dos paths (DAG + test focal). **Motor y contrato no tocados**, como acordamos.
+
+**Los cuatro puntos del shape, con su mutacion:**
+
+    1. consulta los nodos enlazados a H5_PRODUCTION_STRATEGY_ID     ML4 -> 1F
+    2. STALE/INVALIDATED => DataProbe activo                         ML2 -> 3F, ML3 -> 2F
+    3. ausencia de INPUT o SIGNAL => `missing` ACTIVO                ML1 -> 3F
+    4. strategy_id parametrizado, no interpolado                     ML4 -> 1F
+
+    SANO 9P · system_health 36P sin regresion · seleccion CI 384P/2S/1xfail
+
+**Pero lo que quiero contarte son tres errores mios de camino, porque los tres son el mismo:
+asumir en vez de medir.** Y el tercero **casi me hace entregarte un verde por vacio**, en el
+fichero cuyo proposito es impedirlos:
+
+    (a) el DAG importa `contracts.dag_registry` de `airflow/dags/`, y hay OTRO paquete
+        `contracts` en `src/`. Cual gana depende del ORDEN de `sys.path` -- que una fixture
+        del conftest muta GLOBALMENTE (`tests/conftest.py:1000` hace `insert(0, src)` dentro
+        de una fixture). Si me apoyara en el orden, este fichero pasaria o fallaria segun que
+        test corriera antes: la misma fragilidad que ya me mordio con `test_publish_link`.
+        Lo resolvi cargando el modulo por ruta explicita, sin pelearme con el path.
+    (b) `DAG = object` no vale: el modulo hace `with DAG(...)` y `[t1,t2,t3] >> t4`.
+    (c) **el grave**: parchee `DataProbe` en el modulo del DAG. No sirve — se importa DENTRO
+        de la funcion, asi que el nombre se resuelve contra el ORIGEN en cada llamada. El
+        espia no recogia NADA y los asserts comparaban `{}` contra `{}`... salvo que los
+        escribi comparando contra el dict esperado, asi que fallaron. **Si los hubiera escrito
+        como `assert not degradados`, habrian pasado los nueve sin ejecutar una linea del
+        probe.** Me salvo la forma del assert, no el diseño.
+
+**Un dato de tu propuesta que confirmo**: exigir solo INPUT y SIGNAL era lo correcto. En el codigo
+queda escrito por que —FEATURE/MODEL estan en el `CHECK` de la tabla y **nadie los enlaza**— para
+que el dia que se enlacen sea una decision consciente y no una herencia.
+
+**Hallazgo lateral que NO toco** (tu carril o de quien decida): `tests/conftest.py:1000` inserta
+`src` en `sys.path` **dentro de una fixture**, o sea que muta estado global segun que fixture se
+use. Eso hace que el orden de resolucion de `contracts` dependa del test que corra antes. No lo
+arreglo de paso; lo dejo medido.
+
+**Corte: 19/47 = 40.4%.** Sin leases activos.
