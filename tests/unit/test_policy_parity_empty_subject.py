@@ -4,8 +4,9 @@
 EL DEFECTO
 ----------
 `check_policy_parity.py --ci-eligible` sólo verifica policies en `PARITY_GREEN`/`CUTOVER`.
-El 2026-08-06 no había ninguna —estado real `{PARITY_PENDING: 3, SPEC_ONLY: 1}`, cero
-elegibles— y el script imprimía «0 specs elegibles — nada verificado» y devolvía **0**.
+El 2026-08-06 no había ninguna elegible y el script imprimía «0 specs elegibles — nada
+verificado» y devolvía **0**. El conteo exacto de policies inertes no se anota: lo mide el
+propio gate en cada corrida, y una cifra escrita a mano sólo puede quedarse obsoleta.
 
 `fabric-contracts.yml` lo ejecuta. O sea: un paso de CI que corría, salía verde y no
 comprobaba una sola policy, indefinidamente, hasta que alguien promoviese algo.
@@ -30,6 +31,7 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import numpy as np
 import pytest
 import yaml
 
@@ -54,7 +56,8 @@ def _comando_del_gate() -> str:
     Medido con un mutante que quitó el flag del `run:` y dejó 13 verdes.
     Se parsea el YAML y se lee el step por su nombre.
     """
-    doc = yaml.safe_load((REPO / ".github/workflows/fabric-contracts.yml").read_text(encoding="utf-8"))
+    ruta = REPO / ".github/workflows/fabric-contracts.yml"
+    doc = yaml.safe_load(ruta.read_text(encoding="utf-8"))
     for job in (doc.get("jobs") or {}).values():
         for step in job.get("steps") or []:
             run = str(step.get("run", ""))
@@ -91,25 +94,75 @@ def test_zero_eligible_with_the_flag_is_green_but_says_so(monkeypatch, capsys) -
     assert "VACÍO DECLARADO" in capsys.readouterr().out
 
 
-def test_the_flag_does_not_silence_a_real_failure(monkeypatch, capsys) -> None:
-    """ANTI-VACUIDAD: `--allow-empty` sólo perdona el vacío, no un fallo con sujeto.
+def _spec_elegible() -> dict:
+    return {"id": "con_arnes", "inputs": {"warmup_bars": 0}}
 
-    Es el test que impide que este fichero mida nada. Si el flag se hubiera implementado
-    como «pasa siempre», los dos de arriba seguirían verdes y el gate estaría muerto —que
-    es el defecto original con otra ropa.
 
-    Se usa una policy elegible SIN arnés de paridad: el gate debe seguir dando 1 aunque se
-    le pase el flag.
+def test_with_a_subject_the_harness_actually_runs(monkeypatch, capsys) -> None:
+    """ANTI-VACUIDAD CENTRAL: con sujeto elegible, la verificación se EJECUTA.
+
+    Sin esto, todo este fichero mediría sólo cómo se comporta el gate cuando no hay nada
+    que mirar. Una versión anterior usaba una policy elegible **sin arnés** y exigía
+    `exit 1`; Codex señaló (CXD-757) que eso sólo prueba un camino de fallo y no demuestra
+    que `--allow-empty` deje correr la verificación real. Tenía razón.
+
+    Aquí el arnés es un espía que devuelve dos arrays IDÉNTICOS: el gate debe llamarlo
+    exactamente una vez y salir 0 **aunque se le pase `--allow-empty`**, porque el flag
+    perdona el vacío, no la verificación.
     """
+    llamadas: list[dict] = []
+
+    def arnes(spec):
+        llamadas.append(spec)
+        return np.zeros(8, dtype=float), np.zeros(8, dtype=float)
+
     monkeypatch.setattr(
-        gate, "load_all_policy_specs", lambda: [_policy("sin_arnes", "PARITY_GREEN")]
+        gate, "load_all_policy_specs", lambda: [_policy("con_arnes", "PARITY_GREEN")]
     )
-    assert gate.main(["--ci-eligible", "--allow-empty"]) == 1
+    monkeypatch.setattr(gate, "CHECKS", {"con_arnes": arnes})
+    monkeypatch.setattr(gate, "load_policy_spec", lambda _p: _spec_elegible())
+
+    assert gate.main(["--ci-eligible", "--allow-empty"]) == 0
+    assert len(llamadas) == 1, (
+        f"el arnés se ejecutó {len(llamadas)} veces: con un sujeto elegible el gate tiene "
+        f"que verificar exactamente una vez, no saltárselo"
+    )
     salida = capsys.readouterr().out
+    assert "exposición IDÉNTICA" in salida
     assert "VACÍO DECLARADO" not in salida, (
-        "con un sujeto elegible el gate no puede reportar vacío: estaría confundiendo "
-        "«no hay nada que verificar» con «hay algo y falla»"
+        "con sujeto el gate no puede reportar vacío: confundiría «no había nada que "
+        "verificar» con «verifiqué y coincide»"
     )
+
+
+def test_the_flag_does_not_silence_a_real_divergence(monkeypatch, capsys) -> None:
+    """Y con divergencia real, `--allow-empty` NO la perdona.
+
+    El complemento del anterior: si el flag se hubiera implementado como «pasa siempre»,
+    aquel daría 0 igualmente y no distinguiríamos nada. Aquí el arnés devuelve arrays que
+    difieren y el gate debe salir 1 pese al flag.
+    """
+    def arnes(spec):
+        return np.zeros(8, dtype=float), np.array([0, 0, 1, 0, 0, 0, 0, 0], dtype=float)
+
+    monkeypatch.setattr(
+        gate, "load_all_policy_specs", lambda: [_policy("con_arnes", "PARITY_GREEN")]
+    )
+    monkeypatch.setattr(gate, "CHECKS", {"con_arnes": arnes})
+    monkeypatch.setattr(gate, "load_policy_spec", lambda _p: _spec_elegible())
+
+    assert gate.main(["--ci-eligible", "--allow-empty"]) == 1
+    assert "barras divergen" in capsys.readouterr().out
+
+
+def test_allow_empty_is_rejected_without_ci_eligible() -> None:
+    """El flag sólo tiene sentido frente al conjunto elegible (recomendación CXD-757).
+
+    Suelto invitaría a colarlo en cualquier invocación como si ablandase el gate entero.
+    """
+    with pytest.raises(SystemExit) as e:
+        gate.main(["--allow-empty"])
+    assert e.value.code != 0
 
 
 def test_the_workflow_declares_why_it_accepts_an_empty_gate() -> None:
@@ -136,8 +189,6 @@ def test_no_policy_was_promoted_to_feed_the_gate() -> None:
     policies sigan inertes, el workflow debe seguir declarando el vacío; el día que una se
     promueva de verdad, este test recuerda que hay que retirar el flag.
     """
-    import yaml
-
     estados = {
         p.stem: (yaml.safe_load(p.read_text(encoding="utf-8")).get("migration") or {}).get("status")
         for p in sorted((REPO / "config/policies").glob("*.yaml"))

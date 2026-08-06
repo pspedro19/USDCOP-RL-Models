@@ -133,12 +133,12 @@ jobs:
       - run: python scripts/validation/report_ledger_dsr.py
       - run: python scripts/validation/validate_policy_specs.py
       # `--allow-empty` es una DECLARACION, no un ablandamiento. El gate solo verifica
-      # policies en PARITY_GREEN/CUTOVER y hoy no hay ninguna: el estado real es
-      # {PARITY_PENDING: 3, SPEC_ONLY: 1}. Sin el flag el gate sale ROJO a proposito,
-      # porque un paso que corre sin sujeto y devuelve 0 se lee como "verificado" cuando
-      # no verifico nada — exactamente lo que este step hacia en silencio hasta 2026-08-06.
-      #   owner: CLAUDE (el cero de sujetos lo produjo la degradacion de spx500/btc/gold
-      #          a PARITY_PENDING en esa misma sesion)
+      # policies en PARITY_GREEN/CUTOVER y hoy no hay ninguna elegible. Sin el flag sale
+      # ROJO a proposito, porque un paso que corre sin sujeto y devuelve 0 se lee como
+      # "verificado" cuando no verifico nada — que es lo que este step hacia en silencio
+      # hasta 2026-08-06. El conteo exacto de policies inertes NO se anota aqui: el gate
+      # lo mide en cada corrida y un numero en un comentario solo envejece mal.
+      #   owner: workstream de migracion de policies (BL-47)
       #   cancelacion: se BORRA `--allow-empty` en cuanto una policy llegue a
       #          PARITY_GREEN o CUTOVER. Nadie debe promover una policy solo para darle
       #          sujeto al gate: eso seria la trampa que este cambio denuncia.

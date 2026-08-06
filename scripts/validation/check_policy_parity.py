@@ -213,6 +213,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = ap.parse_args(argv)
 
+    if args.allow_empty and not args.ci_eligible:
+        # El flag sólo tiene sentido frente al conjunto elegible. Aceptarlo suelto
+        # invitaría a colarlo en cualquier invocación como si ablandase el gate entero.
+        ap.error("--allow-empty sólo aplica junto a --ci-eligible")
+
     if args.ci_eligible:
         specs = load_all_policy_specs()
         if not specs:
@@ -229,9 +234,11 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             # Cero sujetos NO es verde. El mensaje de abajo era honesto —decía que no
             # había verificado nada— pero CI lee el EXIT CODE, no el texto: el paso
-            # corría, salía en verde y no comprobaba una sola policy. Estado real que lo
-            # produjo: {PARITY_PENDING: 3, SPEC_ONLY: 1}, cero elegibles, y así habría
-            # seguido indefinidamente.
+            # corría, salía en verde y no comprobaba una sola policy, y así habría
+            # seguido mientras ninguna policy llegase a PARITY_GREEN/CUTOVER.
+            #
+            # No se anota aquí cuántas había inertes: este gate ya las cuenta en cada
+            # corrida, y un número escrito en un comentario sólo puede envejecer mal.
             #
             # Ahora el vacío es rojo salvo que el llamador lo DECLARE con `--allow-empty`.
             # No se trata de tener sujeto a toda costa: promover una policy para darle
