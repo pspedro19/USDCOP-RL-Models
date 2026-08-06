@@ -19,6 +19,26 @@ Inconsistencia real: forecast_h5_predictions.predicted_return_pct=1.6481 (puntos
 ## Qué falta exactamente
 Regla: en DB todo retorno DECIMAL (0.01 = 1 pct); nombres return_decimal/drawdown_decimal/leverage_ratio; el formateo a pct solo en frontend. strategy_signal normalizada: núcleo estable (signal_id, sleeve_id, version, instrument, as_of, valid_from/until, direction, target_exposure, decision_fingerprint) + decision_components JSONB versionado (hurst, regime, tp, hs, ...).
 
+### El canario existe y nadie lo arma
+
+`test_return_units.py` trae un canario deliberado —`test_db_available_when_required`— colocado
+**fuera** del `xfail` estricto, con su razón escrita: *«the strict-xfail test below swallows ANY
+failure (including our `_db_unavailable` fail) as "expected" — so unavailability must turn red
+HERE, or the requirement is vacuous»*. Quien lo escribió **vio el riesgo exacto**.
+
+Y sin embargo **`BL42_REQUIRE_DB` no aparece en ningún workflow ni en el Makefile** (grep vacío,
+2026-08-06). El canario nunca se dispara: es **un candado correcto con el seguro puesto**, y por
+eso las dos comprobaciones de unidades en DB llevan saltándose sin que nada lo señale.
+
+**Por qué NO se arma en el CI actual** (decidido bilateralmente, CXD-649): el `postgres:15` de
+`ci.yml` usa `test_db` **sin esquema ni fixtures**. Armar la bandera ahí probaría la *conexión* y
+dejaría las queries de unidades vacías — un **gate nominal**, no evidencia de convención. Cambiar
+un skip engañoso por un verde engañoso no es progreso.
+
+**Lo que falta para armarlo, declarado y no automatizado**: un job con **esquema cargado + fixture
+representativo gobernado**. Hoy **no existe**, y esta ficha no declara una automatización que no
+hay.
+
 ## Impacto frontend
 Formateo pct exclusivo del frontend; tabla de señales filtrable por columnas estables.
 
@@ -32,8 +52,18 @@ Grep: ninguna columna _pct con valores decimales; la señal v11 rinde igual en U
 
 ```
 comando: BL42_REQUIRE_DB=1 python -m pytest tests/regression/test_return_units.py -q
-verde:   30 passed, 1 xfailed   (2026-08-05, Postgres arriba; el xfailed es estricto y
-         documenta la fase 2 pendiente, no un fallo tolerado)
+verde:   30 passed, 1 xfailed   (2026-08-05, con una DB UTILIZABLE; el xfailed es
+         estricto y documenta la fase 2 pendiente, no un fallo tolerado)
+
+         CORRECCION 2026-08-06: aqui decia «Postgres arriba», y eso SOBREAFIRMA.
+         Medido: con el contenedor healthy, `5432` publicado en `0.0.0.0`, puerto
+         abierto desde el host y `POSTGRES_DB` real == el default del test, la
+         conexion SIGUE fallando. El requisito real son CUATRO cosas —driver,
+         credenciales, esquema y datos representativos— y «arriba» sólo cubre una.
+         Sin ellas el comando de arriba **no es reproducible**.
+
+sin la bandera: 28 passed, 3 skipped   (2026-08-06, este host) — dos de esos skips
+         son las comprobaciones de unidades EN DB, que no se ejecutan.
 
 muta:    scripts/pipeline/train_and_export_smart_simple.py:1052
          "total_return_pct": round(total_return, 2)  ->  round(total_return / 100.0, 6)
