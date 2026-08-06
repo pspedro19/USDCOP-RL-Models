@@ -45,6 +45,12 @@ from pathlib import Path
 
 import pytest
 
+# API privada de pytest a proposito: no hay equivalente publico para distinguir "la
+# fixture fallo" de "la fixture no existe", y esa distincion es justo lo que separa este
+# test de uno vacuo. Si un pytest futuro la mueve, el import revienta en la coleccion —
+# ruidoso y localizado, que es como se quiere descubrir esto.
+from _pytest.fixtures import FixtureLookupError
+
 REPO = Path(__file__).resolve().parents[2]
 SRC = str((REPO / "src").resolve())
 DAGS = str((REPO / "airflow" / "dags").resolve())
@@ -135,6 +141,17 @@ def test_the_feature_builder_fixture_leaves_sys_path_as_it_found_it(
     antes = list(sys.path)
     try:
         request.getfixturevalue("feature_builder")
+    except FixtureLookupError:
+        # ANTI-VACUIDAD, y no es hipotetico: sin esta rama, renombrar la fixture dejaba
+        # el test en VERDE. Medido —`feature_builder` → `feature_builder_RENOMBRADA`
+        # daba `1 passed` en 0.21s— porque el `except` de abajo se tragaba el fallo de
+        # lookup, `sys.path` no cambiaba y la comparacion final se cumplia sin haber
+        # ejercitado nada. Lo señaló Codex (CXD-668) antes de que yo lo viera.
+        pytest.fail(
+            "la fixture `feature_builder` no existe: este test no ha ejercitado nada y "
+            "su verde no significaria nada. Si se renombro, actualizar aqui; si se "
+            "borro, borrar tambien este test en vez de dejarlo pasando en vacio"
+        )
     except (Exception, pytest.skip.Exception):
         # Se traga CUALQUIER desenlace de la fixture a propósito. Hoy `FeatureBuilder()`
         # revienta con `norm_stats missing required features` —drift de contrato RL,
