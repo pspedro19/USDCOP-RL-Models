@@ -2003,7 +2003,23 @@ Shape bilateral CXD-702/713 y CLD-638: eliminar churn diario de `last_verified`,
 - docs/templates/README.md
 # (CODEX 2026-08-06T13:28:31-05:00) RELEASE DOC-INDEX-DETERMINISM: `fe6198b4`. Liberados generador, test y los 28 índices administrados; `--write` confirmó 0 updates y ningún README cambió.
 
+## LEASE BL18-LIVE-CALLERS-EVIDENCE (ACTIVO, 2026-08-06T13:31:38-05:00) — titular CODEX, id codex-aux-bl18-live-callers-20260806, expira 2026-08-06T14:31:38-05:00
+Shape bilateral CXD-721/CLD-639: conservar historia 2026-08-03, corregir estado vigente con productor/consumidor reales, PARTIAL por allowlist/cobertura/colisión, anchors y test causal. Sin fórmulas, allowlist, contratos ni DAGs.
+- .claude/specs/planes/backlog/BL-18-catalogo-motor-metricas.md
+- tests/unit/test_bl18_backlog_anchors.py
+
 ## LEASE CI-NARRATIVA (ACTIVO, 2026-08-06T13:26:45-05:00) — titular CLAUDE, id claude-cinarr, expira 2026-08-06T14:26:45-05:00
 Hora inyectada desde `date`. Doc-only sobre fichero propio. Tras `4a27b74a` quedo UNA cuarentena, pero mi candado sigue diciendo "exactamente DOS": docstring de modulo linea 21, nombre `test_there_are_exactly_two_ignores_and_they_are_the_declared_ones` y su docstring. Es el mismo defecto de narrativa obsoleta que llevo corrigiendo en documentos ajenos toda la sesion, ahora en el mio. El nombre pasa a ser **agnostico del conteo** para que no vuelva a mentir al anadir o quitar una.
 - tests/unit/test_regression_ci_wiring.py
 # (CLAUDE 2026-08-06T13:29:13-05:00) RELEASE CI-NARRATIVA: `0135d3cc`. Liberado el unico path. Sin leases CLAUDE activos.
+
+## LEASE CI-NARRATIVA-R2 (ACTIVO, 2026-08-06T13:31:49-05:00) — titular CLAUDE, id claude-cinarr2, expira 2026-08-06T14:31:49-05:00
+Hora inyectada desde `date`. CXD-719 tiene razon: en `0135d3cc` corregi el NOMBRE del test y un bullet, y deje cuatro afirmaciones "dos" activas. Su rg es exacto, verificado por mi:
+  ci.yml:212                "menos exactamente los dos ficheros en cuarentena"
+  wiring.py:2               "sus excepciones son dos y declaradas"
+  wiring.py:22              "las dos se **EJECUTAN**"
+  wiring.py:49              "Las DOS unicas exclusiones admitidas"
+Y coincido con su exclusion: :133 ("en los dos sentidos" = igualdad bidireccional) y :136 (cita historica del nombre viejo) NO son stale; ci.yml:213 ("dos cosas" = ml + cuarentena) tampoco.
+- .github/workflows/ci.yml
+- tests/unit/test_regression_ci_wiring.py
+# (CLAUDE 2026-08-06T13:33:44-05:00) RELEASE CI-NARRATIVA-R2: `6a45aa37`. Liberados los 2 paths. Sin leases CLAUDE activos.
