@@ -20892,3 +20892,67 @@ Pendientes acordados y NO hechos: despausar DAGs (uno a uno, contigo), regenerar
 si las 10 columnas de macro profundo faltan por una migracion no aplicada.
 
 **Backlog: 19/47 = 40.4%.**
+
+## CLD-673 (2026-08-06T16:03:45-05:00) — L0 despausados. Y el bloqueo NO era el pause: era una conexion que el compose ya arreglaba
+
+Codex: el operador me pidio despausar los L0 uno a uno. Lo hice, y el primero destapo algo
+que explica por que "levantar Airflow" no bastaba.
+
+### El hallazgo
+
+Despause `core_l0_04_macro_update` y su `health_check` fallo:
+
+    The conn_id `timescale_conn` isn't defined
+
+Fui a mirar antes de despausar los otros seis —despausarlos habria multiplicado el mismo
+fallo—. Las 57 conexiones de Airflow eran **todas las de fabrica** (`postgres_default`,
+`redis_default`...). `timescale_conn`, que **todos** los L0 esperan, no existia.
+
+Y la causa raiz es fina: `docker-compose.yml:271` **SI** define
+`AIRFLOW_CONN_TIMESCALE_CONN`, con este comentario al lado:
+
+    # Durable timescale_conn (env-var connections survive metadata-DB resets; used by
+    # core_l0_03_macro_backfill health_check — found missing on 2026-07-07, ledger #41)
+
+O sea que ya se diagnostico el 7-jul y se arreglo en compose. Pero el contenedor en marcha
+se **creo el 2026-08-03**, y las variables de entorno se fijan al CREAR, no al arrancar.
+Yo lo levante con `docker start`, que reusa el contenedor viejo: el arreglo estaba en el
+fichero y no en el proceso.
+
+**Es la misma familia que el empalme FX**: se reparo el artefacto derivado y la fuente
+siguio su vida. Aqui al reves — se reparo la fuente (compose) y el proceso vivo se quedo
+con el estado anterior. En ambos casos, "arreglado" describia el sitio equivocado.
+
+### Lo hecho
+
+    docker compose up -d --no-deps airflow-scheduler airflow-webserver   (RECREA, no start)
+    -> AIRFLOW_CONN_TIMESCALE_CONN presente · contenedor recreado 20:51:52Z
+    -> prueba real del hook: PostgresHook('timescale_conn') lee 26.326 filas de macro
+
+Despues, los 7 L0 despausados **uno a uno, verificando cada uno antes del siguiente**:
+
+    core_l0_04_macro_update ............ success (2 corridas)
+    core_l0_02_ohlcv_realtime .......... success
+    core_l0_01_ohlcv_backfill .......... success
+    core_l0_03_macro_backfill .......... sin corridas (fuera de ventana)
+    core_l0_04_usdcop_forward_macro_pit  sin corridas
+    core_l0_05_seed_backup ............. success
+    l0_multiframe_catchup .............. running
+
+    fallos en los ultimos 30 min: **ninguno**
+    estado global: 50 pausados / 10 activos  (eran 57/3)
+
+### Lo que NO ha pasado, y conviene decirlo
+
+Los datos **no** han avanzado todavia: m5 sigue en 2026-07-29 y macro en 2026-07-28. No es
+un fallo: son las 15:5x COT y la sesion es 8:00-12:55, asi que `check_market_hours` hace
+`skip` de la extraccion — correctamente. El hueco se cerrara en la proxima ventana de
+mercado, o antes si disparamos el backfill a mano.
+
+**No he disparado ningun backfill manual** ni despausado nada fuera de los L0. Y
+`l0_multiframe_catchup` sigue corriendo; lo vigilo.
+
+Pendiente contigo: regenerar `MACRO_DAILY_CLEAN` desde la DB sana para poder retirar la
+cuarentena FX, y las 10 columnas de macro profundo.
+
+**Backlog: 19/47 = 40.4%.**
