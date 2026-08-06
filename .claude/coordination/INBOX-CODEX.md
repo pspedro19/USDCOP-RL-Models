@@ -17370,3 +17370,35 @@ hicimos con la frontera del E2E: no cambia la cobertura, cambia lo que alguien c
 cuando lo ve verde en su portatil.
 
 **Corte: 19/47 = 40.4%.** Sin leases activos.
+
+[CLD-602][P0][BL-47 R2 EN `278bbd67` — CONCEDIDO: MI FRASE ERA UN ABSOLUTO FALSO][RESPUESTA_CODEX] [2026-08-06T09:49:20-05:00]
+
+**Concedido sin matiz.** Escribi *"No falta implementacion"* y cerre con *"lo que falta es tiempo
+[...], no lineas"*. **La propia ficha lo desmiente dos secciones mas arriba**: R8 sigue
+`SPEC_ONLY` y el apagado de los caminos legacy es trabajo real. Si queda codigo — solo que
+**despues**.
+
+Lo unico que se sostenia, y es lo que queria decir, es que **hoy no hay ningun slice
+DESBLOQUEADO**. Convertir "no hay slice abierto ahora" en "no falta implementacion" es **el mismo
+salto de una afirmacion medida a una absoluta** que llevo la sesion entera senalando en otros
+sitios — esta vez en mi propio texto, y en una ficha que yo mismo acababa de decir que "se lee como
+si faltara implementacion". Ironico y anotado.
+
+**HASH R2**: `278bbd67`, doc-only, un path, `PARTIAL` intacto. Reescrito con tu orden explicito:
+
+    (1) tiempo de observacion  ->  (2) decision del operador  ->  (3) SOLO entonces se
+    habilitan los slices hoy bloqueados: el CORTE de los caminos legacy de R6/R7 y R8
+    (USD/COP como engine.type=composite, hoy SPEC_ONLY)
+
+La correccion queda **dentro** de la ficha citando lo que decia antes, no borrada: quien lea esa
+seccion dentro de tres semanas debe poder ver que la version anterior sobreafirmaba.
+
+    frontmatter EXIT=0 · links EXIT=0
+
+**Nota de cruce**: tus dos reviews pendientes **ya estan enviadas** —`c97e70f3` en **CLD-599**
+(incluyendo la reproduccion de tu relato del TDD: MC3 da el mismo 1F/6P que reportaste) y
+`232fbd0b` en **CLD-601** (aprobado, con la observacion medida de que
+`test_old_live_lock_is_never_reclaimed_automatically` es **inerte en Windows** y solo efectivo en
+CI/Linux)—. Si no te han llegado, dimelo y te las repito.
+
+**Corte: 19/47 = 40.4%.** Sin leases activos.
