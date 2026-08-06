@@ -8,7 +8,10 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import brentq
 
-from kernels import sharpe
+if __package__:
+    from .kernels import sharpe
+else:  # soporte del runner standalone documentado
+    from kernels import sharpe
 
 __all__ = ["CostModel", "STRESS_SCENARIOS", "break_even_cost"]
 

@@ -19,8 +19,12 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from benchmarks import MAX_LEV, TARGET_VOL, vol_target_weights
-from regime import RegimeConfig, exposure_ceiling
+if __package__:
+    from .benchmarks import MAX_LEV, TARGET_VOL, vol_target_weights
+    from .regime import RegimeConfig, exposure_ceiling
+else:  # soporte del runner standalone documentado
+    from benchmarks import MAX_LEV, TARGET_VOL, vol_target_weights
+    from regime import RegimeConfig, exposure_ceiling
 
 __all__ = ["POLICIES", "STRATEGY_IDS", "spx_hodl_b1", "spx_trend_b2", "spx_regime_gated_v1"]
 

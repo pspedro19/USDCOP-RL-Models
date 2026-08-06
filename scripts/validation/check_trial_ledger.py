@@ -68,6 +68,11 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.metrics.trial_count import read_n_trials_total  # noqa: E402
+
 LEDGER_PATH = ROOT / "registries" / "ledger.jsonl"
 FAMILIES_DIR = ROOT / "registries" / "families"
 
@@ -92,18 +97,6 @@ REGISTRY_PATHS = {
     "btcusdt": ROOT / ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md",
     "spx500": ROOT / ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
 }
-
-N_TRIALS_RE = re.compile(r"^n_trials_total:\s*(\d+)\s*(?:#.*)?$", re.MULTILINE)
-
-
-def read_n_trials_total(path: Path) -> int:
-    """Lee n_trials_total del front-matter YAML de un HYPOTHESIS-REGISTRY (solo lectura)."""
-    text = path.read_text(encoding="utf-8")
-    match = N_TRIALS_RE.search(text)
-    if match is None:
-        raise ValueError(f"n_trials_total no encontrado en {path}")
-    return int(match.group(1))
-
 
 def load_ledger(path: Path = LEDGER_PATH) -> list[dict]:
     records = []

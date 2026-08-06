@@ -44,7 +44,6 @@ from typing import Callable
 
 import numpy as np
 import pandas as pd
-import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -65,6 +64,11 @@ from services.common.metrics import (  # noqa: E402
 from src.contracts.strategy_schema import (  # noqa: E402
     MIN_TRADES_FOR_STATS,
     suppress_small_sample_stats,
+)
+from src.metrics.trial_count import (  # noqa: E402
+    TrialCountError,
+    read_n_trials_total,
+    read_registry_front_matter,
 )
 from scripts.analysis.profitability_types import Sleeve  # noqa: E402
 
@@ -103,18 +107,6 @@ FAMILIES = {
 # Trial counts — the input the DSR cannot be honest without
 # ---------------------------------------------------------------------------
 
-class TrialCountError(RuntimeError):
-    """Raised when a trial count is missing or contradicts the published floor."""
-
-
-def read_front_matter(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    if not text.startswith("---"):
-        raise TrialCountError(f"{path} has no YAML front-matter")
-    end = text.index("\n---", 3)
-    return yaml.safe_load(text[3:end]) or {}
-
-
 def published_floor(asset: str) -> int:
     """Every published version was looked at, so it is at least one trial."""
     total = 0
@@ -127,18 +119,8 @@ def published_floor(asset: str) -> int:
 
 def trial_count(asset: str) -> dict:
     path = ROOT / REGISTRIES[asset]
-    if not path.is_file():
-        raise TrialCountError(
-            f"{asset}: no HYPOTHESIS-REGISTRY at {path}. The DSR needs a trial count with a "
-            "traceable source; a number living in a .py literal is not one."
-        )
-    fm = read_front_matter(path)
-    n = fm.get("n_trials_total")
-    if not isinstance(n, int) or n < 1:
-        raise TrialCountError(
-            f"{asset}: registry {path} lacks a usable `n_trials_total`. Refusing to assume a "
-            "value — assuming 1 would silently turn a deflated Sharpe back into a raw one."
-        )
+    fm = read_registry_front_matter(path)
+    n = read_n_trials_total(path)
     floor = published_floor(asset)
     if n < floor:
         raise TrialCountError(

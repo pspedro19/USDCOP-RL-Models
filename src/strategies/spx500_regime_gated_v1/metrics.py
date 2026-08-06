@@ -8,7 +8,10 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from kernels import PERIODS_PER_YEAR, cer_gain_bps, cscv, deflated_sharpe, sharpe
+if __package__:
+    from .kernels import PERIODS_PER_YEAR, cer_gain_bps, cscv, deflated_sharpe, sharpe
+else:  # soporte del runner standalone documentado
+    from kernels import PERIODS_PER_YEAR, cer_gain_bps, cscv, deflated_sharpe, sharpe
 
 __all__ = ["PerfMetrics", "compute_metrics", "dsr_from_family", "pbo_from_family",
            "regime_robustness"]
@@ -66,8 +69,9 @@ def dsr_from_family(candidate: PerfMetrics, family_sharpes: np.ndarray,
                     n_trials: int) -> float:
     """DSR del candidato con Var(SR) tomada de la familia y N del estudio.
 
-    n_trials = TODOS los trials del estudio (SDD-000 §3: N_MAX=989), no los
-    reportados. Con N grande, SR* sube y un Sharpe de 1.0 no prueba nada.
+    n_trials = conteo total gobernado por el HYPOTHESIS-REGISTRY, no solo los
+    reportados ni el presupuesto maximo. Con N grande, SR* sube y un Sharpe de
+    1.0 no prueba nada.
     """
     sr_var = float(np.var(family_sharpes, ddof=1)) if family_sharpes.size >= 2 else 0.25
     return deflated_sharpe(
