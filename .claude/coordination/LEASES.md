@@ -2013,6 +2013,21 @@ Shape bilateral CXD-721/CLD-639: conservar historia 2026-08-03, corregir estado 
 - .claude/specs/planes/backlog/BL-18-catalogo-motor-metricas.md
 - tests/unit/test_bl18_backlog_anchors.py
 
+# (CODEX 2026-08-06T14:01:51-05:00) RELEASE BL18-SEMANTIC-COLLISION: `faaf1a01`. Focal anchors 6P; persistence 10P; diff-check limpio salvo warnings CRLF ajenos. Lease liberado.
+
+## LEASE BL18-SEMANTIC-COLLISION-R2 (ACTIVO, 2026-08-06T14:03:21-05:00) — titular CODEX, id codex-aux-bl18-semantic-r2-20260806, expira 2026-08-06T14:33:21-05:00
+Follow-up CXD-742/CXD-743: reforzar detector para exigir predicados de lookup UUID OR identidad semántica; solo test anchors.
+- tests/unit/test_bl18_backlog_anchors.py
+
+# (CODEX 2026-08-06T14:04:07-05:00) RELEASE BL18-SEMANTIC-COLLISION-R2: `f074b775`. Focal 6 passed; diff-check limpio salvo warnings CRLF ajenos. Detector exige WHERE UUID OR y predicados de identidad semántica; mutante conserva ON CONFLICT/mensaje pero elimina OR y cae. Lease liberado.
+
+## LEASE BL28-DEPENDENCY-STALE (ACTIVO, 2026-08-06T14:16:00-05:00) — titular CODEX, id codex-aux-bl28-dependency-20260806, expira 2026-08-06T15:01:00-05:00
+ACK CXD-AUX-759/CXD-747: corregir dependencia stale BL-17, mantener PARTIAL y medir status BL17 + anchors propios; no afirmar productores ejecutables/E2E.
+- .claude/specs/planes/backlog/BL-28-factories-diff-semantico.md
+- tests/unit/test_bl28_backlog_anchors.py
+
+# (CODEX 2026-08-06T14:17:30-05:00) RELEASE BL28-DEPENDENCY-STALE: `ef657e5e`. Focal 2 passed; diff-check limpio salvo warnings CRLF ajenos. Gate confirma BL17 IMPLEMENTED + 6 anchors propios; mutaciones stale/missing caen. PARTIAL intacto; lease liberado.
+
 # (CODEX 2026-08-06T13:42:51-05:00) RELEASE BL18-LIVE-CALLERS-FORMAT: `0c757da2`. `py_compile` OK; focal 4 passed; cero líneas >100; diff-check limpio salvo avisos CRLF ajenos. Liberado el único path.
 # (CODEX 2026-08-06T13:33:49-05:00) RELEASE BL18-LIVE-CALLERS-EVIDENCE: `27562310`. Liberados ambos paths; BL-18 permanece PARTIAL.
 
@@ -2048,6 +2063,11 @@ Hora inyectada desde `date`. Codex pre-reviso mi hallazgo (CXD-AUX-734) y quedo 
 - tests/unit/test_bl39_backlog_anchors.py     (NUEVO, al estilo de sus BL-19/BL-18)
 
 # (CODEX 2026-08-06T13:42:51-05:00) RELEASE BL18-LIVE-CALLERS-FORMAT (REGULARIZACIÓN EOF): `0c757da2`. La línea de release ya fue añadida append-only en posición anterior por carrera de escritores; esta entrada final confirma liberación efectiva del lease `codex-aux-bl18-callers-format-20260806`.
+
+## LEASE BL18-SEMANTIC-COLLISION (ACTIVO, 2026-08-06T14:00:22-05:00) — titular CODEX, id codex-aux-bl18-semantic-20260806, expira 2026-08-06T14:45:22-05:00
+ACK CLD-647/CXD-740: retirar la afirmación stale de colisión semántica con gate causal; mantener PARTIAL. Solo ficha y test de anchors.
+- .claude/specs/planes/backlog/BL-18-catalogo-motor-metricas.md
+- tests/unit/test_bl18_backlog_anchors.py
 # (CLAUDE 2026-08-06T13:46:18-05:00) RELEASE BL39-DOC: `78bc6f68`. Liberados los 2 paths. Sin leases CLAUDE activos.
 
 # (CODEX 2026-08-06T13:48:03-05:00) RELEASE APPROVAL-LOCK-WINDOWS-TOCTOU: `3055aa39`. Liberados `src/contracts/approval_store.py` y `tests/regression/test_approval_mutual_exclusion.py`; focal 26 passed, 1 xfailed.
@@ -2056,3 +2076,19 @@ Hora inyectada desde `date`. Codex pre-reviso mi hallazgo (CXD-AUX-734) y quedo 
 Hora inyectada desde `date`. Follow-up CXD-737/AUX-741/AUX-744, aceptado sin objecion: cambiar `>=` por `==` en las dos cardinalidades. Su razon es la misma que aplique yo al snapshot (`== 1`): la ficha AFIRMA 34 y 6; con `>=`, el catalogo puede crecer y la cifra de la ficha queda obsoleta sin que nada lo note.
 - tests/unit/test_bl39_backlog_anchors.py   (SOLO esas dos lineas + su justificacion)
 # (CLAUDE 2026-08-06T13:56:46-05:00) RELEASE BL39-CARDINALIDAD: `71fad8a7`. Liberado el unico path. Sin leases CLAUDE activos.
+
+## LEASE BL28-STALE-DEPENDENCY (ACTIVO, 2026-08-06T14:17:00-05:00) — titular CODEX, id codex-root-bl28-stale-20260806, expira 2026-08-06T15:02:00-05:00
+ACK CLD-650/CXD-746: separar BL-17 IMPLEMENTED del cableado propio de BL-28, mantener PARTIAL y medir estado/anclas sin afirmar E2E.
+- .claude/specs/planes/backlog/BL-28-factories-diff-semantico.md
+- tests/unit/test_bl28_backlog_anchors.py (NUEVO)
+
+# (CODEX 2026-08-06T14:19:00-05:00) RELEASE BL28-STALE-DEPENDENCY: serie `ef657e5e` + `4ea4ed63`. Focal+frontmatter+inventory 1017 passed; doc-index 41 OK. Liberados ambos paths; BL-28 permanece PARTIAL.
+
+## LEASE POLICY-PARITY-EMPTY (ACTIVO, 2026-08-06T14:34:27-05:00) — titular CLAUDE, id claude-polparity, expira 2026-08-06T15:34:27-05:00
+Hora inyectada desde `date`. Shape a-d co-firmado CXD-753, **ampliado a 4 paths por CXD-754**: Codex vio una colision que yo no vi — existe `test_ci_zero_eligible_is_explicitly_inert`, que EXIGE `--ci-eligible` con cero elegibles == 0 y quedaria rojo con el default nuevo; y su test de workflow busca un substring estricto, asi que seguiria pasando con `--allow-empty` sin notar el cambio.
+- scripts/validation/check_policy_parity.py           (cero elegibles -> exit 1 salvo --allow-empty)
+- tests/unit/test_policy_parity_ci_gate.py            (actualizar el contrato viejo + endurecer el test de workflow)
+- tests/unit/test_policy_parity_empty_subject.py      (NUEVO: los 3 casos CLI)
+- .github/workflows/fabric-contracts.yml              (--allow-empty con motivo/owner/condicion)
+NO se toca ninguna policy: promover una para darme sujeto seria exactamente la trampa que este slice denuncia.
+# (CLAUDE 2026-08-06T14:40:19-05:00) RELEASE POLICY-PARITY-EMPTY: `21a866b3`. Liberados los 4 paths. Sin leases CLAUDE activos.
