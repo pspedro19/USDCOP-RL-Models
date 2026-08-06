@@ -6,17 +6,19 @@ QUÉ SE PUEDE Y QUÉ NO SE PUEDE PROBAR AQUÍ, dicho antes que nada
 El camino **puro** —leer, validar (reparando lo que el manifiesto declare, hoy nada),
 hashear, exportar— se ejercita de verdad: se llama al script y se comprueba el resultado.
 
-El camino que **toca la base** no. Desde este entorno Postgres no es alcanzable (los tests
-que lo intentan reportan `postgres unreachable`), así que sus tres garantías —LOCK antes
-del conteo, recheck bajo el lock y filtro por `table_schema`— se fijan **leyendo el
-código**, no ejecutándolo.
+El camino que **toca la base** se ejercita con una conexión falsa que registra los eventos
+en orden. Eso prueba el **comportamiento** —que el LOCK va antes del conteo, que hay
+recheck bajo el lock y que el INSERT ocurre después— y no sólo que las líneas existan.
 
-Eso es una comprobación de forma y no de comportamiento, y conviene no confundirlas: estos
-tests impiden que alguien **borre** esas líneas, no demuestran que Postgres las respete.
-La prueba real de esas tres es una corrida contra una base, y hoy no la tenemos.
+La primera versión de este fichero se conformaba con leer el fuente y lo declaraba como
+limitación: «impide que alguien borre esas líneas, no demuestra que Postgres las respete».
+Codex enseñó en `test_seed_from_minio_macro_gate.py` que la mitad de esa limitación era
+pereza mía: el orden sí se puede probar sin base. Se cierra aquí.
 
-Se dice aquí porque un fichero de tests que no declara su alcance acaba leyéndose como una
-garantía mayor de la que da — el defecto que este repo lleva un día entero corrigiendo.
+**Lo que sigue sin probarse**, y conviene no perderlo de vista: que PostgreSQL respete la
+semántica de `SHARE ROW EXCLUSIVE` es cosa de PostgreSQL; estos tests fijan que el script
+la pida en el momento correcto, no que el motor la honre. Para eso hace falta una corrida
+real contra una base, y desde este entorno no la hay.
 """
 from __future__ import annotations
 
@@ -95,7 +97,149 @@ def test_a_missing_source_fails_instead_of_loading_nothing() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Camino con base: comprobación ESTÁTICA. Ver el docstring del módulo.
+# Camino con base: comprobación de COMPORTAMIENTO con una conexión falsa
+# ---------------------------------------------------------------------------
+
+
+class _CursorEspia:
+    """Cursor que anota qué SQL recibe, en orden, y responde lo justo."""
+
+    def __init__(self, eventos: list[str], filas_iniciales: int) -> None:
+        self._eventos = eventos
+        self._filas = filas_iniciales
+        self._ultimo = None
+
+    def execute(self, sql, params=None):  # noqa: D401
+        texto = " ".join(str(sql).split())
+        self._ultimo = texto
+        if "LOCK TABLE" in texto:
+            self._eventos.append("lock")
+        elif "count(*)" in texto:
+            self._eventos.append("count")
+        elif "information_schema.columns" in texto:
+            self._eventos.append("schema")
+        elif texto.startswith("INSERT INTO"):
+            self._eventos.append("insert")
+
+    def executemany(self, sql, filas):
+        self._eventos.append("insert")
+
+    def fetchone(self):
+        return (self._filas,)
+
+    def fetchall(self):
+        # Todas las columnas que el cargador pueda pedir: el objetivo de este test es el
+        # ORDEN, no el mapeo de columnas, que ya se cubre aparte.
+        import pandas as pd
+        columnas = pd.read_parquet(BACKUP).columns if BACKUP.is_file() else []
+        return [(c,) for c in list(columnas) + ["fecha"]]
+
+    def close(self):
+        self._eventos.append("close_cursor")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class _ConexionFalsa:
+    """Conexión mínima que registra el orden de las operaciones."""
+
+    def __init__(self, filas_iniciales: int = 0) -> None:
+        self.eventos: list[str] = []
+        self._filas = filas_iniciales
+
+    def cursor(self):
+        return _CursorEspia(self.eventos, self._filas)
+
+    def commit(self):
+        self.eventos.append("commit")
+
+    def rollback(self):
+        self.eventos.append("rollback")
+
+    def close(self):
+        self.eventos.append("close_conn")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        if exc[0] is None:
+            self.commit()
+        return False
+
+
+def _cargar_modulo():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("_loader_bajo_prueba", SCRIPT)
+    modulo = importlib.util.module_from_spec(spec)
+    sys.modules["_loader_bajo_prueba"] = modulo
+    spec.loader.exec_module(modulo)
+    return modulo
+
+
+@pytest.mark.skipif(not BACKUP.is_file(), reason="backup ausente en este checkout")
+def test_the_lock_is_taken_before_counting_and_the_insert_comes_after(monkeypatch) -> None:
+    """EL orden real: `lock` → `count` → … → `insert` → `commit`.
+
+    Antes esto se comprobaba leyendo el fuente, y lo dije en el docstring: eso impide que
+    alguien borre las líneas, no que se ejecuten en el orden correcto. Alguien podía mover
+    el `LOCK` después del conteo y los asserts estáticos —que sólo miran posiciones de
+    texto— podían seguir contentos si el orden textual no cambiaba.
+
+    Aquí se ejercita el `main()` con una conexión falsa que anota cada SQL. El primer
+    evento tiene que ser `lock`, y el `insert` posterior al segundo `count` (el recheck).
+    """
+    modulo = _cargar_modulo()
+    falsa = _ConexionFalsa(filas_iniciales=0)
+    monkeypatch.setattr(modulo, "_conexion", lambda: falsa)
+    monkeypatch.setattr(sys, "argv", ["load_macro_daily_repaired.py"])
+
+    assert modulo.main() == 0, "la carga simulada debía terminar bien"
+
+    eventos = [e for e in falsa.eventos if e in {"lock", "count", "insert", "commit"}]
+    assert eventos[0] == "lock", (
+        f"el primer evento contra la base fue {eventos[0]!r}: si se cuenta antes de "
+        f"bloquear, la guarda empty-only es una foto"
+    )
+    assert "insert" in eventos, f"no hubo INSERT: {eventos}"
+
+    # Se cuentan los conteos ANTERIORES al insert, no todos. El script hace un `count`
+    # final para reportar el total, así que un `count(*) >= 2` a secas se cumpliría sin
+    # recheck — medido: la mutación que borra el recheck dejaba este test en verde.
+    antes_del_insert = eventos[: eventos.index("insert")]
+    assert antes_del_insert.count("count") >= 2, (
+        f"antes del INSERT sólo hubo {antes_del_insert.count('count')} conteo(s) "
+        f"({eventos}): falta el recheck bajo el lock, y sin él la guarda mira un estado "
+        f"que puede haber cambiado cuando se escribe"
+    )
+    assert eventos[-1] == "commit", f"la secuencia no termina en commit: {eventos}"
+
+
+@pytest.mark.skipif(not BACKUP.is_file(), reason="backup ausente en este checkout")
+def test_a_table_that_is_not_empty_aborts_without_inserting(monkeypatch) -> None:
+    """Con filas ya presentes, aborta y NO inserta.
+
+    El complemento del anterior: sin esto, una implementación que ignorase el conteo
+    pasaría el test de orden igual, porque el orden seguiría siendo el mismo.
+    """
+    modulo = _cargar_modulo()
+    falsa = _ConexionFalsa(filas_iniciales=26_326)
+    monkeypatch.setattr(modulo, "_conexion", lambda: falsa)
+    monkeypatch.setattr(sys, "argv", ["load_macro_daily_repaired.py"])
+
+    assert modulo.main() == 1, "una tabla con filas debe abortar con código 1"
+    assert "insert" not in falsa.eventos, (
+        f"insertó sobre una tabla no vacía: {falsa.eventos}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Comprobaciones ESTÁTICAS que siguen valiendo (forma, no comportamiento)
 # ---------------------------------------------------------------------------
 
 
