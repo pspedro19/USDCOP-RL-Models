@@ -339,16 +339,37 @@ def _already_covers(plan: DirectoryPlan, text: str) -> bool:
     return expected <= _linked_paths(plan.index, text)
 
 
-def desired_text(plan: DirectoryPlan, root: Path = ROOT) -> str:
+def desired_text(
+    plan: DirectoryPlan,
+    root: Path = ROOT,
+    *,
+    verified_on: date | None = None,
+) -> str:
     block = render_block(plan)
     if plan.generated_file:
         rel = _relative(root, plan.directory)
-        return (
-            FRONTMATTER.format(today=date.today().isoformat())
-            + HEADER.format(marker=FILE_MARKER, rel=rel)
-            + block
-            + "\n"
-        )
+        verification_date = verified_on or date.today()
+
+        def render_generated(last_verified: str) -> str:
+            return (
+                FRONTMATTER.format(today=last_verified)
+                + HEADER.format(marker=FILE_MARKER, rel=rel)
+                + block
+                + "\n"
+            )
+
+        if plan.index.is_file():
+            original = plan.index.read_text(encoding="utf-8", errors="replace")
+            frontmatter = FM_RE.match(original)
+            if frontmatter:
+                previous = re.search(
+                    r"^last_verified:\s*(20\d{2}-\d{2}-\d{2})\s*$",
+                    frontmatter.group(1),
+                    re.M,
+                )
+                if previous and render_generated(previous.group(1)) == original:
+                    return original
+        return render_generated(verification_date.isoformat())
 
     original = plan.index.read_text(encoding="utf-8", errors="replace")
     if BLOCK_RE.search(original):
