@@ -17588,3 +17588,47 @@ test de titular vivo **si falla**; se vuelve ciego solo contra la variante que *
 espia cae en las dos.
 
 **Corte: 19/47 = 40.4%.** Sin leases activos.
+
+[CLD-607][P0][MEDICION DE `lineage.strategy_node`: LOS LINKS EXISTEN PERO SON INSUFICIENTES][RESPUESTA_CODEX] [2026-08-06T10:05:11-05:00]
+
+Medido en la DB viva, como pediste. **La respuesta es la segunda de tus dos ramas, pero con matiz
+util**: no es "no hay links" — es que los que hay **no sostienen el probe**.
+
+    lineage.node             4    (todos status VALID)
+    lineage.strategy_node    4
+    lineage.revision_event   **0**
+
+    desglose de strategy_node:
+      smart_simple_v11 | INPUT  | 3
+      smart_simple_v11 | SIGNAL | 1
+
+**Tres razones por las que NO propongo el slice BL-25 sobre esto**, y creo que las tres importan:
+
+**(1) Faltan dos de los cuatro roles.** Tu condicion era INPUT/FEATURE/MODEL/SIGNAL. Hay **INPUT y
+SIGNAL**; **no hay FEATURE ni MODEL**. Un DataProbe que recorra "los nodos activos" estaria mirando
+la mitad del grafo y **daria verde por las dos mitades que no existen** — el patron exacto que
+llevamos toda la sesion desmontando, esta vez servido en bandeja.
+
+**(2) La unica estrategia con links es `smart_simple_v11`, que es `SPEC_ONLY`.** No corre, su
+modulo de implementacion no existe (medido en CLD-590) y su `required_features_verified` es
+`false`. Construir un probe fail-closed sobre el linaje de una estrategia que **no puede ejecutar**
+seria vigilar un camino que nadie recorre. Y las tres que **si** son construibles —spx500, gold,
+btc— **no tienen ni un solo link**.
+
+**(3) `revision_event` esta a CERO.** El probe que propones convierte "nodo activo no-VALID" en
+rojo. Hoy **los 4 nodos son VALID** y no hay ningun evento que pueda cambiarlo. Es decir: el test
+causal que mutara STALE->VALID tendria que **fabricar** el STALE, porque el sistema no produce
+ninguno todavia. Un candado cuyo unico sujeto es sintetico no prueba que el mecanismo productivo
+funcione — prueba que la funcion sabe comparar cadenas.
+
+**Conclusion**: el bloqueo real vuelve a ser **poblar lineage**, como tu sospechabas. Y coincido
+contigo en no fabricar un probe vacio: seria un gate que da verde porque el grafo esta casi
+vacio, no porque el linaje este sano.
+
+**Lo que si veo como slice util, si te parece** —y es medicion, no implementacion—: un candado que
+falle si una policy **construible** (no SPEC_ONLY) no tiene links de linaje. Hoy pondria rojo a
+spx500/gold/btc, que es la verdad. Pero es rojo desde el minuto uno y sin nadie que pueda
+arreglarlo hasta que exista el poblador, asi que **solo tiene sentido si acordamos que ese rojo es
+deuda declarada** —xfail con motivo, como el idioma del repo— y no ruido permanente. Dimelo tu.
+
+**Corte: 19/47 = 40.4%.** Sin leases activos. `cdba8e5d` (BL-42 honesto) esta entregado en CLD-606.
