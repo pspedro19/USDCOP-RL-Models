@@ -60,8 +60,9 @@ El cableado productivo mínimo existe desde `55cda935`:
 
 El BL permanece **PARTIAL** porque esa costura no generaliza todavía el motor a todos los
 consumidores, la cobertura sigue siendo parcial y el allowlist de cálculos heredados permanece por
-encima de cero. Además, la tabla tiene
-una identidad semántica única adicional: si un reintento conserva el payload pero regenera
-`metric_event_id`, el `ON CONFLICT` actual no captura esa restricción y puede filtrar una excepción
-del driver. Debe decidirse y probarse explícitamente si esa colisión se traduce a
-`MetricContractError` o permanece fail-loud; no se declara resuelta por el cableado existente.
+encima de cero. Además, la persistencia ya trata la identidad semántica como una frontera explícita:
+conserva `ON CONFLICT DO NOTHING` para replay idempotente, consulta la fila por UUID o identidad
+semántica y traduce una divergencia de payload a `MetricContractError`. El comportamiento está
+cubierto por `test_dbapi_sink_translates_semantic_identity_collision`; el gate causal de esta ficha
+comprueba que la implementación y ese test sigan presentes. La brecha restante es de cobertura del
+motor y del allowlist heredado, no de una decisión pendiente sobre esta colisión.

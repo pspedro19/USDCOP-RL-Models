@@ -41,6 +41,15 @@ def _reads_metric_event(source: str) -> bool:
     return re.search(r"\bFROM\s+control\.metric_event\b", source, re.IGNORECASE) is not None
 
 
+def _handles_semantic_collision(source: str) -> bool:
+    normalized = " ".join(source.split())
+    return (
+        "ON CONFLICT DO NOTHING" in normalized
+        and "semantic identity" in normalized
+        and "MetricContractError" in normalized
+    )
+
+
 def _document() -> tuple[dict[str, object], str]:
     text = BL18.read_text(encoding="utf-8")
     _, raw_frontmatter, body = text.split("---", 2)
@@ -94,3 +103,17 @@ PythonOperator(python_callable=another_callable)
 
     assert not _has_python_callable(producer, "persist_governed_metric_events")
     assert not _reads_metric_event(consumer)
+
+
+def test_bl18_semantic_collision_anchor_is_causally_wired() -> None:
+    persistence = (ROOT / "src/metrics/persistence.py").read_text(encoding="utf-8")
+    persistence_test = (ROOT / "tests/unit/test_metric_persistence.py").read_text(encoding="utf-8")
+
+    assert _handles_semantic_collision(persistence)
+    assert "test_dbapi_sink_translates_semantic_identity_collision" in persistence_test
+
+
+def test_bl18_semantic_collision_check_rejects_unwired_mutation() -> None:
+    source = "INSERT INTO control.metric_event VALUES (...)"
+
+    assert not _handles_semantic_collision(source)
