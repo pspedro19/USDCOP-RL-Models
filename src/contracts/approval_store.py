@@ -228,17 +228,25 @@ def acquire_approval_lock(path: Path, timeout_s: float = _LOCK_WAIT_S):
                     os.write(self._fd, f'{{"pid": {os.getpid()}}}'.encode())
                     return self
                 except FileExistsError:
-                    # Se libera siempre en ``__exit__``: un lock viejo solo puede venir
-                    # de un proceso muerto.
-                    try:
-                        if time.time() - self._lock.stat().st_mtime > _LOCK_STALE_S:
-                            self._lock.unlink(missing_ok=True)
-                            continue
-                    except FileNotFoundError:
+                    pass
+                except PermissionError:
+                    # Windows puede devolver EACCES durante la carrera en que otro
+                    # proceso libera un lock existente. Solo esa forma observable es
+                    # contencion; sin lock visible es un error real de permisos.
+                    if not self._lock.exists():
+                        raise
+
+                # Se libera siempre en ``__exit__``: un lock viejo solo puede venir
+                # de un proceso muerto.
+                try:
+                    if time.time() - self._lock.stat().st_mtime > _LOCK_STALE_S:
+                        self._lock.unlink(missing_ok=True)
                         continue
-                    if time.monotonic() >= deadline:
-                        raise ApprovalLockTimeout(f"approval state busy: {path.name}")
-                    time.sleep(0.015)
+                except FileNotFoundError:
+                    continue
+                if time.monotonic() >= deadline:
+                    raise ApprovalLockTimeout(f"approval state busy: {path.name}")
+                time.sleep(0.015)
 
         def __exit__(self, *exc: Any) -> None:
             if self._fd is not None:

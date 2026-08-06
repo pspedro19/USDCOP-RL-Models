@@ -137,6 +137,34 @@ def test_naive_read_modify_write_really_races(tmp_path):
 
 # ═══════════════════ 2 · el store: exactamente un ganador, resto en conflicto ════════
 
+
+def test_windows_permission_error_with_visible_lock_is_contention(tmp_path, monkeypatch):
+    """EACCES transitorio sobre un lock visible respeta el contrato de timeout."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    lock.write_text("held", encoding="utf-8")
+
+    def denied(*args, **kwargs):
+        raise PermissionError("simulated Windows lock deletion race")
+
+    monkeypatch.setattr(store.os, "open", denied)
+    with pytest.raises(store.ApprovalLockTimeout, match="approval state busy"):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un lock en contencion no puede adquirirse")
+
+
+def test_permission_error_without_visible_lock_is_not_disguised(tmp_path, monkeypatch):
+    """Un ACL/EACCES real conserva PermissionError; no se convierte en BUSY."""
+    target = tmp_path / "approval_state.json"
+
+    def denied(*args, **kwargs):
+        raise PermissionError("simulated ACL denial")
+
+    monkeypatch.setattr(store.os, "open", denied)
+    with pytest.raises(PermissionError, match="simulated ACL denial"):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un path sin permisos no puede adquirirse")
+
 _STORE = '''
 import json, os, sys, time
 sys.path.insert(0, os.environ["REPO_ROOT"])
