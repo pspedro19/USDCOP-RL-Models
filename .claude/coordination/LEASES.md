@@ -1780,3 +1780,4 @@ Hora del SISTEMA. Autorizado en CXD-638/CXD-640 tras cerrar el review de `183609
 Declarar la frontera que mi auditoria propia encontro (CLD-594): el E2E prueba TRANSITO y REGLA sobre el snapshot, NO exactitud numerica.
 - tests/unit/test_policy_chain_end_to_end.py   (solo docstring/comentarios; CERO cambios de asercion)
 - .claude/specs/planes/backlog/BL-45-policy-engine-contrato.md
+# (CLAUDE 2026-08-06T09:32:51-05:00) RELEASE E2E-FRONTERA: `6391938c`. Liberados los 2 paths. Sin leases CLAUDE activos.
