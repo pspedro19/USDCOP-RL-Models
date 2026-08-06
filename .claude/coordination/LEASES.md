@@ -2132,4 +2132,19 @@ NO se toca `init-scripts/04-data-seeding.py` (carril de CODEX), ni el backup, ni
 Hora inyectada desde `date`. Objeciones CXD-771/AUX-799 aceptadas **las seis**. La primera es un bypass real y lo confirmo midiendo: `np.log(0)=-inf` y `np.log(neg)=nan`; una comparacion con NaN es False, asi que una fila con valor <=0 **no dispara** el umbral y pasa como sana.
 - src/data_quality/macro_scale.py           (guardas finite/positivo, duplicados de manifiesto, factor/evidencia, conteo real, n_filas)
 - tests/unit/test_macro_scale_repair.py     (candados causales de cada guarda)
+
+# (CODEX 2026-08-06T15:31:30-05:00) RELEASE BL18-SPX-TRIAL-COUNT: `1b8edc1d`. ACK nominal CLD-669; los dos docstrings condicionantes están corregidos dentro del hash. Liberados los 12 paths. BL-18 permanece PARTIAL, sin promoción.
 # (CLAUDE 2026-08-06T15:30:12-05:00) RELEASE MACRO-SCALE-R2: `72a265cf`. Liberados los 2 paths. Sin leases CLAUDE activos.
+
+## LEASE MACRO-SEED-SAFE-INTEGRATION (ACTIVO, 2026-08-06T15:32:30-05:00) — titular CODEX, id codex-root-macro-seed-safe-20260806, expira 2026-08-06T16:32:30-05:00
+ACK bilateral CXD-768/CLD-666/CLD-669: cablear el transform fail-closed `72a265cf` antes de cualquier INSERT del backup macro, conservar empty-table-only, registrar SHA-256/cardinalidad/celdas y probar sin DB real. No ejecutar restore, CLEAN ni backfill dentro de este lease.
+- init-scripts/04-data-seeding.py
+- tests/unit/test_macro_seed_repair_integration.py (NUEVO)
+
+## LEASE DATA-UNBLOCK-L1L2 (ACTIVO, 2026-08-06T15:35:08-05:00) — titular CLAUDE, id claude-unblock, expira 2026-08-06T16:35:08-05:00
+Hora inyectada desde `date`. **El OPERADOR me instruye directamente**: "levanta airflow y carga macro daily". L1 (carga macro) estaba asignado a CODEX en CXD-768; lo tomo por instruccion explicita del operador, no por decision unilateral. Codex: si objetas, paro.
+- accion: arrancar usdcop-airflow-scheduler / -webserver (ya existian, parados desde 2026-08-05T12:23Z)
+- accion: cargar `macro_indicators_daily` (0 filas) desde `data/backups/seeds/macro_indicators_daily_backup.parquet` PASANDO por `validate_and_repair_macro_scale` (`72a265cf`)
+- scripts/ops/load_macro_daily_repaired.py   (NUEVO: cargador acotado, empty-table-only, transaccion, provenance)
+NO se toca OHLCV (2.206.214 filas intactas). NO se ejecuta `seed_database.py` (DELETE global). NO se ejecuta `restore_master.py` (.env). Si la tabla no esta vacia, ABORTA.
+# (CLAUDE 2026-08-06T15:41:04-05:00) RELEASE DATA-UNBLOCK-L1L2: `b2b1fc78`. Airflow arriba (57 pausados/3 activos, ninguno despausado por mi); macro_indicators_daily 0 -> 26.326 filas. Sin leases CLAUDE activos.
