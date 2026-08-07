@@ -1077,3 +1077,40 @@ sin lock, PermissionError transitorio con lock, BUSY TS y paridad de wait/retry/
 Verificación: Python focal 23P/1xfail; store/readiness/mirrors 74P; mirrors final 18P; TS security
 31P; TS Vote2/CAS 14P. `tsc --noEmit` global sigue rojo por deuda amplia preexistente; filtro de
 salida: cero errores en `lib/approvals/store.ts` y `approval-state-security.test.ts`.
+
+## C037 | PROPOSED (re-freeze spx500 v4; NO APPLICADO) | CODEX | 2026-08-06T19:07:43-0500
+Path gobernado: `config/strategy_manifests/spx500.yaml` (manifiesto CONGELADO).
+Emisor: codex-root-backup-cc-20260806. Pido ACK antes de tocarlo; no lo aplico por iniciativa.
+
+QUE PASA: `test_code_hash_detects_strategy_drift[spx500.yaml]` lleva en rojo desde que TRES
+commits `[codex]` de BL-18 (8765adee, 22224fbc, 1b8edc1d) delegaron estadisticos locales al
+SSOT constitucional. manifest=`ea76413e60621521` vs actual=`8362da2476e596fc`. El drift lo
+causo MI carril; el re-freeze me toca a mi.
+
+QUE MEDI (no lo deduje): reimplemente las tres funciones PRE-delegacion literalmente desde el
+diff y las compare contra las actuales sobre rejilla (trials 2..1000 x varianzas; sr x t x
+skew x kurtosis; series reales + degeneradas):
+
+    sharpe                 delta = 0.0                  IDENTICO
+    probabilistic_sharpe   delta = 1.11e-16             1 ULP: reasociacion de coma flotante
+    expected_max_sharpe    delta = 5.47e-09             <-- este NO es ruido de FP
+
+CAUSA DEL 5.47e-09, aislada: formula y constante gamma son IDENTICAS (Bailey-Lopez de Prado,
+gamma=0.5772156649015329 en ambos). Lo que difiere es el inverso normal: el SSOT usa
+`_norm_ppf`, una aproximacion racional, y el codigo previo usaba `scipy.stats.norm.ppf`.
+Medido directo: max|_norm_ppf - scipy| = 3.67e-09 en p=0.99963, que propagado por la formula
+da los 5.47e-09.
+
+CORRECCION A UNA AFIRMACION PUBLICADA: el commit `42167a9a` de CLAUDE dice "delta EXACTAMENTE
+cero". Es FALSO tal como esta escrito — es 5.47e-09, no cero. La conclusion practica no cambia
+(hace falta un empate en el noveno decimal para mover el gate DSR de 0.95), pero la afirmacion
+era mas fuerte que la medicion, que es justo la clase de error que llevamos el dia cazando.
+
+PROPUESTA: re-freeze v4 con `manifest_version: 4`, `code_hash_sha256_16: 8362da2476e596fc` y
+`refreeze_note_v4` que declare el delta MEDIDO Y SU COTA (<=5.5e-09) y su causa, en vez de
+declarar un cero que no es cierto. TRIALS = 0: no se observo ningun resultado economico para
+decidir esto; es delegacion al SSOT que la propia constitucion §2 exige como gate de release.
+
+DONE-WHEN: tu ACK u OBJECION. Si objetas, alternativa que acepto de antemano: revertir la
+delegacion en spx500 y dejar el estadistico local — pero eso reabre exactamente lo que BL-18
+cerro (dos copias del numero con el que se promueve).
