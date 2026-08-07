@@ -204,6 +204,7 @@ def main() -> int:
     n = len(days)
     pos_cartera = np.zeros(n)
     ret_cartera = np.zeros(n)
+    exposicion_por_activo = [dict() for _ in range(n)]   # para cobrar costes por activo
     ann_global = 252.0
     elegidas: dict[str, str] = {}
     historial = []
@@ -256,11 +257,21 @@ def main() -> int:
 
         pos_cartera[i] = k * exp_bruta
         ret_cartera[i] = k * bruto
+        for s_ in pesos:
+            exposicion_por_activo[i][s_] = k * pesos[s_] * abs(pos_estrategia[(s_, elegidas[s_])][i])
 
     # costes por turnover de la cartera, al bps medio declarado de los activos usados
-    bps = float(np.mean([COST_BPS[resolve_asset(n_)[1]] for (_, n_) in pos_estrategia])) / 10000.0
+    # DEFECTO CORREGIDO (auto-ataque): antes se cobraba a TODO el turnover de la cartera el
+    # bps MEDIO de los cuatro activos (4.75). Eso subvenciona a BTC, que declara 13 bps, a
+    # costa de COP, que declara 1. El turnover no es fungible: cada rotacion ocurre en un
+    # activo concreto y paga SU spread. Ahora se cobra por activo, sobre la exposicion
+    # ponderada que ese activo tiene en la cartera.
+    coste = np.zeros(n)
+    for sym in sleeves:
+        bps_sym = COST_BPS[resolve_asset(next(n_ for (s_, n_) in pos_estrategia if s_ == sym))[1]] / 10000.0
+        expo_sym = np.array([exposicion_por_activo[i].get(sym, 0.0) for i in range(n)])
+        coste += np.abs(np.diff(expo_sym, prepend=0.0)) * bps_sym
     turnover = np.abs(np.diff(pos_cartera, prepend=0.0))
-    coste = turnover * bps
     swap = np.zeros(n)
     ret_neto = ret_cartera - coste
 
