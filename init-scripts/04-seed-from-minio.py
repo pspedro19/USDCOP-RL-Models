@@ -21,11 +21,13 @@ Version: 2.0.0
 
 import glob
 import gzip
+import hashlib
 import json
 import os
 import sys
 import time
 from datetime import datetime
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -33,6 +35,12 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 import psycopg2
 import yaml
+
+from src.data_quality.macro_scale import (
+    MacroScaleError,
+    manifiesto_backup_2026_06,
+    validate_and_repair_macro_scale,
+)
 
 
 # =============================================================================
@@ -118,6 +126,28 @@ SEED_SOURCES = [
 ]
 
 
+@dataclass(frozen=True)
+class SeedArtifact:
+    """A parsed seed tied to the exact bytes and origin that produced it."""
+
+    frame: pd.DataFrame
+    source_uri: str
+    sha256: str
+
+
+def _parse_artifact(payload: bytes, source_uri: str) -> SeedArtifact:
+    data = BytesIO(payload)
+    if source_uri.endswith('.parquet'):
+        frame = pd.read_parquet(data)
+    elif source_uri.endswith('.csv.gz'):
+        frame = pd.read_csv(data, compression='gzip')
+    elif source_uri.endswith('.csv'):
+        frame = pd.read_csv(data)
+    else:
+        raise ValueError(f"Unknown seed format: {source_uri}")
+    return SeedArtifact(frame, source_uri, hashlib.sha256(payload).hexdigest())
+
+
 # =============================================================================
 # DATABASE FUNCTIONS
 # =============================================================================
@@ -138,17 +168,18 @@ def get_db_connection(max_retries: int = 10, retry_delay: int = 5):
 
 def table_has_data(conn, table_name: str) -> Tuple[bool, int]:
     """Check if table exists and has data."""
+    cursor = conn.cursor()
     try:
-        cursor = conn.cursor()
         cursor.execute(f"SELECT COUNT(*) FROM {table_name}")
         count = cursor.fetchone()[0]
         return count > 0, count
-    except Exception as e:
-        return False, 0
+    finally:
+        cursor.close()
 
 
 def insert_dataframe(conn, df: pd.DataFrame, table_name: str, batch_size: int = 10000,
-                     json_columns: List[str] = None, conflict_columns: List[str] = None):
+                     json_columns: List[str] = None, conflict_columns: List[str] = None,
+                     commit: bool = True, required_target_columns=None):
     """Insert DataFrame into table using batch UPSERT.
 
     Args:
@@ -170,6 +201,11 @@ def insert_dataframe(conn, df: pd.DataFrame, table_name: str, batch_size: int = 
     target_cols = {r[0] for r in _c.fetchall()}
     _c.close()
     if target_cols:
+        missing_required = sorted(set(required_target_columns or ()) - target_cols)
+        if missing_required:
+            raise RuntimeError(
+                f"Required columns absent in {table_name}: {missing_required}"
+            )
         extra = [c for c in df.columns if c not in target_cols]
         if extra:
             print(f"    Note: dropping {len(extra)} col(s) absent in {table_name}: "
@@ -234,7 +270,8 @@ def insert_dataframe(conn, df: pd.DataFrame, table_name: str, batch_size: int = 
         if rows_inserted % 50000 == 0:
             print(f"    Inserted {rows_inserted:,} rows...")
 
-    conn.commit()
+    if commit:
+        conn.commit()
     return rows_inserted
 
 
@@ -242,7 +279,7 @@ def insert_dataframe(conn, df: pd.DataFrame, table_name: str, batch_size: int = 
 # DATA LOADING FUNCTIONS
 # =============================================================================
 
-def load_from_minio(minio_path: str) -> Optional[pd.DataFrame]:
+def load_from_minio(minio_path: str) -> Optional[SeedArtifact]:
     """Load Parquet file from MinIO."""
     try:
         from minio import Minio
@@ -261,30 +298,21 @@ def load_from_minio(minio_path: str) -> Optional[pd.DataFrame]:
 
         # Download to memory
         response = client.get_object(bucket, minio_path)
-        data = BytesIO(response.read())
-        response.close()
-        response.release_conn()
-
-        # Read based on file format
-        if minio_path.endswith('.parquet'):
-            df = pd.read_parquet(data)
-        elif minio_path.endswith('.csv.gz'):
-            df = pd.read_csv(data, compression='gzip')
-        elif minio_path.endswith('.csv'):
-            df = pd.read_csv(data)
-        else:
-            print(f"    Unknown file format: {minio_path}")
-            return None
-
-        print(f"    Loaded from MinIO: {minio_path} ({len(df):,} rows)")
-        return df
+        try:
+            payload = response.read()
+        finally:
+            response.close()
+            response.release_conn()
+        artifact = _parse_artifact(payload, f"s3://{bucket}/{minio_path}")
+        print(f"    Loaded from MinIO: {minio_path} ({len(artifact.frame):,} rows)")
+        return artifact
 
     except Exception as e:
         print(f"    MinIO load failed: {e}")
         return None
 
 
-def load_from_local(paths: List[str]) -> Optional[pd.DataFrame]:
+def load_from_local(paths: List[str]) -> Optional[SeedArtifact]:
     """Load from local file paths."""
     for path_pattern in paths:
         # Handle glob patterns
@@ -301,17 +329,9 @@ def load_from_local(paths: List[str]) -> Optional[pd.DataFrame]:
             continue
 
         try:
-            if path.endswith('.parquet'):
-                df = pd.read_parquet(path)
-            elif path.endswith('.csv.gz'):
-                df = pd.read_csv(path, compression='gzip')
-            elif path.endswith('.csv'):
-                df = pd.read_csv(path)
-            else:
-                continue
-
-            print(f"    Loaded from local: {path} ({len(df):,} rows)")
-            return df
+            artifact = _parse_artifact(Path(path).read_bytes(), str(Path(path).resolve()))
+            print(f"    Loaded from local: {path} ({len(artifact.frame):,} rows)")
+            return artifact
 
         except Exception as e:
             print(f"    Failed to load {path}: {e}")
@@ -319,7 +339,7 @@ def load_from_local(paths: List[str]) -> Optional[pd.DataFrame]:
     return None
 
 
-def load_seed_data(source: dict) -> Optional[pd.DataFrame]:
+def load_seed_data(source: dict) -> Optional[SeedArtifact]:
     """Load seed data using priority chain.
 
     Priority:
@@ -335,27 +355,27 @@ def load_seed_data(source: dict) -> Optional[pd.DataFrame]:
     backup_paths = source.get('backup_paths', [])
     if backup_paths:
         print(f"    [1/4] Trying daily backup parquets...")
-        df = load_from_local(backup_paths)
-        if df is not None:
-            return df
+        artifact = load_from_local(backup_paths)
+        if artifact is not None:
+            return artifact
 
     # 2. Try local Git LFS paths (available after git clone)
     print(f"    [2/4] Trying local Git LFS paths...")
-    df = load_from_local(source['local_paths'])
-    if df is not None:
-        return df
+    artifact = load_from_local(source['local_paths'])
+    if artifact is not None:
+        return artifact
 
     # 3. Try MinIO (may have data on existing deployments)
     print(f"    [3/4] Trying MinIO: {source['minio_path']}")
-    df = load_from_minio(source['minio_path'])
-    if df is not None:
-        return df
+    artifact = load_from_minio(source['minio_path'])
+    if artifact is not None:
+        return artifact
 
     # 4. Try legacy paths
     print(f"    [4/4] Trying legacy paths...")
-    df = load_from_local(source['legacy_paths'])
-    if df is not None:
-        return df
+    artifact = load_from_local(source['legacy_paths'])
+    if artifact is not None:
+        return artifact
 
     return None
 
@@ -421,8 +441,8 @@ def main():
             continue
 
         # Load data
-        df = load_seed_data(source)
-        if df is None:
+        artifact = load_seed_data(source)
+        if artifact is None:
             if required:
                 print(f"  ERROR: Failed to load required seed: {name}")
                 results[name] = {'status': 'failed', 'rows': 0}
@@ -430,6 +450,26 @@ def main():
                 print(f"  WARNING: Optional seed not found: {name}")
                 results[name] = {'status': 'not_found', 'rows': 0}
             continue
+
+        df = artifact.frame
+        print(f"    Source SHA-256: {artifact.sha256} ({artifact.source_uri})")
+
+        if name == 'macro':
+            required_columns = {'fecha', *manifiesto_backup_2026_06().columnas_vigiladas}
+            missing = sorted(required_columns - set(df.columns))
+            if missing:
+                print(f"  ERROR: macro seed missing required columns: {missing}")
+                results[name] = {'status': 'validation_failed', 'rows': len(df)}
+                continue
+            try:
+                df, scale_report = validate_and_repair_macro_scale(
+                    df, manifiesto_backup_2026_06()
+                )
+            except MacroScaleError as exc:
+                print(f"  ERROR: macro scale validation failed: {exc}")
+                results[name] = {'status': 'validation_failed', 'rows': len(df)}
+                continue
+            print(f"    Macro scale audit: {json.dumps(scale_report, sort_keys=True)}")
 
         # Validate
         if not validate_data(df, source):
@@ -440,8 +480,34 @@ def main():
         print(f"\n  Inserting into {table}...")
         json_cols = source.get('json_columns', [])
         conflict_cols = source.get('conflict_columns', None)
-        rows = insert_dataframe(conn, df, table, json_columns=json_cols,
-                                conflict_columns=conflict_cols)
+        if name == 'macro':
+            try:
+                lock_cursor = conn.cursor()
+                lock_cursor.execute(
+                    "LOCK TABLE macro_indicators_daily IN SHARE ROW EXCLUSIVE MODE"
+                )
+                lock_cursor.execute(
+                    "SELECT COUNT(*) FROM macro_indicators_daily"
+                )
+                locked_count = lock_cursor.fetchone()[0]
+                lock_cursor.close()
+                if locked_count:
+                    conn.rollback()
+                    print(f"  Table became non-empty ({locked_count:,} rows), skipping")
+                    results[name] = {'status': 'skipped', 'rows': locked_count}
+                    continue
+                rows = insert_dataframe(
+                    conn, df, table, json_columns=json_cols,
+                    conflict_columns=conflict_cols, commit=False,
+                    required_target_columns=required_columns,
+                )
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
+        else:
+            rows = insert_dataframe(conn, df, table, json_columns=json_cols,
+                                    conflict_columns=conflict_cols)
         print(f"  Inserted {rows:,} rows")
         results[name] = {'status': 'success', 'rows': rows}
 
@@ -458,15 +524,18 @@ def main():
         icon = '✓' if status in ['success', 'skipped'] else '✗'
         print(f"  {icon} {name}: {status} ({rows:,} rows)")
 
-    # Write completion marker
-    marker_path = '/app/.seeding_complete'
-    try:
-        Path(marker_path).touch()
-    except:
-        pass
-
     print(f"\nCompleted: {datetime.utcnow().isoformat()}Z")
+    required_failures = {
+        source['name']
+        for source in SEED_SOURCES
+        if source['required']
+        and results.get(source['name'], {}).get('status') not in {'success', 'skipped'}
+    }
+    if required_failures:
+        print(f"Required seeds failed: {sorted(required_failures)}")
+        return 1
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(main())
