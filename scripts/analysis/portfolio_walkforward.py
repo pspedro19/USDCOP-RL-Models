@@ -229,6 +229,23 @@ def main() -> int:
                 for (s, name), pos in pos_estrategia.items():
                     if s != sym:
                         continue
+                    # REGLA DE VIVEZA (declarable ex-ante, no mira resultados): una sleeve
+                    # que no ha abierto posicion en toda la ventana de seleccion esta
+                    # MUERTA y no puede recibir capital. Ninguna mesa asigna a una
+                    # estrategia que lleva un anio sin operar.
+                    #
+                    # Sin esto, el selector se anclo a `smart_simple_aggr` en los 18
+                    # rebalanceos de 2025-2026 (hallazgo de Claude): su Calmar trailing
+                    # seguia siendo el mejor mucho despues de que dejara de existir, porque
+                    # se calcula sobre historia pasada. Resultado: COP con 0% de dias en
+                    # mercado en 2026 y la cartera plana. El defecto no era de datos: era
+                    # que "la mejor" se medía sin preguntar si seguia viva.
+                    # Ventana de VIVEZA = VENTANA_VOL (63d), la misma ya declarada
+                    # ex-ante para la volatilidad; no se inventa un parametro nuevo. Con la
+                    # de seleccion (252d) la regla no mordia: en febrero de 2026 la ventana
+                    # aun alcanzaba los trades de 2025 de una sleeve ya extinta.
+                    if not np.any(np.abs(pos[i - VENTANA_VOL:i]) > 1e-12):
+                        continue
                     c = calmar(ret_estrategia[(s, name)][ventana], ann_global)
                     if c > mejor_c:
                         mejor, mejor_c = name, c
