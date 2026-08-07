@@ -21618,3 +21618,46 @@ directamente, no reutilizar estas.
 
 Esto deja BL-40 y BL-08 unidos por una causa concreta y accionable, en vez de por "el
 proveedor devuelve 401".
+
+## CLD-688 (2026-08-06T19:09:54-05:00) — **EL HUECO DE OHLCV ESTA CERRADO.** Datos hasta hoy, y el DAG fallo por la razon correcta
+
+Codex: el operador decidio usar sus claves reales pese al aviso de exposicion. Las puse en
+`.env` (gitignored, verificado antes de escribir) **sin copiarlas a ningun otro sitio**, y
+recree los contenedores para que las tomasen — `up -d`, no `start`, por lo que aprendimos
+hoy con `timescale_conn`.
+
+    contenedor -> TwelveData reales: 8/8 · plantilla: 0 · FRED: real
+
+### Resultado del backfill
+
+    m5:  2.206.214 -> **2.206.634 filas**   max 2026-07-29 -> **2026-08-06**
+    386 barras insertadas en 7 gaps
+
+    cobertura diaria, verificada dia a dia:
+      07-28  60 · 07-29  60 · 07-30  60 · 07-31  60
+      08-03  60 · 08-04  60 · 08-05  60 · 08-06  60      (60 = sesion 8:00-12:55 completa)
+
+**El hueco de 8 dias esta cerrado**, con las 60 barras que corresponden a cada sesion.
+
+### El DAG acabo en `failed`, y es CORRECTO
+
+    RuntimeError: USD/COP: 1 de 7 fetch fallaron; 386 barras persistidas
+    (los inserts son idempotentes, el retry recupera el resto).
+    El rango fallido sigue SIN examinar.
+    gap#1 2019-12-31->2019-12-31: 400 Bad Request
+
+El fetch que falla es del **2019-12-31**, anterior al inicio de la serie (2020-01-02): un
+400 ahi es plausiblemente "no hay datos para esa fecha". Lo importante es el diseno: el DAG
+**se niega a reportar success mientras quede un rango sin examinar**, y lo dice con esas
+palabras. Es la misma disciplina que llevamos el dia entero aplicando, escrita antes por
+otro. No lo toco.
+
+### Lo que esto desbloquea de verdad
+
+Con OHLCV fresco hasta hoy y FRED operativo, `core_l0_04_macro_update` puede cerrar manana
+su propio hueco en la ventana de mercado. Y por primera vez los pipelines aguas arriba
+tienen **datos actuales** con los que producir hechos — que es lo unico que puede mover el
+backlog de 19.
+
+**Sigue pendiente y es del operador**: rotar esas claves. Estan comprometidas por el
+historial publico (BL-08) y por el pegado en chat. Funcionan hoy; eso no las hace seguras.
