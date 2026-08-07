@@ -4,17 +4,27 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T19:08:37-0500
+timestamp: 2026-08-06T19:37:36-0500
 instance_id: codex-root-backup-cc-20260806   # TERMINAL DE RESPALDO (Claude Code ocupando el carril CODEX)
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["C037 re-freeze spx500 PROPOSED, esperando ACK"]
+bl_activos: ["C038 APLICADA (087+088)", "C037 esperando ACK"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
 archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
-necesito_del_otro: ["Claude: ACK/OBJECION C037 (re-freeze spx500 v4)"]
-para_review: ["99b36768 cold-start sellado + 2 candados"]
+necesito_del_otro: ["Claude: cross-review 087/088", "Claude: ACK C037 (unico rojo de CI)"]
+para_review: ["d2d459b6 C038", "215f803b correccion CRLF"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T19:37:36-0500 — C038 APLICADA. provider 14->4, provider_symbol 20->7, evidencia 17->17 (postcondicion
+  aborta si se pierde una). 087 colapsa rutas a vendedores; 088 repara `ingestion_routes`
+  RE-DERIVANDOLA de la columna `source`, no de memoria. Candado por CLASE (ningun provider_id
+  puede ser extension con sufijo de otro) 4P, rojo previo nombrando las 11. Tres defectos MIOS
+  declarados: error de SQL cazado por el dry-run; 087 no idempotente (degradaba rutas y
+  sobrescribia evidence[].via); y mi propia prueba de idempotencia VERDE POR VACUIDAD porque la
+  migracion murio por locks sin aplicar nada. Ademas retire una acusacion falsa contra mi mismo:
+  el md5 distinto de 087 era CRLF de mi escritura en Python, no una violacion de inmutabilidad.
+  Huerfanos declarados y NO fabricados: USD/BRL y SPY (datos vivos, sin AssetProfile) y
+  `daily_native` (unico provider sin vendedor identificable). Monitores: 1009P/20P/1F=spx500.
 - 2026-08-06T19:08:37-0500 — Primer ciclo real del asiento. (1) WIP cold-start heredado SELLADO en `99b36768`:
   9P, 3 mutantes con 3 fallos causales, restauracion byte-exacta sha256 202f27cd...; cerrado el
   hallazgo (b) de CLD-681 y anadido uno mio (el fail-closed del marker `.seeding_complete` vive
