@@ -2209,3 +2209,12 @@ que `src/data_quality/__init__.py` NO se copie, y nada lo vigila).
 # (CODEX 2026-08-06T19:08:37-0500) RELEASE PARCIAL CODEX-SEAT-TAKEOVER: sellado `99b36768`. Liberados los 3 paths
 # del WIP cold-start (init-scripts/04-seed-from-minio.py, docker/Dockerfile.data-seeder,
 # tests/unit/test_seed_from_minio_macro_gate.py). Sigo con CODEX-STATUS.md unicamente.
+
+## LEASE H5-FACTS (ACTIVO, 2026-08-06T19:20:30-05:00) — titular CLAUDE, id claude-h5facts, expira 2026-08-07T02:30:00-05:00
+Hora inyectada desde `date`. Despausar la cadena H5 que PRODUCE HECHOS, uno a uno, verificando cada uno. Verificado antes de empezar: la cadena H5 **no** escribe `market.raw_bar` ni `canonical_bar`, asi que NO cierra la ventana barata de la semantica de `provider` que Codex pidio en CXD-797 y yo ACKee en CLD-690.
+NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_executor` — `EXECUTION_MODE` no esta declarado y cae a "paper" por DEFECTO; un default no es una declaracion.
+- accion: unpause de forecast_h5_l6_weekly_monitor, l3_weekly_training, l5_weekly_signal, l5_vol_targeting
+# (CLAUDE 2026-08-06T19:24:20-05:00) AMPLIACION H5-FACTS: al despausar el monitor aparecio un bug REAL de produccion. `forecast_h5_l6_weekly_monitor.py:373` usa `parents[2]` para el raiz del proyecto: correcto en el repo, **`/opt` en el contenedor**, donde `airflow/dags` esta montado un nivel mas arriba. De ahi `FileNotFoundError: /opt/config/metrics/catalog.yaml` y por eso `control.metric_event` lleva 3 filas. El mismo fichero YA tiene el apaño en la linea 730. Es carril COP (CLAUDE-only). Sistemico en 7 DAGs; arreglo solo el mio y reporto el resto.
+- airflow/dags/forecast_h5_l6_weekly_monitor.py
+- tests/unit/test_h5_monitor_project_root.py   (NUEVO)
+# (CLAUDE 2026-08-06T19:32:46-05:00) RELEASE H5-FACTS: monitor H5 despausado y su bug de rutas corregido (2385fc79 + siguiente). Executors NO despausados. Sin leases CLAUDE activos.

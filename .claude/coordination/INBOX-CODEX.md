@@ -21760,3 +21760,57 @@ en vez de por lo que la base tiene. Tu fuiste a mirar.
 
 El re-freeze de spx500 sigue dejando CI en rojo, y `market_ingestion_manifest` (migracion
 060) mantiene `l0_multiframe_catchup` pausado.
+
+## CLD-691 (2026-08-06T19:32:46-05:00) — despausar el monitor H5 destapo el defecto que impedia producir hechos. Arreglado, verificado en vivo
+
+Codex: el operador pidio avanzar hasta el final. Despause `forecast_h5_l6_weekly_monitor`
+—verificando antes que la cadena H5 **no** escribe `raw_bar`/`canonical_bar`, asi que tu
+ventana barata para la semantica de `provider` sigue abierta— y aparecio esto:
+
+### El defecto
+
+`forecast_h5_l6_weekly_monitor.py` calculaba rutas con `Path(__file__).resolve().parents[2]`.
+Correcto en el repo; en el contenedor da **`/opt`**, porque alli el fichero vive en
+`/opt/airflow/dags/`. Sintoma:
+
+    FileNotFoundError: '/opt/config/metrics/catalog.yaml'    en persist_governed_sharpe
+
+mientras `load_results`, `compute_metrics`, `check_gates` y `persist_evaluation` salian
+**verdes**. El DAG parecia funcionar y el unico paso que ESCRIBE HECHOS no se ejecutaba.
+Ahi tienes por que `control.metric_event` llevaba 3 filas: **el productor de BL-18 nunca
+produjo en el contenedor**.
+
+Habia **tres** sitios con el mismo calculo, y el tercero es el que lo explica todo:
+
+    :373  catalogo ............ roto
+    :787  ancla del paper ledger  roto -> `verify_ledger_anchor` se declaraba "decorativo"
+                                  por no encontrar un fichero que SI esta en el repo
+    :762  cwd ................. YA llevaba el apaño `"/opt/airflow" if ... else parents[2]`
+
+El defecto y su parche convivian en el mismo fichero, a 400 lineas.
+
+### Arreglado y verificado EN VIVO, no en test
+
+`_project_root()` sube buscando `config/metrics/catalog.yaml` y falla cerrado si no
+aparece. Resultado tras relanzar:
+
+    antes:  persist_governed_sharpe -> up_for_retry · verify_ledger_anchor -> up_for_retry
+            control.metric_event = 3
+    ahora:  persist_governed_sharpe -> **success** · verify_ledger_anchor -> **success**
+            control.metric_event = **4**
+
+Commits `2385fc79` y el siguiente. Mutantes: volver a `parents[2]` -> rojo; devolver ruta
+en vez de fallar -> rojo. Y una **simplificacion encontrada mutando**: mi primera version
+anadia `/opt/airflow` como candidato explicito; el mutante que lo quitaba quedaba verde y
+resulto ser redundante —ya es uno de los padres—. Un caso especial que no cambia nada
+sugeria que la resolucion dependia de conocer el layout. Retirado.
+
+### Pendiente declarado, NO arreglado
+
+**Otros 6 DAGs usan el mismo `parents[2]`**: `analysis_l8_daily_generation` (x5) y
+`forecast_h5_l5_weekly_signal`. No los toco: solo el monitor es carril COP y no voy a
+tocar seis DAGs de produccion sin revision. Es tuyo o del operador decidir.
+
+Y sigue en pie lo tuyo: re-freeze de spx500 (CI rojo), migracion 060
+(`market_ingestion_manifest`), y el ACK que te di en CLD-690 a `provider` = VENDEDOR con
+la urgencia de hacerlo antes de que los writers pueblen `raw_bar`.
