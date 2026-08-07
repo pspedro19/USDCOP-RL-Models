@@ -182,10 +182,20 @@ def main() -> int:
             historial.append({"fecha": str(d), "elegidas": dict(elegidas)})
 
         # pesos inverse-vol entre activos, con la vol del pasado reciente
+        # DEFECTO CORREGIDO (diagnostico 2026): inverse-vol con una sleeve SIN POSICION le
+        # daba peso 1/1e-9 -- o sea, casi toda la cartera al activo que no esta operando, y
+        # como su posicion es cero la cartera entera colapsaba a exposicion ~0.01. Asi es
+        # como `USD/COP`, que no tiene NI UN trade publicado en 2026, se llevaba la cartera
+        # y dejaba 2026 plano. Un activo que no toma riesgo debe pesar CERO, no infinito.
         pesos, total = {}, 0.0
         for sym, name in elegidas.items():
-            r = pos_estrategia[(sym, name)][i - VENTANA_VOL:i] * ret_activo[sym][i - VENTANA_VOL:i]
-            v = float(np.std(r)) or 1e-9
+            pos_v = pos_estrategia[(sym, name)][i - VENTANA_VOL:i]
+            if not np.any(np.abs(pos_v) > 1e-12):
+                continue                      # sin posicion en la ventana => no asigna riesgo
+            r = pos_v * ret_activo[sym][i - VENTANA_VOL:i]
+            v = float(np.std(r))
+            if v <= 1e-9:
+                continue                      # varianza nula: no es "riesgo bajisimo", es ausencia
             pesos[sym] = 1.0 / v
             total += pesos[sym]
         if total <= 0:
