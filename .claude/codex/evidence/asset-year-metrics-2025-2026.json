@@ -1,0 +1,2162 @@
+[
+  {
+    "strategy_id": "btc_exposure_s3",
+    "asset": "BTC/USDT",
+    "year": 2025,
+    "n_trades": 13,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 365,
+    "exposicion_media": 0.3984,
+    "dias_en_mercado_pct": 64.4,
+    "ret_bundle_pct": -3.08,
+    "ret_diario_pct": 1.71,
+    "discrepancia_pp": 4.79,
+    "estrategia": {
+      "ann_return_pct": 1.71,
+      "max_dd_pct": -12.73,
+      "calmar": 0.134,
+      "sharpe": 0.184
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -7.34,
+      "max_dd_pct": -32.02,
+      "calmar": -0.229,
+      "sharpe": 0.025
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.3984,
+      "ann_return_pct": -0.96,
+      "max_dd_pct": -13.96,
+      "calmar": -0.069,
+      "sharpe": 0.025
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 1.71,
+        "max_dd_pct": -12.73,
+        "calmar": 0.134,
+        "sharpe": 0.184
+      },
+      "x2": {
+        "ann_return_pct": 0.12,
+        "max_dd_pct": -13.15,
+        "calmar": 0.009,
+        "sharpe": 0.092
+      },
+      "x3": {
+        "ann_return_pct": -1.44,
+        "max_dd_pct": -13.61,
+        "calmar": -0.106,
+        "sharpe": 0.0
+      },
+      "survives_2x": true,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=13 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "btc_exposure_s3",
+    "asset": "BTC/USDT",
+    "year": 2026,
+    "n_trades": 0,
+    "periodo": "2026-01-01..2026-07-29",
+    "dias_de_mercado": 210,
+    "exposicion_media": 0.0,
+    "dias_en_mercado_pct": 0.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": 0.0,
+    "discrepancia_pp": 0.0,
+    "estrategia": {
+      "ann_return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "calmar": 0.0,
+      "sharpe": 0.0
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -43.41,
+      "max_dd_pct": -39.53,
+      "calmar": -1.098,
+      "sharpe": -0.977
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.0,
+      "ann_return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "calmar": 0.0,
+      "sharpe": 0.0
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 0.0,
+        "max_dd_pct": 0.0,
+        "calmar": 0.0,
+        "sharpe": 0.0
+      },
+      "x2": {
+        "ann_return_pct": 0.0,
+        "max_dd_pct": 0.0,
+        "calmar": 0.0,
+        "sharpe": 0.0
+      },
+      "x3": {
+        "ann_return_pct": 0.0,
+        "max_dd_pct": 0.0,
+        "calmar": 0.0,
+        "sharpe": 0.0
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "btc_hodl_b1",
+    "asset": "BTC/USDT",
+    "year": 2025,
+    "n_trades": 0,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 365,
+    "exposicion_media": 0.27,
+    "dias_en_mercado_pct": 100.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": -0.39,
+    "discrepancia_pp": -0.39,
+    "estrategia": {
+      "ann_return_pct": -0.39,
+      "max_dd_pct": -9.65,
+      "calmar": -0.04,
+      "sharpe": 0.022
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -7.34,
+      "max_dd_pct": -32.02,
+      "calmar": -0.229,
+      "sharpe": 0.025
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.27,
+      "ann_return_pct": -0.35,
+      "max_dd_pct": -9.65,
+      "calmar": -0.037,
+      "sharpe": 0.025
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -0.39,
+        "max_dd_pct": -9.65,
+        "calmar": -0.04,
+        "sharpe": 0.022
+      },
+      "x2": {
+        "ann_return_pct": -0.42,
+        "max_dd_pct": -9.65,
+        "calmar": -0.044,
+        "sharpe": 0.018
+      },
+      "x3": {
+        "ann_return_pct": -0.46,
+        "max_dd_pct": -9.65,
+        "calmar": -0.047,
+        "sharpe": 0.015
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "btc_hodl_b1",
+    "asset": "BTC/USDT",
+    "year": 2026,
+    "n_trades": 2,
+    "periodo": "2026-01-01..2026-07-29",
+    "dias_de_mercado": 210,
+    "exposicion_media": 0.2488,
+    "dias_en_mercado_pct": 95.7,
+    "ret_bundle_pct": 1303.41,
+    "ret_diario_pct": -7.27,
+    "discrepancia_pp": -1310.68,
+    "estrategia": {
+      "ann_return_pct": -12.29,
+      "max_dd_pct": -11.7,
+      "calmar": -1.051,
+      "sharpe": -0.996
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -43.41,
+      "max_dd_pct": -39.53,
+      "calmar": -1.098,
+      "sharpe": -0.977
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.2488,
+      "ann_return_pct": -11.39,
+      "max_dd_pct": -10.8,
+      "calmar": -1.054,
+      "sharpe": -0.977
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -12.29,
+        "max_dd_pct": -11.7,
+        "calmar": -1.051,
+        "sharpe": -0.996
+      },
+      "x2": {
+        "ann_return_pct": -12.4,
+        "max_dd_pct": -11.7,
+        "calmar": -1.06,
+        "sharpe": -1.006
+      },
+      "x3": {
+        "ann_return_pct": -12.51,
+        "max_dd_pct": -11.7,
+        "calmar": -1.069,
+        "sharpe": -1.015
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=2 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "btc_trend_b2",
+    "asset": "BTC/USDT",
+    "year": 2025,
+    "n_trades": 8,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 365,
+    "exposicion_media": 0.069,
+    "dias_en_mercado_pct": 17.0,
+    "ret_bundle_pct": 5.45,
+    "ret_diario_pct": -7.39,
+    "discrepancia_pp": -12.84,
+    "estrategia": {
+      "ann_return_pct": -7.39,
+      "max_dd_pct": -8.9,
+      "calmar": -0.83,
+      "sharpe": -0.988
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -7.34,
+      "max_dd_pct": -32.02,
+      "calmar": -0.229,
+      "sharpe": 0.025
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.069,
+      "ann_return_pct": 0.03,
+      "max_dd_pct": -2.54,
+      "calmar": 0.012,
+      "sharpe": 0.025
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -7.39,
+        "max_dd_pct": -8.9,
+        "calmar": -0.83,
+        "sharpe": -0.988
+      },
+      "x2": {
+        "ann_return_pct": -8.53,
+        "max_dd_pct": -9.83,
+        "calmar": -0.867,
+        "sharpe": -1.149
+      },
+      "x3": {
+        "ann_return_pct": -9.65,
+        "max_dd_pct": -10.75,
+        "calmar": -0.898,
+        "sharpe": -1.307
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=8 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "btc_trend_b2",
+    "asset": "BTC/USDT",
+    "year": 2026,
+    "n_trades": 3,
+    "periodo": "2026-01-01..2026-07-29",
+    "dias_de_mercado": 210,
+    "exposicion_media": 0.031,
+    "dias_en_mercado_pct": 9.0,
+    "ret_bundle_pct": -2.5,
+    "ret_diario_pct": -2.62,
+    "discrepancia_pp": -0.12,
+    "estrategia": {
+      "ann_return_pct": -4.51,
+      "max_dd_pct": -3.5,
+      "calmar": -1.288,
+      "sharpe": -1.53
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -43.41,
+      "max_dd_pct": -39.53,
+      "calmar": -1.098,
+      "sharpe": -0.977
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.031,
+      "ann_return_pct": -1.42,
+      "max_dd_pct": -1.37,
+      "calmar": -1.033,
+      "sharpe": -0.977
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -4.51,
+        "max_dd_pct": -3.5,
+        "calmar": -1.288,
+        "sharpe": -1.53
+      },
+      "x2": {
+        "ann_return_pct": -4.93,
+        "max_dd_pct": -3.63,
+        "calmar": -1.357,
+        "sharpe": -1.661
+      },
+      "x3": {
+        "ann_return_pct": -5.35,
+        "max_dd_pct": -3.77,
+        "calmar": -1.421,
+        "sharpe": -1.787
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=3 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "btc_trend_funding_s4",
+    "asset": "BTC/USDT",
+    "year": 2025,
+    "n_trades": 8,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 365,
+    "exposicion_media": 0.0547,
+    "dias_en_mercado_pct": 17.0,
+    "ret_bundle_pct": 2.74,
+    "ret_diario_pct": -4.27,
+    "discrepancia_pp": -7.01,
+    "estrategia": {
+      "ann_return_pct": -4.27,
+      "max_dd_pct": -5.71,
+      "calmar": -0.747,
+      "sharpe": -0.79
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -7.34,
+      "max_dd_pct": -32.02,
+      "calmar": -0.229,
+      "sharpe": 0.025
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.0547,
+      "ann_return_pct": 0.03,
+      "max_dd_pct": -2.02,
+      "calmar": 0.015,
+      "sharpe": 0.025
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -4.27,
+        "max_dd_pct": -5.71,
+        "calmar": -0.747,
+        "sharpe": -0.79
+      },
+      "x2": {
+        "ann_return_pct": -5.26,
+        "max_dd_pct": -6.51,
+        "calmar": -0.808,
+        "sharpe": -0.978
+      },
+      "x3": {
+        "ann_return_pct": -6.24,
+        "max_dd_pct": -7.3,
+        "calmar": -0.856,
+        "sharpe": -1.162
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=8 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "btc_trend_funding_s4",
+    "asset": "BTC/USDT",
+    "year": 2026,
+    "n_trades": 3,
+    "periodo": "2026-01-01..2026-07-29",
+    "dias_de_mercado": 210,
+    "exposicion_media": 0.0303,
+    "dias_en_mercado_pct": 9.0,
+    "ret_bundle_pct": -1.57,
+    "ret_diario_pct": -2.35,
+    "discrepancia_pp": -0.78,
+    "estrategia": {
+      "ann_return_pct": -4.05,
+      "max_dd_pct": -3.33,
+      "calmar": -1.218,
+      "sharpe": -1.428
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -43.41,
+      "max_dd_pct": -39.53,
+      "calmar": -1.098,
+      "sharpe": -0.977
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.0303,
+      "ann_return_pct": -1.39,
+      "max_dd_pct": -1.35,
+      "calmar": -1.033,
+      "sharpe": -0.977
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -4.05,
+        "max_dd_pct": -3.33,
+        "calmar": -1.218,
+        "sharpe": -1.428
+      },
+      "x2": {
+        "ann_return_pct": -4.43,
+        "max_dd_pct": -3.45,
+        "calmar": -1.287,
+        "sharpe": -1.557
+      },
+      "x3": {
+        "ann_return_pct": -4.81,
+        "max_dd_pct": -3.56,
+        "calmar": -1.351,
+        "sharpe": -1.682
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=3 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "btc_trend_volbrk_s5",
+    "asset": "BTC/USDT",
+    "year": 2025,
+    "n_trades": 8,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 365,
+    "exposicion_media": 0.069,
+    "dias_en_mercado_pct": 17.0,
+    "ret_bundle_pct": 5.45,
+    "ret_diario_pct": -7.39,
+    "discrepancia_pp": -12.84,
+    "estrategia": {
+      "ann_return_pct": -7.39,
+      "max_dd_pct": -8.9,
+      "calmar": -0.83,
+      "sharpe": -0.988
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -7.34,
+      "max_dd_pct": -32.02,
+      "calmar": -0.229,
+      "sharpe": 0.025
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.069,
+      "ann_return_pct": 0.03,
+      "max_dd_pct": -2.54,
+      "calmar": 0.012,
+      "sharpe": 0.025
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -7.39,
+        "max_dd_pct": -8.9,
+        "calmar": -0.83,
+        "sharpe": -0.988
+      },
+      "x2": {
+        "ann_return_pct": -8.53,
+        "max_dd_pct": -9.83,
+        "calmar": -0.867,
+        "sharpe": -1.149
+      },
+      "x3": {
+        "ann_return_pct": -9.65,
+        "max_dd_pct": -10.75,
+        "calmar": -0.898,
+        "sharpe": -1.307
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=8 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "btc_trend_volbrk_s5",
+    "asset": "BTC/USDT",
+    "year": 2026,
+    "n_trades": 3,
+    "periodo": "2026-01-01..2026-07-29",
+    "dias_de_mercado": 210,
+    "exposicion_media": 0.031,
+    "dias_en_mercado_pct": 9.0,
+    "ret_bundle_pct": -2.5,
+    "ret_diario_pct": -2.62,
+    "discrepancia_pp": -0.12,
+    "estrategia": {
+      "ann_return_pct": -4.51,
+      "max_dd_pct": -3.5,
+      "calmar": -1.288,
+      "sharpe": -1.53
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -43.41,
+      "max_dd_pct": -39.53,
+      "calmar": -1.098,
+      "sharpe": -0.977
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.031,
+      "ann_return_pct": -1.42,
+      "max_dd_pct": -1.37,
+      "calmar": -1.033,
+      "sharpe": -0.977
+    },
+    "coste_bps_declarado": 13.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -4.51,
+        "max_dd_pct": -3.5,
+        "calmar": -1.288,
+        "sharpe": -1.53
+      },
+      "x2": {
+        "ann_return_pct": -4.93,
+        "max_dd_pct": -3.63,
+        "calmar": -1.357,
+        "sharpe": -1.661
+      },
+      "x3": {
+        "ann_return_pct": -5.35,
+        "max_dd_pct": -3.77,
+        "calmar": -1.421,
+        "sharpe": -1.787
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=3 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_dxy_tilt",
+    "asset": "XAU/USD",
+    "year": 2025,
+    "n_trades": 0,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 332,
+    "exposicion_media": 1.37,
+    "dias_en_mercado_pct": 100.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": 89.0,
+    "discrepancia_pp": 89.0,
+    "estrategia": {
+      "ann_return_pct": 61.51,
+      "max_dd_pct": -14.26,
+      "calmar": 4.313,
+      "sharpe": 2.176
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 45.32,
+      "max_dd_pct": -10.43,
+      "calmar": 4.343,
+      "sharpe": 2.285
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 1.37,
+      "ann_return_pct": 65.62,
+      "max_dd_pct": -14.14,
+      "calmar": 4.641,
+      "sharpe": 2.285
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 61.51,
+        "max_dd_pct": -14.26,
+        "calmar": 4.313,
+        "sharpe": 2.176
+      },
+      "x2": {
+        "ann_return_pct": 61.47,
+        "max_dd_pct": -14.26,
+        "calmar": 4.31,
+        "sharpe": 2.175
+      },
+      "x3": {
+        "ann_return_pct": 61.44,
+        "max_dd_pct": -14.26,
+        "calmar": 4.308,
+        "sharpe": 2.175
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_dxy_tilt",
+    "asset": "XAU/USD",
+    "year": 2026,
+    "n_trades": 2,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 205,
+    "exposicion_media": 1.2898,
+    "dias_en_mercado_pct": 96.6,
+    "ret_bundle_pct": 832.98,
+    "ret_diario_pct": -11.01,
+    "discrepancia_pp": -843.99,
+    "estrategia": {
+      "ann_return_pct": -13.26,
+      "max_dd_pct": -34.11,
+      "calmar": -0.389,
+      "sharpe": -0.268
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -8.04,
+      "max_dd_pct": -25.4,
+      "calmar": -0.316,
+      "sharpe": -0.216
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 1.2898,
+      "ann_return_pct": -11.27,
+      "max_dd_pct": -31.97,
+      "calmar": -0.353,
+      "sharpe": -0.216
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -13.26,
+        "max_dd_pct": -34.11,
+        "calmar": -0.389,
+        "sharpe": -0.268
+      },
+      "x2": {
+        "ann_return_pct": -13.32,
+        "max_dd_pct": -34.11,
+        "calmar": -0.39,
+        "sharpe": -0.27
+      },
+      "x3": {
+        "ann_return_pct": -13.38,
+        "max_dd_pct": -34.11,
+        "calmar": -0.392,
+        "sharpe": -0.272
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=2 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_dxy_tilt_s05",
+    "asset": "XAU/USD",
+    "year": 2025,
+    "n_trades": 0,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 332,
+    "exposicion_media": 1.37,
+    "dias_en_mercado_pct": 100.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": 89.0,
+    "discrepancia_pp": 89.0,
+    "estrategia": {
+      "ann_return_pct": 61.51,
+      "max_dd_pct": -14.26,
+      "calmar": 4.313,
+      "sharpe": 2.176
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 45.32,
+      "max_dd_pct": -10.43,
+      "calmar": 4.343,
+      "sharpe": 2.285
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 1.37,
+      "ann_return_pct": 65.62,
+      "max_dd_pct": -14.14,
+      "calmar": 4.641,
+      "sharpe": 2.285
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 61.51,
+        "max_dd_pct": -14.26,
+        "calmar": 4.313,
+        "sharpe": 2.176
+      },
+      "x2": {
+        "ann_return_pct": 61.47,
+        "max_dd_pct": -14.26,
+        "calmar": 4.31,
+        "sharpe": 2.175
+      },
+      "x3": {
+        "ann_return_pct": 61.44,
+        "max_dd_pct": -14.26,
+        "calmar": 4.308,
+        "sharpe": 2.175
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_dxy_tilt_s05",
+    "asset": "XAU/USD",
+    "year": 2026,
+    "n_trades": 2,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 205,
+    "exposicion_media": 1.2898,
+    "dias_en_mercado_pct": 96.6,
+    "ret_bundle_pct": 863.3,
+    "ret_diario_pct": -11.01,
+    "discrepancia_pp": -874.32,
+    "estrategia": {
+      "ann_return_pct": -13.26,
+      "max_dd_pct": -34.11,
+      "calmar": -0.389,
+      "sharpe": -0.268
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -8.04,
+      "max_dd_pct": -25.4,
+      "calmar": -0.316,
+      "sharpe": -0.216
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 1.2898,
+      "ann_return_pct": -11.27,
+      "max_dd_pct": -31.97,
+      "calmar": -0.353,
+      "sharpe": -0.216
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -13.26,
+        "max_dd_pct": -34.11,
+        "calmar": -0.389,
+        "sharpe": -0.268
+      },
+      "x2": {
+        "ann_return_pct": -13.32,
+        "max_dd_pct": -34.11,
+        "calmar": -0.39,
+        "sharpe": -0.27
+      },
+      "x3": {
+        "ann_return_pct": -13.38,
+        "max_dd_pct": -34.11,
+        "calmar": -0.392,
+        "sharpe": -0.272
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=2 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_dxy_tilt_s07",
+    "asset": "XAU/USD",
+    "year": 2025,
+    "n_trades": 0,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 332,
+    "exposicion_media": 1.37,
+    "dias_en_mercado_pct": 100.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": 89.0,
+    "discrepancia_pp": 89.0,
+    "estrategia": {
+      "ann_return_pct": 61.51,
+      "max_dd_pct": -14.26,
+      "calmar": 4.313,
+      "sharpe": 2.176
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 45.32,
+      "max_dd_pct": -10.43,
+      "calmar": 4.343,
+      "sharpe": 2.285
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 1.37,
+      "ann_return_pct": 65.62,
+      "max_dd_pct": -14.14,
+      "calmar": 4.641,
+      "sharpe": 2.285
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 61.51,
+        "max_dd_pct": -14.26,
+        "calmar": 4.313,
+        "sharpe": 2.176
+      },
+      "x2": {
+        "ann_return_pct": 61.47,
+        "max_dd_pct": -14.26,
+        "calmar": 4.31,
+        "sharpe": 2.175
+      },
+      "x3": {
+        "ann_return_pct": 61.44,
+        "max_dd_pct": -14.26,
+        "calmar": 4.308,
+        "sharpe": 2.175
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_dxy_tilt_s07",
+    "asset": "XAU/USD",
+    "year": 2026,
+    "n_trades": 2,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 205,
+    "exposicion_media": 1.2898,
+    "dias_en_mercado_pct": 96.6,
+    "ret_bundle_pct": 803.29,
+    "ret_diario_pct": -11.01,
+    "discrepancia_pp": -814.3,
+    "estrategia": {
+      "ann_return_pct": -13.26,
+      "max_dd_pct": -34.11,
+      "calmar": -0.389,
+      "sharpe": -0.268
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -8.04,
+      "max_dd_pct": -25.4,
+      "calmar": -0.316,
+      "sharpe": -0.216
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 1.2898,
+      "ann_return_pct": -11.27,
+      "max_dd_pct": -31.97,
+      "calmar": -0.353,
+      "sharpe": -0.216
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -13.26,
+        "max_dd_pct": -34.11,
+        "calmar": -0.389,
+        "sharpe": -0.268
+      },
+      "x2": {
+        "ann_return_pct": -13.32,
+        "max_dd_pct": -34.11,
+        "calmar": -0.39,
+        "sharpe": -0.27
+      },
+      "x3": {
+        "ann_return_pct": -13.38,
+        "max_dd_pct": -34.11,
+        "calmar": -0.392,
+        "sharpe": -0.272
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=2 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_dynamic_exit",
+    "asset": "XAU/USD",
+    "year": 2025,
+    "n_trades": 10,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 332,
+    "exposicion_media": 0.6055,
+    "dias_en_mercado_pct": 99.1,
+    "ret_bundle_pct": 38.62,
+    "ret_diario_pct": 34.73,
+    "discrepancia_pp": -3.89,
+    "estrategia": {
+      "ann_return_pct": 25.17,
+      "max_dd_pct": -6.6,
+      "calmar": 3.811,
+      "sharpe": 2.057
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 45.32,
+      "max_dd_pct": -10.43,
+      "calmar": 4.343,
+      "sharpe": 2.285
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.6055,
+      "ann_return_pct": 25.84,
+      "max_dd_pct": -6.39,
+      "calmar": 4.043,
+      "sharpe": 2.285
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 25.17,
+        "max_dd_pct": -6.6,
+        "calmar": 3.811,
+        "sharpe": 2.057
+      },
+      "x2": {
+        "ann_return_pct": 25.09,
+        "max_dd_pct": -6.61,
+        "calmar": 3.793,
+        "sharpe": 2.051
+      },
+      "x3": {
+        "ann_return_pct": 25.01,
+        "max_dd_pct": -6.62,
+        "calmar": 3.775,
+        "sharpe": 2.045
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=10 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_dynamic_exit",
+    "asset": "XAU/USD",
+    "year": 2026,
+    "n_trades": 7,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 205,
+    "exposicion_media": 0.2101,
+    "dias_en_mercado_pct": 59.5,
+    "ret_bundle_pct": 2.37,
+    "ret_diario_pct": 1.99,
+    "discrepancia_pp": -0.38,
+    "estrategia": {
+      "ann_return_pct": 2.43,
+      "max_dd_pct": -8.29,
+      "calmar": 0.293,
+      "sharpe": 0.353
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -8.04,
+      "max_dd_pct": -25.4,
+      "calmar": -0.316,
+      "sharpe": -0.216
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.2101,
+      "ann_return_pct": -1.25,
+      "max_dd_pct": -5.75,
+      "calmar": -0.217,
+      "sharpe": -0.216
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 2.43,
+        "max_dd_pct": -8.29,
+        "calmar": 0.293,
+        "sharpe": 0.353
+      },
+      "x2": {
+        "ann_return_pct": 2.34,
+        "max_dd_pct": -8.35,
+        "calmar": 0.28,
+        "sharpe": 0.34
+      },
+      "x3": {
+        "ann_return_pct": 2.24,
+        "max_dd_pct": -8.42,
+        "calmar": 0.266,
+        "sharpe": 0.328
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=7 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_long_only_b1",
+    "asset": "XAU/USD",
+    "year": 2025,
+    "n_trades": 0,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 332,
+    "exposicion_media": 1.37,
+    "dias_en_mercado_pct": 100.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": 89.0,
+    "discrepancia_pp": 89.0,
+    "estrategia": {
+      "ann_return_pct": 61.51,
+      "max_dd_pct": -14.26,
+      "calmar": 4.313,
+      "sharpe": 2.176
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 45.32,
+      "max_dd_pct": -10.43,
+      "calmar": 4.343,
+      "sharpe": 2.285
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 1.37,
+      "ann_return_pct": 65.62,
+      "max_dd_pct": -14.14,
+      "calmar": 4.641,
+      "sharpe": 2.285
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 61.51,
+        "max_dd_pct": -14.26,
+        "calmar": 4.313,
+        "sharpe": 2.176
+      },
+      "x2": {
+        "ann_return_pct": 61.47,
+        "max_dd_pct": -14.26,
+        "calmar": 4.31,
+        "sharpe": 2.175
+      },
+      "x3": {
+        "ann_return_pct": 61.44,
+        "max_dd_pct": -14.26,
+        "calmar": 4.308,
+        "sharpe": 2.175
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_long_only_b1",
+    "asset": "XAU/USD",
+    "year": 2026,
+    "n_trades": 2,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 205,
+    "exposicion_media": 1.2865,
+    "dias_en_mercado_pct": 96.6,
+    "ret_bundle_pct": 718.58,
+    "ret_diario_pct": -10.13,
+    "discrepancia_pp": -728.71,
+    "estrategia": {
+      "ann_return_pct": -12.21,
+      "max_dd_pct": -34.11,
+      "calmar": -0.358,
+      "sharpe": -0.232
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -8.04,
+      "max_dd_pct": -25.4,
+      "calmar": -0.316,
+      "sharpe": -0.216
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 1.2865,
+      "ann_return_pct": -11.23,
+      "max_dd_pct": -31.9,
+      "calmar": -0.352,
+      "sharpe": -0.216
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -12.21,
+        "max_dd_pct": -34.11,
+        "calmar": -0.358,
+        "sharpe": -0.232
+      },
+      "x2": {
+        "ann_return_pct": -12.27,
+        "max_dd_pct": -34.11,
+        "calmar": -0.36,
+        "sharpe": -0.234
+      },
+      "x3": {
+        "ann_return_pct": -12.33,
+        "max_dd_pct": -34.11,
+        "calmar": -0.362,
+        "sharpe": -0.236
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=2 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_regime_gated_v1",
+    "asset": "XAU/USD",
+    "year": 2025,
+    "n_trades": 6,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 332,
+    "exposicion_media": 0.6903,
+    "dias_en_mercado_pct": 78.3,
+    "ret_bundle_pct": 43.03,
+    "ret_diario_pct": 39.29,
+    "discrepancia_pp": -3.74,
+    "estrategia": {
+      "ann_return_pct": 28.34,
+      "max_dd_pct": -7.93,
+      "calmar": 3.574,
+      "sharpe": 1.773
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 45.32,
+      "max_dd_pct": -10.43,
+      "calmar": 4.343,
+      "sharpe": 2.285
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.6903,
+      "ann_return_pct": 29.84,
+      "max_dd_pct": -7.27,
+      "calmar": 4.106,
+      "sharpe": 2.285
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 28.34,
+        "max_dd_pct": -7.93,
+        "calmar": 3.574,
+        "sharpe": 1.773
+      },
+      "x2": {
+        "ann_return_pct": 28.19,
+        "max_dd_pct": -7.93,
+        "calmar": 3.555,
+        "sharpe": 1.764
+      },
+      "x3": {
+        "ann_return_pct": 28.04,
+        "max_dd_pct": -7.93,
+        "calmar": 3.536,
+        "sharpe": 1.756
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=6 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_regime_gated_v1",
+    "asset": "XAU/USD",
+    "year": 2026,
+    "n_trades": 2,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 205,
+    "exposicion_media": 0.1867,
+    "dias_en_mercado_pct": 69.3,
+    "ret_bundle_pct": -1.43,
+    "ret_diario_pct": 2.5,
+    "discrepancia_pp": 3.94,
+    "estrategia": {
+      "ann_return_pct": 3.06,
+      "max_dd_pct": -5.37,
+      "calmar": 0.57,
+      "sharpe": 0.625
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -8.04,
+      "max_dd_pct": -25.4,
+      "calmar": -0.316,
+      "sharpe": -0.216
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.1867,
+      "ann_return_pct": -1.1,
+      "max_dd_pct": -5.12,
+      "calmar": -0.214,
+      "sharpe": -0.216
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 3.06,
+        "max_dd_pct": -5.37,
+        "calmar": 0.57,
+        "sharpe": 0.625
+      },
+      "x2": {
+        "ann_return_pct": 3.02,
+        "max_dd_pct": -5.37,
+        "calmar": 0.563,
+        "sharpe": 0.618
+      },
+      "x3": {
+        "ann_return_pct": 2.99,
+        "max_dd_pct": -5.38,
+        "calmar": 0.556,
+        "sharpe": 0.611
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=2 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_trend_b2",
+    "asset": "XAU/USD",
+    "year": 2025,
+    "n_trades": 1,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 332,
+    "exposicion_media": 0.319,
+    "dias_en_mercado_pct": 60.5,
+    "ret_bundle_pct": 9.22,
+    "ret_diario_pct": 18.7,
+    "discrepancia_pp": 9.49,
+    "estrategia": {
+      "ann_return_pct": 13.78,
+      "max_dd_pct": -5.56,
+      "calmar": 2.478,
+      "sharpe": 1.65
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 45.32,
+      "max_dd_pct": -10.43,
+      "calmar": 4.343,
+      "sharpe": 2.285
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.319,
+      "ann_return_pct": 13.02,
+      "max_dd_pct": -3.39,
+      "calmar": 3.837,
+      "sharpe": 2.285
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 13.78,
+        "max_dd_pct": -5.56,
+        "calmar": 2.478,
+        "sharpe": 1.65
+      },
+      "x2": {
+        "ann_return_pct": 13.75,
+        "max_dd_pct": -5.56,
+        "calmar": 2.473,
+        "sharpe": 1.648
+      },
+      "x3": {
+        "ann_return_pct": 13.73,
+        "max_dd_pct": -5.56,
+        "calmar": 2.468,
+        "sharpe": 1.645
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=1 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_trend_b2",
+    "asset": "XAU/USD",
+    "year": 2026,
+    "n_trades": 3,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 205,
+    "exposicion_media": 0.1413,
+    "dias_en_mercado_pct": 30.7,
+    "ret_bundle_pct": 21.95,
+    "ret_diario_pct": 7.48,
+    "discrepancia_pp": -14.46,
+    "estrategia": {
+      "ann_return_pct": 9.2,
+      "max_dd_pct": -6.32,
+      "calmar": 1.455,
+      "sharpe": 1.181
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -8.04,
+      "max_dd_pct": -25.4,
+      "calmar": -0.316,
+      "sharpe": -0.216
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.1413,
+      "ann_return_pct": -0.81,
+      "max_dd_pct": -3.89,
+      "calmar": -0.209,
+      "sharpe": -0.216
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 9.2,
+        "max_dd_pct": -6.32,
+        "calmar": 1.455,
+        "sharpe": 1.181
+      },
+      "x2": {
+        "ann_return_pct": 9.14,
+        "max_dd_pct": -6.32,
+        "calmar": 1.446,
+        "sharpe": 1.174
+      },
+      "x3": {
+        "ann_return_pct": 9.09,
+        "max_dd_pct": -6.32,
+        "calmar": 1.437,
+        "sharpe": 1.167
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=3 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_trend_ens",
+    "asset": "XAU/USD",
+    "year": 2025,
+    "n_trades": 0,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 332,
+    "exposicion_media": 0.407,
+    "dias_en_mercado_pct": 100.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": 18.94,
+    "discrepancia_pp": 18.94,
+    "estrategia": {
+      "ann_return_pct": 13.95,
+      "max_dd_pct": -4.45,
+      "calmar": 3.133,
+      "sharpe": 1.922
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 45.32,
+      "max_dd_pct": -10.43,
+      "calmar": 4.343,
+      "sharpe": 2.285
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.407,
+      "ann_return_pct": 16.84,
+      "max_dd_pct": -4.32,
+      "calmar": 3.899,
+      "sharpe": 2.285
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 13.95,
+        "max_dd_pct": -4.45,
+        "calmar": 3.133,
+        "sharpe": 1.922
+      },
+      "x2": {
+        "ann_return_pct": 13.95,
+        "max_dd_pct": -4.45,
+        "calmar": 3.131,
+        "sharpe": 1.922
+      },
+      "x3": {
+        "ann_return_pct": 13.94,
+        "max_dd_pct": -4.45,
+        "calmar": 3.13,
+        "sharpe": 1.921
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_trend_ens",
+    "asset": "XAU/USD",
+    "year": 2026,
+    "n_trades": 2,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 205,
+    "exposicion_media": 0.3206,
+    "dias_en_mercado_pct": 80.0,
+    "ret_bundle_pct": 65.62,
+    "ret_diario_pct": -3.61,
+    "discrepancia_pp": -69.23,
+    "estrategia": {
+      "ann_return_pct": -4.38,
+      "max_dd_pct": -11.33,
+      "calmar": -0.387,
+      "sharpe": -0.442
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -8.04,
+      "max_dd_pct": -25.4,
+      "calmar": -0.316,
+      "sharpe": -0.216
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.3206,
+      "ann_return_pct": -2.0,
+      "max_dd_pct": -8.68,
+      "calmar": -0.231,
+      "sharpe": -0.216
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -4.38,
+        "max_dd_pct": -11.33,
+        "calmar": -0.387,
+        "sharpe": -0.442
+      },
+      "x2": {
+        "ann_return_pct": -4.41,
+        "max_dd_pct": -11.34,
+        "calmar": -0.388,
+        "sharpe": -0.444
+      },
+      "x3": {
+        "ann_return_pct": -4.43,
+        "max_dd_pct": -11.35,
+        "calmar": -0.39,
+        "sharpe": -0.447
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=2 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_trend_simple",
+    "asset": "XAU/USD",
+    "year": 2025,
+    "n_trades": 0,
+    "periodo": "2025-01-01..2025-12-31",
+    "dias_de_mercado": 332,
+    "exposicion_media": 0.61,
+    "dias_en_mercado_pct": 100.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": 31.54,
+    "discrepancia_pp": 31.54,
+    "estrategia": {
+      "ann_return_pct": 22.93,
+      "max_dd_pct": -6.57,
+      "calmar": 3.491,
+      "sharpe": 2.043
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 45.32,
+      "max_dd_pct": -10.43,
+      "calmar": 4.343,
+      "sharpe": 2.285
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.61,
+      "ann_return_pct": 26.05,
+      "max_dd_pct": -6.44,
+      "calmar": 4.047,
+      "sharpe": 2.285
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 22.93,
+        "max_dd_pct": -6.57,
+        "calmar": 3.491,
+        "sharpe": 2.043
+      },
+      "x2": {
+        "ann_return_pct": 22.92,
+        "max_dd_pct": -6.57,
+        "calmar": 3.489,
+        "sharpe": 2.042
+      },
+      "x3": {
+        "ann_return_pct": 22.9,
+        "max_dd_pct": -6.57,
+        "calmar": 3.487,
+        "sharpe": 2.041
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "gold_trend_simple",
+    "asset": "XAU/USD",
+    "year": 2026,
+    "n_trades": 5,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 205,
+    "exposicion_media": 0.3027,
+    "dias_en_mercado_pct": 58.5,
+    "ret_bundle_pct": 70.87,
+    "ret_diario_pct": -1.82,
+    "discrepancia_pp": -72.69,
+    "estrategia": {
+      "ann_return_pct": -2.21,
+      "max_dd_pct": -13.46,
+      "calmar": -0.164,
+      "sharpe": -0.143
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -8.04,
+      "max_dd_pct": -25.4,
+      "calmar": -0.316,
+      "sharpe": -0.216
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.3027,
+      "ann_return_pct": -1.87,
+      "max_dd_pct": -8.21,
+      "calmar": -0.228,
+      "sharpe": -0.216
+    },
+    "coste_bps_declarado": 2.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": -2.21,
+        "max_dd_pct": -13.46,
+        "calmar": -0.164,
+        "sharpe": -0.143
+      },
+      "x2": {
+        "ann_return_pct": -2.31,
+        "max_dd_pct": -13.52,
+        "calmar": -0.171,
+        "sharpe": -0.152
+      },
+      "x3": {
+        "ann_return_pct": -2.4,
+        "max_dd_pct": -13.58,
+        "calmar": -0.177,
+        "sharpe": -0.16
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=5 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "smart_simple_aggr",
+    "asset": "USD/COP",
+    "year": 2025,
+    "n_trades": 34,
+    "periodo": "2025-01-01..2025-12-30",
+    "dias_de_mercado": 258,
+    "exposicion_media": 0.7809,
+    "dias_en_mercado_pct": 46.9,
+    "ret_bundle_pct": 29.47,
+    "ret_diario_pct": 27.67,
+    "discrepancia_pp": -1.8,
+    "estrategia": {
+      "ann_return_pct": 28.04,
+      "max_dd_pct": -8.83,
+      "calmar": 3.174,
+      "sharpe": 1.952
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -14.64,
+      "max_dd_pct": -16.24,
+      "calmar": -0.901,
+      "sharpe": -1.271
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.7809,
+      "ann_return_pct": -11.52,
+      "max_dd_pct": -12.87,
+      "calmar": -0.895,
+      "sharpe": -1.271
+    },
+    "coste_bps_declarado": 1.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 28.04,
+        "max_dd_pct": -8.83,
+        "calmar": 3.174,
+        "sharpe": 1.952
+      },
+      "x2": {
+        "ann_return_pct": 26.82,
+        "max_dd_pct": -8.97,
+        "calmar": 2.99,
+        "sharpe": 1.878
+      },
+      "x3": {
+        "ann_return_pct": 25.62,
+        "max_dd_pct": -9.11,
+        "calmar": 2.813,
+        "sharpe": 1.804
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": 1.9523346205838883,
+      "sortino": 3.139729678393261,
+      "nota": "N>=20 trades: la constitucion permite estadistica inferencial"
+    }
+  },
+  {
+    "strategy_id": "smart_simple_aggr",
+    "asset": "USD/COP",
+    "year": 2026,
+    "n_trades": 0,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 135,
+    "exposicion_media": 0.0,
+    "dias_en_mercado_pct": 0.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": 0.0,
+    "discrepancia_pp": 0.0,
+    "estrategia": {
+      "ann_return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "calmar": 0.0,
+      "sharpe": 0.0
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -26.88,
+      "max_dd_pct": -15.84,
+      "calmar": -1.697,
+      "sharpe": -2.309
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.0,
+      "ann_return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "calmar": 0.0,
+      "sharpe": 0.0
+    },
+    "coste_bps_declarado": 1.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 0.0,
+        "max_dd_pct": 0.0,
+        "calmar": 0.0,
+        "sharpe": 0.0
+      },
+      "x2": {
+        "ann_return_pct": 0.0,
+        "max_dd_pct": 0.0,
+        "calmar": 0.0,
+        "sharpe": 0.0
+      },
+      "x3": {
+        "ann_return_pct": 0.0,
+        "max_dd_pct": 0.0,
+        "calmar": 0.0,
+        "sharpe": 0.0
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "smart_simple_v11",
+    "asset": "USD/COP",
+    "year": 2025,
+    "n_trades": 31,
+    "periodo": "2025-01-01..2025-12-30",
+    "dias_de_mercado": 258,
+    "exposicion_media": 0.6577,
+    "dias_en_mercado_pct": 44.6,
+    "ret_bundle_pct": 18.73,
+    "ret_diario_pct": 24.66,
+    "discrepancia_pp": 5.94,
+    "estrategia": {
+      "ann_return_pct": 24.98,
+      "max_dd_pct": -5.34,
+      "calmar": 4.676,
+      "sharpe": 2.204
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -14.64,
+      "max_dd_pct": -16.24,
+      "calmar": -0.901,
+      "sharpe": -1.271
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.6577,
+      "ann_return_pct": -9.74,
+      "max_dd_pct": -10.93,
+      "calmar": -0.891,
+      "sharpe": -1.271
+    },
+    "coste_bps_declarado": 1.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 24.98,
+        "max_dd_pct": -5.34,
+        "calmar": 4.676,
+        "sharpe": 2.204
+      },
+      "x2": {
+        "ann_return_pct": 23.94,
+        "max_dd_pct": -5.48,
+        "calmar": 4.372,
+        "sharpe": 2.121
+      },
+      "x3": {
+        "ann_return_pct": 22.91,
+        "max_dd_pct": -5.61,
+        "calmar": 4.085,
+        "sharpe": 2.039
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": 2.2036262463267637,
+      "sortino": 4.020347483589407,
+      "nota": "N>=20 trades: la constitucion permite estadistica inferencial"
+    }
+  },
+  {
+    "strategy_id": "smart_simple_v11",
+    "asset": "USD/COP",
+    "year": 2026,
+    "n_trades": 0,
+    "periodo": "2026-01-01..2026-07-28",
+    "dias_de_mercado": 135,
+    "exposicion_media": 0.0,
+    "dias_en_mercado_pct": 0.0,
+    "ret_bundle_pct": 0.0,
+    "ret_diario_pct": 0.0,
+    "discrepancia_pp": 0.0,
+    "estrategia": {
+      "ann_return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "calmar": 0.0,
+      "sharpe": 0.0
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": -26.88,
+      "max_dd_pct": -15.84,
+      "calmar": -1.697,
+      "sharpe": -2.309
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.0,
+      "ann_return_pct": 0.0,
+      "max_dd_pct": 0.0,
+      "calmar": 0.0,
+      "sharpe": 0.0
+    },
+    "coste_bps_declarado": 1.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 0.0,
+        "max_dd_pct": 0.0,
+        "calmar": 0.0,
+        "sharpe": 0.0
+      },
+      "x2": {
+        "ann_return_pct": 0.0,
+        "max_dd_pct": 0.0,
+        "calmar": 0.0,
+        "sharpe": 0.0
+      },
+      "x3": {
+        "ann_return_pct": 0.0,
+        "max_dd_pct": 0.0,
+        "calmar": 0.0,
+        "sharpe": 0.0
+      },
+      "survives_2x": false,
+      "survives_3x": false
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=0 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "spx500_daily_ma200_v1",
+    "asset": "SPX/500",
+    "year": 2025,
+    "n_trades": 3,
+    "periodo": "2025-01-02..2025-12-31",
+    "dias_de_mercado": 250,
+    "exposicion_media": 0.832,
+    "dias_en_mercado_pct": 83.2,
+    "ret_bundle_pct": 9.91,
+    "ret_diario_pct": 10.82,
+    "discrepancia_pp": 0.91,
+    "estrategia": {
+      "ann_return_pct": 10.82,
+      "max_dd_pct": -10.24,
+      "calmar": 1.056,
+      "sharpe": 0.982
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 16.65,
+      "max_dd_pct": -18.9,
+      "calmar": 0.881,
+      "sharpe": 0.917
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.832,
+      "ann_return_pct": 13.94,
+      "max_dd_pct": -15.93,
+      "calmar": 0.875,
+      "sharpe": 0.917
+    },
+    "coste_bps_declarado": 3.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 10.82,
+        "max_dd_pct": -10.24,
+        "calmar": 1.056,
+        "sharpe": 0.982
+      },
+      "x2": {
+        "ann_return_pct": 10.66,
+        "max_dd_pct": -10.35,
+        "calmar": 1.029,
+        "sharpe": 0.969
+      },
+      "x3": {
+        "ann_return_pct": 10.49,
+        "max_dd_pct": -10.46,
+        "calmar": 1.003,
+        "sharpe": 0.955
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=3 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "spx500_daily_ma200_v1",
+    "asset": "SPX/500",
+    "year": 2026,
+    "n_trades": 2,
+    "periodo": "2026-01-02..2026-07-27",
+    "dias_de_mercado": 141,
+    "exposicion_media": 0.9078,
+    "dias_en_mercado_pct": 90.8,
+    "ret_bundle_pct": 5.63,
+    "ret_diario_pct": 5.18,
+    "discrepancia_pp": -0.45,
+    "estrategia": {
+      "ann_return_pct": 9.37,
+      "max_dd_pct": -5.36,
+      "calmar": 1.749,
+      "sharpe": 0.815
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 14.79,
+      "max_dd_pct": -9.1,
+      "calmar": 1.625,
+      "sharpe": 1.08
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.9078,
+      "ann_return_pct": 13.42,
+      "max_dd_pct": -8.28,
+      "calmar": 1.621,
+      "sharpe": 1.08
+    },
+    "coste_bps_declarado": 3.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 9.37,
+        "max_dd_pct": -5.36,
+        "calmar": 1.749,
+        "sharpe": 0.815
+      },
+      "x2": {
+        "ann_return_pct": 9.2,
+        "max_dd_pct": -5.39,
+        "calmar": 1.707,
+        "sharpe": 0.802
+      },
+      "x3": {
+        "ann_return_pct": 9.03,
+        "max_dd_pct": -5.42,
+        "calmar": 1.666,
+        "sharpe": 0.788
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=2 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "spx500_regime_gated_v1",
+    "asset": "SPX/500",
+    "year": 2025,
+    "n_trades": 4,
+    "periodo": "2025-01-02..2025-12-31",
+    "dias_de_mercado": 250,
+    "exposicion_media": 0.6379,
+    "dias_en_mercado_pct": 78.0,
+    "ret_bundle_pct": 8.19,
+    "ret_diario_pct": 10.43,
+    "discrepancia_pp": 2.23,
+    "estrategia": {
+      "ann_return_pct": 10.43,
+      "max_dd_pct": -5.49,
+      "calmar": 1.899,
+      "sharpe": 1.204
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 16.65,
+      "max_dd_pct": -18.9,
+      "calmar": 0.881,
+      "sharpe": 0.917
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.6379,
+      "ann_return_pct": 10.76,
+      "max_dd_pct": -12.4,
+      "calmar": 0.868,
+      "sharpe": 0.917
+    },
+    "coste_bps_declarado": 3.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 10.43,
+        "max_dd_pct": -5.49,
+        "calmar": 1.899,
+        "sharpe": 1.204
+      },
+      "x2": {
+        "ann_return_pct": 10.34,
+        "max_dd_pct": -5.54,
+        "calmar": 1.867,
+        "sharpe": 1.195
+      },
+      "x3": {
+        "ann_return_pct": 10.26,
+        "max_dd_pct": -5.59,
+        "calmar": 1.836,
+        "sharpe": 1.185
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=4 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  },
+  {
+    "strategy_id": "spx500_regime_gated_v1",
+    "asset": "SPX/500",
+    "year": 2026,
+    "n_trades": 3,
+    "periodo": "2026-01-02..2026-07-27",
+    "dias_de_mercado": 141,
+    "exposicion_media": 0.5875,
+    "dias_en_mercado_pct": 78.7,
+    "ret_bundle_pct": -0.98,
+    "ret_diario_pct": 1.81,
+    "discrepancia_pp": 2.79,
+    "estrategia": {
+      "ann_return_pct": 3.23,
+      "max_dd_pct": -4.79,
+      "calmar": 0.675,
+      "sharpe": 0.421
+    },
+    "B1_buy_hold": {
+      "ann_return_pct": 14.79,
+      "max_dd_pct": -9.1,
+      "calmar": 1.625,
+      "sharpe": 1.08
+    },
+    "B1p_exposicion_emparejada": {
+      "mean_exposure": 0.5875,
+      "ann_return_pct": 8.68,
+      "max_dd_pct": -5.41,
+      "calmar": 1.605,
+      "sharpe": 1.08
+    },
+    "coste_bps_declarado": 3.0,
+    "stress_costos": {
+      "x1": {
+        "ann_return_pct": 3.23,
+        "max_dd_pct": -4.79,
+        "calmar": 0.675,
+        "sharpe": 0.421
+      },
+      "x2": {
+        "ann_return_pct": 3.04,
+        "max_dd_pct": -4.82,
+        "calmar": 0.63,
+        "sharpe": 0.398
+      },
+      "x3": {
+        "ann_return_pct": 2.84,
+        "max_dd_pct": -4.84,
+        "calmar": 0.586,
+        "sharpe": 0.375
+      },
+      "survives_2x": true,
+      "survives_3x": true
+    },
+    "inferencia": {
+      "sharpe": null,
+      "sortino": null,
+      "nota": "N=3 < 20 trades: constitucion \u00a76 PROHIBE Sharpe/p-value/DSR aqui. No es que falte el dato, es que reportarlo seria falso."
+    }
+  }
+]
