@@ -85,75 +85,48 @@ def resolve_asset(strategy_id: str):
     return None, None, None
 
 
-def latest_backtest_dir(strategy_dir: Path) -> Path | None:
-    """El bundle a evaluar: el que el manifest declara PRODUCTION, si lo declara.
+def production_backtest_dir(strategy_dir: Path) -> Path | None:
+    """El bundle que el manifest declara PRODUCTION, no el de numero mas alto.
 
-    POR QUE NO BASTA CON "LA VERSION MAS ALTA" (defecto medido el 2026-08-06)
-    ------------------------------------------------------------------------
-    Esta funcion ordenaba por los digitos del nombre del directorio. Para
-    `smart_simple_v11` eso da `3.0.0-A` y `3.0.0-B` -> [3,0,0], por encima de `2.0.0`, y
-    se elegia una de las 3.0.0. Pero 3.0.0-A/B son variantes de INVESTIGACION: aparecen
-    en el manifest solo como `backtests`, no tienen rol de produccion y **no contienen
-    2026**. El manifest declara `production.model_version = 2.0.0`, que si trae los dos
-    anios.
+    DEFECTO CORREGIDO, y era grave y a mi favor: ordenaba los directorios por numero y
+    tomaba el ultimo. Para `smart_simple_v11` eso da `3.0.0-B`, que el propio manifest
+    marca `active: false`, mientras `production.model_version` dice **2.0.0**. Las
+    consecuencias iban las dos en mi direccion:
 
-    Consecuencia observada aguas abajo: la cartera walk-forward veia `USD/COP` con 0.0%
-    de dias en mercado durante 2026 (CXD-807) y le daba peso casi infinito por
-    inverse-vol a una sleeve sin posicion. El sintoma parecia "COP no opera en 2026"; la
-    causa era que se estaba leyendo un bundle que nunca se desplego.
+      * 3.0.0-A/B se publicaron SIN fichero de 2026 -> COP aportaba CERO al anio en curso
+        (era el sintoma que me hizo cazar el bug del peso infinito, pero no su causa);
+      * y en 2025 la version que yo evaluaba declara +26.58% mientras la de PRODUCCION
+        declara **+7.35% con gates 4/6 = REVIEW** y p=0.2277.
 
-    Evaluar una cartera "como si hubiera estado operativa" obliga a leer lo que HABRIA
-    estado operativo. El puntero `production` del manifest es esa declaracion, y es
-    anterior a cualquiera de estos analisis (`generated_at` 2026-07-21).
-
-    DIRECCION DEL EFECTO, declarada a proposito: seguir el manifest SUBE COP 2025 de
-    +18.73% a +25.63% y crea un 2026 de +1.77% donde no habia nada. Que mueva el numero
-    a favor obliga a comprobar que la regla no es "elegir el mejor": `3.0.0-A` da +26.58%
-    en 2025 y tampoco se elige, porque no es la declarada. Se sigue el manifest, no el
-    resultado.
-
-    Alcance medido: 1 de 18 sleeves. Las otras 17 no declaran `production` y caen al
-    orden por digitos de siempre, sin cambio.
+    O sea que estaba midiendo el backtest mas favorable en lugar del que esta operando.
+    Un informe sobre "que habria pasado si esto hubiera estado operativo" tiene que leer
+    lo que ESTA operativo. Localizado gracias al arreglo simetrico de Claude en el loader
+    (`f315032d`), que topo con lo mismo en su lado.
     """
     bt = strategy_dir / "backtests"
+    manifest = strategy_dir / "manifest.json"
+    if manifest.exists():
+        try:
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            ver = (data.get("production") or {}).get("model_version")
+            if ver and (bt / str(ver)).is_dir():
+                return bt / str(ver)
+            activas = [m.get("version") for m in data.get("model_versions", []) if m.get("active")]
+            for v in activas:
+                if v and (bt / str(v)).is_dir():
+                    return bt / str(v)
+        except Exception:  # noqa: BLE001
+            pass
     if not bt.is_dir():
         return None
     versions = [d for d in bt.iterdir() if d.is_dir()]
     if not versions:
         return None
 
-    declarada = _production_version(strategy_dir)
-    if declarada:
-        for d in versions:
-            if d.name == declarada:
-                return d
-        # Declarada pero ausente en disco: se avisa y se cae al orden por digitos. Callarlo
-        # dejaria el mismo defecto que este arreglo cierra, solo que mas dificil de ver.
-        print(
-            f"[aviso] {strategy_dir.name}: el manifest declara production={declarada} "
-            f"pero ese directorio no existe; caigo al orden por version"
-        )
-
     def key(d: Path):
         return [int(x) for x in re.findall(r"\d+", d.name)] or [0]
 
     return sorted(versions, key=key)[-1]
-
-
-def _production_version(strategy_dir: Path) -> str | None:
-    """`production.model_version` del manifest, o None si no lo declara o no se puede leer."""
-    manifiesto = strategy_dir / "manifest.json"
-    if not manifiesto.is_file():
-        return None
-    try:
-        datos = json.loads(manifiesto.read_text(encoding="utf-8"))
-    except Exception:
-        return None
-    produccion = datos.get("production")
-    if not isinstance(produccion, dict):
-        return None
-    version = produccion.get("model_version")
-    return version if isinstance(version, str) and version else None
 
 
 def load_trades(strategy_dir: Path) -> list[dict]:
@@ -164,7 +137,7 @@ def load_trades(strategy_dir: Path) -> list[dict]:
     de PUBLICACION, no el periodo. Por eso se unen y se deduplican, y el corte por anio lo
     hace este script con la fecha de salida real, nunca el nombre del fichero.
     """
-    d = latest_backtest_dir(strategy_dir)
+    d = production_backtest_dir(strategy_dir)
     if d is None:
         return []
     seen, out = set(), []
