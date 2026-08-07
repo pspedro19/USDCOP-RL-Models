@@ -14,8 +14,18 @@
 **Three Tracks** (in priority order):
 
 1. **H5 Weekly Pipeline (PRODUCTION)**: Smart Simple v2.0, Ridge+BR + Regime Gate (XGBoost = experimento offline, no promovido — `smart_simple_v1.yaml:196`)
-   - **+25.63%, Sharpe 3.35, p=0.006** (2025 backtest, 34 trades)
-   - **+0.61%** (2026 YTD, 1/1 wins — regime gate blocked 11 of 12 mean-reverting weeks)
+   - **+7.35%, Sharpe 0.942, p=0.2277, DSR trial-aware 0.0587 (N=59)** — 2025 backtest, 32 trades,
+     gates **4/6 = REVIEW**, `approval_state.json` en `PENDING_APPROVAL`. **NO es significativo.**
+   - **+3.36%** (2026 YTD, `production/summary.json`)
+   - ⚠️ **Esta línea decía "+25.63%, Sharpe 3.35, p=0.006, 34 trades" hasta el 2026-08-06 y era un
+     número PRE-ARREGLO DE FUGA.** La corrección está en el propio historial: `cf392508` cerró una
+     fuga de purga (look-ahead) y bajó 2025 de +25.63% a +7.66%; `03eaa994` hizo *open-aware* los
+     fills de hard stop —dejar de rellenar a precios por los que el mercado hizo gap— y lo dejó en
+     **+7.35%**. Ambos commits regeneraron `public/data/production/trades/` pero **no** el bundle
+     `strategies/smart_simple_v11/backtests/2.0.0/`, que sigue publicando los valores de abril: por
+     eso el titular sobrevivió meses a su propia refutación. Comprobación de un vistazo:
+     `production/trades/smart_simple_v11_2025.json` compone **+7.35% con 32 trades**; el bundle
+     compone **+25.63% con 34**. El primero cuadra con el gate; el segundo no.
    - Architecture: Regime Gate (Hurst) → Ridge/BR/XGB ensemble → Effective HS → DL → CB
    - DAGs: H5-L3/L4/L5/L6/L7 (see `.claude/specs/tracks/h5-smart-simple.md`)
 
@@ -37,11 +47,16 @@ Alpha comes from regime gate (knows when NOT to trade) + TP/HS mechanics, not fr
 same OOS-2025 (42-cell grid, "#8 of 42"). **Trial-aware DSR of v11 = 0.50-0.92 < 0.95 in all scenarios**
 — the 2025 backtest cannot prove edge after selection; **v11 is FROZEN and the 2026 forward is the only
 clean judge** (`.claude/specs/assets/usdcop/{HYPOTHESIS-REGISTRY,WITHDRAWAL-PROTOCOL}.md`).
+**Actualización 2026-08-06**: el DSR vigente en `data/approvals/approval_state.json` es **0.0587 con
+N=59 trials**, no el rango 0.50-0.92 de julio — el conteo de trials creció y el retorno bajó a +7.35%
+al cerrarse la fuga. La conclusión de la auditoría no cambia, se agrava: 2025 no prueba edge.
 Anti-selection discipline is now transversal (`.claude/rules/quant-constitution.md`). Master plan:
 `.claude/specs/audit/PLAN-completar-sistema-2026-07.md`.
 
 **Current Best**:
-- H5 Weekly v2.0: Ridge+Gate+EffectiveHS → $10K → $12,563 (2025), $10K → $10,061 (2026 YTD)
+- H5 Weekly v2.0: Ridge+Gate+EffectiveHS → $10K → **$10,735** (2025, post-arreglo de fuga),
+  $10K → **$10,336** (2026 YTD). *(Decía $12,563 y $10,061: el primero venía del mismo número
+  pre-fuga corregido arriba; el segundo es anterior a `cf392508`, que subió 2026 a +3.36%.)*
 - Momentum v3.0 (paper): $10K → $10,353 (2026 YTD, better in mean-reverting but worse in trending)
 - RL: V21.5b — +2.51% mean (4/5 seeds), NOT significant
 
