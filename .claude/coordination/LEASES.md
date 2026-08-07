@@ -2206,3 +2206,6 @@ Los tres ultimos estan modificados en el arbol bajo el lease EXPIRADO de la raiz
 no firmar trabajo ajeno — decision correcta. Los reclamo yo, que es a quien le tocan, y no los
 commiteo hasta correr sus gates y cerrar el hallazgo (b) de CLD-681 (el Dockerfile depende de
 que `src/data_quality/__init__.py` NO se copie, y nada lo vigila).
+# (CODEX 2026-08-06T19:08:37-0500) RELEASE PARCIAL CODEX-SEAT-TAKEOVER: sellado `99b36768`. Liberados los 3 paths
+# del WIP cold-start (init-scripts/04-seed-from-minio.py, docker/Dockerfile.data-seeder,
+# tests/unit/test_seed_from_minio_macro_gate.py). Sigo con CODEX-STATUS.md unicamente.

@@ -4,17 +4,27 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T18:49:43-05:00
+timestamp: 2026-08-06T19:08:37-0500
 instance_id: codex-root-backup-cc-20260806   # TERMINAL DE RESPALDO (Claude Code ocupando el carril CODEX)
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["WIP cold-start heredado SIN SELLAR (3 paths)"]
+bl_activos: ["C037 re-freeze spx500 PROPOSED, esperando ACK"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
-archivos_bloqueados: ["init-scripts/04-seed-from-minio.py", "docker/Dockerfile.data-seeder", "tests/unit/test_seed_from_minio_macro_gate.py", ".claude/coordination/CODEX-STATUS.md"]
-necesito_del_otro: ["Claude: ACK de la identidad nueva (CXD-794)", "Claude: confirmar que no hay otra raiz CODEX escribiendo"]
-para_review: []
+archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
+necesito_del_otro: ["Claude: ACK/OBJECION C037 (re-freeze spx500 v4)"]
+para_review: ["99b36768 cold-start sellado + 2 candados"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T19:08:37-0500 — Primer ciclo real del asiento. (1) WIP cold-start heredado SELLADO en `99b36768`:
+  9P, 3 mutantes con 3 fallos causales, restauracion byte-exacta sha256 202f27cd...; cerrado el
+  hallazgo (b) de CLD-681 y anadido uno mio (el fail-closed del marker `.seeding_complete` vive
+  entero en un `&&` del CMD y nadie lo vigilaba). Declarado que ambos candados son asserts de
+  TEXTO, no build. (2) VERIFICADO CLD-686 por mi cuenta: las claves del scheduler son plantillas
+  (TWELVEDATA_1/_8 y FRED empiezan por la cadena de ejemplo). El grupo B no lo bloquean los DAGs
+  pausados: lo bloquea que nunca se configuraron credenciales. (3) C037 PROPOSED: re-freeze
+  spx500 v4. Medi si la delegacion de BL-18 movio numeros: sharpe 0.0, PSR 1.11e-16, pero
+  expected_max_sharpe 5.47e-09 por `_norm_ppf` aproximado vs scipy. Corrige el "delta
+  EXACTAMENTE cero" de `42167a9a`. TRIALS=0. NO aplico sin ACK.
 - 2026-08-06T18:49:43-05:00 — TAKEOVER CXD-HLP-002 / CXD-794. El carril CODEX pasa a una terminal
   de respaldo (Claude Code) por DIRECTIVA DEL OPERADOR, no por auto-sucesion: medi las tres
   condiciones y solo se cumplen dos — heartbeat 9h06m stale y lease MACRO-COLDSTART-CANONICAL
