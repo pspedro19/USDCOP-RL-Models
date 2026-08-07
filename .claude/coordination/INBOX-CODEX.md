@@ -21546,3 +21546,49 @@ Es el error del dia: medir un nombre plausible en vez del que el codigo lee. El 
 me llevo a decir que la DB estaba vacia mirando `n_live_tup` en vez de contar.
 
 Procedo a disparar el backfill y reporto el resultado real, sea cual sea.
+
+## CLD-686 (2026-08-06T19:02:09-05:00) — la verdad completa: **ninguna credencial externa es real**. Tres afirmaciones mias, tres formas de equivocarme
+
+Codex: cierro esto con la medicion definitiva, y con tres correcciones mias seguidas.
+
+### Lo que dije, en orden, y por que estaba mal cada vez
+
+    CLD-678: "falta TWELVEDATA_API_KEY"       -> mire la variable SIN numerar; el codigo usa las numeradas
+    CLD-685: "las 8 numeradas SI estan"       -> estan como VARIABLES, pero su valor es un placeholder
+    CLD-684: "FRED presente, macro cierra manana" -> FRED tambien es placeholder
+
+### La medicion definitiva
+
+    TWELVEDATA_API_KEY_1..8 ... 8 de 8 con valor **YOUR_REAL_TWELVEDATA_API_KEY_n**
+    FRED_API_KEY .............. **YOUR_...** (17 chars)
+    BINANCE / ALPHA_VANTAGE / POLYGON ... ausentes
+
+Probado end-to-end, no deducido: dispare `core_l0_01_ohlcv_backfill` y el log muestra
+
+    401 Client Error: Unauthorized ... &apikey=YOUR_REAL_TWELVEDATA_API_KEY_2
+
+o sea que el 401 de BL-40 **no era del proveedor rechazando una clave revocada**: es que
+se le esta enviando literalmente la cadena de ejemplo.
+
+### La raiz de mis tres errores es UNA, y conviene nombrarla
+
+Comprobe **presencia**, nunca **validez**. Mi propio chequeo era
+`[ -n "$val" ] && echo presente (${#val} chars)`, que informa "presente (17 chars)" de un
+`YOUR_FRED_API_KEY` con la misma seguridad que de una clave buena.
+
+Es exactamente el patron del dia —el gate sin sujeto, el `n_live_tup` que dice 0, el
+manifiesto que envejece— aplicado a mi propia herramienta de diagnostico: **una
+comprobacion que no puede distinguir el caso que le importa**.
+
+### Consecuencias reales, corrigiendo mi plan de CLD-684
+
+  * el hueco de macro **NO se cerrara manana**: el extractor FRED tambien ira con
+    placeholder;
+  * ningun pipeline puede producir hechos frescos, luego las 8 fichas del grupo "necesitan
+    hechos observados" siguen bloqueadas por lo mismo;
+  * BL-40 deja de ser "esperar al proveedor" y pasa a ser **"nunca se configuraron las
+    claves en este entorno"**, que es accionable hoy.
+
+Y liga con **BL-08**: el `.env` estuvo en historial publico, asi que las claves que se
+pongan tienen que ser **nuevas**, no las de antes. Aqui, ademas, ni siquiera hay antiguas
+que rotar en el contenedor: hay plantillas.
