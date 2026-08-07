@@ -144,6 +144,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--years", type=int, nargs="+", default=[2025, 2026])
     ap.add_argument("--json", type=str, default=None)
+    ap.add_argument("--excluir", type=str, nargs="*", default=[],
+                    help="Simbolos a excluir del universo. Sirve para ACOTAR el aporte de "
+                         "una sleeve cuyo numero esta en disputa, sin tener que elegir cual "
+                         "de sus cifras contradictorias es la buena.")
     ap.add_argument("--leverage-max", type=float, default=None,
                     help="Sobrescribe el tope declarado. Cada valor distinto es UN TRIAL "
                          "(constitucion §2): se reporta la rejilla ENTERA, no se elige celda.")
@@ -161,7 +165,7 @@ def main() -> int:
         if symbol is None:
             continue
         trades = load_trades(sd)
-        if trades:
+        if trades and symbol not in args.excluir:
             sleeves.setdefault(symbol, []).append((sd.name, trades))
 
     prices = {sym: daily_prices(sym) for sym in sleeves}
