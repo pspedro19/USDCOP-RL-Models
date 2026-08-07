@@ -86,6 +86,48 @@ def strategy_daily(trades, days: list[date]) -> np.ndarray:
     return pos
 
 
+def strategy_daily_exact(trades, days, closes):
+    """Retorno diario EXACTO de una sleeve, sin aproximar por cierre-a-cierre.
+
+      dia de entrada:   close_d / entry_price - 1
+      dias intermedios: close_d / close_{d-1} - 1
+      dia de salida:    exit_price / close_{d-1} - 1
+
+    POR QUE IMPORTA (self-red-team CXD-808): la version anterior acreditaba el retorno
+    cierre-a-cierre del dia de entrada, que arranca en el cierre ANTERIOR -- o sea que se
+    quedaba el hueco de apertura ocurrido ANTES de entrar. Eso es fuga, y era grande:
+    desplazar la posicion un dia se llevaba el 47% de 2025 y el 58% de 2026. El shift
+    completo, en cambio, contaba el lag dos veces (los manifiestos ya declaran NEXT-OPEN).
+    Este tratamiento no aproxima por ningun lado: usa los precios que el propio trade trae.
+    """
+    idx = {d: i for i, d in enumerate(days)}
+    ret = np.zeros(len(days))
+    pos = np.zeros(len(days))
+    for t in trades:
+        e, x = _as_date(t.get("timestamp")), _as_date(t.get("exit_timestamp"))
+        ep, xp = t.get("entry_price"), t.get("exit_price")
+        if e is None or x is None or ep is None or xp is None:
+            continue
+        if e not in idx or x not in idx:
+            continue
+        lev = abs(float(t.get("leverage") or 1.0))
+        sign = -1.0 if str(t.get("side", "LONG")).upper() == "SHORT" else 1.0
+        i0, i1 = idx[e], idx[x]
+        for i in range(i0, i1 + 1):
+            if not np.isfinite(closes[i]):
+                continue
+            if i == i0:
+                base, final = ep, (closes[i] if i1 > i0 else xp)
+            elif i == i1:
+                base, final = closes[i - 1], xp
+            else:
+                base, final = closes[i - 1], closes[i]
+            if base and np.isfinite(base):
+                ret[i] += sign * lev * (final / base - 1.0)
+                pos[i] += sign * lev
+    return np.nan_to_num(ret), pos
+
+
 def calmar(returns: np.ndarray, ann: float) -> float:
     if returns.size < 2 or not np.any(returns):
         return -np.inf
@@ -132,7 +174,7 @@ def main() -> int:
         return 1
 
     # retornos del activo alineados al calendario comun (ffill del ultimo precio conocido)
-    ret_activo, pos_estrategia, dedupe = {}, {}, {}
+    ret_activo, pos_estrategia, ret_estrategia, closes_sym, dedupe = {}, {}, {}, {}, {}
     for sym in sleeves:
         serie = []
         last = None
@@ -140,18 +182,20 @@ def main() -> int:
             last = prices[sym].get(d, last)
             serie.append(last)
         px = np.array([v if v else np.nan for v in serie], dtype=float)
+        closes_sym[sym] = px
         r = np.zeros(len(days))
         r[1:] = np.where(np.isfinite(px[1:]) & np.isfinite(px[:-1]), px[1:] / px[:-1] - 1, 0.0)
         ret_activo[sym] = np.nan_to_num(r)
 
         for name, trades in sleeves[sym]:
-            pos = strategy_daily(trades, days)
+            r_exact, pos = strategy_daily_exact(trades, days, closes_sym[sym])
             firma = (sym, hash(pos.tobytes()))
             if firma in dedupe:
                 print(f"  TRIAL DUPLICADO: {name} == {dedupe[firma]} (serie identica) -> colapsado")
                 continue
             dedupe[firma] = name
             pos_estrategia[(sym, name)] = pos
+            ret_estrategia[(sym, name)] = r_exact
 
     print(f"\nuniverso: {len(pos_estrategia)} sleeves unicas sobre {len(sleeves)} activos; "
           f"calendario {days[0]}..{days[-1]} ({len(days)} dias)")
@@ -174,7 +218,7 @@ def main() -> int:
                 for (s, name), pos in pos_estrategia.items():
                     if s != sym:
                         continue
-                    c = calmar(pos[ventana] * ret_activo[sym][ventana], ann_global)
+                    c = calmar(ret_estrategia[(s, name)][ventana], ann_global)
                     if c > mejor_c:
                         mejor, mejor_c = name, c
                 if mejor:
@@ -192,8 +236,7 @@ def main() -> int:
             pos_v = pos_estrategia[(sym, name)][i - VENTANA_VOL:i]
             if not np.any(np.abs(pos_v) > 1e-12):
                 continue                      # sin posicion en la ventana => no asigna riesgo
-            r = pos_v * ret_activo[sym][i - VENTANA_VOL:i]
-            v = float(np.std(r))
+            v = float(np.std(ret_estrategia[(sym, name)][i - VENTANA_VOL:i]))
             if v <= 1e-9:
                 continue                      # varianza nula: no es "riesgo bajisimo", es ausencia
             pesos[sym] = 1.0 / v
@@ -202,11 +245,11 @@ def main() -> int:
             continue
         pesos = {k: v / total for k, v in pesos.items()}
 
-        bruto = sum(pesos[s] * pos_estrategia[(s, elegidas[s])][i] * ret_activo[s][i] for s in pesos)
+        bruto = sum(pesos[s] * ret_estrategia[(s, elegidas[s])][i] for s in pesos)
         exp_bruta = sum(pesos[s] * abs(pos_estrategia[(s, elegidas[s])][i]) for s in pesos)
 
         hist = np.array([
-            sum(pesos[s] * pos_estrategia[(s, elegidas[s])][j] * ret_activo[s][j] for s in pesos)
+            sum(pesos[s] * ret_estrategia[(s, elegidas[s])][j] for s in pesos)
             for j in range(i - VENTANA_VOL, i)])
         vol = float(np.std(hist)) * np.sqrt(ann_global)
         k = min(LEVERAGE_MAX, VOL_OBJETIVO / vol) if vol > 1e-9 else 0.0
@@ -301,7 +344,7 @@ def main() -> int:
     # ganador sigue arriba por efecto de activo, no por habilidad de seleccion.
     pbo = {}
     for sym in sorted(sleeves):
-        cols = [pos_estrategia[k] * ret_activo[sym] for k in pos_estrategia if k[0] == sym]
+        cols = [ret_estrategia[k] for k in ret_estrategia if k[0] == sym]
         if len(cols) < 2:
             continue
         try:

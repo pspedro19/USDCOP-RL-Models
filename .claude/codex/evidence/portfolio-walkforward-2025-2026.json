@@ -14,7 +14,6 @@
     "BTC/USDT:btc_trend_volbrk_s5",
     "XAU/USD:gold_dxy_tilt",
     "XAU/USD:gold_dynamic_exit",
-    "XAU/USD:gold_long_only_b1",
     "XAU/USD:gold_regime_gated_v1",
     "XAU/USD:gold_trend_b2",
     "XAU/USD:gold_trend_ens",
@@ -29,12 +28,12 @@
       "anio": 2025,
       "dias": 365,
       "periodo": "2025-01-01..2025-12-31",
-      "exposicion_media": 0.992,
+      "exposicion_media": 0.953,
       "cartera": {
-        "ann_return_pct": 24.49,
-        "max_dd_pct": -7.73,
-        "calmar": 3.169,
-        "sharpe": 2.258
+        "ann_return_pct": 18.39,
+        "max_dd_pct": -6.86,
+        "calmar": 2.681,
+        "sharpe": 1.909
       },
       "B1_equiponderada_1x": {
         "ann_return_pct": 9.4,
@@ -43,68 +42,68 @@
         "sharpe": 0.854
       },
       "B1p_exposicion_emparejada": {
-        "mean_exposure": 0.9918,
-        "ann_return_pct": 9.32,
-        "max_dd_pct": -9.52,
+        "mean_exposure": 0.9529,
+        "ann_return_pct": 8.96,
+        "max_dd_pct": -9.16,
         "calmar": 0.979,
         "sharpe": 0.854
       },
       "stress_costos": {
         "x1": {
-          "ann_return_pct": 24.49,
-          "max_dd_pct": -7.73,
-          "calmar": 3.169,
-          "sharpe": 2.258
+          "ann_return_pct": 18.39,
+          "max_dd_pct": -6.86,
+          "calmar": 2.681,
+          "sharpe": 1.909
         },
         "x2": {
-          "ann_return_pct": 22.19,
-          "max_dd_pct": -8.03,
-          "calmar": 2.765,
-          "sharpe": 2.067
+          "ann_return_pct": 16.01,
+          "max_dd_pct": -7.13,
+          "calmar": 2.245,
+          "sharpe": 1.682
         },
         "x3": {
-          "ann_return_pct": 19.93,
-          "max_dd_pct": -8.33,
-          "calmar": 2.393,
-          "sharpe": 1.876
+          "ann_return_pct": 13.68,
+          "max_dd_pct": -7.41,
+          "calmar": 1.847,
+          "sharpe": 1.454
         },
         "survives_2x": true,
         "survives_3x": true
       },
-      "sharpe": 2.257602811365098,
-      "sortino": 3.8959161080378935,
-      "sharpe_stderr": 0.05204156068157675,
+      "sharpe": 1.90925295735257,
+      "sortino": 3.2430842853426576,
+      "sharpe_stderr": 0.05156455670218047,
       "n_observaciones": 365,
       "bate_B1p": true,
       "dsr": {
-        "n_trials=16": {
-          "headline_dsr": 0.9912666157665989,
+        "n_trials=15": {
+          "headline_dsr": 0.9754841965727843,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
-          "headline_sr0": 0.017012693449578134,
-          "worst_cell_dsr": 0.9912666157665989,
-          "n_trials": 16,
+          "headline_sr0": 0.016731387192253058,
+          "worst_cell_dsr": 0.9754841965727843,
+          "n_trials": 15,
           "n_obs": 365,
-          "sharpe_per_period": 0.142216,
+          "sharpe_per_period": 0.120272,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
-              "sr0": 0.005670897816526045,
-              "dsr": 0.9952294812405968,
+              "sr0": 0.005577129064084353,
+              "dsr": 0.9853846425014416,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
-              "sr0": 0.01134179563305209,
-              "dsr": 0.9935111925685657,
+              "sr0": 0.011154258128168707,
+              "dsr": 0.9809760737661795,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
-              "sr0": 0.017012693449578134,
-              "dsr": 0.9912666157665989,
+              "sr0": 0.016731387192253058,
+              "dsr": 0.9754841965727843,
               "significant": true
             }
           ],
@@ -112,33 +111,33 @@
           "passes": true
         },
         "n_trials=50": {
-          "headline_dsr": 0.9890292117028896,
+          "headline_dsr": 0.9697747034014998,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.021509042482277765,
-          "worst_cell_dsr": 0.9890292117028896,
+          "worst_cell_dsr": 0.9697747034014998,
           "n_trials": 50,
           "n_obs": 365,
-          "sharpe_per_period": 0.142216,
+          "sharpe_per_period": 0.120272,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.0071696808274259215,
-              "dsr": 0.9948200949587381,
+              "dsr": 0.9842258055712942,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.014339361654851843,
-              "dsr": 0.9923979389866413,
+              "dsr": 0.9779841814944739,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.021509042482277765,
-              "dsr": 0.9890292117028896,
+              "dsr": 0.9697747034014998,
               "significant": true
             }
           ],
@@ -146,33 +145,33 @@
           "passes": true
         },
         "n_trials=100": {
-          "headline_dsr": 0.9876404114837326,
+          "headline_dsr": 0.9665103625704097,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.023911949739351433,
-          "worst_cell_dsr": 0.9876404114837326,
+          "worst_cell_dsr": 0.9665103625704097,
           "n_trials": 100,
           "n_obs": 365,
-          "sharpe_per_period": 0.142216,
+          "sharpe_per_period": 0.120272,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.007970649913117144,
-              "dsr": 0.9945887369733821,
+              "dsr": 0.9836137660872861,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.01594129982623429,
-              "dsr": 0.99173662632029,
+              "dsr": 0.9763350676400386,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.023911949739351433,
-              "dsr": 0.9876404114837326,
+              "dsr": 0.9665103625704097,
               "significant": true
             }
           ],
@@ -185,12 +184,12 @@
       "anio": 2026,
       "dias": 208,
       "periodo": "2026-01-01..2026-07-27",
-      "exposicion_media": 0.603,
+      "exposicion_media": 0.535,
       "cartera": {
-        "ann_return_pct": 5.55,
-        "max_dd_pct": -7.77,
-        "calmar": 0.715,
-        "sharpe": 0.765
+        "ann_return_pct": 2.32,
+        "max_dd_pct": -8.58,
+        "calmar": 0.271,
+        "sharpe": 0.382
       },
       "B1_equiponderada_1x": {
         "ann_return_pct": -10.39,
@@ -199,68 +198,68 @@
         "sharpe": -0.702
       },
       "B1p_exposicion_emparejada": {
-        "mean_exposure": 0.603,
-        "ann_return_pct": -6.18,
-        "max_dd_pct": -9.17,
-        "calmar": -0.674,
+        "mean_exposure": 0.5349,
+        "ann_return_pct": -5.46,
+        "max_dd_pct": -8.15,
+        "calmar": -0.67,
         "sharpe": -0.702
       },
       "stress_costos": {
         "x1": {
-          "ann_return_pct": 5.55,
-          "max_dd_pct": -7.77,
-          "calmar": 0.715,
-          "sharpe": 0.765
+          "ann_return_pct": 2.32,
+          "max_dd_pct": -8.58,
+          "calmar": 0.271,
+          "sharpe": 0.382
         },
         "x2": {
-          "ann_return_pct": 4.99,
-          "max_dd_pct": -7.91,
-          "calmar": 0.63,
-          "sharpe": 0.692
+          "ann_return_pct": 1.72,
+          "max_dd_pct": -8.73,
+          "calmar": 0.197,
+          "sharpe": 0.292
         },
         "x3": {
-          "ann_return_pct": 4.42,
-          "max_dd_pct": -8.04,
-          "calmar": 0.549,
-          "sharpe": 0.62
+          "ann_return_pct": 1.12,
+          "max_dd_pct": -8.88,
+          "calmar": 0.126,
+          "sharpe": 0.202
         },
         "survives_2x": true,
         "survives_3x": true
       },
-      "sharpe": 0.764935432186192,
-      "sortino": 1.1299285608046241,
-      "sharpe_stderr": 0.07236866267853166,
+      "sharpe": 0.3815066617148774,
+      "sortino": 0.5508250748006669,
+      "sharpe_stderr": 0.07901622994805886,
       "n_observaciones": 208,
       "bate_B1p": true,
       "dsr": {
-        "n_trials=16": {
-          "headline_dsr": 0.6730141322210041,
+        "n_trials=15": {
+          "headline_dsr": 0.5418247394611261,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
-          "headline_sr0": 0.017012693449578134,
-          "worst_cell_dsr": 0.6730141322210041,
-          "n_trials": 16,
+          "headline_sr0": 0.016731387192253058,
+          "worst_cell_dsr": 0.5418247394611261,
+          "n_trials": 15,
           "n_obs": 208,
-          "sharpe_per_period": 0.048186,
+          "sharpe_per_period": 0.024033,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
-              "sr0": 0.005670897816526045,
-              "dsr": 0.7295116938130148,
+              "sr0": 0.005577129064084353,
+              "dsr": 0.6046841977472052,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
-              "sr0": 0.01134179563305209,
-              "dsr": 0.7018726658029997,
+              "sr0": 0.011154258128168707,
+              "dsr": 0.5734879150839243,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
-              "sr0": 0.017012693449578134,
-              "dsr": 0.6730141322210041,
+              "sr0": 0.016731387192253058,
+              "dsr": 0.5418247394611261,
               "significant": false
             }
           ],
@@ -268,33 +267,33 @@
           "passes": false
         },
         "n_trials=50": {
-          "headline_dsr": 0.6493617039289764,
+          "headline_dsr": 0.5144797415551374,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.021509042482277765,
-          "worst_cell_dsr": 0.6493617039289764,
+          "worst_cell_dsr": 0.5144797415551374,
           "n_trials": 50,
           "n_obs": 208,
-          "sharpe_per_period": 0.048186,
+          "sharpe_per_period": 0.024033,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.0071696808274259215,
-              "dsr": 0.7223328028474197,
+              "dsr": 0.5958350021538944,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.014339361654851843,
-              "dsr": 0.686761581889295,
+              "dsr": 0.5554496185013147,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.021509042482277765,
-              "dsr": 0.6493617039289764,
+              "dsr": 0.5144797415551374,
               "significant": false
             }
           ],
@@ -302,33 +301,33 @@
           "passes": false
         },
         "n_trials=100": {
-          "headline_dsr": 0.6364726148068137,
+          "headline_dsr": 0.5006927541138307,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.023911949739351433,
-          "worst_cell_dsr": 0.6364726148068137,
+          "worst_cell_dsr": 0.5006927541138307,
           "n_trials": 100,
           "n_obs": 208,
-          "sharpe_per_period": 0.048186,
+          "sharpe_per_period": 0.024033,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.007970649913117144,
-              "dsr": 0.7184585207011227,
+              "dsr": 0.5913654128869075,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.01594129982623429,
-              "dsr": 0.6785533094169872,
+              "dsr": 0.546331283401185,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.023911949739351433,
-              "dsr": 0.6364726148068137,
+              "dsr": 0.5006927541138307,
               "significant": false
             }
           ],
@@ -340,31 +339,31 @@
   ],
   "pbo_cscv": {
     "BTC/USDT": {
-      "pbo": 0.4166,
+      "pbo": 0.3549,
       "n_combinations": 12870,
       "n_strategies": 5,
       "n_sleeves": 5,
       "degenerado_N2": false
     },
     "SPX/500": {
-      "pbo": 0.4074,
+      "pbo": 1.0,
       "n_combinations": 11583,
       "n_strategies": 2,
       "n_sleeves": 2,
       "degenerado_N2": true
     },
     "USD/COP": {
-      "pbo": 1.0,
+      "pbo": 0.3043,
       "n_combinations": 9867,
       "n_strategies": 2,
       "n_sleeves": 2,
       "degenerado_N2": true
     },
     "XAU/USD": {
-      "pbo": 0.724,
+      "pbo": 0.2262,
       "n_combinations": 12870,
-      "n_strategies": 7,
-      "n_sleeves": 7,
+      "n_strategies": 6,
+      "n_sleeves": 6,
       "degenerado_N2": false
     }
   },
@@ -372,22 +371,21 @@
     {
       "fecha": "2018-04-26",
       "elegidas": {
-        "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2018-05-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2018-06-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_trend_b2"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
@@ -429,7 +427,7 @@
       "fecha": "2018-12-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
@@ -442,7 +440,7 @@
     {
       "fecha": "2019-02-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_b2",
+        "BTC/USDT": "btc_hodl_b1",
         "XAU/USD": "gold_dynamic_exit"
       }
     },
@@ -450,7 +448,7 @@
       "fecha": "2019-03-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dynamic_exit"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
@@ -464,49 +462,49 @@
       "fecha": "2019-05-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
       "fecha": "2019-06-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2019-07-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2019-08-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2019-09-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2019-10-01",
       "elegidas": {
-        "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_hodl_b1",
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2019-11-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
@@ -520,7 +518,7 @@
       "fecha": "2020-01-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_regime_gated_v1"
       }
     },
     {
@@ -534,63 +532,63 @@
       "fecha": "2020-03-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dynamic_exit"
+        "XAU/USD": "gold_regime_gated_v1"
       }
     },
     {
       "fecha": "2020-04-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dynamic_exit"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2020-05-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2020-06-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2020-07-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2020-08-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
       "fecha": "2020-09-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
       "fecha": "2020-10-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
       "fecha": "2020-11-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
@@ -611,14 +609,14 @@
       "fecha": "2021-02-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_trend_b2"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
       "fecha": "2021-03-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_trend_b2"
+        "XAU/USD": "gold_regime_gated_v1"
       }
     },
     {
@@ -660,7 +658,7 @@
       "fecha": "2021-09-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_trend_b2"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
@@ -674,63 +672,63 @@
       "fecha": "2021-11-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_volbrk_s5",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_b2"
       }
     },
     {
       "fecha": "2021-12-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_trend_b2"
       }
     },
     {
       "fecha": "2022-01-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2022-02-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_trend_b2"
       }
     },
     {
       "fecha": "2022-03-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_trend_b2"
       }
     },
     {
       "fecha": "2022-04-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_regime_gated_v1"
       }
     },
     {
       "fecha": "2022-05-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_regime_gated_v1"
       }
     },
     {
       "fecha": "2022-06-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
       "fecha": "2022-07-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
@@ -765,14 +763,14 @@
       "fecha": "2022-12-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
       "fecha": "2023-01-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
@@ -792,43 +790,43 @@
     {
       "fecha": "2023-04-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_b2",
+        "BTC/USDT": "btc_exposure_s3",
         "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2023-05-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dynamic_exit"
+        "BTC/USDT": "btc_hodl_b1",
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2023-06-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_hodl_b1",
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2023-07-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_hodl_b1",
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2023-08-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
       "fecha": "2023-09-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_regime_gated_v1"
+        "XAU/USD": "gold_trend_ens"
       }
     },
     {
@@ -891,7 +889,7 @@
       "fecha": "2024-06-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_dynamic_exit"
+        "XAU/USD": "gold_trend_simple"
       }
     },
     {
@@ -904,59 +902,59 @@
     {
       "fecha": "2024-08-01",
       "elegidas": {
-        "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_funding_s4",
+        "XAU/USD": "gold_trend_simple"
       }
     },
     {
       "fecha": "2024-09-01",
       "elegidas": {
-        "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt"
+        "BTC/USDT": "btc_trend_b2",
+        "XAU/USD": "gold_regime_gated_v1"
       }
     },
     {
       "fecha": "2024-10-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_regime_gated_v1"
       }
     },
     {
       "fecha": "2024-11-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_regime_gated_v1"
       }
     },
     {
       "fecha": "2024-12-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
       "fecha": "2025-01-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt"
+        "XAU/USD": "gold_dynamic_exit"
       }
     },
     {
       "fecha": "2025-02-01",
       "elegidas": {
-        "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dxy_tilt",
+        "BTC/USDT": "btc_hodl_b1",
+        "XAU/USD": "gold_dynamic_exit",
         "USD/COP": "smart_simple_aggr",
-        "SPX/500": "spx500_daily_ma200_v1"
+        "SPX/500": "spx500_regime_gated_v1"
       }
     },
     {
       "fecha": "2025-03-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt",
+        "XAU/USD": "gold_dynamic_exit",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }
@@ -965,8 +963,8 @@
       "fecha": "2025-04-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dxy_tilt",
-        "USD/COP": "smart_simple_v11",
+        "XAU/USD": "gold_dynamic_exit",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }
     },
@@ -974,8 +972,8 @@
       "fecha": "2025-05-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt",
-        "USD/COP": "smart_simple_v11",
+        "XAU/USD": "gold_dynamic_exit",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }
     },
@@ -983,9 +981,9 @@
       "fecha": "2025-06-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt",
-        "USD/COP": "smart_simple_v11",
-        "SPX/500": "spx500_daily_ma200_v1"
+        "XAU/USD": "gold_regime_gated_v1",
+        "USD/COP": "smart_simple_aggr",
+        "SPX/500": "spx500_regime_gated_v1"
       }
     },
     {
@@ -993,7 +991,7 @@
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
         "XAU/USD": "gold_regime_gated_v1",
-        "USD/COP": "smart_simple_v11",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
     },
@@ -1001,8 +999,8 @@
       "fecha": "2025-08-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt",
-        "USD/COP": "smart_simple_v11",
+        "XAU/USD": "gold_regime_gated_v1",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
     },
@@ -1010,8 +1008,8 @@
       "fecha": "2025-09-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt",
-        "USD/COP": "smart_simple_v11",
+        "XAU/USD": "gold_regime_gated_v1",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
     },
@@ -1019,8 +1017,8 @@
       "fecha": "2025-10-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dxy_tilt",
-        "USD/COP": "smart_simple_v11",
+        "XAU/USD": "gold_dynamic_exit",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
     },
@@ -1029,7 +1027,7 @@
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
         "XAU/USD": "gold_dynamic_exit",
-        "USD/COP": "smart_simple_v11",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
     },
@@ -1038,7 +1036,7 @@
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
         "XAU/USD": "gold_dynamic_exit",
-        "USD/COP": "smart_simple_v11",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
     },
@@ -1055,7 +1053,7 @@
       "fecha": "2026-02-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dxy_tilt",
+        "XAU/USD": "gold_dynamic_exit",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }
@@ -1092,14 +1090,14 @@
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
         "XAU/USD": "gold_trend_b2",
-        "USD/COP": "smart_simple_aggr",
+        "USD/COP": "smart_simple_v11",
         "SPX/500": "spx500_daily_ma200_v1"
       }
     },
     {
       "fecha": "2026-07-01",
       "elegidas": {
-        "BTC/USDT": "btc_exposure_s3",
+        "BTC/USDT": "btc_trend_funding_s4",
         "XAU/USD": "gold_regime_gated_v1",
         "USD/COP": "smart_simple_v11",
         "SPX/500": "spx500_daily_ma200_v1"
