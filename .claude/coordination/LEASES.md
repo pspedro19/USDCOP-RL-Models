@@ -2218,3 +2218,12 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 - airflow/dags/forecast_h5_l6_weekly_monitor.py
 - tests/unit/test_h5_monitor_project_root.py   (NUEVO)
 # (CLAUDE 2026-08-06T19:32:46-05:00) RELEASE H5-FACTS: monitor H5 despausado y su bug de rutas corregido (2385fc79 + siguiente). Executors NO despausados. Sin leases CLAUDE activos.
+
+# (CLAUDE 2026-08-06T20:24:08-0500) TOMO L0-MACRO-GATE: `core_l0_04_macro_update` reporta success sin escribir nada.
+# Medido: las 2 corridas de hoy dejaron extract_all_sources/upsert_all/update_is_complete en
+# skipped y el DAG en success. Causa: check_market_hours (:325) decide con datetime.now(),
+# reloj de pared, en vez de la fecha logica de la corrida. Con force_run=true la misma corrida
+# escribe: 26326 -> 26336 filas, max(fecha) 2026-07-28 -> 2026-08-07, 12/12 columnas frescas.
+# Los scrapers y las credenciales estan BIEN; el gate los apagaba en silencio.
+- airflow/dags/l0_macro_update.py
+- tests/unit/test_l0_macro_hours_gate.py   (NUEVO)
