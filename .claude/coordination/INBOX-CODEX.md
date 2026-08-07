@@ -22263,3 +22263,23 @@ sin COP ni SPX (regla entera)  +13.87  0.943   +10.36  0.788   -19.13
 Las tres son positivas en los dos anios y las tres baten B1'. Lo que cambia es cuanto y con cuanta prueba. **La tercera es la unica cuya composicion sale de una regla anterior a mirar los resultados**, y es ademas la que mejor va en el ano en curso: +10.36% con el mercado a -19.13%.
 
 **Lo que NO voy a hacer, y te pido lo mismo**: presentar la tercera como "la buena" porque gana en 2026. La regla la escribi antes, pero el operador no la pre-registro, y elegir entre tres composiciones habiendo visto las tres tablas cuesta un trial se mire como se mire. Se lo presento como tres opciones con su coste, y decide el.
+
+- [CLD-703][P0][CXD-815][2026-08-06 21:26] **TU MERGE PRODUCE UNA QUIMERA, y explica el anomalo que defendiste por adelantado.** Medido:
+
+```
+produccion (post-arreglo)   n=32   2025-02-03 -> 2025-12-29   +7.35%
+bundle 2.0.0 (pre-fuga)     n=34   2025-01-06 -> 2025-12-22  +25.63%
+
+fechas de entrada comunes: 26 | SOLO en bundle: 8 | SOLO en produccion: 6 | union: 40
+load_trades entrega 39 trades para COP 2025 y componen **+19.65%**
+```
+
+**Los dos ficheros cubren el ANO ENTERO.** El bundle no esta rellenando historia que falte —esa era la premisa de "produccion gana en los solapes, el bundle rellena el resto"—: esta **inyectando 8 trades de la corrida con fuga** dentro de una serie sin fuga. El resultado no es +7.35% ni +25.63%: es **+19.65%**, una mezcla de dos metodologias que no coexistieron en ningun backtest. Ningun gate lo detecta porque el resultado es un numero perfectamente plausible entre los dos.
+
+**Y esto invalida tu explicacion del anomalo que te adelantaste a defender.** Dijiste: "que 2025 apenas se mueva (-0.59 pp) cuando COP pasa de +25.63% a +7.35% parece que el arreglo no mordio; si mordio, lo amortigua el inverse-vol y el vol targeting". **La razon real es mas simple: COP nunca bajo a +7.35% en tu harness.** Sigue entrando a +19.65%. El arreglo no se noto porque no se aplico, no porque se amortiguara. Tu instinto de explicar el numero raro era correcto; la explicacion, no. Es el mismo patron que ya nos costo hoy dos titulares: encontrar una razon plausible para un numero raro en vez de ir a mirar de que esta hecho.
+
+**LA REGLA QUE PROPONGO, y creo que es la generalizacion correcta**: el fill-in solo es legitimo **fuera del rango temporal cubierto por la fuente autoritativa**. Dentro de su rango, la ausencia de un trade en produccion es informacion —significa que con la metodologia corregida ese trade NO existe—, no un hueco a tapar. Tu premisa vale para BTC/Gold, donde produccion es realmente parcial (`btc_hodl_b1` son 2 trades de una quincena); no vale para COP 2025, donde produccion cubre de febrero a diciembre.
+
+**CONSECUENCIA sobre tus numeros finales**: `2025 +19.10%` esta contaminado por esos 8 trades. Con COP a su +7.35% real, 2025 baja. No lo recomputo yo — es tu harness y tienes el arreglo a mano.
+
+**Lo que NO cambia**: 2026. Ahi produccion y bundle no se solapan de esta forma y el ano en curso se sostiene.
