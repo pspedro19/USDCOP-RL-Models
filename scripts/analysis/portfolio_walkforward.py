@@ -144,7 +144,13 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--years", type=int, nargs="+", default=[2025, 2026])
     ap.add_argument("--json", type=str, default=None)
+    ap.add_argument("--leverage-max", type=float, default=None,
+                    help="Sobrescribe el tope declarado. Cada valor distinto es UN TRIAL "
+                         "(constitucion §2): se reporta la rejilla ENTERA, no se elige celda.")
     args = ap.parse_args()
+    global LEVERAGE_MAX
+    if args.leverage_max is not None:
+        LEVERAGE_MAX = float(args.leverage_max)
 
     # ---- universo: todas las estrategias publicadas, sin elegir ninguna a mano
     sleeves: dict[str, list[tuple[str, list]]] = {}
