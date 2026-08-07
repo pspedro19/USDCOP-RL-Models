@@ -339,20 +339,33 @@
     }
   ],
   "pbo_cscv": {
-    "n_blocks=10": {
-      "pbo": 0.3849,
-      "n_combinations": 252,
-      "n_strategies": 16
-    },
-    "n_blocks=14": {
-      "pbo": 0.3651,
-      "n_combinations": 3432,
-      "n_strategies": 16
-    },
-    "n_blocks=16": {
-      "pbo": 0.3271,
+    "BTC/USDT": {
+      "pbo": 0.4166,
       "n_combinations": 12870,
-      "n_strategies": 16
+      "n_strategies": 5,
+      "n_sleeves": 5,
+      "degenerado_N2": false
+    },
+    "SPX/500": {
+      "pbo": 0.4074,
+      "n_combinations": 11583,
+      "n_strategies": 2,
+      "n_sleeves": 2,
+      "degenerado_N2": true
+    },
+    "USD/COP": {
+      "pbo": 1.0,
+      "n_combinations": 9867,
+      "n_strategies": 2,
+      "n_sleeves": 2,
+      "degenerado_N2": true
+    },
+    "XAU/USD": {
+      "pbo": 0.724,
+      "n_combinations": 12870,
+      "n_strategies": 7,
+      "n_sleeves": 7,
+      "degenerado_N2": false
     }
   },
   "seleccion": [

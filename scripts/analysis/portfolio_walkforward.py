@@ -284,21 +284,35 @@ def main() -> int:
     # significa que seleccionar es PEOR que tirar una moneda, y eso es REJECT aunque el
     # Sharpe sea bonito. Es la unica medida que ataca de frente la limitacion declarada de
     # que las sleeves no se re-ajustan point-in-time.
-    matriz = np.array([pos_estrategia[k] * ret_activo[k[0]] for k in pos_estrategia]).T
+    # OBJECION DE CLAUDE (CLD-696) CONCEDIDA: la version anterior agrupaba las 16 columnas
+    # en UNA familia, y CSCV preguntaba si el ganador GLOBAL persiste. Mi seleccion es POR
+    # ACTIVO: nunca rankeo entre activos. El pooling ademas MAQUILLA el numero, porque
+    # columnas de activos distintos difieren en vol y drift de forma persistente y el
+    # ganador sigue arriba por efecto de activo, no por habilidad de seleccion.
     pbo = {}
-    for nb in (10, 14, 16):
+    for sym in sorted(sleeves):
+        cols = [pos_estrategia[k] * ret_activo[sym] for k in pos_estrategia if k[0] == sym]
+        if len(cols) < 2:
+            continue
         try:
-            pbo[f"n_blocks={nb}"] = pbo_cscv(matriz, n_blocks=nb)
+            r = pbo_cscv(np.array(cols).T, n_blocks=16)
+            r["n_sleeves"] = len(cols)
+            r["degenerado_N2"] = len(cols) == 2   # con 2 columnas "bajo la mediana" = "el peor de dos"
+            pbo[sym] = r
         except Exception as exc:  # noqa: BLE001
-            pbo[f"n_blocks={nb}"] = {"error": str(exc)}
+            pbo[sym] = {"error": str(exc)}
     print("")
-    print("PBO/CSCV del procedimiento de seleccion (>0.5 = REJECT, peor que el azar):")
-    for k, v in pbo.items():
+    print("PBO/CSCV POR ACTIVO -- la familia entre la que realmente se elige (>0.5 = REJECT):")
+    for sym, v in pbo.items():
         if "error" in v:
-            print(f"  {k:<14} ERROR: {v['error']}")
+            print(f"  {sym:<10} ERROR: {v['error']}")
         else:
-            juicio = "REJECT" if v["pbo"] > 0.5 else ("aceptable" if v["pbo"] < 0.35 else "zona gris")
-            print(f"  {k:<14} PBO={v['pbo']:.3f}  ({v['n_combinations']:>6} splits)  -> {juicio}")
+            j = "PEOR QUE EL AZAR" if v["pbo"] > 0.5 else "aceptable"
+            deg = "  (N=2: casi degenerado, constitucion §6)" if v["degenerado_N2"] else ""
+            print(f"  {sym:<10} {v['n_sleeves']} sleeves   PBO={v['pbo']:.3f}   {j}{deg}")
+    print("  NOTA: el PBO agrupando los 4 activos en una familia daria 0.327 y seria ENGANOSO:")
+    print("        mide una seleccion entre activos que este procedimiento nunca ejecuta.")
+
     print("")
     print("DSR trial-aware (headline = la sigma MENOS favorable; bar constitucional 0.95):")
     for f in salida:
