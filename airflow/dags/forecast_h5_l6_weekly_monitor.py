@@ -759,7 +759,9 @@ with DAG(
         import sys as _sys
         r = subprocess.run(
             [_sys.executable, "scripts/pipeline/candidates_paper_ledger.py"],
-            cwd="/opt/airflow" if Path("/opt/airflow/scripts").exists() else str(Path(__file__).resolve().parents[2]),
+            # Era el apaño ad-hoc que convivía con el bug: aquí se sabía que el layout
+            # cambia y 400 líneas más arriba no. Unificado con el mismo resolutor.
+            cwd=str(_project_root()),
             capture_output=True, text=True, timeout=3600,
         )
         logger.info(r.stdout[-2000:] if r.stdout else "")
@@ -784,7 +786,10 @@ with DAG(
 
         from src.identity.ledger_replay import assert_anchor_holds, read_ledger
 
-        raiz = Path(__file__).resolve().parents[2]
+        # Segunda instancia del mismo defecto: aquí también se contaba profundidad y en
+        # el contenedor daba `/opt/data/anchors/...`. El ancla existe en el repo, así que
+        # el gate se declaraba "decorativo" por no encontrar un fichero que sí estaba.
+        raiz = _project_root()
         ruta = raiz / "data" / "anchors" / "paper_ledger_h5.json"
         if not ruta.is_file():
             raise RuntimeError(

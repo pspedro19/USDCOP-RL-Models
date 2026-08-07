@@ -114,3 +114,23 @@ def test_the_dag_no_longer_counts_directories_for_the_catalog() -> None:
     assert "root = _project_root()" in FUENTE, (
         "la raíz del catálogo volvió a calcularse por profundidad de árbol"
     )
+
+
+def test_no_path_in_this_dag_is_derived_by_counting_parents() -> None:
+    """Ninguna ruta de este fichero se calcula por profundidad de árbol.
+
+    Había TRES sitios: el catálogo (roto), el ancla del paper ledger (roto, y por eso el
+    gate se declaraba «decorativo» sin encontrar un fichero que sí existe) y un `cwd` que
+    ya llevaba un apaño ad-hoc. Convivían el defecto y su parche en el mismo fichero.
+
+    Se admite la mención en prosa —el docstring explica el defecto— pero no en código.
+    """
+    codigo = [
+        l for l in FUENTE.splitlines()
+        if "parents[2]" in l and not l.lstrip().startswith(("#", "`", '"'))
+        and "`Path(__file__)" not in l
+    ]
+    assert not codigo, (
+        f"vuelven a calcularse rutas contando directorios: {codigo}. En el contenedor "
+        f"eso resuelve a /opt y el fichero buscado no aparece"
+    )
