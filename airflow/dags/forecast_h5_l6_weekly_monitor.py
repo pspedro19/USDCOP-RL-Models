@@ -335,6 +335,38 @@ def compute_metrics(**context) -> Dict[str, Any]:
         conn.close()
 
 
+def _project_root() -> Path:
+    """Raíz del proyecto, resuelta por lo que CONTIENE y no por contar directorios.
+
+    `Path(__file__).resolve().parents[2]` acierta en el repo —donde este fichero está en
+    `<repo>/airflow/dags/`— y **falla en el contenedor**, donde el mismo fichero vive en
+    `/opt/airflow/dags/` y ese cálculo devuelve `/opt`. El síntoma era
+    `FileNotFoundError: /opt/config/metrics/catalog.yaml`, y con él
+    `persist_governed_metric_events` no llegaba a escribir: por eso `control.metric_event`
+    se quedó en 3 filas mientras el DAG reportaba tareas previas en verde.
+
+    El propio fichero ya esquivaba esto 350 líneas más abajo
+    (`cwd="/opt/airflow" if Path("/opt/airflow/scripts").exists() else ...`): el problema
+    se conocía en un sitio y no en el otro. Aquí se resuelve buscando hacia arriba el
+    fichero que se va a leer, así que la respuesta es correcta en cualquier layout, y si
+    no aparece se **falla cerrado** en vez de devolver una ruta que no existe.
+    """
+    # Sólo se sube por los ancestros. Una primera versión añadía `/opt/airflow` como
+    # candidato explícito; el mutante que lo quitaba dejaba los tests en verde y al mirar
+    # por qué resultó ser redundante — en el contenedor `/opt/airflow` YA es uno de los
+    # padres del fichero. Un caso especial que no cambia nada sugiere que la resolución
+    # depende de conocer el layout, y es justo lo contrario.
+    marcador = Path("config") / "metrics" / "catalog.yaml"
+    for base in Path(__file__).resolve().parents:
+        if (base / marcador).is_file():
+            return base
+    raise RuntimeError(
+        f"no encuentro {marcador} desde {Path(__file__).resolve()}. Sin el catálogo no "
+        f"hay métrica gobernada que persistir, y adivinar la raíz es como se llegó a "
+        f"leer /opt/config"
+    )
+
+
 def persist_governed_metric_events(**context) -> dict[str, object]:
     """Publish H5 paper Sharpe through the BL-18 engine and metric ledger."""
     import numpy as np
@@ -370,7 +402,7 @@ def persist_governed_metric_events(**context) -> dict[str, object]:
             dtype=float,
         )
 
-        root = Path(__file__).resolve().parents[2]
+        root = _project_root()
         catalog = MetricCatalog.load(root / "config" / "metrics" / "catalog.yaml")
         engine = MetricEngine.from_asset_registry(
             catalog, assets_dir=root / "config" / "assets"
