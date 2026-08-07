@@ -129,33 +129,68 @@ def production_backtest_dir(strategy_dir: Path) -> Path | None:
     return sorted(versions, key=key)[-1]
 
 
-def load_trades(strategy_dir: Path) -> list[dict]:
-    """Todos los trades del bundle mas reciente, deduplicados por (entrada, salida, precio).
+PROD_TRADES = BUNDLES.parent / "production" / "trades"
 
-    Los ficheros `trades_2025.json` / `trades_2026.json` de BTC y Gold son la MISMA corrida
-    de historia completa publicada en dos fechas (hallazgo CLD-692): el sufijo es la fecha
-    de PUBLICACION, no el periodo. Por eso se unen y se deduplican, y el corte por anio lo
-    hace este script con la fecha de salida real, nunca el nombre del fichero.
+
+def load_trades(strategy_dir: Path) -> list[dict]:
+    """Trades de la estrategia, PREFIRIENDO los artefactos de PRODUCCION al bundle.
+
+    Veredicto CLD-701, verificado commit a commit por Claude y reproducido por mi: el
+    bundle del registry quedo CONGELADO en los valores de abril. Dos arreglos de julio
+    —`cf392508` cerro una fuga de purga (look-ahead) y `03eaa994` dejo de rellenar hard
+    stops a precios por los que el mercado hizo gap— regeneraron
+    `public/data/production/trades/...` pero NO el bundle. Medido en los ficheros:
+
+        production/trades/smart_simple_v11_2025.json   n=32   +7.35%   <- post-arreglo
+        strategies/.../backtests/2.0.0/trades_2025.json n=34  +25.63%   <- pre-fuga
+
+    Leer el bundle era consumir el numero de ANTES de corregir el look-ahead. Un informe
+    de "que habria pasado operando" tiene que leer el artefacto que la produccion mantiene
+    al dia, no el que quedo fosilizado.
+
+    Los `trades_YYYY.json` del bundle solo se usan para los activos que no publican
+    artefacto de produccion; su sufijo es la fecha de PUBLICACION, no el periodo (CLD-692),
+    asi que se unen, se deduplican y el corte por anio lo hace el llamador con la fecha de
+    salida real.
     """
-    d = production_backtest_dir(strategy_dir)
-    if d is None:
-        return []
-    seen, out = set(), []
-    for path in sorted(d.glob("trades_*.json")):
+    trades: list[dict] = []
+    seen: set = set()
+
+    def _absorber(path: Path) -> None:
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            continue
-        trades = raw.get("trades", raw) if isinstance(raw, dict) else raw
-        if not isinstance(trades, list):
-            continue
-        for t in trades:
-            k = (t.get("timestamp"), t.get("exit_timestamp"), t.get("entry_price"))
+        except Exception:  # noqa: BLE001
+            return
+        items = raw.get("trades", raw) if isinstance(raw, dict) else raw
+        if not isinstance(items, list):
+            return
+        for t in items:
+            # Clave por sello de ENTRADA, no por (entrada, salida, precio): el mismo trade
+            # economico aparece en ambas fuentes con precios DISTINTOS, justo porque los
+            # arreglos de fuga los cambiaron. Con la clave compuesta se colaban los dos y
+            # se contaba el trade dos veces.
+            k = t.get("timestamp")
             if k in seen:
                 continue
             seen.add(k)
-            out.append(t)
-    return out
+            trades.append(t)
+
+    prod = sorted(PROD_TRADES.glob(f"{strategy_dir.name}*.json")) if PROD_TRADES.is_dir() else []
+    prod += sorted((strategy_dir / "production").glob("trades*.json"))
+    # PRIMERO produccion (gana en los solapes), DESPUES el bundle para el resto de la
+    # historia. Sustituir en bloque era otro defecto mio: los artefactos de produccion son
+    # PARCIALES -- `btc_hodl_b1` son 2 trades de una quincena, `gold_dynamic_exit` 7 de
+    # 2026 -- asi que preferirlos enteros MUTILABA la historia de casi todas las sleeves y
+    # movia los resultados de forma erratica. Se fusiona, no se sustituye.
+    for path in prod:
+        _absorber(path)
+
+    d = production_backtest_dir(strategy_dir)
+    if d is None:
+        return []
+    for path in sorted(d.glob("trades_*.json")):
+        _absorber(path)
+    return trades
 
 
 def _as_date(value) -> date | None:
