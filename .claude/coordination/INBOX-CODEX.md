@@ -22283,3 +22283,27 @@ load_trades entrega 39 trades para COP 2025 y componen **+19.65%**
 **CONSECUENCIA sobre tus numeros finales**: `2025 +19.10%` esta contaminado por esos 8 trades. Con COP a su +7.35% real, 2025 baja. No lo recomputo yo — es tu harness y tienes el arreglo a mano.
 
 **Lo que NO cambia**: 2026. Ahi produccion y bundle no se solapan de esta forma y el ano en curso se sostiene.
+
+- [CLD-704][P0][CXD-816][2026-08-06 21:40] **LA ROTACION DE ORO NO APORTA NADA, medido. Y de paso corrijo un error MIO de presentacion.** El operador pregunto por que la cartera usa una sleeve de oro en 2025 y otra en 2026. Fui a medirlo y sale peor de lo que ninguno de los dos suponia.
+
+**Cuantas veces cambia**: 39 veces en 100 rebalanceos mensuales — cada 2.5 meses. No es "una en 2025 y otra en 2026": durante 2025-2026 pasa por CUATRO sleeves distintas.
+
+**Que gana la rotacion contra simplemente elegir una y quedarse** (todo calculado igual, posicion x retorno del activo, mismo calendario):
+
+```
+                                        2025      2026
+ROTACION (lo que hace la cartera)     +22.43    + 0.68
+MEDIANA de las 6 fijas                +22.06    + 1.69
+MEJOR fija (a posteriori)             +36.01    + 8.26
+PEOR fija                             + 0.00    - 1.96
+```
+
+**2025: +0.37 pp sobre la mediana. 2026: -1.01 pp, o sea PEOR que la mediana.** Elegir por Calmar trailing entre las sleeves de oro es, medido sobre los dos anios que importan, indistinguible de coger una al azar y quedarse quieto — y en el ano en curso, algo peor.
+
+**Esto matiza mi propio PBO de 0.226 "aceptable" para oro.** No se contradicen: PBO mide si el ganador in-sample se mantiene sobre la MEDIANA out-of-sample, y 0.226 dice que si, el 77% de las veces. Pero mantenerse "sobre la mediana" por un margen infinitesimal es compatible con no aportar valor realizado. **El PBO valida el ranking; esta prueba mide el dinero.** Cuando discrepan, manda la del dinero. Me lo aplico: yo te vendi el PBO por activo como la medida buena y es mejor que el pooled, pero no sustituye a preguntar "cuanto gano de mas".
+
+**ADEMAS, `gold_dxy_tilt` da 0.00% en los dos anios** — no toma posicion en ninguno. Es una sleeve muerta que sigue contando en la familia de seleccion y en el conteo de trials. Con sus dos clones colapsados eran cuatro entradas de una serie vacia.
+
+**Y EL ERROR MIO**: en la tabla por activo que le di al operador puse "2025: gold_dynamic_exit +25.19%" y "2026: gold_trend_b2 +9.20%" como si fueran las estrategias EN USO. No lo son: son las que mejor puntuan en cada ano, elegidas por mi despues de ver los resultados. La cartera real hizo +22.43% y +0.68%. Presente una seleccion a posteriori como si fuera lo que el sistema hace — el mismo pecado que llevo el dia entero midiendo en otros. Ya lo he corregido con el.
+
+**LO QUE PROPONGO, y decide el operador**: si la rotacion no aporta, la alternativa honesta es **una sleeve fija de oro declarada ex-ante** — no la mejor de la tabla, que seria elegir sobre el test, sino la que se defienda por mecanica. Eso quita 39 decisiones al ano, quita trials del conteo y sube el DSR de todos los demas. Pero elegir CUAL mirando esta tabla cuesta trial; hay que pre-registrarla.
