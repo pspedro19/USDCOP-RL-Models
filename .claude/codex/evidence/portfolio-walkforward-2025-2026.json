@@ -28,12 +28,12 @@
       "anio": 2025,
       "dias": 365,
       "periodo": "2025-01-01..2025-12-31",
-      "exposicion_media": 0.832,
+      "exposicion_media": 0.778,
       "cartera": {
-        "ann_return_pct": 19.1,
-        "max_dd_pct": -5.99,
-        "calmar": 3.188,
-        "sharpe": 2.312
+        "ann_return_pct": 14.79,
+        "max_dd_pct": -7.33,
+        "calmar": 2.019,
+        "sharpe": 1.867
       },
       "B1_equiponderada_1x": {
         "ann_return_pct": 9.4,
@@ -42,68 +42,68 @@
         "sharpe": 0.854
       },
       "B1p_exposicion_emparejada": {
-        "mean_exposure": 0.8323,
-        "ann_return_pct": 7.86,
-        "max_dd_pct": -8.03,
-        "calmar": 0.978,
+        "mean_exposure": 0.7778,
+        "ann_return_pct": 7.35,
+        "max_dd_pct": -7.52,
+        "calmar": 0.977,
         "sharpe": 0.854
       },
       "stress_costos": {
         "x1": {
-          "ann_return_pct": 19.1,
-          "max_dd_pct": -5.99,
-          "calmar": 3.188,
-          "sharpe": 2.312
+          "ann_return_pct": 14.79,
+          "max_dd_pct": -7.33,
+          "calmar": 2.019,
+          "sharpe": 1.867
         },
         "x2": {
-          "ann_return_pct": 18.41,
-          "max_dd_pct": -6.05,
-          "calmar": 3.041,
-          "sharpe": 2.235
+          "ann_return_pct": 14.15,
+          "max_dd_pct": -7.46,
+          "calmar": 1.897,
+          "sharpe": 1.791
         },
         "x3": {
-          "ann_return_pct": 17.73,
-          "max_dd_pct": -6.12,
-          "calmar": 2.898,
-          "sharpe": 2.158
+          "ann_return_pct": 13.51,
+          "max_dd_pct": -7.59,
+          "calmar": 1.779,
+          "sharpe": 1.715
         },
         "survives_2x": true,
         "survives_3x": true
       },
-      "sharpe": 2.311506502494582,
-      "sortino": 4.001473522420731,
-      "sharpe_stderr": 0.052487572518986926,
+      "sharpe": 1.8671149519822845,
+      "sortino": 3.187780892898125,
+      "sharpe_stderr": 0.0521989379077553,
       "n_observaciones": 365,
       "bate_B1p": true,
       "dsr": {
         "n_trials=15": {
-          "headline_dsr": 0.9927762407928644,
+          "headline_dsr": 0.9724543807415542,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.016731387192253058,
-          "worst_cell_dsr": 0.9927762407928644,
+          "worst_cell_dsr": 0.9724543807415542,
           "n_trials": 15,
           "n_obs": 365,
-          "sharpe_per_period": 0.145611,
+          "sharpe_per_period": 0.117617,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.005577129064084353,
-              "dsr": 0.9960653904464207,
+              "dsr": 0.9834238274860814,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.011154258128168707,
-              "dsr": 0.9946413671291621,
+              "dsr": 0.9785249388271972,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.016731387192253058,
-              "dsr": 0.9927762407928644,
+              "dsr": 0.9724543807415542,
               "significant": true
             }
           ],
@@ -111,33 +111,33 @@
           "passes": true
         },
         "n_trials=50": {
-          "headline_dsr": 0.9907453032468123,
+          "headline_dsr": 0.9661739941525065,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.021509042482277765,
-          "worst_cell_dsr": 0.9907453032468123,
+          "worst_cell_dsr": 0.9661739941525065,
           "n_trials": 50,
           "n_obs": 365,
-          "sharpe_per_period": 0.145611,
+          "sharpe_per_period": 0.117617,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.0071696808274259215,
-              "dsr": 0.9956980697576296,
+              "dsr": 0.9821335576258811,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.014339361654851843,
-              "dsr": 0.9936368252131138,
+              "dsr": 0.9752138333226805,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.021509042482277765,
-              "dsr": 0.9907453032468123,
+              "dsr": 0.9661739941525065,
               "significant": true
             }
           ],
@@ -145,33 +145,33 @@
           "passes": true
         },
         "n_trials=100": {
-          "headline_dsr": 0.9895466097132514,
+          "headline_dsr": 0.9625952797895055,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.023911949739351433,
-          "worst_cell_dsr": 0.9895466097132514,
+          "worst_cell_dsr": 0.9625952797895055,
           "n_trials": 100,
           "n_obs": 365,
-          "sharpe_per_period": 0.145611,
+          "sharpe_per_period": 0.117617,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.007970649913117144,
-              "dsr": 0.9955019835949969,
+              "dsr": 0.9814528693750939,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.01594129982623429,
-              "dsr": 0.9930712125856951,
+              "dsr": 0.9733928632204003,
               "significant": true
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.023911949739351433,
-              "dsr": 0.9895466097132514,
+              "dsr": 0.9625952797895055,
               "significant": true
             }
           ],
@@ -184,12 +184,12 @@
       "anio": 2026,
       "dias": 208,
       "periodo": "2026-01-01..2026-07-27",
-      "exposicion_media": 0.535,
+      "exposicion_media": 0.449,
       "cartera": {
-        "ann_return_pct": 2.63,
-        "max_dd_pct": -8.5,
-        "calmar": 0.31,
-        "sharpe": 0.427
+        "ann_return_pct": 0.2,
+        "max_dd_pct": -8.81,
+        "calmar": 0.023,
+        "sharpe": 0.064
       },
       "B1_equiponderada_1x": {
         "ann_return_pct": -10.39,
@@ -198,68 +198,68 @@
         "sharpe": -0.702
       },
       "B1p_exposicion_emparejada": {
-        "mean_exposure": 0.5349,
-        "ann_return_pct": -5.46,
-        "max_dd_pct": -8.15,
-        "calmar": -0.67,
+        "mean_exposure": 0.4485,
+        "ann_return_pct": -4.57,
+        "max_dd_pct": -6.86,
+        "calmar": -0.666,
         "sharpe": -0.702
       },
       "stress_costos": {
         "x1": {
-          "ann_return_pct": 2.63,
-          "max_dd_pct": -8.5,
-          "calmar": 0.31,
-          "sharpe": 0.427
+          "ann_return_pct": 0.2,
+          "max_dd_pct": -8.81,
+          "calmar": 0.023,
+          "sharpe": 0.064
         },
         "x2": {
-          "ann_return_pct": 2.34,
-          "max_dd_pct": -8.57,
-          "calmar": 0.272,
-          "sharpe": 0.383
+          "ann_return_pct": -0.06,
+          "max_dd_pct": -8.89,
+          "calmar": -0.007,
+          "sharpe": 0.022
         },
         "x3": {
-          "ann_return_pct": 2.04,
-          "max_dd_pct": -8.64,
-          "calmar": 0.236,
-          "sharpe": 0.339
+          "ann_return_pct": -0.32,
+          "max_dd_pct": -8.96,
+          "calmar": -0.036,
+          "sharpe": -0.019
         },
-        "survives_2x": true,
-        "survives_3x": true
+        "survives_2x": false,
+        "survives_3x": false
       },
-      "sharpe": 0.42714654948638625,
-      "sortino": 0.6172303076761503,
-      "sharpe_stderr": 0.07897019223440216,
+      "sharpe": 0.06379894664165091,
+      "sortino": 0.08674246113326813,
+      "sharpe_stderr": 0.0829228568095248,
       "n_observaciones": 208,
       "bate_B1p": true,
       "dsr": {
         "n_trials=15": {
-          "headline_dsr": 0.558191344983434,
+          "headline_dsr": 0.4274385168561416,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.016731387192253058,
-          "worst_cell_dsr": 0.558191344983434,
+          "worst_cell_dsr": 0.4274385168561416,
           "n_trials": 15,
           "n_obs": 208,
-          "sharpe_per_period": 0.026908,
+          "sharpe_per_period": 0.004019,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.005577129064084353,
-              "dsr": 0.6205166541165605,
+              "dsr": 0.49105721404147545,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.011154258128168707,
-              "dsr": 0.5896371119889404,
+              "dsr": 0.4591169233784795,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.016731387192253058,
-              "dsr": 0.558191344983434,
+              "dsr": 0.4274385168561416,
               "significant": false
             }
           ],
@@ -267,33 +267,33 @@
           "passes": false
         },
         "n_trials=50": {
-          "headline_dsr": 0.5309504049727082,
+          "headline_dsr": 0.4006606312819344,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.021509042482277765,
-          "worst_cell_dsr": 0.5309504049727082,
+          "worst_cell_dsr": 0.4006606312819344,
           "n_trials": 50,
           "n_obs": 208,
-          "sharpe_per_period": 0.026908,
+          "sharpe_per_period": 0.004019,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.0071696808274259215,
-              "dsr": 0.6117677207296788,
+              "dsr": 0.4819217969447796,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.014339361654851843,
-              "dsr": 0.5717354526429155,
+              "dsr": 0.44098033403955333,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.021509042482277765,
-              "dsr": 0.5309504049727082,
+              "dsr": 0.4006606312819344,
               "significant": false
             }
           ],
@@ -301,33 +301,33 @@
           "passes": false
         },
         "n_trials=100": {
-          "headline_dsr": 0.5171865355852713,
+          "headline_dsr": 0.3873589544393581,
           "headline_sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
           "headline_sr0": 0.023911949739351433,
-          "worst_cell_dsr": 0.5171865355852713,
+          "worst_cell_dsr": 0.3873589544393581,
           "n_trials": 100,
           "n_obs": 208,
-          "sharpe_per_period": 0.026908,
+          "sharpe_per_period": 0.004019,
           "cells": [
             {
               "sigma_trials_pp": 0.00315,
               "sigma_origin": "declared_0.05_annualized_over_sqrt(252)",
               "sr0": 0.007970649913117144,
-              "dsr": 0.6073456280713977,
+              "dsr": 0.47733045133581736,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.006299,
               "sigma_origin": "declared_0.1_annualized_over_sqrt(252)",
               "sr0": 0.01594129982623429,
-              "dsr": 0.562673305498131,
+              "dsr": 0.4319027487472329,
               "significant": false
             },
             {
               "sigma_trials_pp": 0.009449,
               "sigma_origin": "declared_0.15_annualized_over_sqrt(252)",
               "sr0": 0.023911949739351433,
-              "dsr": 0.5171865355852713,
+              "dsr": 0.3873589544393581,
               "significant": false
             }
           ],
@@ -360,7 +360,7 @@
       "degenerado_N2": true
     },
     "XAU/USD": {
-      "pbo": 0.1883,
+      "pbo": 0.6969,
       "n_combinations": 12870,
       "n_strategies": 6,
       "n_sleeves": 6,
@@ -861,28 +861,28 @@
       "fecha": "2024-02-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_trend_ens"
+        "XAU/USD": "gold_trend_simple"
       }
     },
     {
       "fecha": "2024-03-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_trend_ens"
+        "XAU/USD": "gold_trend_simple"
       }
     },
     {
       "fecha": "2024-04-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_trend_ens"
+        "XAU/USD": "gold_trend_simple"
       }
     },
     {
       "fecha": "2024-05-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_funding_s4",
-        "XAU/USD": "gold_trend_ens"
+        "XAU/USD": "gold_trend_simple"
       }
     },
     {
@@ -946,7 +946,7 @@
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
         "XAU/USD": "gold_dynamic_exit",
-        "USD/COP": "smart_simple_v11",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
     },
@@ -955,7 +955,7 @@
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
         "XAU/USD": "gold_dynamic_exit",
-        "USD/COP": "smart_simple_v11",
+        "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }
     },
@@ -963,7 +963,7 @@
       "fecha": "2025-04-01",
       "elegidas": {
         "BTC/USDT": "btc_trend_b2",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }
@@ -972,7 +972,7 @@
       "fecha": "2025-05-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }
@@ -981,7 +981,7 @@
       "fecha": "2025-06-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
@@ -990,7 +990,7 @@
       "fecha": "2025-07-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
@@ -999,7 +999,7 @@
       "fecha": "2025-08-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_regime_gated_v1",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
@@ -1008,7 +1008,7 @@
       "fecha": "2025-09-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_regime_gated_v1",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
@@ -1017,7 +1017,7 @@
       "fecha": "2025-10-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
@@ -1026,7 +1026,7 @@
       "fecha": "2025-11-01",
       "elegidas": {
         "BTC/USDT": "btc_hodl_b1",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
@@ -1035,7 +1035,7 @@
       "fecha": "2025-12-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
@@ -1044,7 +1044,7 @@
       "fecha": "2026-01-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
@@ -1053,7 +1053,7 @@
       "fecha": "2026-02-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }
@@ -1062,7 +1062,7 @@
       "fecha": "2026-03-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_simple",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }
@@ -1071,7 +1071,7 @@
       "fecha": "2026-04-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_b2",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_regime_gated_v1"
       }
@@ -1080,7 +1080,7 @@
       "fecha": "2026-05-01",
       "elegidas": {
         "BTC/USDT": "btc_exposure_s3",
-        "XAU/USD": "gold_dynamic_exit",
+        "XAU/USD": "gold_trend_b2",
         "USD/COP": "smart_simple_aggr",
         "SPX/500": "spx500_daily_ma200_v1"
       }

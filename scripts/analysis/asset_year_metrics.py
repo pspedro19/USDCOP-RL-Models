@@ -156,7 +156,7 @@ def load_trades(strategy_dir: Path) -> list[dict]:
     trades: list[dict] = []
     seen: set = set()
 
-    def _absorber(path: Path) -> None:
+    def _absorber(path: Path, dentro_de: tuple | None = None) -> None:
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except Exception:  # noqa: BLE001
@@ -172,6 +172,10 @@ def load_trades(strategy_dir: Path) -> list[dict]:
             k = t.get("timestamp")
             if k in seen:
                 continue
+            if dentro_de:
+                fecha = _as_date(k)
+                if fecha and fecha.year in dentro_de:
+                    continue      # anio cubierto por la fuente autoritativa: su ausencia es informacion
             seen.add(k)
             trades.append(t)
 
@@ -185,11 +189,29 @@ def load_trades(strategy_dir: Path) -> list[dict]:
     for path in prod:
         _absorber(path)
 
+    # REGLA DE CLAUDE (CLD-703), concedida integra: el relleno desde el bundle solo es
+    # legitimo FUERA del rango temporal que cubre la fuente autoritativa. DENTRO de su
+    # rango, que un trade no exista en produccion es INFORMACION —significa que con la
+    # metodologia corregida ese trade no existe— y no un hueco que tapar.
+    #
+    # Mi version anterior fusionaba por sello de entrada sin mirar rangos, y para COP 2025
+    # —donde produccion cubre de febrero a diciembre— inyectaba 8 trades de la corrida CON
+    # FUGA dentro de la serie sin fuga. El resultado no era +7.35% ni +25.63%: era +19.65%,
+    # una quimera de dos metodologias que no coexistieron en ningun backtest, y ningun gate
+    # la detecta porque el numero es plausible. Vale para BTC/Gold, donde produccion si es
+    # parcial (`btc_hodl_b1` son 2 trades de una quincena); no valia para COP.
+    # La cobertura se mide POR ANIO, no como min-max de fechas: si produccion tiene algun
+    # trade en 2025, es autoritativa sobre TODO 2025. Mi primera version usaba el rango
+    # exacto (2025-02-03..) y los trades de ENERO del bundle se colaban por el borde --
+    # tres de ellos-- dejando COP en +17.55% en vez de +7.35%. El borde de un rango no es
+    # un hueco de cobertura: es el mes en que la metodologia corregida no abrio posicion.
+    cubierto = {d.year for d in (_as_date(t.get("timestamp")) for t in trades) if d}
+
     d = production_backtest_dir(strategy_dir)
     if d is None:
-        return []
+        return trades
     for path in sorted(d.glob("trades_*.json")):
-        _absorber(path)
+        _absorber(path, dentro_de=cubierto)
     return trades
 
 
