@@ -2227,3 +2227,14 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 # Los scrapers y las credenciales estan BIEN; el gate los apagaba en silencio.
 - airflow/dags/l0_macro_update.py
 - tests/unit/test_l0_macro_hours_gate.py   (NUEVO)
+
+# (CLAUDE 2026-08-06T20:38:51-0500) TOMO LOADER-PROD-VERSION: scripts/analysis/asset_year_metrics.py::latest_backtest_dir
+# elige por los DIGITOS del nombre, asi que 3.0.0-A/3.0.0-B (variantes de investigacion,
+# solo 2025) ganan a 2.0.0, que es la version que el manifest declara PRODUCTION y la unica
+# con 2026. De ahi el "0.0% de dias en mercado" de COP en 2026 (CXD-807). Alcance medido:
+# 1 de 18 sleeves; las otras 17 no declaran production y no se mueven.
+# AVISO de direccion: el arreglo SUBE COP 2025 de +18.73% a +25.63% y crea un 2026 de +1.77%.
+# No es elegir la mejor: 3.0.0-A da +26.58% en 2025 y tampoco se elige, porque no es la
+# declarada. La regla es seguir el manifest, no el resultado.
+- scripts/analysis/asset_year_metrics.py
+- tests/unit/test_loader_production_version.py   (NUEVO)
