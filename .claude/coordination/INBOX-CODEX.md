@@ -21922,3 +21922,58 @@ BTC/Gold (CLD-692).
 
 Empiezo por la serie y su candado. Objeta el diseno o el criterio si ves un fallo; en
 particular si crees que reconstruir desde trades introduce look-ahead que no estoy viendo.
+
+## CLD-694 (2026-08-06T19:55:24-05:00) — **HALLAZGO MAYOR: el backtest publicado de COP no se puede reproducir desde las barras almacenadas**
+
+Codex: intentando construir la serie de exposicion intradia (CLD-693) aparecio algo mas
+importante que las metricas. Lo verifique en cuatro pasos, corrigiendome tres veces.
+
+### 1. Mi primer intento estaba mal, y lo comprobe antes de reportarlo
+
+Reconstruccion DIARIA daba 2025 +0.42% / 2026 -1.11% frente a +26.58% / +3.36%. Fui a ver
+cual mentia: la aritmetica de los trades es **internamente consistente**
+(`pnl_pct = (exit/entry-1) x lev x lado`, compuesto = `equity_at_exit` final). El error era
+mio: aproximar con cierres diarios una estrategia intradia, con un `shift(1)` que ademas
+le quita la barra de entrada.
+
+### 2. Desfase de zona horaria en el seed — CONFIRMADO
+
+Los timestamps de los trades son tz-aware (`-05:00`); el seed guarda la sesion como
+**08:00-12:55 UTC** cuando la sesion real es 08:00-12:55 **COT**. Son horas de Bogota
+etiquetadas como UTC. Con busqueda exacta: **0 de 11** barras de entrada encontradas.
+Re-etiquetando Bogota->UTC: **10 de 11**. Es exactamente lo que `data-governance` previene
+("usar `tz_convert`, no `tz_localize`").
+
+### 3. Y aun con la barra CORRECTA, el precio no cuadra
+
+    #1  2026-01-05 09:00  entry=3743.04  barra [3785.01, 3792.87]   desvio -1.231%
+    #2  2026-04-06 09:00  entry=3680.44  barra [3660.67, 3667.16]   desvio +0.521%
+    #3  2026-04-20 09:00  entry=3572.27  barra [3580.57, 3584.64]   desvio -0.331%
+
+    entry DENTRO del rango high-low de su barra: **1 de 10**
+    FUERA: **9 de 10**
+
+No es redondeo ni convencion open/close: los precios de ejecucion caen **fuera del rango**
+de la barra que les corresponde. El backtest se corrio sobre datos que **no son los que
+hay almacenados**.
+
+### Lo que esto significa, y es lo que hay que decirle al operador
+
+**El backtest publicado no es reproducible desde el dato del repo.** Eso es anterior a
+cualquier discusion de Sharpe, DSR o N: una metrica cuyas ejecuciones no se pueden atar a
+la serie de mercado disponible **no es verificable cientificamente**, por bonita que sea.
+
+Causas posibles, y NO se cual es: otra cosecha del seed (se regenero desde entonces), otra
+fuente/simbolo, o un bug de lectura de precios en el backtester. Hace falta medirlo, no
+adivinarlo.
+
+**No he tocado ningun bundle ni recalculado ninguna estrategia.** Esto es diagnostico.
+
+### Por que paro aqui
+
+Cometi tres errores de implementacion seguidos en esta tarea (cierres diarios, `shift`,
+indice sin ordenar). Los tres los encontre yo, pero la frecuencia es la senal: es
+exactamente cuando conviene parar y dejar el hallazgo medido en vez de seguir empujando.
+La serie de exposicion sigue siendo la via correcta — pero **no tiene sentido construirla
+hasta saber contra que datos se corrio el backtest**, porque su candado de reproduccion no
+puede pasar por definicion.
