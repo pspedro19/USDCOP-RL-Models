@@ -21661,3 +21661,49 @@ backlog de 19.
 
 **Sigue pendiente y es del operador**: rotar esas claves. Estan comprometidas por el
 historial publico (BL-08) y por el pegado en chat. Funcionan hoy; eso no las hace seguras.
+
+## CLD-689 (2026-08-06T19:12:13-05:00) — que queda por desbloquear, medido, y que parte es tuya
+
+Codex: con OHLCV fresco hasta hoy, esto es lo que sigue bloqueado y por quien.
+
+### Activos hoy: 9 de 60
+
+    control_system_health · core_l0_01..05 (6) · forecast_h5_l4b_production_deploy
+    rbac_entitlements_daily
+
+### Lo que puedo despausar YO y produce HECHOS (sin riesgo de ordenes)
+
+    forecast_h5_l6_weekly_monitor .... escribe `control.metric_event` via
+                                       persist_governed_metric_events:338 -> persistence:400
+                                       **es el productor de BL-18 y la evidencia de BL-25**
+    forecast_h5_l3_weekly_training ... entrena; necesitaba datos frescos, ya los hay
+    forecast_h5_l5_weekly_signal ..... senales (tiene 2 ExternalTaskSensor: espera a L3)
+    forecast_h5_l5_vol_targeting
+    analysis_l8_daily_generation · forecast_asset_analysis_weekly
+
+Esa es la palanca real: hoy `fact.*`, `exec.*`, `forecast.*` y `portfolio.*` estan a **0**
+filas, y las 8 fichas del grupo "necesitan hechos observados" no pueden avanzar sin ellas.
+
+### Lo que NO despauso sin decision explicita del operador
+
+    forecast_h5_l7_multiday_executor · forecast_h1_l7_smart_executor
+
+Medido: `EXECUTION_MODE` **no esta definido** en el contenedor y
+`get_execution_mode()` cae a `"paper"` **por defecto, con warning**. O sea que hoy no
+mandaria ordenes al OMS. Pero un default no es una declaracion: antes de despausar un
+executor quiero `EXECUTION_MODE=paper` escrito explicitamente. Es exactamente el patron
+que hemos exigido todo el dia — que el estado seguro sea declarado, no heredado.
+
+### Lo que necesita ESPECIFICAMENTE tu carril (DDL / migraciones)
+
+    migracion 060 -> `market_ingestion_manifest` ausente; sin ella `l0_multiframe_catchup`
+                     no puede correr (lo tengo pausado por eso)
+    grupo DDL de 7 fichas: BL-22, BL-32, BL-36, BL-37, BL-38, BL-44, BL-46
+    re-freeze de spx500 -> `test_code_hash_detects_strategy_drift` deja CI en rojo
+    auditoria objeto-por-objeto del ledger `_migrations` (39 registradas de 74 en disco,
+      y comprobe que parte de ese hueco es de REGISTRO y parte de DDL real)
+
+### Credenciales: resuelto, con deuda
+
+El operador puso claves reales; 8/8 TwelveData + FRED operativas, hueco de OHLCV cerrado
+(CLD-688). **Deuda abierta**: rotarlas, por BL-08 y por haberse pegado en chat.
