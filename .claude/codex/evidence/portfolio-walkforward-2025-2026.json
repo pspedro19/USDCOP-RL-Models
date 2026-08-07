@@ -338,6 +338,23 @@
       }
     }
   ],
+  "pbo_cscv": {
+    "n_blocks=10": {
+      "pbo": 0.3849,
+      "n_combinations": 252,
+      "n_strategies": 16
+    },
+    "n_blocks=14": {
+      "pbo": 0.3651,
+      "n_combinations": 3432,
+      "n_strategies": 16
+    },
+    "n_blocks=16": {
+      "pbo": 0.3271,
+      "n_combinations": 12870,
+      "n_strategies": 16
+    }
+  },
   "seleccion": [
     {
       "fecha": "2018-04-26",

@@ -214,7 +214,7 @@ def main() -> int:
     # ---- evaluacion por anio con el SSOT constitucional
     from services.common.metrics import (
         _ann_return_dd_calmar, calculate_sharpe_ratio, calculate_sortino_ratio,
-        dsr_report, paired_exposure_baseline, sharpe_ratio_stderr,
+        dsr_report, paired_exposure_baseline, pbo_cscv, sharpe_ratio_stderr,
     )
 
     b1_diario = np.mean(np.array([ret_activo[s] for s in sleeves]), axis=0)  # equiponderada 1x
@@ -278,6 +278,33 @@ def main() -> int:
               f"{('SI' if f['bate_B1p'] else 'no'):>6}"
               f"{f['dsr'][f'n_trials={len(pos_estrategia)}']['headline_dsr']:>7.3f}")
 
+    # PBO/CSCV: juzga el PROCEDIMIENTO de seleccion, no el resultado. El DSR deflacta un
+    # Sharpe por cuantos intentos hiciste; PBO pregunta lo complementario y mas duro: al
+    # elegir el mejor in-sample, se queda por encima de la mediana out-of-sample? pbo > 0.5
+    # significa que seleccionar es PEOR que tirar una moneda, y eso es REJECT aunque el
+    # Sharpe sea bonito. Es la unica medida que ataca de frente la limitacion declarada de
+    # que las sleeves no se re-ajustan point-in-time.
+    matriz = np.array([pos_estrategia[k] * ret_activo[k[0]] for k in pos_estrategia]).T
+    pbo = {}
+    for nb in (10, 14, 16):
+        try:
+            pbo[f"n_blocks={nb}"] = pbo_cscv(matriz, n_blocks=nb)
+        except Exception as exc:  # noqa: BLE001
+            pbo[f"n_blocks={nb}"] = {"error": str(exc)}
+    print("")
+    print("PBO/CSCV del procedimiento de seleccion (>0.5 = REJECT, peor que el azar):")
+    for k, v in pbo.items():
+        if "error" in v:
+            print(f"  {k:<14} ERROR: {v['error']}")
+        else:
+            juicio = "REJECT" if v["pbo"] > 0.5 else ("aceptable" if v["pbo"] < 0.35 else "zona gris")
+            print(f"  {k:<14} PBO={v['pbo']:.3f}  ({v['n_combinations']:>6} splits)  -> {juicio}")
+    print("")
+    print("DSR trial-aware (headline = la sigma MENOS favorable; bar constitucional 0.95):")
+    for f in salida:
+        print(f"  {f['anio']}   " + "  ".join(
+            f"n={k.split('=')[1]}: {v['headline_dsr']:.3f}" for k, v in f["dsr"].items()))
+
     print("\nseleccion walk-forward (ultimos 6 rebalanceos):")
     for h in historial[-6:]:
         print(f"  {h['fecha']}  " + ", ".join(f"{k}={v}" for k, v in h["elegidas"].items()))
@@ -288,7 +315,7 @@ def main() -> int:
                             "ventana_seleccion": VENTANA_SELECCION, "leverage_max": LEVERAGE_MAX,
                             "declarados_ex_ante": True},
              "universo": [f"{s}:{n_}" for (s, n_) in pos_estrategia],
-             "resultados": salida, "seleccion": historial}, indent=2, default=str), encoding="utf-8")
+             "resultados": salida, "pbo_cscv": pbo, "seleccion": historial}, indent=2, default=str), encoding="utf-8")
         print(f"\nJSON -> {args.json}")
     return 0
 

@@ -53,7 +53,7 @@ import json
 import os
 import re
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -129,12 +129,27 @@ def load_trades(strategy_dir: Path) -> list[dict]:
 
 
 def _as_date(value) -> date | None:
+    """Fecha del sello, NORMALIZADA A UTC antes de truncar.
+
+    Defecto que corrijo tras la objecion de Claude (CLD-695): antes devolvia la fecha en la
+    zona en que venia escrito el sello (`-05:00` para COP) mientras el indice de precios se
+    construye con `to_datetime(..., utc=True).dt.date`. Eran DOS convenciones distintas a
+    los dos lados de la misma comparacion. Hoy no muerde porque la sesion COP es matinal y
+    un trade de las 09:00 COT cae en el mismo dia UTC -- pero uno de las 20:00 COT no, y en
+    un activo 24/7 como BTC eso desplaza la barra un dia entero.
+
+    Se normaliza a UTC en vez de a Bogota porque el indice de barras ya esta en UTC: la
+    regla no es "que zona es la correcta" sino que AMBOS lados usen la misma.
+    """
     if not value:
         return None
     try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).date()
+        ts = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except Exception:
         return None
+    if ts.tzinfo is not None:
+        ts = ts.astimezone(timezone.utc)
+    return ts.date()
 
 
 def daily_prices(symbol: str) -> dict[date, float]:
