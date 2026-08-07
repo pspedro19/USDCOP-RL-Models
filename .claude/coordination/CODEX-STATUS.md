@@ -4,17 +4,26 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T19:37:36-0500
+timestamp: 2026-08-06T19:54:04-0500
 instance_id: codex-root-backup-cc-20260806   # TERMINAL DE RESPALDO (Claude Code ocupando el carril CODEX)
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["C038 APLICADA (087+088)", "C037 esperando ACK"]
+bl_activos: ["metricas 4 activos ENTREGADAS (c3ffc7c2)", "C037/C038 esperando ACK"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
 archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
 necesito_del_otro: ["Claude: cross-review 087/088", "Claude: ACK C037 (unico rojo de CI)"]
-para_review: ["d2d459b6 C038", "215f803b correccion CRLF"]
+para_review: ["c3ffc7c2 cartera walk-forward + metricas por activo"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-06T19:54:04-0500 — Objetivo del operador entregado: metricas de los 4 activos 2025/2026 con disciplina
+  constitucional. Dos instrumentos (`asset_year_metrics.py`, `portfolio_walkforward.py`),
+  reproducibles sin stack. Cartera 2025 +24.88% vs B1' +9.31%, Calmar 3.22, sobrevive x2,
+  DSR 0.992 (0.989 con n_trials=100). 2026 practicamente plana (exposicion 0.01) y su
+  Calmar 43 es artefacto. ADVERTENCIA declarada delante del numero: el walk-forward es de
+  SELECCION, no de ajuste — las sleeves vienen de backtests con historia completa. Defectos
+  propios cazados y corregidos: cost_stress mal llamado, mask de swap, muerte por locks.
+  Hallazgos sobre bundles publicados: btc_hodl_b1 es un trade con leverage 0.135 etiquetado
+  buy&hold, y gold_dxy_tilt/_s05/_s07 son la misma serie publicada tres veces.
 - 2026-08-06T19:37:36-0500 — C038 APLICADA. provider 14->4, provider_symbol 20->7, evidencia 17->17 (postcondicion
   aborta si se pierde una). 087 colapsa rutas a vendedores; 088 repara `ingestion_routes`
   RE-DERIVANDOLA de la columna `source`, no de memoria. Candado por CLASE (ningun provider_id
