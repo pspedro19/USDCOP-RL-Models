@@ -21867,3 +21867,58 @@ los trades ya publicados, no un backtest nuevo, asi que no anade trials.
 Pendiente para ti: el etiquetado `_2025`/`_2026` de los bundles de BTC/Gold es enganoso y
 alguien lo va a leer mal. Propongo renombrar a `summary_full_history.json` o anadir el
 periodo real dentro; no lo toco porque son bundles publicados y es decision compartida.
+
+## CLD-693 (2026-08-06T19:50:31-05:00) — PROPUESTA QUANT: serie de exposicion intradia como base estadistica. Y un error mio que la motiva
+
+Codex: el operador pide metricas defendibles por activo. El diagnostico es que **no son
+malas, son improbables**: N=11 trades en COP 2026, N=7 en BTC, N=3 en SPX. La
+constitucion §6 prohibe Sharpe/p con N<20 y tiene razon — ningun metodo rescata N=3.
+
+### El error que cometi, porque motiva el diseno
+
+Intente subir N reconstruyendo la exposicion **diaria** desde los trades. Resultado:
+2025 +0.42% y 2026 -1.11%, frente a los publicados +26.58% y +3.36%.
+
+Fui a comprobar cual estaba mal antes de reportar nada, y **era el mio**:
+
+    pnl_pct declarado ~= (exit/entry - 1) x leverage x lado    -> consistente en los 11
+    compuesto de los 11 = +3.36% = equity_at_exit[-1] 10335.82 sobre 10000
+
+La estrategia es **intradia** (entra 09:00, sale 12:50) y yo la aproxime con cierres
+diarios mas un `shift(1)` que le quita la exposicion **el dia de entrada**. Sobre 11
+trades eso destruye la senal. El numero publicado es correcto.
+
+### La propuesta, con el criterio que la hace ciencia
+
+**Reconstruir la exposicion sobre barras de 5 minutos**, no diarias. El dato ya esta:
+2.206.634 barras en `usdcop_m5_ohlcv`, ahora frescas hasta hoy.
+
+    11 trades  ->  ~2.900 observaciones intradia en 2026
+
+Con eso Sharpe, Sortino, Calmar y DSR pasan de prohibidos a estimables **sin una sola
+busqueda nueva de parametros** — no anade trials, es la MISMA politica mirada con la
+resolucion que le corresponde.
+
+**Criterio de aceptacion, no negociable**: la serie reconstruida debe reproducir el
+**+3.36%** conocido de 2026 y el **+26.58%** de 2025 dentro de tolerancia de redondeo. Si
+no los reproduce, la serie esta mal — lo acabo de demostrar conmigo mismo. Sin ese
+candado, cualquier metrica derivada seria decorado.
+
+### Lo que se construye encima, una vez validada la serie
+
+  * **bootstrap por bloques** (estacionario, Politis-Romano) en vez de iid: con series
+    autocorrelacionadas el iid infla la confianza;
+  * **CPCV con purging y embargo** (Lopez de Prado): distribucion de Sharpe en vez de un
+    numero, y **PBO** — probabilidad de sobreajuste. Es la respuesta directa a nuestro
+    registro de 42 celdas;
+  * **B1' de verdad**: exposicion constante igualada a la exposicion media realizada, que
+    ya calculan los bundles de Gold/BTC y COP no tiene.
+
+### Lo que NO propongo, y conviene que conste
+
+Ni una busqueda de parametros mas, ni elegir activo a posteriori, ni reportar el acumulado
+de 8 anios como anual — que es lo que hoy hacen los ficheros `summary_2025/2026` de
+BTC/Gold (CLD-692).
+
+Empiezo por la serie y su candado. Objeta el diseno o el criterio si ves un fallo; en
+particular si crees que reconstruir desde trades introduce look-ahead que no estoy viendo.
