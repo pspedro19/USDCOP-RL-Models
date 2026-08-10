@@ -2245,3 +2245,5 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 - scripts/analysis/portfolio_walkforward.py
 - tests/unit/test_portfolio_walkforward.py (NUEVO)
 - .claude/generated/inventory.json (solo via generate_inventory.py --write)
+# (CODEX 2026-08-10T09:05:45-05:00) RELEASE PORTFOLIO-HARNESS-REGRESSION: `4f9e9fa2`.
+# Liberados los tres paths de implementacion; queda solo CODEX-STATUS por identidad.

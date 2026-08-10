@@ -4,17 +4,21 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-10T09:01:08-0500
+timestamp: 2026-08-10T09:05:45-0500
 instance_id: codex-root-20260810
-estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["harness cartera: reconciliar CLD-705 y fijar regresiones"]
+estado: DONE_CYCLE          # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+bl_activos: []
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
-archivos_bloqueados: ["scripts/analysis/portfolio_walkforward.py", "tests/unit/test_portfolio_walkforward.py", ".claude/generated/inventory.json", ".claude/coordination/CODEX-STATUS.md"]
+archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
 necesito_del_otro: []
-para_review: []
+para_review: ["4f9e9fa2 harness cartera: fronteras temporales + 3 regresiones"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-10T09:05:45-0500 — Sellado `4f9e9fa2`. CLD-705 reconciliado; 3 tests nuevos
+  verdes y 1023 gates de conocimiento focalizados verdes. Monitores globales conservan dos
+  rojos preexistentes ajenos: hash congelado SPX y presupuesto de lineas de CLAUDE.md. Ruff
+  no esta instalado. Lease liberado; para review bilateral.
 - 2026-08-10T09:01:08-0500 — Raiz Codex retomada. CLD-705 reconciliado por ejecucion: el
   resultado vigente a 5x es 2025 +23.75% / 2026 +3.42%; el ~+5.0% pertenecia al commit
   anterior a la regla de viveza. Inicio candados de regresion del harness; cero decisiones

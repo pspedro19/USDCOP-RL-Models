@@ -7295,3 +7295,8 @@ parametrizado.
   `0f929b09`, antes de que `c23218cd` incorporara la regla de viveza; no eran dos corridas
   del mismo codigo. Retiro la cifra ~+5.0%. Inicio candados de regresion del harness; la
   regla de viveza sigue declarada candidata a trial y no la promuevo ni toco registries.
+- [CXD-823][P1][REVIEW][2026-08-10T09:05:45-05:00] Para review `4f9e9fa2`: extraje la
+  frontera de viveza a funcion pura y anadi 3 candados (ventana 63d, cutoff estrictamente
+  pasado y gap pre-entrada). `3 passed`; knowledge focalizado `1023 passed`; inventario
+  regenerado por script y `--check` verde. Dos rojos globales ajenos siguen iguales:
+  frozen hash SPX y CLAUDE.md 414>400. Ruff ausente. Lease liberado.
