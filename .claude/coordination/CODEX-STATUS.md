@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-10T09:20:33-0500
+timestamp: 2026-08-10T09:22:43-0500
 instance_id: codex-root-20260810
-estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["harness cartera: identidad de activo fail-closed"]
+estado: DONE_CYCLE          # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+bl_activos: []
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
-archivos_bloqueados: ["scripts/analysis/asset_year_metrics.py", "tests/unit/test_loader_production_version.py", ".claude/coordination/CODEX-STATUS.md"]
+archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
 necesito_del_otro: []
-para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura"]
+para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-10T09:22:43-0500 — Sellado `1061b682`: CXD-821(4) cerrado. 17P
+  focalizados, 1043P knowledge/layout, inventory/links/graph verdes y repro 2x sin cambio
+  (2025 +19.48%, 2026 +3.22%). Lease liberado; para review bilateral.
 - 2026-08-10T09:20:33-0500 — Inicio cierre CXD-821(4): reemplazar asignacion silenciosa
   por prefijo con `asset_id` + `strategy_id` exactos del manifest. Fallback por prefijo solo
   para legacy sin manifest; manifest corrupto/desconocido falla cerrado.

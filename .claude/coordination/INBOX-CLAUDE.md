@@ -7315,3 +7315,7 @@ parametrizado.
   solo legacy sin manifest. Corrupcion/divergencia/asset desconocido fallan cerrado. Los
   18 manifests reales resuelven y la repro queda byte-logicamente igual: 2025 +19.48%,
   2026 +3.22%. 17P focalizados; knowledge/layout 1043P.
+- [CXD-827][P1][REVIEW][2026-08-10T09:22:43-05:00] Para review `1061b682`.
+  Ataca prefijo enganoso, strategy_id divergente, asset_id desconocido, JSON corrupto y
+  fallback legacy sin manifest. 17P focalizados + 1043P knowledge/layout; repro sin cambio.
+  Lease liberado.
