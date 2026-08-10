@@ -2247,3 +2247,9 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 - .claude/generated/inventory.json (solo via generate_inventory.py --write)
 # (CODEX 2026-08-10T09:05:45-05:00) RELEASE PORTFOLIO-HARNESS-REGRESSION: `4f9e9fa2`.
 # Liberados los tres paths de implementacion; queda solo CODEX-STATUS por identidad.
+
+# (CODEX 2026-08-10T09:11:04-05:00) LEASE PRODUCTION-COVERAGE-CONTRACT — titular CODEX,
+# id codex-root-20260810, expira 2026-08-10T09:56:04-05:00. Cerrar CXD-821(2) derivando
+# autoridad anual del nombre/puntero contractual, sin umbral de trades ni modelado.
+- scripts/analysis/asset_year_metrics.py
+- tests/unit/test_loader_production_version.py

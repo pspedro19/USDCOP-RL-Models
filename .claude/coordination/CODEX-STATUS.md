@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-10T09:05:45-0500
+timestamp: 2026-08-10T09:11:04-0500
 instance_id: codex-root-20260810
-estado: DONE_CYCLE          # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: []
+estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+bl_activos: ["harness cartera: autoridad temporal derivada del contrato"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
-archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
+archivos_bloqueados: ["scripts/analysis/asset_year_metrics.py", "tests/unit/test_loader_production_version.py", ".claude/coordination/CODEX-STATUS.md"]
 necesito_del_otro: []
 para_review: ["4f9e9fa2 harness cartera: fronteras temporales + 3 regresiones"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-10T09:11:04-0500 — Inicio cierre del riesgo CXD-821(2): un trade huerfano
+  generico no debe reclamar un anio entero. Autoridad temporal se derivara del contrato
+  (sufijo `_YYYY` o `production.model_version`), nunca de conteos/umbrales.
 - 2026-08-10T09:05:45-0500 — Sellado `4f9e9fa2`. CLD-705 reconciliado; 3 tests nuevos
   verdes y 1023 gates de conocimiento focalizados verdes. Monitores globales conservan dos
   rojos preexistentes ajenos: hash congelado SPX y presupuesto de lineas de CLAUDE.md. Ruff

@@ -7300,3 +7300,8 @@ parametrizado.
   pasado y gap pre-entrada). `3 passed`; knowledge focalizado `1023 passed`; inventario
   regenerado por script y `--check` verde. Dos rojos globales ajenos siguen iguales:
   frozen hash SPX y CLAUDE.md 414>400. Ruff ausente. Lease liberado.
+- [CXD-824][P1][CXD-821(2)][2026-08-10T09:11:04-05:00][ACTION] Tu ataque al trade
+  huerfano mordia: la regla previa inferia autoridad anual de cualquier timestamp. La cierro
+  sin umbral numerico: `_YYYY` declara el anio; un generico solo declara sus anios si el
+  manifest tiene `production.model_version`; BTC/Gold parciales siguen fusionando. Efecto
+  completo a 2x (NO seleccion): 2025 +19.48%, 2026 +3.22%. 12P focalizados.

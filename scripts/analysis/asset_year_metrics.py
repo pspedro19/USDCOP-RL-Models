@@ -111,6 +111,11 @@ def production_backtest_dir(strategy_dir: Path) -> Path | None:
             ver = (data.get("production") or {}).get("model_version")
             if ver and (bt / str(ver)).is_dir():
                 return bt / str(ver)
+            if ver:
+                print(
+                    f"WARNING: {strategy_dir.name} declara production.model_version={ver} "
+                    "pero ese bundle no existe; se usara el fallback disponible"
+                )
             activas = [m.get("version") for m in data.get("model_versions", []) if m.get("active")]
             for v in activas:
                 if v and (bt / str(v)).is_dir():
@@ -155,6 +160,11 @@ def load_trades(strategy_dir: Path) -> list[dict]:
     """
     trades: list[dict] = []
     seen: set = set()
+    try:
+        manifest = json.loads((strategy_dir / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        manifest = {}
+    has_production_pointer = bool((manifest.get("production") or {}).get("model_version"))
 
     def _absorber(path: Path, dentro_de: tuple | None = None) -> None:
         try:
@@ -186,8 +196,21 @@ def load_trades(strategy_dir: Path) -> list[dict]:
     # PARCIALES -- `btc_hodl_b1` son 2 trades de una quincena, `gold_dynamic_exit` 7 de
     # 2026 -- asi que preferirlos enteros MUTILABA la historia de casi todas las sleeves y
     # movia los resultados de forma erratica. Se fusiona, no se sustituye.
+    authoritative_years: set[int] = set()
     for path in prod:
         _absorber(path)
+        # Authority is a property of the artifact contract, never of how many trades it
+        # happens to contain. ``*_YYYY.json`` explicitly owns that year. A generic file
+        # owns its observed years only when the manifest points at a production version;
+        # otherwise it is a partial operational extract (the BTC/Gold case) and may be
+        # completed from the published bundle.
+        named_year = re.search(r"_(20\d{2})(?:\D|$)", path.stem)
+        if named_year:
+            authoritative_years.add(int(named_year.group(1)))
+        elif has_production_pointer:
+            authoritative_years.update(
+                d.year for d in (_as_date(t.get("timestamp")) for t in trades) if d
+            )
 
     # REGLA DE CLAUDE (CLD-703), concedida integra: el relleno desde el bundle solo es
     # legitimo FUERA del rango temporal que cubre la fuente autoritativa. DENTRO de su
@@ -200,12 +223,12 @@ def load_trades(strategy_dir: Path) -> list[dict]:
     # una quimera de dos metodologias que no coexistieron en ningun backtest, y ningun gate
     # la detecta porque el numero es plausible. Vale para BTC/Gold, donde produccion si es
     # parcial (`btc_hodl_b1` son 2 trades de una quincena); no valia para COP.
-    # La cobertura se mide POR ANIO, no como min-max de fechas: si produccion tiene algun
-    # trade en 2025, es autoritativa sobre TODO 2025. Mi primera version usaba el rango
-    # exacto (2025-02-03..) y los trades de ENERO del bundle se colaban por el borde --
-    # tres de ellos-- dejando COP en +17.55% en vez de +7.35%. El borde de un rango no es
-    # un hueco de cobertura: es el mes en que la metodologia corregida no abrio posicion.
-    cubierto = {d.year for d in (_as_date(t.get("timestamp")) for t in trades) if d}
+    # La cobertura declarada se mide POR ANIO, no como min-max de fechas: un artefacto
+    # ``*_2025`` es autoritativo sobre TODO 2025. Mi primera version usaba el rango exacto
+    # (2025-02-03..) y los trades de ENERO del bundle se colaban por el borde -- tres de
+    # ellos-- dejando COP en +17.55% en vez de +7.35%. A la inversa, un extracto generico
+    # sin puntero de produccion no reclama el anio entero por contener un trade huerfano.
+    cubierto = authoritative_years
 
     d = production_backtest_dir(strategy_dir)
     if d is None:
