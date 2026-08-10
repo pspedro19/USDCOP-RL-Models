@@ -73,12 +73,44 @@ ASSET_MAP = [
     ("usdcop",        "USD/COP",  "usdcop",  261),
 ]
 
+ASSET_BY_ID = {
+    "btcusdt": ("BTC/USDT", "btcusdt", 365),
+    "xauusd": ("XAU/USD", "xauusd", 250),
+    "spx500": ("SPX/500", "spx500", 250),
+    "usdcop": ("USD/COP", "usdcop", 261),
+}
+
 # Coste por unidad de turnover, en bps, LEIDO de los manifiestos (ver docstring §3).
 COST_BPS = {"btcusdt": 13.0, "xauusd": 2.0, "spx500": 3.0, "usdcop": 1.0}
 SWAP_ANNUAL_PCT = {"xauusd": 2.5}
 
 
-def resolve_asset(strategy_id: str):
+def resolve_asset(strategy_id: str, strategy_dir: Path | None = None):
+    """Resolve an asset from exact manifest identity, with a legacy-only prefix fallback."""
+    candidate = strategy_dir or (BUNDLES / strategy_id)
+    manifest_path = candidate / "manifest.json"
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"WARNING: manifest invalido para {strategy_id}: {exc}")
+            return None, None, None
+        declared_id = manifest.get("strategy_id")
+        asset_id = manifest.get("asset_id")
+        if declared_id != strategy_id:
+            print(
+                f"WARNING: identidad divergente: directorio={strategy_id}, "
+                f"manifest.strategy_id={declared_id!r}"
+            )
+            return None, None, None
+        if asset_id not in ASSET_BY_ID:
+            print(f"WARNING: asset_id desconocido para {strategy_id}: {asset_id!r}")
+            return None, None, None
+        return ASSET_BY_ID[asset_id]
+
+    # Compatibilidad acotada: artefactos legacy sin manifest conservan la convención de
+    # nombre. En cuanto existe un manifest, su identidad exacta manda y cualquier defecto
+    # falla cerrado arriba; un prefijo jamás puede sobreescribirlo.
     for prefix, symbol, manifest, ann in ASSET_MAP:
         if strategy_id.startswith(prefix):
             return symbol, manifest, ann
@@ -404,7 +436,7 @@ def main() -> int:
     for sd in sorted(BUNDLES.iterdir()):
         if not sd.is_dir():
             continue
-        symbol, manifest, ann = resolve_asset(sd.name)
+        symbol, manifest, ann = resolve_asset(sd.name, sd)
         if symbol is None:
             print(f"  SIN MAPEO DE ACTIVO: {sd.name} (se omite, declarado)", file=sys.stderr)
             continue

@@ -157,6 +157,55 @@ def test_a_manifest_production_pointer_makes_a_generic_artifact_authoritative(
     assert [t["timestamp"] for t in metrics.load_trades(strategy)] == ["2025-01-02"]
 
 
+def test_asset_resolution_uses_manifest_identity_not_a_misleading_prefix(tmp_path) -> None:
+    strategy = tmp_path / "btc_name_but_gold_contract"
+    strategy.mkdir()
+    (strategy / "manifest.json").write_text(
+        json.dumps({
+            "strategy_id": "btc_name_but_gold_contract",
+            "asset_id": "xauusd",
+            "symbol": "XAU/USD",
+        }),
+        encoding="utf-8",
+    )
+
+    assert metrics.resolve_asset(strategy.name, strategy) == ("XAU/USD", "xauusd", 250)
+
+
+@pytest.mark.parametrize(
+    ("manifest", "warning"),
+    [
+        ({"strategy_id": "another_id", "asset_id": "btcusdt"}, "identidad divergente"),
+        ({"strategy_id": "btc_candidate", "asset_id": "unknown"}, "asset_id desconocido"),
+    ],
+)
+def test_asset_resolution_fails_closed_on_invalid_manifest_identity(
+    tmp_path, capsys, manifest, warning
+) -> None:
+    strategy = tmp_path / "btc_candidate"
+    strategy.mkdir()
+    (strategy / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    assert metrics.resolve_asset(strategy.name, strategy) == (None, None, None)
+    assert warning in capsys.readouterr().out
+
+
+def test_asset_resolution_fails_closed_on_a_corrupt_manifest(tmp_path, capsys) -> None:
+    strategy = tmp_path / "btc_candidate"
+    strategy.mkdir()
+    (strategy / "manifest.json").write_text("{broken", encoding="utf-8")
+
+    assert metrics.resolve_asset(strategy.name, strategy) == (None, None, None)
+    assert "manifest invalido" in capsys.readouterr().out
+
+
+def test_asset_resolution_keeps_prefix_fallback_only_without_a_manifest(tmp_path) -> None:
+    strategy = tmp_path / "btc_legacy"
+    strategy.mkdir()
+
+    assert metrics.resolve_asset(strategy.name, strategy) == ("BTC/USDT", "btcusdt", 365)
+
+
 @pytest.mark.skipif(not ESTRATEGIAS.is_dir(), reason="bundles no presentes en este checkout")
 def test_on_the_real_bundles_cop_resolves_to_the_production_version() -> None:
     """Sobre el disco real: COP debe resolver a 2.0.0, la única con 2026.

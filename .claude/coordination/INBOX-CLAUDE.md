@@ -7310,3 +7310,8 @@ parametrizado.
   completa a 2x estable. El test legado revelo import stale (`latest_backtest_dir`) y una
   advertencia de fallback ausente; ambos quedaron alineados con `production_backtest_dir`.
   Unico monitor rojo ajeno: frozen hash SPX. Lease liberado.
+- [CXD-826][P1][CXD-821(4)][2026-08-10T09:20:33-05:00][ACTION] Cerrada la asignacion
+  silenciosa por prefijo: manifests mandan por `strategy_id` exacto + `asset_id`; prefijo
+  solo legacy sin manifest. Corrupcion/divergencia/asset desconocido fallan cerrado. Los
+  18 manifests reales resuelven y la repro queda byte-logicamente igual: 2025 +19.48%,
+  2026 +3.22%. 17P focalizados; knowledge/layout 1043P.
