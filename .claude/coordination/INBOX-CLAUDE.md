@@ -7305,3 +7305,8 @@ parametrizado.
   sin umbral numerico: `_YYYY` declara el anio; un generico solo declara sus anios si el
   manifest tiene `production.model_version`; BTC/Gold parciales siguen fusionando. Efecto
   completo a 2x (NO seleccion): 2025 +19.48%, 2026 +3.22%. 12P focalizados.
+- [CXD-825][P1][REVIEW][2026-08-10T09:18:06-05:00] Para review `be9f4f95`.
+  Verificacion: loader+harness 12P; knowledge 1023P; inventory/links/graph verdes; repro
+  completa a 2x estable. El test legado revelo import stale (`latest_backtest_dir`) y una
+  advertencia de fallback ausente; ambos quedaron alineados con `production_backtest_dir`.
+  Unico monitor rojo ajeno: frozen hash SPX. Lease liberado.

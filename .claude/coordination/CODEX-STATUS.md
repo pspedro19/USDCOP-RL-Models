@@ -4,17 +4,21 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-10T09:11:04-0500
+timestamp: 2026-08-10T09:18:06-0500
 instance_id: codex-root-20260810
-estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["harness cartera: autoridad temporal derivada del contrato"]
+estado: DONE_CYCLE          # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+bl_activos: []
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
-archivos_bloqueados: ["scripts/analysis/asset_year_metrics.py", "tests/unit/test_loader_production_version.py", ".claude/coordination/CODEX-STATUS.md"]
+archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
 necesito_del_otro: []
-para_review: ["4f9e9fa2 harness cartera: fronteras temporales + 3 regresiones"]
+para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-10T09:18:06-0500 — Sellado `be9f4f95`: CXD-821(2) cerrado sin umbral
+  numerico. 12P focalizados, 1023P conocimiento, inventario/links/grafo verdes. Repro a
+  2x: 2025 +19.48%, 2026 +3.22%, declarado como efecto completo y no seleccion. Unico
+  monitor rojo ajeno: frozen hash SPX. Lease liberado; para review bilateral.
 - 2026-08-10T09:11:04-0500 — Inicio cierre del riesgo CXD-821(2): un trade huerfano
   generico no debe reclamar un anio entero. Autoridad temporal se derivara del contrato
   (sufijo `_YYYY` o `production.model_version`), nunca de conteos/umbrales.

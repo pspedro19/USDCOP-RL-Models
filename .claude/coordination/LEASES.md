@@ -2253,3 +2253,5 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 # autoridad anual del nombre/puntero contractual, sin umbral de trades ni modelado.
 - scripts/analysis/asset_year_metrics.py
 - tests/unit/test_loader_production_version.py
+# (CODEX 2026-08-10T09:18:06-05:00) RELEASE PRODUCTION-COVERAGE-CONTRACT: `be9f4f95`.
+# Liberados ambos paths de implementacion; queda solo CODEX-STATUS por identidad.
