@@ -2238,3 +2238,10 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 # declarada. La regla es seguir el manifest, no el resultado.
 - scripts/analysis/asset_year_metrics.py
 - tests/unit/test_loader_production_version.py   (NUEVO)
+# (CODEX 2026-08-10T09:01:08-05:00) LEASE PORTFOLIO-HARNESS-REGRESSION — titular CODEX,
+# id codex-root-20260810, expira 2026-08-10T09:46:08-05:00. Reconciliar CLD-705 y fijar
+# candados de ingenieria para la regla de viveza/merge temporal sin elegir parametros ni
+# tocar registries.
+- scripts/analysis/portfolio_walkforward.py
+- tests/unit/test_portfolio_walkforward.py (NUEVO)
+- .claude/generated/inventory.json (solo via generate_inventory.py --write)

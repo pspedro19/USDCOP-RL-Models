@@ -140,6 +140,17 @@ def calmar(returns: np.ndarray, ann: float) -> float:
     return cagr / abs(dd) if dd < 0 else (np.inf if cagr > 0 else -np.inf)
 
 
+def sleeve_is_live(position: np.ndarray, cutoff: int, window: int = VENTANA_VOL) -> bool:
+    """Return whether a sleeve carried exposure in the declared trailing window.
+
+    ``cutoff`` is excluded: selection at day *t* may only inspect days before *t*.
+    Keeping this rule in a small pure function makes the temporal boundary executable in
+    regression tests instead of leaving it embedded in the monthly-selection loop.
+    """
+    start = max(0, cutoff - window)
+    return bool(np.any(np.abs(position[start:cutoff]) > 1e-12))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--years", type=int, nargs="+", default=[2025, 2026])
@@ -244,7 +255,7 @@ def main() -> int:
                     # ex-ante para la volatilidad; no se inventa un parametro nuevo. Con la
                     # de seleccion (252d) la regla no mordia: en febrero de 2026 la ventana
                     # aun alcanzaba los trades de 2025 de una sleeve ya extinta.
-                    if not np.any(np.abs(pos[i - VENTANA_VOL:i]) > 1e-12):
+                    if not sleeve_is_live(pos, i):
                         continue
                     c = calmar(ret_estrategia[(s, name)][ventana], ann_global)
                     if c > mejor_c:

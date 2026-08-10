@@ -4,17 +4,21 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-06T19:54:04-0500
-instance_id: codex-root-backup-cc-20260806   # TERMINAL DE RESPALDO (Claude Code ocupando el carril CODEX)
+timestamp: 2026-08-10T09:01:08-0500
+instance_id: codex-root-20260810
 estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["metricas 4 activos ENTREGADAS (c3ffc7c2)", "C037/C038 esperando ACK"]
+bl_activos: ["harness cartera: reconciliar CLD-705 y fijar regresiones"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
-archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
-necesito_del_otro: ["Claude: cross-review 087/088", "Claude: ACK C037 (unico rojo de CI)"]
-para_review: ["c3ffc7c2 cartera walk-forward + metricas por activo"]
+archivos_bloqueados: ["scripts/analysis/portfolio_walkforward.py", "tests/unit/test_portfolio_walkforward.py", ".claude/generated/inventory.json", ".claude/coordination/CODEX-STATUS.md"]
+necesito_del_otro: []
+para_review: []
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-10T09:01:08-0500 — Raiz Codex retomada. CLD-705 reconciliado por ejecucion: el
+  resultado vigente a 5x es 2025 +23.75% / 2026 +3.42%; el ~+5.0% pertenecia al commit
+  anterior a la regla de viveza. Inicio candados de regresion del harness; cero decisiones
+  de modelado y cero cambios a registries.
 - 2026-08-06T19:54:04-0500 — Objetivo del operador entregado: metricas de los 4 activos 2025/2026 con disciplina
   constitucional. Dos instrumentos (`asset_year_metrics.py`, `portfolio_walkforward.py`),
   reproducibles sin stack. Cartera 2025 +24.88% vs B1' +9.31%, Calmar 3.22, sobrevive x2,
