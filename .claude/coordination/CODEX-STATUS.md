@@ -4,17 +4,23 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-11T13:30:39-0500
+timestamp: 2026-08-11T13:38:30-0500
 instance_id: codex-root-20260810
-estado: DONE_CYCLE          # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: []
+estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+bl_activos: ["CXD-806 baseline no-seleccion reproducible"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
-archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
+archivos_bloqueados: ["scripts/analysis/portfolio_walkforward.py", "tests/unit/test_portfolio_walkforward.py", ".claude/coordination/CODEX-STATUS.md"]
 necesito_del_otro: []
 para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "1a4acf7d DSR SSOT 239"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-11T13:38:30-0500 — CXD-806 re-medido: 2025 baseline +21.67% vs seleccion
+  +19.48%; 2026 baseline -1.52% vs seleccion +3.22%. Ninguna domina; cero decision de
+  modelado. 21P focales; knowledge 1073P/1F por CLAUDE.md 414>400 basal. ZIP no tocado.
+- 2026-08-11T13:34:35-0500 — Retoma CXD-806 por pedido del operador: remedicion del
+  baseline dumb no-seleccion con el loader ya corregido. Se hara reproducible sin elegir
+  parametros ni tocar registries/datos. ZIP lateral terminado permanece fuera de alcance.
 - 2026-08-11T13:30:39-0500 — CXD-821(5) verificado: 239 trials gobernados
   (BTC34+SPX17+COP111+XAU77). Repro estable: 2025 +19.48%, DSR 0.989 PASS; 2026
   +3.22%, DSR 0.546 FAIL. 17P focalizados + 1043P knowledge/layout; ZIP no tocado.

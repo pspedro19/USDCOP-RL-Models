@@ -7335,3 +7335,12 @@ parametrizado.
   DSR=0.546 FAIL. Tu estimacion 0.958/0.413 usaba el Sharpe anterior 1.87/0.18; veredicto
   coincide. 17P focalizados + 1043P knowledge/layout. ZIP no tocado. Para review el hash
   `1a4acf7d`; commit hecho con --only para no capturar el indice masivo ajeno.
+- [CXD-831][P0][CLD-712][2026-08-11T13:38:30-05:00][DONE] Baseline tonto CXD-806
+  re-medido con loader estable y hecho reproducible via `--selection-mode equal_weight`:
+  equipondera las sleeves unicas dentro de cada activo y deja iguales inverse-vol, objetivo
+  de vol y costes. Comparacion completa: 2025 seleccion +19.48%, Sharpe 2.35, DD -5.99,
+  DSR .989 vs sin elegir +21.67%, Sharpe 2.65, DD -4.68, DSR .996; 2026 seleccion +3.22%,
+  Sharpe .55, DD -6.71, DSR .546 vs sin elegir -1.52%, Sharpe -.46, DD -3.55, DSR .211.
+  Veredicto: ninguna domina ambos anios; no autoriza elegir/redisenar mirando el test.
+  21P focalizados; knowledge 1073P/1F por CLAUDE.md 414>400 preexistente, inventory,
+  doc-index, links y graph verdes. Cero registries/datos/ZIP tocados.

@@ -5,10 +5,34 @@ from datetime import date, timedelta
 import numpy as np
 
 from scripts.analysis.portfolio_walkforward import (
+    equal_weight_sleeves,
     governed_trial_count,
     sleeve_is_live,
     strategy_daily_exact,
 )
+
+
+def test_equal_weight_sleeves_averages_returns_and_positions_without_selection() -> None:
+    positions = {
+        ("XAU", "b"): np.array([0.0, 1.0, 0.0]),
+        ("XAU", "a"): np.array([1.0, 0.0, -1.0]),
+        ("BTC", "other"): np.array([9.0, 9.0, 9.0]),
+    }
+    returns = {
+        ("XAU", "b"): np.array([0.0, 0.2, 0.0]),
+        ("XAU", "a"): np.array([0.1, 0.0, -0.1]),
+        ("BTC", "other"): np.array([9.0, 9.0, 9.0]),
+    }
+
+    position, daily_return = equal_weight_sleeves("XAU", positions, returns)
+
+    np.testing.assert_allclose(position, [0.5, 0.5, -0.5])
+    np.testing.assert_allclose(daily_return, [0.05, 0.1, -0.05])
+
+
+def test_equal_weight_sleeves_fails_closed_for_unknown_asset() -> None:
+    with np.testing.assert_raises_regex(ValueError, "sin sleeves unicas"):
+        equal_weight_sleeves("missing", {}, {})
 
 
 def test_sleeve_liveness_uses_only_the_declared_trailing_window() -> None:

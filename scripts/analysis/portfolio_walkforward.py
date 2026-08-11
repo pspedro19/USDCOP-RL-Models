@@ -169,6 +169,26 @@ def sleeve_is_live(position: np.ndarray, cutoff: int, window: int = VENTANA_VOL)
     return bool(np.any(np.abs(position[start:cutoff]) > 1e-12))
 
 
+def equal_weight_sleeves(
+    symbol: str,
+    positions: dict[tuple[str, str], np.ndarray],
+    returns: dict[tuple[str, str], np.ndarray],
+) -> tuple[np.ndarray, np.ndarray]:
+    """Combine every published sleeve for one asset with fixed equal weights.
+
+    This is the pre-declared dumb baseline for the selection layer: it changes only
+    how sleeves are combined within an asset. Cross-asset inverse-vol weighting, vol
+    targeting and transaction costs remain downstream and therefore identical.
+    """
+    keys = sorted(key for key in positions if key[0] == symbol)
+    if not keys:
+        raise ValueError(f"sin sleeves unicas para {symbol}")
+    return (
+        np.mean(np.array([positions[key] for key in keys]), axis=0),
+        np.mean(np.array([returns[key] for key in keys]), axis=0),
+    )
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--years", type=int, nargs="+", default=[2025, 2026])
@@ -180,6 +200,13 @@ def main() -> int:
     ap.add_argument("--leverage-max", type=float, default=None,
                     help="Sobrescribe el tope declarado. Cada valor distinto es UN TRIAL "
                          "(constitucion §2): se reporta la rejilla ENTERA, no se elige celda.")
+    ap.add_argument(
+        "--selection-mode",
+        choices=("walk_forward", "equal_weight"),
+        default="walk_forward",
+        help="walk_forward elige una sleeve por activo; equal_weight es el baseline tonto "
+             "pre-declarado que equipondera todas las sleeves dentro de cada activo.",
+    )
     args = ap.parse_args()
     global LEVERAGE_MAX
     if args.leverage_max is not None:
@@ -250,18 +277,33 @@ def main() -> int:
     exposicion_por_activo = [dict() for _ in range(n)]   # para cobrar costes por activo
     ann_global = 252.0
     elegidas: dict[str, str] = {}
+    retorno_activo_elegido: dict[str, np.ndarray] = {}
+    posicion_activo_elegida: dict[str, np.ndarray] = {}
     historial = []
+
+    baseline_equiponderado = {
+        sym: equal_weight_sleeves(sym, pos_estrategia, ret_estrategia)
+        for sym in sleeves
+    }
 
     for i in range(VENTANA_SELECCION, n):
         d = days[i]
         if i == VENTANA_SELECCION or (d.month != days[i - 1].month):
             ventana = slice(i - VENTANA_SELECCION, i)          # ESTRICTAMENTE pasado
             elegidas = {}
-            for sym in sleeves:
-                mejor, mejor_c = None, -np.inf
-                for (s, name), pos in pos_estrategia.items():
-                    if s != sym:
-                        continue
+            retorno_activo_elegido = {}
+            posicion_activo_elegida = {}
+            if args.selection_mode == "equal_weight":
+                for sym, (pos, ret) in baseline_equiponderado.items():
+                    elegidas[sym] = "EQUIPONDERADA"
+                    posicion_activo_elegida[sym] = pos
+                    retorno_activo_elegido[sym] = ret
+            else:
+                for sym in sleeves:
+                    mejor, mejor_c = None, -np.inf
+                    for (s, name), pos in pos_estrategia.items():
+                        if s != sym:
+                            continue
                     # REGLA DE VIVEZA (declarable ex-ante, no mira resultados): una sleeve
                     # que no ha abierto posicion en toda la ventana de seleccion esta
                     # MUERTA y no puede recibir capital. Ninguna mesa asigna a una
@@ -277,13 +319,15 @@ def main() -> int:
                     # ex-ante para la volatilidad; no se inventa un parametro nuevo. Con la
                     # de seleccion (252d) la regla no mordia: en febrero de 2026 la ventana
                     # aun alcanzaba los trades de 2025 de una sleeve ya extinta.
-                    if not sleeve_is_live(pos, i):
-                        continue
-                    c = calmar(ret_estrategia[(s, name)][ventana], ann_global)
-                    if c > mejor_c:
-                        mejor, mejor_c = name, c
-                if mejor:
-                    elegidas[sym] = mejor
+                        if not sleeve_is_live(pos, i):
+                            continue
+                        c = calmar(ret_estrategia[(s, name)][ventana], ann_global)
+                        if c > mejor_c:
+                            mejor, mejor_c = name, c
+                    if mejor:
+                        elegidas[sym] = mejor
+                        posicion_activo_elegida[sym] = pos_estrategia[(sym, mejor)]
+                        retorno_activo_elegido[sym] = ret_estrategia[(sym, mejor)]
             historial.append({"fecha": str(d), "elegidas": dict(elegidas)})
 
         # pesos inverse-vol entre activos, con la vol del pasado reciente
@@ -293,11 +337,11 @@ def main() -> int:
         # como `USD/COP`, que no tiene NI UN trade publicado en 2026, se llevaba la cartera
         # y dejaba 2026 plano. Un activo que no toma riesgo debe pesar CERO, no infinito.
         pesos, total = {}, 0.0
-        for sym, name in elegidas.items():
-            pos_v = pos_estrategia[(sym, name)][i - VENTANA_VOL:i]
+        for sym in elegidas:
+            pos_v = posicion_activo_elegida[sym][i - VENTANA_VOL:i]
             if not np.any(np.abs(pos_v) > 1e-12):
                 continue                      # sin posicion en la ventana => no asigna riesgo
-            v = float(np.std(ret_estrategia[(sym, name)][i - VENTANA_VOL:i]))
+            v = float(np.std(retorno_activo_elegido[sym][i - VENTANA_VOL:i]))
             if v <= 1e-9:
                 continue                      # varianza nula: no es "riesgo bajisimo", es ausencia
             pesos[sym] = 1.0 / v
@@ -306,11 +350,11 @@ def main() -> int:
             continue
         pesos = {k: v / total for k, v in pesos.items()}
 
-        bruto = sum(pesos[s] * ret_estrategia[(s, elegidas[s])][i] for s in pesos)
-        exp_bruta = sum(pesos[s] * abs(pos_estrategia[(s, elegidas[s])][i]) for s in pesos)
+        bruto = sum(pesos[s] * retorno_activo_elegido[s][i] for s in pesos)
+        exp_bruta = sum(pesos[s] * abs(posicion_activo_elegida[s][i]) for s in pesos)
 
         hist = np.array([
-            sum(pesos[s] * ret_estrategia[(s, elegidas[s])][j] for s in pesos)
+            sum(pesos[s] * retorno_activo_elegido[s][j] for s in pesos)
             for j in range(i - VENTANA_VOL, i)])
         vol = float(np.std(hist)) * np.sqrt(ann_global)
         k = min(LEVERAGE_MAX, VOL_OBJETIVO / vol) if vol > 1e-9 else 0.0
@@ -318,7 +362,7 @@ def main() -> int:
         pos_cartera[i] = k * exp_bruta
         ret_cartera[i] = k * bruto
         for s_ in pesos:
-            exposicion_por_activo[i][s_] = k * pesos[s_] * abs(pos_estrategia[(s_, elegidas[s_])][i])
+            exposicion_por_activo[i][s_] = k * pesos[s_] * abs(posicion_activo_elegida[s_][i])
 
     # costes por turnover de la cartera, al bps medio declarado de los activos usados
     # DEFECTO CORREGIDO (auto-ataque): antes se cobraba a TODO el turnover de la cartera el
@@ -388,7 +432,9 @@ def main() -> int:
         fila["n_trials_by_asset"] = trials_by_asset
         salida.append(fila)
 
-    print(f"\n{'='*96}\nCARTERA WALK-FORWARD  (vol objetivo {VOL_OBJETIVO:.0%}, "
+    modo_titulo = ("SELECCION WALK-FORWARD" if args.selection_mode == "walk_forward"
+                   else "BASELINE SIN ELEGIR (SLEEVES EQUIPONDERADAS)")
+    print(f"\n{'='*96}\nCARTERA {modo_titulo}  (vol objetivo {VOL_OBJETIVO:.0%}, "
           f"seleccion {VENTANA_SELECCION}d, rebalanceo mensual)\n{'='*96}")
     print(f"{'anio':<6}{'dias':>6}{'expos':>8}{'ret%':>9}{'B1%':>9}{'B1p%':>9}"
           f"{'maxDD%':>9}{'Calmar':>8}{'Sharpe':>8}{'+-SE':>7}{'x2':>4}{'>B1p':>6}{'DSR':>7}")
@@ -416,7 +462,7 @@ def main() -> int:
     # columnas de activos distintos difieren en vol y drift de forma persistente y el
     # ganador sigue arriba por efecto de activo, no por habilidad de seleccion.
     pbo = {}
-    for sym in sorted(sleeves):
+    for sym in sorted(sleeves) if args.selection_mode == "walk_forward" else []:
         cols = [ret_estrategia[k] for k in ret_estrategia if k[0] == sym]
         if len(cols) < 2:
             continue
@@ -429,6 +475,8 @@ def main() -> int:
             pbo[sym] = {"error": str(exc)}
     print("")
     print("PBO/CSCV POR ACTIVO -- la familia entre la que realmente se elige (>0.5 = REJECT):")
+    if args.selection_mode == "equal_weight":
+        print("  NO APLICA: el baseline no elige sleeves.")
     for sym, v in pbo.items():
         if "error" in v:
             print(f"  {sym:<10} ERROR: {v['error']}")
@@ -436,8 +484,9 @@ def main() -> int:
             j = "PEOR QUE EL AZAR" if v["pbo"] > 0.5 else "aceptable"
             deg = "  (N=2: casi degenerado, constitucion §6)" if v["degenerado_N2"] else ""
             print(f"  {sym:<10} {v['n_sleeves']} sleeves   PBO={v['pbo']:.3f}   {j}{deg}")
-    print("  NOTA: el PBO agrupando los 4 activos en una familia daria 0.327 y seria ENGANOSO:")
-    print("        mide una seleccion entre activos que este procedimiento nunca ejecuta.")
+    if args.selection_mode == "walk_forward":
+        print("  NOTA: el PBO agrupando los 4 activos en una familia daria 0.327 y seria ENGANOSO:")
+        print("        mide una seleccion entre activos que este procedimiento nunca ejecuta.")
 
     print("")
     print("DSR trial-aware (headline = la sigma MENOS favorable; bar constitucional 0.95):")
@@ -448,7 +497,7 @@ def main() -> int:
         print(f"  {f['anio']}   " + "  ".join(
             f"n={k.split('=')[1]}: {v['headline_dsr']:.3f}" for k, v in f["dsr"].items()))
 
-    print("\nseleccion walk-forward (ultimos 6 rebalanceos):")
+    print(f"\nmodo {args.selection_mode} (ultimos 6 rebalanceos):")
     for h in historial[-6:]:
         print(f"  {h['fecha']}  " + ", ".join(f"{k}={v}" for k, v in h["elegidas"].items()))
 
@@ -456,6 +505,7 @@ def main() -> int:
         Path(args.json).write_text(json.dumps(
             {"parametros": {"vol_objetivo": VOL_OBJETIVO, "ventana_vol": VENTANA_VOL,
                             "ventana_seleccion": VENTANA_SELECCION, "leverage_max": LEVERAGE_MAX,
+                            "selection_mode": args.selection_mode,
                             "declarados_ex_ante": True},
              "universo": [f"{s}:{n_}" for (s, n_) in pos_estrategia],
              "resultados": salida, "pbo_cscv": pbo, "seleccion": historial}, indent=2, default=str), encoding="utf-8")
