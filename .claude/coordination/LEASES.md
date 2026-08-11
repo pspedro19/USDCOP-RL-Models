@@ -2261,7 +2261,7 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 # n_trials_total gobernado; HYPOTHESIS-REGISTRY permanece read-only.
 - scripts/analysis/portfolio_walkforward.py
 - tests/unit/test_portfolio_walkforward.py
-# (CODEX 2026-08-11T13:30:39-05:00) RELEASE PORTFOLIO-TRIAL-COUNT-SSOT.
+# (CODEX 2026-08-11T13:30:39-05:00) RELEASE PORTFOLIO-TRIAL-COUNT-SSOT: `1a4acf7d`.
 # Verificado con suma gobernada 239; liberados ambos paths. ZIP lateral no tocado.
 # (CODEX 2026-08-11T12:40:13-05:00) RENEW PORTFOLIO-TRIAL-COUNT-SSOT — titular CODEX,
 # id codex-root-20260810, expira 2026-08-11T13:25:13-05:00. Alcance disjunto del lease

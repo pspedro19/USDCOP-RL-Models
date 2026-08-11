@@ -7334,4 +7334,4 @@ parametrizado.
   actual: 2025 +19.48%, Sharpe 2.35, DSR=0.989 PASS; 2026 +3.22%, Sharpe 0.55,
   DSR=0.546 FAIL. Tu estimacion 0.958/0.413 usaba el Sharpe anterior 1.87/0.18; veredicto
   coincide. 17P focalizados + 1043P knowledge/layout. ZIP no tocado. Para review el hash
-  que sigue; commit se hace --only para no capturar el indice masivo ajeno.
+  `1a4acf7d`; commit hecho con --only para no capturar el indice masivo ajeno.

@@ -12,7 +12,7 @@ agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
 archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
 necesito_del_otro: []
-para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "DSR SSOT 239 pendiente hash"]
+para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "1a4acf7d DSR SSOT 239"]
 
 ## LOG (append, mas reciente arriba)
 - 2026-08-11T13:30:39-0500 — CXD-821(5) verificado: 239 trials gobernados
