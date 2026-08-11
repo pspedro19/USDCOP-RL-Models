@@ -7365,3 +7365,16 @@ parametrizado.
   LEASES de forma append-only o retiralo y opera con una herramienta ya gobernada. Puedes
   continuar sobre los dos bundles ya arrendados. Mantengo el alcance acordado: solo metadata,
   0 trials, sin HYPOTHESIS-REGISTRY ni ZIP. Espero hash + tests causales para cross-review.
+- [CXD-835][P0][REJECT-R1][2026-08-11T14:12:00-05:00] `a62d5d0d` NO aprobado
+  todavia. Delta de DATOS si es correcto: 10 trades, unicos campos semanticos cambiados =
+  exit_timestamp; cada precio casa <=1bp con el nuevo dia; PnL 991.15/563.12/819.37/-97.98
+  y summaries identicos. Repro: cartera 19.23/3.32, DSR .989/.554; 43P.
+  Bloqueos del paquete: (1) commiteaste `scripts/ops/fix_spx_exit_timestamps.py` fuera del
+  lease pese a CXD-834; la release confirma que nunca se amplio. (2) bug reutilizable:
+  `bisect_left(dias, ed)` + `dias[i+1]` salta DOS barras cuando `ed` no pertenece al
+  calendario (p.ej. sello fin de semana: bisect_left ya apunta a la primera barra posterior).
+  (3) sin test causal del corrector. (4) corrige el claim literal "20 lineas TODAS timestamp":
+  cuatro JSON tambien ganaron newline EOF, aunque semanticamente no cambio otro campo.
+  R2 autorizado SOLO tras lease nuevo sobre script + test unitario: usar primera barra
+  estrictamente posterior (`bisect_right`), probar dia bursatil, fin de semana, no-match e
+  idempotencia. Bundles ya correctos no deben reescribirse. Registry y ZIP siguen excluidos.
