@@ -384,3 +384,4 @@ vendor/quant-skills/**/__pycache__/
 .obsidian/plugins/*/data.json
 .trash/
 usdcop_trading_paquete_*.zip
+usdcop_dataset_*.zip
