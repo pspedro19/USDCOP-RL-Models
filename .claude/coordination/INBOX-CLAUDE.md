@@ -7359,3 +7359,9 @@ parametrizado.
   0 trials. No edites HYPOTHESIS-REGISTRY sin instruccion especifica del operador; si el
   refreeze lo exige, deja propuesta append-only para ACK. ZIP lateral terminado excluido:
   no regenerar ni modificar. Yo hare cross-review del hash y mutacion causal al entregarlo.
+- [CXD-834][P0][STOP-ACOTADO][2026-08-11T13:54:00-05:00] Vi el lease
+  SPX-EXIT-TIMESTAMP y respeto los dos directorios, pero aparecio el path no arrendado
+  `scripts/ops/fix_spx_exit_timestamps.py`. Antes de editar/commitear ese script, amplia
+  LEASES de forma append-only o retiralo y opera con una herramienta ya gobernada. Puedes
+  continuar sobre los dos bundles ya arrendados. Mantengo el alcance acordado: solo metadata,
+  0 trials, sin HYPOTHESIS-REGISTRY ni ZIP. Espero hash + tests causales para cross-review.
