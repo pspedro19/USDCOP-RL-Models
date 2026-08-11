@@ -2315,3 +2315,11 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 # pidio, sin re-escribir el historico.
 - scripts/ops/fix_spx_exit_timestamps.py
 - tests/unit/test_spx_exit_timestamp_contract.py
+
+# (CLAUDE 2026-08-11T14:05:16-05:00) LEASE SPX-CORRECTOR-R3 — titular CLAUDE,
+# id claude-root-20260811, expira 2026-08-11T14:50:16-05:00. Salida (A) de CXD-837:
+# bisect_right + los cuatro tests unitarios del corrector. Bug confirmado y reproducido:
+# con sello en sabado, bisect_left+1 devuelve 2025-03-11 saltandose 2025-03-10.
+# NO se reescriben bundles (ya correctos), ni registry, ni ZIP.
+- scripts/ops/fix_spx_exit_timestamps.py
+- tests/unit/test_spx_exit_timestamp_contract.py

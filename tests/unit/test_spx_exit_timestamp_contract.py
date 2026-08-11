@@ -124,3 +124,53 @@ def test_the_correction_did_not_touch_the_money() -> None:
                     f"{f.name} trade {t.get('trade_id')}: pnl_usd={t['pnl_usd']} "
                     f"pero la equity implica {e1 - e0:.2f}")
     assert not problemas, "el PnL dejo de cuadrar con la equity:\n  " + "\n  ".join(problemas)
+
+
+# ---------------------------------------------------------------------------
+# CXD-836/837 — los cuatro casos del CORRECTOR, no del bundle final. Los de
+# arriba fijan el resultado publicado; estos ejercitan la herramienta, que es
+# donde vivia el bug `bisect_left + 1` que encontro Codex.
+# ---------------------------------------------------------------------------
+from scripts.ops.fix_spx_exit_timestamps import sello_corregido  # noqa: E402
+
+# Calendario bursatil de juguete: el 2025-03-08 y 09 son fin de semana y NO existen.
+_DIAS = [date(2025, 3, 6), date(2025, 3, 7), date(2025, 3, 10), date(2025, 3, 11)]
+_CIERRES = {date(2025, 3, 6): 100.0, date(2025, 3, 7): 101.0,
+            date(2025, 3, 10): 102.0, date(2025, 3, 11): 103.0}
+
+
+def test_a_stamp_on_a_trading_day_moves_to_the_next_bar() -> None:
+    """(a) El caso normal: sello el 10, precio del 11 -> el sello pasa al 11."""
+    nuevo, _ = sello_corregido("2025-03-10 20:00:00", 103.0, _CIERRES, _DIAS)
+    assert nuevo == "2025-03-11 20:00:00"
+
+
+def test_a_weekend_stamp_takes_the_first_bar_after_it_not_the_second() -> None:
+    """(b) EL BUG QUE ENCONTRO CODEX, fijado.
+
+    Sello el sabado 2025-03-08 con el precio del lunes 2025-03-10. La primera barra
+    estrictamente posterior es el **10**. `bisect_left(dias, ed) + 1` devolvia el **11**,
+    porque con `ed` fuera del calendario `bisect_left` ya apunta al 10 y sumarle uno lo salta.
+    """
+    nuevo, _ = sello_corregido("2025-03-08 20:00:00", 102.0, _CIERRES, _DIAS)
+    assert nuevo == "2025-03-10 20:00:00", "salto la primera barra posterior"
+
+
+def test_a_price_matching_nothing_is_left_untouched() -> None:
+    """(c) Sin barra que case no se inventa un sello."""
+    nuevo, motivo = sello_corregido("2025-03-10 20:00:00", 999.0, _CIERRES, _DIAS)
+    assert nuevo is None and "sin barra que case" in motivo
+
+
+def test_applying_the_correction_twice_changes_nothing() -> None:
+    """(d) Idempotencia: la segunda pasada no mueve nada, porque el sello ya casa."""
+    primero, _ = sello_corregido("2025-03-10 20:00:00", 103.0, _CIERRES, _DIAS)
+    assert primero == "2025-03-11 20:00:00"
+    segundo, motivo = sello_corregido(primero, 103.0, _CIERRES, _DIAS)
+    assert segundo is None and motivo == "ya casa con su propio dia"
+
+
+def test_a_stamp_already_matching_its_own_day_is_not_moved() -> None:
+    """Guardarrail del anterior: un sello correcto nunca se desplaza 'por si acaso'."""
+    nuevo, motivo = sello_corregido("2025-03-10 20:00:00", 102.0, _CIERRES, _DIAS)
+    assert nuevo is None and motivo == "ya casa con su propio dia"

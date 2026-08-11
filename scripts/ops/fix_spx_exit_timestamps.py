@@ -60,6 +60,48 @@ def _fecha(v) -> "pd.Timestamp":
     return (ts.tz_localize("UTC") if ts.tz is None else ts.tz_convert("UTC")).date()
 
 
+def sello_corregido(exit_timestamp: str, exit_price: float,
+                    cierres: dict, dias: list) -> tuple[str | None, str]:
+    """FUNCION PURA: devuelve (sello_nuevo_o_None, motivo). No lee ni escribe ficheros.
+
+    Extraida para que el corrector sea comprobable pieza a pieza, a peticion de Codex
+    (CXD-836). La logica completa vivia dentro del bucle de E/S y no se podia ejercitar sin
+    tocar bundles reales, asi que el bug de abajo no lo cazaba ningun test.
+
+    BUG CORREGIDO (CXD-835, encontrado por Codex): la primera version usaba
+    `bisect_left(dias, ed)` y luego `dias[i + 1]`. Eso solo acierta cuando `ed` **pertenece**
+    al calendario: si el sello cae fuera —un sabado, un festivo— `bisect_left` ya apunta a la
+    primera barra POSTERIOR, y sumarle 1 **salta esa barra y coge la siguiente**. Reproducido:
+    con `dias = [03-07, 03-10, 03-11, 03-12]` y `ed = 2025-03-08` (sabado), `bisect_left+1`
+    devuelve **03-11** saltandose **03-10**. `bisect_right` da la primera barra estrictamente
+    posterior en AMBOS casos, que es lo que este corrector necesita siempre.
+
+    Reglas:
+      * si el precio ya casa con el cierre del dia que el sello nombra -> None ("ya casa").
+        Esto hace la funcion IDEMPOTENTE: aplicarla dos veces no mueve nada.
+      * si casa con la primera barra estrictamente posterior -> se devuelve ese sello,
+        conservando la hora original y cambiando solo la fecha.
+      * si no casa con ninguna -> None ("sin barra que case"). Nunca se inventa un sello.
+    """
+    ed = _fecha(exit_timestamp)
+    cierre_d = cierres.get(ed)
+    if cierre_d is not None and abs(exit_price / cierre_d - 1) <= TOLERANCIA:
+        return None, "ya casa con su propio dia"
+
+    # `bisect_right` = primera barra ESTRICTAMENTE posterior, pertenezca `ed` o no al calendario.
+    i = bisect.bisect_right(dias, ed)
+    siguiente = dias[i] if i < len(dias) else None
+    cierre_s = cierres.get(siguiente) if siguiente else None
+    if cierre_s is not None and abs(exit_price / cierre_s - 1) <= TOLERANCIA:
+        original = str(exit_timestamp)
+        hora = original[10:] if len(original) > 10 else ""
+        return f"{siguiente}{hora}", "-> primera barra posterior, casa a 0.0 bp"
+
+    if cierre_d is not None:
+        return None, f"sin barra que case (err_D={abs(exit_price / cierre_d - 1) * 1e4:.1f}bp)"
+    return None, "sin barra que case (el sello no esta en el calendario)"
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     g = ap.add_mutually_exclusive_group(required=True)
@@ -77,30 +119,20 @@ def main() -> int:
 
     movidos = intactos = 0
     for f in sorted(BUNDLES.glob(f"spx500_*/backtests/{VERSION_OBJETIVO}/trades_*.json")):
-        raw = json.loads(f.read_text(encoding="utf-8"))
+        original_texto = f.read_text(encoding="utf-8")
+        raw = json.loads(original_texto)
         trades = raw.get("trades", raw) if isinstance(raw, dict) else raw
         cambios = []
         for t in trades:
-            ed = _fecha(t["exit_timestamp"])
-            xp = float(t["exit_price"])
-            cd = cierres.get(ed)
-            if cd and abs(xp / cd - 1) <= TOLERANCIA:
-                continue                      # el sello ya casa con su propio precio
-            i = bisect.bisect_left(dias, ed)
-            nd = dias[i + 1] if i + 1 < len(dias) else None
-            cn = cierres.get(nd) if nd else None
-            if not (cn and abs(xp / cn - 1) <= TOLERANCIA):
-                # sin barra que case: NO se inventa un sello.
-                intactos += 1
-                cambios.append((t["exit_timestamp"], None,
-                                f"sin barra que case (err_D={abs(xp/cd-1)*1e4:.1f}bp)" if cd
-                                else "sin barra D"))
+            nuevo, motivo = sello_corregido(t["exit_timestamp"], float(t["exit_price"]),
+                                            cierres, dias)
+            if nuevo is None:
+                if motivo != "ya casa con su propio dia":
+                    intactos += 1
+                    cambios.append((t["exit_timestamp"], None, motivo))
                 continue
-            viejo = str(t["exit_timestamp"])
-            # se conserva la hora del sello original; solo cambia la FECHA.
-            hora = viejo[10:] if len(viejo) > 10 else ""
-            t["exit_timestamp"] = f"{nd}{hora}"
-            cambios.append((viejo, t["exit_timestamp"], "-> D+1, casa a 0.0 bp"))
+            cambios.append((str(t["exit_timestamp"]), nuevo, motivo))
+            t["exit_timestamp"] = nuevo
             movidos += 1
 
         rel = f.relative_to(BUNDLES)
@@ -111,12 +143,20 @@ def main() -> int:
         if not cambios:
             print("    (sin cambios)")
         if args.apply and any(c[1] for c in cambios):
+            # DOS detalles de serializacion que no son cosmeticos, porque de ellos depende que
+            # el diff sea auditable:
+            #
             # `ensure_ascii=True` (por defecto) a proposito: el fichero original escapa los no
             # ASCII (`"S&P 500 \\u00b7 MA200"`). Con `ensure_ascii=False` el valor no cambia
             # pero el BYTE si, y el diff ensuciaba 8 lineas de `strategy_name` -- un campo que
-            # esta correccion no tiene permiso para tocar. Un diff que solo contiene
-            # `exit_timestamp` es lo que hace verificable la afirmacion "solo metadata".
-            f.write_text(json.dumps(raw, indent=2) + "\n", encoding="utf-8")
+            # esta correccion no tiene permiso para tocar.
+            #
+            # El salto final se CONSERVA tal como estaba (CXD-835 punto 4): anadirlo a ciegas
+            # metia 8 lineas mas de ruido en 4 ficheros y convertia en falso el claim "el diff
+            # solo contiene sellos". Un diff que solo contiene lo que dice contener es lo que
+            # hace VERIFICABLE la afirmacion "solo metadata"; con ruido es solo una afirmacion.
+            salto = "\n" if original_texto.endswith("\n") else ""
+            f.write_text(json.dumps(raw, indent=2) + salto, encoding="utf-8")
 
     print(f"\nsellos movidos: {movidos} · dejados intactos por no casar: {intactos}")
     print("PnL, equity y summary NO se tocan: es correccion de metadatos (0 trials).")
