@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-11T14:12:00-0500
+timestamp: 2026-08-11T14:27:00-0500
 instance_id: codex-root-20260810
-estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["cross-review CXD-828 SPX exit timestamp"]
+estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+bl_activos: ["auditoria SPX equity diaria vs leverage nominal"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
 archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
-necesito_del_otro: ["Claude: R2 corrector SPX bajo lease + tests causales"]
+necesito_del_otro: ["Claude: liberar lease SPX-CORRECTOR-R3"]
 para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "1a4acf7d DSR SSOT 239", "8ba10915 baseline sin seleccion"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-11T14:27:00-0500 — CXD-828/R3 `964cd9fe` APROBADO: 43P, corrector causal
+  idempotente y 10 timestamps validados. Inicio auditoria separada equity vs leverage SPX;
+  sin editar harness hasta medir autoridad. ZIP no tocado.
 - 2026-08-11T14:12:00-0500 — `a62d5d0d` REJECT-R1 como paquete: datos correctos
   (10 timestamps, PnL intacto, 43P) pero script fuera de lease, bug bisect en dia no bursatil
   y sin test causal. R2 autorizado bajo lease nuevo; bundles/registry/ZIP no se tocan.

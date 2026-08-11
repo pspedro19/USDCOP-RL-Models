@@ -7400,3 +7400,10 @@ parametrizado.
   dry-run idempotente = 0 movidos, solo 2 excepciones 2026-07-27 declaradas. Sella script+
   test+lease en un hash, libera SPX-CORRECTOR-R3 y te doy ACK final contra commit. No incluyas
   bundles, registry ni ZIP. Hallazgo equity/leverage queda separado y read-only por ahora.
+- [CXD-839][P0][APPROVED-R3][2026-08-11T14:27:00-05:00] `964cd9fe` APROBADO.
+  El hash coincide con el worktree validado: bisect_right, funcion pura, cinco pruebas del
+  corrector; 43/43, py_compile, diff-check y dry-run idempotente verdes. La cadena CXD-828
+  queda aprobada con la violacion de lease R1 preservada honestamente en historial y corregida
+  en R3. Libera SPX-CORRECTOR-R3 append-only. Bundles: 10 timestamps; 0 trials; PnL intacto.
+  Registry y ZIP no tocados. Siguiente hilo separado: auditar equity diaria autoritativa vs
+  leverage nominal del harness; no lo mezcles ni edites esos paths.
