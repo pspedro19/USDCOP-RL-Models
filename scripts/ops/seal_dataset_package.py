@@ -119,12 +119,25 @@ def inventario(cur, destino: Path) -> int:
 
 
 def columnas(cur, destino: Path) -> int:
+    """Una fila por columna, con tipo, nulabilidad, default, PK y descripcion del catalogo.
+
+    DOS DEFECTOS CORREGIDOS, ambos silenciosos:
+    * `LEFT JOIN pg_class ON cl.relname = c.table_name` ataba por NOMBRE, sin esquema. Una
+      tabla homonima en dos esquemas multiplicaba filas: el CSV salia con 2.480 filas para
+      2.473 columnas reales. Ahora el join va por `pg_class.oid` resuelto CON su namespace.
+    * `timescaledb_information` colaba las vistas internas del motor dentro del diccionario
+      de negocio. Se excluye.
+    Se anade `object_type` para que el lector sepa si esta mirando una tabla o una vista: el
+    diccionario cubre ambas, y confundirlas lleva a intentar escribir en una vista.
+    """
     cur.execute("""
-        SELECT c.table_schema, c.table_name, c.ordinal_position, c.column_name, c.data_type,
-               c.is_nullable, COALESCE(c.column_default,''),
+        SELECT c.table_schema, c.table_name, t.table_type, c.ordinal_position, c.column_name,
+               c.data_type, c.is_nullable, COALESCE(c.column_default,''),
                CASE WHEN pk.column_name IS NOT NULL THEN 'YES' ELSE 'NO' END,
                COALESCE(d.description,'')
         FROM information_schema.columns c
+        JOIN information_schema.tables t
+          ON t.table_schema=c.table_schema AND t.table_name=c.table_name
         LEFT JOIN (
             SELECT kcu.table_schema, kcu.table_name, kcu.column_name
             FROM information_schema.table_constraints tc
@@ -134,18 +147,22 @@ def columnas(cur, destino: Path) -> int:
             WHERE tc.constraint_type = 'PRIMARY KEY'
         ) pk ON pk.table_schema=c.table_schema AND pk.table_name=c.table_name
             AND pk.column_name=c.column_name
-        LEFT JOIN pg_class cl ON cl.relname = c.table_name
-        LEFT JOIN pg_namespace ns ON ns.oid = cl.relnamespace AND ns.nspname = c.table_schema
+        LEFT JOIN pg_namespace ns ON ns.nspname = c.table_schema
+        LEFT JOIN pg_class cl ON cl.relname = c.table_name AND cl.relnamespace = ns.oid
         LEFT JOIN pg_description d ON d.objoid = cl.oid AND d.objsubid = c.ordinal_position
-        WHERE c.table_schema NOT IN ('pg_catalog','information_schema',
+        WHERE c.table_schema NOT IN ('pg_catalog','information_schema','timescaledb_information',
               '_timescaledb_internal','_timescaledb_catalog','_timescaledb_config','_timescaledb_cache')
         ORDER BY c.table_schema, c.table_name, c.ordinal_position;""")
     filas = [r for r in cur.fetchall() if not es_infra(r[0], r[1])]
+    con_desc = sum(1 for r in filas if r[9])
     with open(destino, "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
-        w.writerow(["schema_name", "table_name", "ordinal_position", "column_name", "data_type",
-                    "is_nullable", "column_default", "is_primary_key", "column_comment"])
+        w.writerow(["schema_name", "table_name", "object_type", "ordinal_position", "column_name",
+                    "data_type", "is_nullable", "column_default", "is_primary_key",
+                    "column_comment"])
         w.writerows(filas)
+    print(f"      {len(filas)} columnas · {con_desc} con descripcion "
+          f"({100*con_desc/max(len(filas),1):.1f}%)")
     return len(filas)
 
 
