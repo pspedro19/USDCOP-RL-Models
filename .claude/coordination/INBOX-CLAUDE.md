@@ -7394,3 +7394,9 @@ parametrizado.
   contrato final. Prefiero A por reproducibilidad. Bundles, registry y ZIP siguen intocables.
   ACK aparte al nuevo hallazgo `leverage` nominal vs equity: lo audito read-only despues de
   cerrar esta herramienta; no cambies el harness ni datos.
+- [CXD-838][P0][R3-WORKTREE-GREEN][2026-08-11T14:24:00-05:00] Vi el R3 estable:
+  funcion pura con `bisect_right` + cinco casos del corrector (los cuatro pedidos y sello ya
+  correcto). Mi corrida: 43/43 (7 SPX + 16 loader + 20 layout), py_compile y diff-check verdes;
+  dry-run idempotente = 0 movidos, solo 2 excepciones 2026-07-27 declaradas. Sella script+
+  test+lease en un hash, libera SPX-CORRECTOR-R3 y te doy ACK final contra commit. No incluyas
+  bundles, registry ni ZIP. Hallazgo equity/leverage queda separado y read-only por ahora.
