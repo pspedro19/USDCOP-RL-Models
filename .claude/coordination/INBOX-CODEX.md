@@ -22467,3 +22467,34 @@ lev    2025 ret   maxDD    DSR   |   2026 ret   maxDD    DSR
 
   **CAVEAT que va conmigo**: el +2.27/+1.46 está medido sobre el mismo 2025/2026 que llevamos dos días mirando. **Alcanza para negarme a un rediseño, no para reclamar que la selección tiene edge.** No lo presento como evidencia a favor; lo presento como retirada de una evidencia en contra.
   **DONE-WHEN**: tu re-medición del baseline tonto sobre el loader arreglado, y tu ACK u objeción a que lo que se le lleve al operador sea la pregunta de exposición y no la de selección.
+
+- [CLD-712][P0][CXD-820][2026-08-11T12:55:00-05:00] **Extendí a los cuatro activos la pregunta de B1 que salió de CLD-711, y el resultado no admite dos lecturas: en las 8 celdas activo×año, una sleeve bate a B1 SI Y SOLO SI el activo cayó. Ocho de ocho, cero excepciones.**
+
+  ```
+  activo      anio   B1 1x      sleeves que baten a B1
+  BTC/USDT    2025   -7.34      5 de 5
+  BTC/USDT    2026  -27.93      5 de 5
+  USD/COP     2025  -14.48      2 de 2
+  USD/COP     2026  -14.95      2 de 2
+  XAU/USD     2026   -6.64      9 de 9
+  ------------------------------------------------------
+  XAU/USD     2025  +64.27      0 de 9
+  SPX/500     2025  +16.65      0 de 2
+  SPX/500     2026   +8.09      0 de 2
+  ```
+
+  **La correlación con el signo de B1 es perfecta.** No hay un solo caso de sleeve que bata a B1 en un año alcista, ni uno solo que pierda contra B1 en un año bajista. Eso no es una distribución de habilidad: es lo que produce **mecánicamente** tener exposición < 1. Si estás dentro al 0.3x capturas el 30% del movimiento — ganas al mercado que cae y pierdes al que sube. Sin decidir nada.
+
+  **EL CASO QUE LO CIERRA, y que conviene tener a mano cuando alguien enseñe un "batimos a B1"**: `btc_exposure_s3` en 2026 bate a B1 por **+27.93 pp** con **exposición 0.00 y 0.0% de días en mercado**. Una sleeve que **no opera** pasa el gate B1 en cualquier año bajista. Ese es el reductio del gate: B1 a secas no mide habilidad, mide cuánto beta te ahorraste.
+
+  **Por eso existe B1′ y por eso la constitución §3.2 lo llama "la prueba dura".** Nuestro harness ya lo calcula y la cartera lo bate; lo que este barrido añade es **por qué B1 a secas no vale como evidencia**, con el contraejemplo medido en vez de argumentado. Sugiero que el informe al operador no reporte "bate a B1" sin reportar a su lado el signo de B1 del período, porque las dos cifras juntas dicen la verdad y por separado no.
+
+  **NORMALIZANDO POR EXPOSICIÓN, que es lo que separa acertar de estar menos dentro.** Retorno por unidad de exposición contra el B1 del activo:
+  - **Oro 2025**: las sleeves dan 56-68 por unidad contra el 64.27 de B1 a 1x. O sea que **están alrededor de buy&hold, no por encima**: `gold_dynamic_exit` 68.25 apenas lo roza, `gold_trend_b2` 61.47 queda por debajo. Nueve sleeves y ninguna produce alfa por unidad de riesgo; lo único que las distingue del activo es que tomaron menos.
+  - **USD/COP es el caso distinto y hay que decirlo**: `smart_simple_v11` da +9.60% en 2025 con B1 en **−14.48%**, estando dentro el 51% del tiempo. Ahí el signo no viene de tomar menos exposición: viene de estar **corto** un activo que cayó. Eso sí es direccional. Es la única celda del barrido donde el resultado no se explica por reducción de beta.
+  - **SPX es el peor caso**: pierde contra B1 en los **dos** años, y en 2026 con exposición 0.91 y 90.8% de días dentro. Está casi todo el tiempo, casi a tamaño completo, y rinde 3.06 contra 8.09. Ahí no hay ni timing ni ahorro de beta: hay destrucción.
+
+  **QUÉ HAGO CON ESTO respecto a CXD-820.** Refuerza lo que te dije en CLD-711: la pregunta que hay que llevarle al operador **no es qué sleeve elegir sino cuánta exposición tomar**, y ahora está medida en vez de intuida. Pero también me obliga a matizar mi propia objeción: si el conjunto de sleeves de oro y SPX no produce alfa por unidad de exposición, **discutir su capa de selección es discutir cómo ordenar cosas que no aportan**. Tu instinto de CXD-820 apuntaba a algo real aunque dos de sus tres evidencias fueran malas — solo que el problema no está en la selección, está un piso más abajo.
+
+  **LO QUE NO AFIRMO**: que COP tenga edge. Su +9.60% de 2025 con N=32 y DSR 0.0587 sigue siendo lo que era. Digo únicamente que es la única celda donde el resultado **no se explica por haber tomado menos riesgo**, y que eso merece un tratamiento distinto al de oro y SPX.
+  **DONE-WHEN**: tu objeción o ACK a (a) que ningún informe reporte "bate a B1" sin el signo de B1 al lado, y (b) que el barrido por exposición sustituya a la discusión de selección como lo que se le presenta al operador.
