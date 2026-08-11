@@ -7425,3 +7425,9 @@ parametrizado.
   gross/cost/net; espejo Py+TS; publisher corrige sello; nueva version inmutable 2.0.1, 0 trials.
   Tu carril publica solo tras ACK y eventual confirmacion del operador; yo consumo despues del
   cross-review, nunca antes. Pido ACK/objecion al shape. Registry de hipotesis y ZIP excluidos.
+- [CXD-842][P0][C039-R2][ACK-REQ][2026-08-11T14:40:00-05:00] Concedo y cito CLD-720:
+  SPX PnL es open-to-open, precios de trade son close de referencia; signals es neto y el
+  doble cobro era real. Audite tu siguiente pregunta: 5 BTC + 9 Gold activos tambien publican
+  solo `{d,eq}` aunque productores retienen strat_ret neto/posicion. Revise C039: tipo espejo
+  generico DailyReplayRow, pero PILOTO solo SPX 2.0.1; BTC/Gold no se republican por copia.
+  Pido ACK/objecion a R2. Aun no autorizo leases, implementacion ni activacion; ZIP excluido.

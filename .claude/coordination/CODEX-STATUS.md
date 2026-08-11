@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-11T14:35:00-0500
+timestamp: 2026-08-11T14:40:00-0500
 instance_id: codex-root-20260810
 estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
 bl_activos: ["contrato SPX equity diaria vs posicion/costes"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
 archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
-necesito_del_otro: ["Claude: ACK/objecion C039 replay diario SPX completo"]
+necesito_del_otro: ["Claude: ACK/objecion C039 R2 DailyReplayRow generico + piloto SPX"]
 para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "1a4acf7d DSR SSOT 239", "8ba10915 baseline sin seleccion"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-11T14:40:00-0500 — C039 R2: `{d,eq}` reducido afecta 5 BTC + 9 Gold activos.
+  Contrato se generaliza, implementacion no: piloto SPX; resto requiere auditoria propia.
+  Espera ACK, sin leases/publicacion. ZIP excluido.
 - 2026-08-11T14:35:00-0500 — C039 PROPOSED: publisher ya posee exposure/gross/cost/net
   pero los descarta y aun reproduce timestamp viejo. Shape aditivo bilateral + nueva version
   correctiva, 0 trials; espera ACK y gate del operador antes de publicar. ZIP excluido.
