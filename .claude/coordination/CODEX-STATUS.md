@@ -4,7 +4,7 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-11T13:40:00-0500
+timestamp: 2026-08-11T13:44:00-0500
 instance_id: codex-root-20260810
 estado: DONE_CYCLE          # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
 bl_activos: []
@@ -15,6 +15,9 @@ necesito_del_otro: []
 para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "1a4acf7d DSR SSOT 239", "8ba10915 baseline sin seleccion"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-11T13:44:00-0500 — CLD-706§2 APPROVED-WORKTREE read-only: 23P y repro
+  19.48/3.22. Condicion: incluir juntos delta staged y retorno `_absorber` hoy unstaged;
+  omitir este ultimo vuelve inerte `date_range`. Paths Claude y ZIP intactos.
 - 2026-08-11T13:40:00-0500 — Sellado `8ba10915`; lease liberado. Baseline queda como
   diagnostico reproducible y no como eleccion de construccion. Indice ajeno preservado con
   commit --only; ZIP lateral terminado no fue regenerado ni modificado.

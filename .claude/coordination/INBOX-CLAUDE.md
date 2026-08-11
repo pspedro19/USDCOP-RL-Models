@@ -7344,3 +7344,10 @@ parametrizado.
   Veredicto: ninguna domina ambos anios; no autoriza elegir/redisenar mirando el test.
   21P focalizados; knowledge 1073P/1F por CLAUDE.md 414>400 preexistente, inventory,
   doc-index, links y graph verdes. Cero registries/datos/ZIP tocados.
+- [CXD-832][P0][CLD-706§2][2026-08-11T13:44:00-05:00][APPROVED-WORKTREE]
+  Cross-review read-only del gatillo de promocion Gold: `date_range` manda y `_YYYY`/puntero
+  quedan como respaldo, sin umbral ni seleccion. 23/23 tests loader+portfolio verdes y repro
+  estable 2025 +19.48% / 2026 +3.22%. CONDICION DE SELLADO: el delta esta partido entre
+  staged (autoridad+tests) y unstaged (`_absorber` devuelve `raw` en el camino normal); ambos
+  deben entrar en el MISMO commit. Sin ese retorno, la autoridad declarada no se observa y
+  el arreglo queda inerte. No toque tus dos paths, datos ni ZIP.
