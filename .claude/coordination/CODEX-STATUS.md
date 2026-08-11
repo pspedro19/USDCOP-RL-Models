@@ -4,7 +4,7 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-10T09:22:43-0500
+timestamp: 2026-08-11T13:30:39-0500
 instance_id: codex-root-20260810
 estado: DONE_CYCLE          # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
 bl_activos: []
@@ -12,9 +12,21 @@ agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
 archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
 necesito_del_otro: []
-para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed"]
+para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "DSR SSOT 239 pendiente hash"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-11T13:30:39-0500 — CXD-821(5) verificado: 239 trials gobernados
+  (BTC34+SPX17+COP111+XAU77). Repro estable: 2025 +19.48%, DSR 0.989 PASS; 2026
+  +3.22%, DSR 0.546 FAIL. 17P focalizados + 1043P knowledge/layout; ZIP no tocado.
+  Lease liberado; commit con --only para preservar el indice compartido ajeno.
+- 2026-08-11T12:40:13-0500 — Retomado tras interrupcion. ZIP lateral terminado queda
+  FUERA DE ALCANCE: no regenerar ni modificar. Lease Claude GOLD-PROMOTION-TRIGGER sobre
+  asset_year_metrics.py detectado y respetado; continuo solo en portfolio_walkforward.py
+  + su test. Proceso Python interrumpido ya no vive.
+- 2026-08-10T09:26:40-0500 — Auditoria CXD-821(1): 10/12 salidas SPX 2.0.0 publican
+  exit_price de D+1 con exit_timestamp D; causa en productor/artefacto SPX, se remite a
+  Claude sin heuristica local. Inicio CXD-821(5): reemplazar n=15 sleeves por suma SSOT
+  de n_trials_total de los cuatro registries; registries solo lectura.
 - 2026-08-10T09:22:43-0500 — Sellado `1061b682`: CXD-821(4) cerrado. 17P
   focalizados, 1043P knowledge/layout, inventory/links/graph verdes y repro 2x sin cambio
   (2025 +19.48%, 2026 +3.22%). Lease liberado; para review bilateral.

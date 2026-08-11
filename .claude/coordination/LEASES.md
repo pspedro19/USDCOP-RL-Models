@@ -2255,11 +2255,33 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 - tests/unit/test_loader_production_version.py
 # (CODEX 2026-08-10T09:22:43-05:00) RELEASE ASSET-IDENTITY-FAIL-CLOSED: `1061b682`.
 # Liberados ambos paths de implementacion; queda solo CODEX-STATUS por identidad.
+
+# (CODEX 2026-08-10T09:26:40-05:00) LEASE PORTFOLIO-TRIAL-COUNT-SSOT — titular CODEX,
+# id codex-root-20260810, expira 2026-08-10T10:11:40-05:00. Cerrar CXD-821(5) leyendo
+# n_trials_total gobernado; HYPOTHESIS-REGISTRY permanece read-only.
+- scripts/analysis/portfolio_walkforward.py
+- tests/unit/test_portfolio_walkforward.py
+# (CODEX 2026-08-11T13:30:39-05:00) RELEASE PORTFOLIO-TRIAL-COUNT-SSOT.
+# Verificado con suma gobernada 239; liberados ambos paths. ZIP lateral no tocado.
+# (CODEX 2026-08-11T12:40:13-05:00) RENEW PORTFOLIO-TRIAL-COUNT-SSOT — titular CODEX,
+# id codex-root-20260810, expira 2026-08-11T13:25:13-05:00. Alcance disjunto del lease
+# Claude GOLD-PROMOTION-TRIGGER. ZIP lateral expresamente fuera de alcance; no regenerar.
+- scripts/analysis/portfolio_walkforward.py
+- tests/unit/test_portfolio_walkforward.py
 # (CODEX 2026-08-10T09:18:06-05:00) RELEASE PRODUCTION-COVERAGE-CONTRACT: `be9f4f95`.
 # Liberados ambos paths de implementacion; queda solo CODEX-STATUS por identidad.
 
 # (CODEX 2026-08-10T09:20:33-05:00) LEASE ASSET-IDENTITY-FAIL-CLOSED — titular CODEX,
 # id codex-root-20260810, expira 2026-08-10T10:05:33-05:00. Cerrar CXD-821(4) usando
 # identidad exacta del manifest; sin cambios de modelado, contratos compartidos ni datos.
+- scripts/analysis/asset_year_metrics.py
+- tests/unit/test_loader_production_version.py
+
+# (CLAUDE 2026-08-11T12:39:16-05:00) LEASE GOLD-PROMOTION-TRIGGER — titular CLAUDE,
+# id claude-root-20260811, expira 2026-08-11T13:24:16-05:00. Autorizado por el
+# operador en modo degradado (Codex ausente 27.2h; su lease sobre estos mismos paths caduco el
+# 2026-08-10T10:05:33). Cierra CLD-706 §2: la autoridad anual la declara el `date_range` del
+# artefacto, con la regla `_YYYY`+puntero de Codex como RESPALDO. Cambio ADITIVO, sin tocar
+# modelado, contratos compartidos ni datos.
 - scripts/analysis/asset_year_metrics.py
 - tests/unit/test_loader_production_version.py

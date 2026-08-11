@@ -4,7 +4,11 @@ from datetime import date, timedelta
 
 import numpy as np
 
-from scripts.analysis.portfolio_walkforward import sleeve_is_live, strategy_daily_exact
+from scripts.analysis.portfolio_walkforward import (
+    governed_trial_count,
+    sleeve_is_live,
+    strategy_daily_exact,
+)
 
 
 def test_sleeve_liveness_uses_only_the_declared_trailing_window() -> None:
@@ -43,3 +47,21 @@ def test_exact_daily_return_does_not_credit_the_pre_entry_gap() -> None:
 
     np.testing.assert_allclose(returns, [0.0, 120.0 / 110.0 - 1.0, 132.0 / 120.0 - 1.0])
     np.testing.assert_allclose(position, [0.0, 1.0, 1.0])
+
+
+def test_governed_trial_count_sums_registry_totals_instead_of_published_sleeves(tmp_path) -> None:
+    paths = {}
+    for asset, count in {"a": 111, "b": 34}.items():
+        path = tmp_path / f"{asset}.md"
+        path.write_text(f"---\nn_trials_total: {count}\n---\n# registry\n", encoding="utf-8")
+        paths[asset] = path
+
+    total, by_asset = governed_trial_count({"a", "b"}, paths)
+
+    assert total == 145
+    assert by_asset == {"a": 111, "b": 34}
+
+
+def test_governed_trial_count_fails_closed_without_a_registry(tmp_path) -> None:
+    with np.testing.assert_raises_regex(ValueError, "sin HYPOTHESIS-REGISTRY"):
+        governed_trial_count({"missing"}, {})

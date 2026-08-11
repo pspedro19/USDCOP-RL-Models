@@ -64,11 +64,29 @@ sys.path.insert(0, str(ROOT))
 from scripts.analysis.asset_year_metrics import (  # noqa: E402
     BUNDLES, COST_BPS, SWAP_ANNUAL_PCT, _as_date, daily_prices, load_trades, resolve_asset,
 )
+from src.metrics.trial_count import read_n_trials_total  # noqa: E402
 
 VOL_OBJETIVO = 0.10
 VENTANA_VOL = 63
 VENTANA_SELECCION = 252
 LEVERAGE_MAX = 2.0
+
+TRIAL_REGISTRIES = {
+    "usdcop": ROOT / ".claude/specs/assets/usdcop/HYPOTHESIS-REGISTRY.md",
+    "xauusd": ROOT / ".claude/specs/assets/xauusd/HYPOTHESIS-REGISTRY.md",
+    "btcusdt": ROOT / ".claude/specs/assets/btcusdt/design/HYPOTHESIS-REGISTRY.md",
+    "spx500": ROOT / ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md",
+}
+
+
+def governed_trial_count(asset_ids: set[str], registry_paths=None) -> tuple[int, dict[str, int]]:
+    """Return the constitutional lower bound: sum of governed trials for active assets."""
+    paths = TRIAL_REGISTRIES if registry_paths is None else registry_paths
+    unknown = sorted(asset_ids - set(paths))
+    if unknown:
+        raise ValueError(f"activos sin HYPOTHESIS-REGISTRY: {unknown}")
+    counts = {asset_id: read_n_trials_total(paths[asset_id]) for asset_id in sorted(asset_ids)}
+    return sum(counts.values()), counts
 
 
 def strategy_daily(trades, days: list[date]) -> np.ndarray:
@@ -169,6 +187,7 @@ def main() -> int:
 
     # ---- universo: todas las estrategias publicadas, sin elegir ninguna a mano
     sleeves: dict[str, list[tuple[str, list]]] = {}
+    active_asset_ids: set[str] = set()
     for sd in sorted(BUNDLES.iterdir()):
         if not sd.is_dir():
             continue
@@ -178,6 +197,7 @@ def main() -> int:
         trades = load_trades(sd)
         if trades and symbol not in args.excluir:
             sleeves.setdefault(symbol, []).append((sd.name, trades))
+            active_asset_ids.add(manifest)
 
     prices = {sym: daily_prices(sym) for sym in sleeves}
     prices = {k: v for k, v in prices.items() if v}
@@ -185,6 +205,8 @@ def main() -> int:
     if not sleeves:
         print("sin sleeves con precios", file=sys.stderr)
         return 1
+
+    n_trials_governed, trials_by_asset = governed_trial_count(active_asset_ids)
 
     # calendario comun: union de fechas, restringida al solape real
     inicio = max(min(prices[s]) for s in prices)
@@ -353,15 +375,17 @@ def main() -> int:
         fila["bate_B1p"] = bool(fila["cartera"]["ann_return_pct"]
                                 > fila["B1p_exposicion_emparejada"]["ann_return_pct"])
 
-        # GATE CONSTITUCIONAL §2: ningun claim de edge sin DSR trial-aware. n_trials no es
-        # 1: el universo son las sleeves unicas consideradas por el selector. Se reporta a
-        # tres conteos porque el numero real depende de cuantas configuraciones se mirasen
-        # historicamente, y esa cifra la fija el HYPOTHESIS-REGISTRY, no yo.
+        # GATE CONSTITUCIONAL §2: ningun claim de edge sin DSR trial-aware. El conteo no es
+        # el numero de sleeves que sobrevivieron a publicacion: incluye TODOS los intentos
+        # historicos FT+AT de cada activo, leidos de sus HYPOTHESIS-REGISTRY. La suma es un
+        # minimo gobernado; cualquier diagnostico aun no registrado solo puede aumentarla.
         sr_pp = (fila["sharpe"] / np.sqrt(ann_global)) if fila["sharpe"] else 0.0
         fila["dsr"] = {
-            f"n_trials={nt}": dsr_report(sr_pp, obs, nt, periods_per_year=int(ann_global))
-            for nt in (len(pos_estrategia), 50, 100)
+            f"n_trials={n_trials_governed}": dsr_report(
+                sr_pp, obs, n_trials_governed, periods_per_year=int(ann_global)
+            )
         }
+        fila["n_trials_by_asset"] = trials_by_asset
         salida.append(fila)
 
     print(f"\n{'='*96}\nCARTERA WALK-FORWARD  (vol objetivo {VOL_OBJETIVO:.0%}, "
@@ -378,7 +402,7 @@ def main() -> int:
               f"{f['sharpe_stderr']:>7.2f}"
               f"{('si' if f['stress_costos']['survives_2x'] else 'no'):>4}"
               f"{('SI' if f['bate_B1p'] else 'no'):>6}"
-              f"{f['dsr'][f'n_trials={len(pos_estrategia)}']['headline_dsr']:>7.3f}")
+              f"{f['dsr'][f'n_trials={n_trials_governed}']['headline_dsr']:>7.3f}")
 
     # PBO/CSCV: juzga el PROCEDIMIENTO de seleccion, no el resultado. El DSR deflacta un
     # Sharpe por cuantos intentos hiciste; PBO pregunta lo complementario y mas duro: al
@@ -417,6 +441,9 @@ def main() -> int:
 
     print("")
     print("DSR trial-aware (headline = la sigma MENOS favorable; bar constitucional 0.95):")
+    print("  n_trials_total por activo: " + ", ".join(
+        f"{asset}={count}" for asset, count in trials_by_asset.items()
+    ) + f"; suma minima gobernada={n_trials_governed}")
     for f in salida:
         print(f"  {f['anio']}   " + "  ".join(
             f"n={k.split('=')[1]}: {v['headline_dsr']:.3f}" for k, v in f["dsr"].items()))
