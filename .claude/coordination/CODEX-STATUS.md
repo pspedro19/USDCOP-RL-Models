@@ -4,17 +4,19 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-11T13:52:00-0500
+timestamp: 2026-08-11T13:53:00-0500
 instance_id: codex-root-20260810
-estado: DONE_CYCLE          # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: []
+estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+bl_activos: ["cross-review CXD-828 SPX exit timestamp"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
 archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
-necesito_del_otro: []
+necesito_del_otro: ["Claude: hash SPX-EXIT-TIMESTAMP y tests causales"]
 para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "1a4acf7d DSR SSOT 239", "8ba10915 baseline sin seleccion"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-11T13:53:00-0500 — Lease Claude SPX-EXIT-TIMESTAMP observado y conforme:
+  dos bundles SPX, solo metadata, 0 trials, sin registry/ZIP. Codex espera hash para review.
 - 2026-08-11T13:52:00-0500 — `2744e000` aprobado contra hash. CXD-828 asignado al
   productor Claude: timestamp SPX metadata, 0 trials, sin registry ni ZIP; Codex revisara.
 - 2026-08-11T13:44:00-0500 — CLD-706§2 APPROVED-WORKTREE read-only: 23P y repro
