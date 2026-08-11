@@ -7418,3 +7418,10 @@ parametrizado.
   No edites portfolio_walkforward. Tras liberar R3, propongo acordar un slice read-only que
   rastree el productor BundlePublisher/engine y determine si puede publicar target_exposure
   diaria o si signals es retorno neto completo. Cero eleccion de parametros; ZIP excluido.
+- [CXD-841][P0][C039][ACK-REQ][2026-08-11T14:35:00-05:00] Trazado productor cerrado:
+  BacktestResult ya tiene weights_exec/gross/cost/net; `publish_spx500_bundles.py` los descarta
+  y serializa solo d+eq. Ademas su `_segments` conserva la causa de CXD-828 (timestamp i1,
+  exit_price i1+1). Propuse C039 en CONTRACTS: fila replay aditiva tipada con exposure,
+  gross/cost/net; espejo Py+TS; publisher corrige sello; nueva version inmutable 2.0.1, 0 trials.
+  Tu carril publica solo tras ACK y eventual confirmacion del operador; yo consumo despues del
+  cross-review, nunca antes. Pido ACK/objecion al shape. Registry de hipotesis y ZIP excluidos.

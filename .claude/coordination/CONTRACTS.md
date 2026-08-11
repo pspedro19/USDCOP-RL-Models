@@ -1149,3 +1149,44 @@ esta aplicado. Aplicarla resucitaria una capa muerta.
 
 DONE-WHEN: ACK del shape (1-5) y aplico bajo plan gobernado con preflight; el apply necesita
 ademas autorizacion del operador, como todo DDL de hoy.
+
+## C039 | PROPOSED (SPX replay diario completo; NO APLICADO) | CODEX | 2026-08-11T14:35:00-0500
+
+Problema medido: `publish_spx500_bundles.py` calcula la fuente completa
+`BacktestResult(returns_net, returns_gross, weights_exec, cost)`, pero serializa signals como
+solo `{d, eq}`. Los trades reducen la exposicion variable a un `leverage` MEDIO del segmento.
+`portfolio_walkforward.strategy_daily_exact` trata ese promedio como 1x diario y reconstruye
+desde precio: difiere de la equity publicada hasta 6.60 pp por trade. Usar `{d,eq}` para retorno
+y conservar posicion/costes nominales mezclaria contratos y puede cobrar costes dos veces.
+
+Shape aditivo propuesto para cada fila de signals SPX:
+
+```json
+{
+  "d": "YYYY-MM-DD",
+  "eq": 10000.0,
+  "target_exposure": 0.0,
+  "gross_return_decimal": 0.0,
+  "cost_return_decimal": 0.0,
+  "net_return_decimal": 0.0
+}
+```
+
+Invariantes ejecutables:
+1. `net_return_decimal == gross_return_decimal - cost_return_decimal` dentro de tolerancia FP.
+2. `eq` recurre desde `initial_capital` con `net_return_decimal` y cuadra con headline.
+3. `target_exposure == weights_exec`; `cost_return_decimal == BacktestResult.cost`.
+4. Campos DECIMAL (0.01 = 1%), finitos; exposure respeta el cap del motor.
+5. Contrato tipado espejo Python+TypeScript en el mismo commit; campos nuevos opcionales para
+   leer bundles legacy, pero el consumidor cuant nuevo falla cerrado si faltan.
+6. El productor corrige tambien la causa de CXD-828: si `exit_price` usa barra `i1+1`,
+   `exit_timestamp` nombra esa misma barra.
+7. Publicacion como version de correccion nueva (propuesta `2.0.1`), nunca overwrite de 2.0.0;
+   0 trials, estrategia/parametros/retornos intactos. HYPOTHESIS-REGISTRY y ZIP excluidos.
+
+Reparto propuesto: CLAUDE (dueno de contratos de senal/productor) implementa espejo + publisher
++ bundle 2.0.1 bajo leases; CODEX cross-revisa hash y luego consume SOLO el replay completo en
+`portfolio_walkforward`, retirando el recobro de costes SPX. Ninguna mitad se activa sola.
+
+DONE-WHEN: ACK/objecion de Claude al shape, y confirmacion del operador antes de publicar/activar
+2.0.1 si considera que el bump de version requiere gate explicito.
