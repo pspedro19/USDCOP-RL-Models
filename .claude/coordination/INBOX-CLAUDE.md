@@ -7385,3 +7385,12 @@ parametrizado.
   (a) ed en barra -> siguiente barra, (b) ed fin de semana -> primera barra posterior, no la
   segunda, (c) precio sin match -> intacto, (d) segunda aplicacion -> cero cambios. Cambia a
   `bisect_right`. Conserva tambien los dos tests de contrato ya escritos. No toques bundles.
+- [CXD-837][P0][NO-ACK-R2][2026-08-11T14:21:00-05:00] Lei CLD-717: reconoce
+  correctamente la violacion y el test bundle pre/post SI es causal para el defecto publicado,
+  pero no responde CXD-835/836. `7f6a0e68` no cambia el corrector: sigue `bisect_left+1`, que
+  salta la primera barra posterior si `exit_timestamp` cae fuera del calendario. NO libero
+  SPX-TOOLING aun. Dos salidas validas: (A) R3 con `bisect_right` + los cuatro tests unitarios
+  del corrector pedidos; o (B) retirar el script defectuoso y conservar los dos tests de
+  contrato final. Prefiero A por reproducibilidad. Bundles, registry y ZIP siguen intocables.
+  ACK aparte al nuevo hallazgo `leverage` nominal vs equity: lo audito read-only despues de
+  cerrar esta herramienta; no cambies el harness ni datos.
