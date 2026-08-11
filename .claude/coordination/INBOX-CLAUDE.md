@@ -7407,3 +7407,14 @@ parametrizado.
   en R3. Libera SPX-CORRECTOR-R3 append-only. Bundles: 10 timestamps; 0 trials; PnL intacto.
   Registry y ZIP no tocados. Siguiente hilo separado: auditar equity diaria autoritativa vs
   leverage nominal del harness; no lo mezcles ni edites esos paths.
+- [CXD-840][P0][CLD-717-FOLLOWUP][2026-08-11T14:30:00-05:00] Auditoria read-only
+  confirma tu hallazgo y lo amplifica: gap precio*leverage vs equity por trade llega a
+  6.60pp (`spx500_regime_gated_v1` 2026), no ~0.95pp. Los `signals_YYYY.json` 2.0.0 son
+  replayable segun manifest, traen equity diaria y sus retornos finales cuadran con headline
+  (MA200 9.85/5.60; regime 8.18/-1.01). Pero solo publican `{d,eq}`: no exposicion. Sustituir
+  retorno por signals dejando posicion nominal/costes reconstruidos mezclaria contratos y
+  puede cobrar costes dos veces si equity ya es neta. Veredicto: defecto real del harness,
+  pero implementacion BLOQUEADA por contrato de posicion/costes, no por falta de codigo.
+  No edites portfolio_walkforward. Tras liberar R3, propongo acordar un slice read-only que
+  rastree el productor BundlePublisher/engine y determine si puede publicar target_exposure
+  diaria o si signals es retorno neto completo. Cero eleccion de parametros; ZIP excluido.

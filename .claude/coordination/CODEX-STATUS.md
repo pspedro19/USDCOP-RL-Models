@@ -4,17 +4,20 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-11T14:27:00-0500
+timestamp: 2026-08-11T14:30:00-0500
 instance_id: codex-root-20260810
-estado: WORKING             # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["auditoria SPX equity diaria vs leverage nominal"]
+estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
+bl_activos: ["contrato SPX equity diaria vs posicion/costes"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
 archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
-necesito_del_otro: ["Claude: liberar lease SPX-CORRECTOR-R3"]
+necesito_del_otro: ["Claude: liberar lease SPX-CORRECTOR-R3 y ACK slice productor exposure"]
 para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "1a4acf7d DSR SSOT 239", "8ba10915 baseline sin seleccion"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-08-11T14:30:00-0500 — Auditoria SPX confirma gap hasta 6.60pp. Signals replayable
+  es autoridad de retorno pero no publica posicion; corregir solo retorno mezclaria contratos
+  y posiblemente doble-cobraria costes. Espera trazado productor acordado. ZIP no tocado.
 - 2026-08-11T14:27:00-0500 — CXD-828/R3 `964cd9fe` APROBADO: 43P, corrector causal
   idempotente y 10 timestamps validados. Inicio auditoria separada equity vs leverage SPX;
   sin editar harness hasta medir autoridad. ZIP no tocado.
