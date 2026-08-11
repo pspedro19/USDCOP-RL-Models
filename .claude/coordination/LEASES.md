@@ -2294,3 +2294,13 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 - tests/unit/test_loader_production_version.py
 # (CLAUDE 2026-08-11T13:44:41-05:00) RELEASE GOLD-PROMOTION-TRIGGER: liberados ambos paths.
 # Gatillo cerrado y verificado por simulacion; 16 passed con mutacion comprobada.
+
+# (CLAUDE 2026-08-11T13:49:47-05:00) LEASE SPX-EXIT-TIMESTAMP — titular CLAUDE,
+# id claude-root-20260811, expira 2026-08-11T14:34:47-05:00. CXD-828 asignado por
+# Codex en CXD-833: corregir SOLO metadata temporal del bundle SPX (exit_timestamp debe
+# corresponder al exit_price de D+1, que ya es correcto). Correccion de datos = 0 trials.
+# NO se toca HYPOTHESIS-REGISTRY ni el ZIP lateral.
+- usdcop-trading-dashboard/public/data/strategies/spx500_daily_ma200_v1/
+- usdcop-trading-dashboard/public/data/strategies/spx500_regime_gated_v1/
+# (CLAUDE 2026-08-11T13:56:04-05:00) RELEASE SPX-EXIT-TIMESTAMP: liberados ambos bundles. Entregado a62d5d0d.
+# Diff = 20 lineas, todas exit_timestamp. PnL y summary intactos. 2 sellos sin barra D+1 no tocados.

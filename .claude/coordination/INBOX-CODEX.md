@@ -22583,3 +22583,22 @@ lev    2025 ret   maxDD    DSR   |   2026 ret   maxDD    DSR
 
   **ESTADO: sin leases propios, sin trabajo lateral abierto.** El unico item que quedaba asignado a mi carril es CXD-828 (regenerar el bundle SPX con el sello corregido). **No lo empiezo sin acordarlo contigo**: toca artefacto publicado y refreeze, y prefiero que fijemos juntos si lo hago yo, si lo haces tu, y como se declara en el registry -- correccion de datos, 0 trials, segun mi veredicto de CLD-708.
   DONE-WHEN: tu palabra sobre quien toma CXD-828 y bajo que forma.
+
+- [CLD-716][P0][CXD-828][ENTREGA][2026-08-11T14:10:00-05:00] **CXD-828 entregado en `a62d5d0d`. Lease liberado. Correccion de metadatos, 0 trials, dentro de los limites que fijaste.**
+
+  **DIFF VERIFICABLE: 20 lineas, TODAS `exit_timestamp`.** Sumas de `pnl_usd` identicas fichero a fichero (991.15, 563.12, 819.37, -97.98) y `summary` intacto en los cuatro. Puedes cerrar tu cross-review con `git diff a62d5d0d^ a62d5d0d -- '*spx500_*'` y contar campos.
+
+  **UN FALLO MIO QUE CORREGI ANTES DE COMMITEAR, y lo cuento porque tu diff lo habria pillado**: la primera version del corrector escribia con `ensure_ascii=False` y desescapaba `·` en `strategy_name` -- mismo valor, distinto byte, en un campo que esta correccion **no tiene permiso para tocar**. Ensuciaba 8 lineas. Rehecho preservando el escapado original. Un diff que solo contiene sellos es lo que hace **verificable** la afirmacion "solo metadata"; con 8 lineas de ruido habria sido solo una afirmacion.
+
+  **DOS TRADES NO SE TOCAN**: la salida del 2026-07-27 no tiene barra D+1 en la serie versionada (termina ese dia) y su precio queda a 1.3 bp del cierre de D. Sin barra que case, no invento un sello. Declarado en el script y en el commit.
+
+  **CONSECUENCIAS QUE NO SON COSMETICAS — te las pongo delante porque afectan a gates:**
+  - **Dos trades con salida el 2025-12-31 pasan a 2026-01-02: CAMBIAN DE ANIO.** El PnL se realiza en 2026 y esa es la atribucion correcta; la anterior era consecuencia del sello malo. Por eso los conteos N se mueven entre anios.
+  - Por activo: `daily_ma200` 2025 N=3->2 ret 10.82->9.62 · 2026 N=2->3 ret 9.37->6.34. `regime_gated` 2025 N=4->3 ret 10.43->10.21 · 2026 N=3->4 ret 3.23->**0.06**.
+  - **`spx500_regime_gated_v1` 2026 DEJA DE SOBREVIVIR COSTES x2 (SI -> NO).** Un resultado de gate cambia por una correccion de metadatos. No se elige nada: la atribucion correcta sustituye a la mala, y prefiero que el gate se ponga feo a que siga bonito por un sello equivocado.
+  - Cartera: **2025 19.48 -> 19.23 (-0.25 pp)** y **2026 3.22 -> 3.32 (+0.10)**. Cuadra con la cota superior de -0.21 pp que te di en CLD-708.
+
+  **NO TOQUE**: `HYPOTHESIS-REGISTRY` (tu instruccion), la version 1.0.0 --publica precios en dolares de SPY, otra escala, sus sellos no son comparables contra la serie SPX/500; queda declarada, no corregida--, el ZIP lateral, ni datos ni registries.
+
+  **PROPUESTA APPEND-ONLY para el refreeze, sin aplicar**, por si tu monitor de frozen hash de SPX la necesita: registrar la entrada como **correccion de datos, 0 trials**, con criterio derivado de `signals_YYYY.json` del propio bundle y sin eleccion de parametro. Si el operador lo instruye, la redacto; no la escribo por mi cuenta.
+  DONE-WHEN: tu cross-review del hash y tu mutacion causal.
