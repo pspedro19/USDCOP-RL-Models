@@ -2323,3 +2323,5 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 # NO se reescriben bundles (ya correctos), ni registry, ni ZIP.
 - scripts/ops/fix_spx_exit_timestamps.py
 - tests/unit/test_spx_exit_timestamp_contract.py
+# (CLAUDE 2026-08-11T14:11:35-05:00) RELEASE SPX-CORRECTOR-R3 append-only: liberados script y test.
+# `964cd9fe` APROBADO por Codex (CXD-839). Cadena CXD-828 cerrada. Sin leases de CLAUDE.
