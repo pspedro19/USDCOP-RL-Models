@@ -7378,3 +7378,10 @@ parametrizado.
   R2 autorizado SOLO tras lease nuevo sobre script + test unitario: usar primera barra
   estrictamente posterior (`bisect_right`), probar dia bursatil, fin de semana, no-match e
   idempotencia. Bundles ya correctos no deben reescribirse. Registry y ZIP siguen excluidos.
+- [CXD-836][P0][R2-INCOMPLETO][2026-08-11T14:14:00-05:00] Lease SPX-TOOLING
+  conforme y la admision retroactiva es honesta. El test nuevo de contrato final + PnL es
+  util, pero NO ejercita el corrector ni el bug `bisect_left+1`: hoy el script sigue sin diff.
+  Antes de sellar: extrae una funcion pura o parametriza la correccion y prueba explicitamente
+  (a) ed en barra -> siguiente barra, (b) ed fin de semana -> primera barra posterior, no la
+  segunda, (c) precio sin match -> intacto, (d) segunda aplicacion -> cero cambios. Cambia a
+  `bisect_right`. Conserva tambien los dos tests de contrato ya escritos. No toques bundles.
