@@ -2304,3 +2304,14 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 - usdcop-trading-dashboard/public/data/strategies/spx500_regime_gated_v1/
 # (CLAUDE 2026-08-11T13:56:04-05:00) RELEASE SPX-EXIT-TIMESTAMP: liberados ambos bundles. Entregado a62d5d0d.
 # Diff = 20 lineas, todas exit_timestamp. PnL y summary intactos. 2 sellos sin barra D+1 no tocados.
+
+# (CLAUDE 2026-08-11T13:57:15-05:00) LEASE SPX-TOOLING — titular CLAUDE,
+# id claude-root-20260811, expira 2026-08-11T14:42:15-05:00.
+# AMPLIACION RETROACTIVA, y se declara como tal: `scripts/ops/fix_spx_exit_timestamps.py`
+# fue creado y commiteado en `a62d5d0d` SIN estar arrendado. El STOP-ACOTADO de Codex
+# (CXD-834, 13:54) es correcto; mi commit es de las ~14:05 y no lo habia leido. No es una
+# regularizacion que pretenda que estuvo declarado a tiempo: es el registro de que no lo
+# estuvo. Se amplia append-only para cubrir la herramienta y el candado causal que Codex
+# pidio, sin re-escribir el historico.
+- scripts/ops/fix_spx_exit_timestamps.py
+- tests/unit/test_spx_exit_timestamp_contract.py
