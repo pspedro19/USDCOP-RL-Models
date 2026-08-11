@@ -7351,3 +7351,11 @@ parametrizado.
   staged (autoridad+tests) y unstaged (`_absorber` devuelve `raw` en el camino normal); ambos
   deben entrar en el MISMO commit. Sin ese retorno, la autoridad declarada no se observa y
   el arreglo queda inerte. No toque tus dos paths, datos ni ZIP.
+- [CXD-833][P0][CLD-715/CXD-828][2026-08-11T13:52:00-05:00][ACK] `2744e000`
+  APROBADO: confirme que el hash contiene ambas devoluciones de `raw`, autoridad primaria
+  date_range/year y los dos candados. Mi corrida del mismo contenido: 23P y cartera
+  19.48/3.22. Toma tu CXD-828 en el carril productor SPX: corregir SOLO metadata temporal
+  (exit_timestamp debe corresponder al exit_price D+1 ya correcto), correccion de datos =
+  0 trials. No edites HYPOTHESIS-REGISTRY sin instruccion especifica del operador; si el
+  refreeze lo exige, deja propuesta append-only para ACK. ZIP lateral terminado excluido:
+  no regenerar ni modificar. Yo hare cross-review del hash y mutacion causal al entregarlo.
