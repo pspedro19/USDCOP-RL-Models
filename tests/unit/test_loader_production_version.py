@@ -224,3 +224,70 @@ def test_on_the_real_bundles_cop_resolves_to_the_production_version() -> None:
     assert (elegida / "trades_2026.json").is_file(), (
         "la versión productiva no publica 2026: el hueco sería real y no del loader"
     )
+
+
+# ---------------------------------------------------------------------------
+# CLD-706 §2 — el gatillo de PROMOCION. Anadido bajo lease CLAUDE 2026-08-11,
+# autorizado por el operador; ACK conceptual de Codex en CXD-829.
+# ---------------------------------------------------------------------------
+def _trades_con_rango(path: Path, timestamps: list[str], inicio: str, fin: str) -> None:
+    """Artefacto de produccion que DECLARA su cobertura, como hacen los reales."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "strategy_id": path.stem,
+        "date_range": {"start": inicio, "end": fin},
+        "trades": [{"timestamp": stamp} for stamp in timestamps],
+    }), encoding="utf-8")
+
+
+def test_declared_coverage_survives_the_asset_being_promoted(tmp_path, monkeypatch) -> None:
+    """Promover un activo NO puede borrarle historia publicada.
+
+    El gatillo, medido antes de este candado: `gold_dynamic_exit.json` declara
+    `date_range 2026-01-01..2026-07-21` pero contiene un trade entrado el 2025-12-30 —la
+    posicion abierta al inicio de su ventana—. Con la autoridad inferida de los SELLOS, ese
+    huerfano reclamaba TODO 2025 en cuanto el manifest ganaba `production.model_version`, y
+    la cartera pasaba de 19.48%/3.22% a 14.79%/0.89% re-destruyendo 11 trades. Sin error y
+    sin aviso.
+
+    El artefacto ya publica su cobertura; leerla es invariante al puntero del manifest, al
+    nombre del fichero y al calendario. Este test fija esa invariancia: **el mismo artefacto
+    con y sin puntero de produccion debe cargar exactamente los mismos trades.**
+    """
+    estrategia = tmp_path / "gold_like"
+    _bundle(estrategia, "1.0.0", (2025,))
+    _trades(estrategia / "backtests" / "1.0.0" / "trades_2025.json",
+            ["2025-03-01", "2025-06-01", "2025-09-01"])
+    produccion = tmp_path / "production"
+    # Trade huerfano de dic-2025 dentro de un artefacto que declara cubrir SOLO 2026.
+    _trades_con_rango(produccion / "gold_like.json", ["2025-12-30", "2026-02-02"],
+                      "2026-01-01", "2026-07-21")
+    monkeypatch.setattr(metrics, "PROD_TRADES", produccion)
+
+    esperado = ["2025-12-30", "2026-02-02", "2025-03-01", "2025-06-01", "2025-09-01"]
+
+    for puntero in (None, {"model_version": "1.0.0"}):
+        (estrategia / "manifest.json").write_text(
+            json.dumps({"strategy_id": "gold_like", "production": puntero}), encoding="utf-8")
+        cargado = [t["timestamp"] for t in metrics.load_trades(estrategia)]
+        assert cargado == esperado, (
+            f"con production={puntero!r} la historia de 2025 cambio: {cargado}")
+
+
+def test_declared_coverage_still_suppresses_the_year_it_owns(tmp_path, monkeypatch) -> None:
+    """La invariancia no puede lograrse ignorando la autoridad: DENTRO de su rango declarado,
+    la ausencia de un trade en produccion sigue siendo INFORMACION, no un hueco que tapar."""
+    estrategia = tmp_path / "cop_like"
+    _bundle(estrategia, "1.0.0", (2025,))
+    _trades(estrategia / "backtests" / "1.0.0" / "trades_2025.json",
+            ["2025-01-05", "2025-03-01"])
+    produccion = tmp_path / "production"
+    _trades_con_rango(produccion / "cop_like_2025.json", ["2025-03-01"],
+                      "2025-01-01", "2026-01-02")
+    (estrategia / "manifest.json").write_text(
+        json.dumps({"strategy_id": "cop_like", "production": {"model_version": "1.0.0"}}),
+        encoding="utf-8")
+    monkeypatch.setattr(metrics, "PROD_TRADES", produccion)
+
+    # 2025 lo cubre produccion: el trade de enero del bundle NO se cuela.
+    assert [t["timestamp"] for t in metrics.load_trades(estrategia)] == ["2025-03-01"]

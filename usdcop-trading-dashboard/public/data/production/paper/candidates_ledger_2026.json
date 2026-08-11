@@ -8,7 +8,7 @@
     "v13": "EXCLUIDA hasta freeze (abrir 2026 = +1 trial, decisi\u00f3n del operador)"
   },
   "judge_note": "el juez sellado de v12/v14 consume SOLO judge_window (post-freeze); la serie completa es monitoreo, no evidencia confirmatoria",
-  "generated_at": "2026-08-05",
+  "generated_at": "2026-08-11",
   "strategies": {
     "smart_simple_v11": {
       "ret_2026_ytd_pct": 2.9,
@@ -108,7 +108,7 @@
       "lineage": {
         "timestamp": "2026-01-05T09:00:00-05:00",
         "signal_node_id": "ab0abbcd-bc64-48ba-b1f2-04cbb98132ab",
-        "snapshot_node_id": "e78640b4-a739-450e-8eb3-96cb958cc721",
+        "snapshot_node_id": "74b9f313-e566-4807-ba64-a9fa6b89dc9c",
         "bar_l0_node_id": "3eaee4a4-04d8-467e-bd58-ec5edb8829b9"
       }
     },
@@ -416,8 +416,8 @@
   },
   "identity": {
     "schema_version": "1.0.0",
-    "semantic_hash": "sha256:04d4153ddea8b4f6827a37339a3d3e3738c67b02c3a150a4b7c306e10e95f6bd",
+    "semantic_hash": "sha256:137473d953b2e80ec0888be00222eda1975da424f6645d984a9bf3be18467bba",
     "decision_fingerprint": "sha256:cfcd88c01d057e4db187f9a66bfd4e95a73c60c326e3280ff2b9472de167b796",
-    "derivation_id": "sha256:741d99d1172064add59bc879d96660a5b1d3e2b1c35708ccda1a3c827018796e"
+    "derivation_id": "sha256:7caa8aef0c057e2ef2d7a79b3835929848dd82a55e23688bce53e2ec7b296541"
   }
 }

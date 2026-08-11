@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-08-04T00:49:38.946850+00:00",
+  "generated_at_utc": "2026-08-06T21:30:50.982460+00:00",
   "read_only": true,
   "pairs": [
     {
@@ -32,7 +32,7 @@
       "seed": "seeds\\latest\\macro_indicators_daily.parquet",
       "backup": "data\\backups\\seeds\\macro_indicators_daily_backup.parquet",
       "seed_sha256": "38b866541bfc677b6b5c472245229cd49fa2f611cae48f067d85a32c5a2a1091",
-      "backup_sha256": "430582f768e2b6b535c135dc0ad583d3272adbbe1895359cfc11230822329835",
+      "backup_sha256": "02d8bea07128f1da1e37b2c547b9a6179864ebbafb65a57ba0877510511b02ca",
       "seed_rows": 10866,
       "backup_rows": 26326,
       "common_timestamps": 10866,
@@ -70,19 +70,9 @@
       ],
       "columns_backup_only": [
         "ffill_count",
-        "finc_curve_t10y2y_usa_d_t10y2y",
-        "finc_curve_t10y3m_usa_d_t10y3m",
-        "finc_realyield10y_usa_d_dfii10",
-        "finc_spread_baa10y_usa_d_baa10y",
-        "finc_spread_hyoas_usa_d_hyoas",
         "fxrt_spot_usdcop_col_d_usdcop",
-        "infl_breakeven10y_usa_d_t10yie",
         "is_complete",
-        "labr_claims_icsa_usa_d_icsa",
-        "polr_fed_funds_usa_d_dff",
-        "source_date",
-        "volt_nfci_usa_d_nfci",
-        "volt_stress_stlfsi_usa_d_stlfsi4"
+        "source_date"
       ],
       "timezone_normalized": true,
       "status": "REVIEW_REQUIRED"

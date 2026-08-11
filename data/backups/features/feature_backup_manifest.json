@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-07-29T00:17:12.153020+00:00",
+  "created_at": "2026-08-11T15:30:21.810493+00:00",
   "tables": {
     "news_articles": {
       "status": "ok",
@@ -31,9 +31,9 @@
     },
     "forecast_h5_predictions": {
       "status": "ok",
-      "rows": 18,
-      "sha256": "8a6348ddfa86e33dd1cf00322e847a46af93d79b3866855c2845dbbc3b3c4054",
-      "latest": "2026-07-07 04:38:31.127306+00:00",
+      "rows": 0,
+      "sha256": "4f33184f669bad593148b9103e87b19cc1482485ee312082436ef87218d1794d",
+      "latest": null,
       "file": "forecast_h5_predictions.parquet"
     },
     "forecast_h5_signals": {
@@ -67,42 +67,30 @@
     "asset_daily_ohlcv": {
       "status": "ok",
       "rows": 60432,
-      "sha256": "d8e00c0df0402d5dfba42abf588f42e449e2fde9aee3d9d87d096487d9710463",
+      "sha256": "f1ffdead519a46e696b18d36fb9685dab186efc16bb4d8b18a84656ca18f6bc6",
       "latest": "2026-07-29 00:00:00+00:00",
       "file": "asset_daily_ohlcv.parquet"
     },
     "usdcop_m5_ohlcv": {
       "status": "ok",
-      "rows": 2206214,
-      "sha256": "ba88a87e1a298eb9cb734ba5c3c7679a729825bc172b6b420f0908bfe7a86f36",
-      "latest": "2026-07-29 00:10:00+00:00",
+      "rows": 2206723,
+      "sha256": "c2f9db8d2c14dfa084a34739c4ad108335175092e95a651a82bf28a878f52962",
+      "latest": "2026-08-11 15:25:00+00:00",
       "file": "usdcop_m5_ohlcv.parquet"
     },
     "asset_native_ohlcv": {
-      "status": "ok",
-      "rows": 286428,
-      "sha256": "ed70f3db3360ae7d0a9b67f7bfd65ccb153b091bf926eb96e65eff79ea1840e4",
-      "latest": "2026-07-29 00:00:00+00:00",
-      "file": "asset_native_ohlcv.parquet"
+      "status": "absent"
     },
     "market_ingestion_manifest": {
-      "status": "ok",
-      "rows": 3775,
-      "sha256": "5032dfc633633e70a488651fc3256d7f3cd5109f482f943fe73b838b8845e1dc",
-      "latest": "2026-07-29 00:14:36.822425+00:00",
-      "file": "market_ingestion_manifest.parquet"
+      "status": "absent"
     },
     "crypto_derivatives_daily": {
-      "status": "ok",
-      "rows": 2506,
-      "sha256": "27516da85920bcd21e2b74d4203da05aa148b50ab6958a41190fab3989dd69cc",
-      "latest": "2026-07-20 00:00:00",
-      "file": "crypto_derivatives_daily.parquet"
+      "status": "absent"
     },
     "macro_indicators_monthly": {
       "status": "ok",
       "rows": 864,
-      "sha256": "20b0aa1f1342da93fd7eb938571f57cd55e5747e12453228bd77e558f59625ee",
+      "sha256": "07728f98968dd1745079e6583147c3d672e1bec0c07631a14e6d00ce6df75ded",
       "latest": "2026-06-01 00:00:00",
       "file": "macro_indicators_monthly.parquet"
     },
@@ -116,7 +104,7 @@
     "audit_log": {
       "status": "ok",
       "rows": 54,
-      "sha256": "d9e7e63538dd333d1ff8df8ab38d6bacc3cd40974f38bf8f213dc1834a1372ec",
+      "sha256": "58bba85cedddca2d87e7f54f7bf174fc0f1e1305304c28d4d3ebc83556764b27",
       "latest": "2026-07-21 02:54:15.720348+00:00",
       "file": "audit_log.parquet"
     }

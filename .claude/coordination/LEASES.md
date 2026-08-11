@@ -2292,3 +2292,5 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 # modelado, contratos compartidos ni datos.
 - scripts/analysis/asset_year_metrics.py
 - tests/unit/test_loader_production_version.py
+# (CLAUDE 2026-08-11T13:44:41-05:00) RELEASE GOLD-PROMOTION-TRIGGER: liberados ambos paths.
+# Gatillo cerrado y verificado por simulacion; 16 passed con mutacion comprobada.

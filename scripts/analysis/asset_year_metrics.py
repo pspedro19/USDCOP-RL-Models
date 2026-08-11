@@ -198,14 +198,14 @@ def load_trades(strategy_dir: Path) -> list[dict]:
         manifest = {}
     has_production_pointer = bool((manifest.get("production") or {}).get("model_version"))
 
-    def _absorber(path: Path, dentro_de: tuple | None = None) -> None:
+    def _absorber(path: Path, dentro_de: tuple | None = None) -> dict | None:
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except Exception:  # noqa: BLE001
-            return
+            return None
         items = raw.get("trades", raw) if isinstance(raw, dict) else raw
         if not isinstance(items, list):
-            return
+            return raw if isinstance(raw, dict) else None
         for t in items:
             # Clave por sello de ENTRADA, no por (entrada, salida, precio): el mismo trade
             # economico aparece en ambas fuentes con precios DISTINTOS, justo porque los
@@ -220,6 +220,12 @@ def load_trades(strategy_dir: Path) -> list[dict]:
                     continue      # anio cubierto por la fuente autoritativa: su ausencia es informacion
             seen.add(k)
             trades.append(t)
+        # Devuelve el documento SIEMPRE, tambien en el camino normal: el llamador lee de aqui
+        # la cobertura declarada (`date_range`/`year`). En la primera version solo se devolvia
+        # en la rama de salida temprana y el caso normal caia al final devolviendo None, con lo
+        # que la autoridad declarada nunca se leia y el arreglo no hacia nada. Lo delato la
+        # prueba del gatillo, no la lectura del codigo.
+        return raw if isinstance(raw, dict) else None
 
     prod = sorted(PROD_TRADES.glob(f"{strategy_dir.name}*.json")) if PROD_TRADES.is_dir() else []
     prod += sorted((strategy_dir / "production").glob("trades*.json"))
@@ -230,12 +236,52 @@ def load_trades(strategy_dir: Path) -> list[dict]:
     # movia los resultados de forma erratica. Se fusiona, no se sustituye.
     authoritative_years: set[int] = set()
     for path in prod:
-        _absorber(path)
-        # Authority is a property of the artifact contract, never of how many trades it
-        # happens to contain. ``*_YYYY.json`` explicitly owns that year. A generic file
-        # owns its observed years only when the manifest points at a production version;
-        # otherwise it is a partial operational extract (the BTC/Gold case) and may be
-        # completed from the published bundle.
+        raw = _absorber(path)
+
+        # ---------------------------------------------------------------------------
+        # (1) AUTORIDAD DECLARADA POR EL PROPIO ARTEFACTO — CLD-706 §2, cierre del
+        #     gatillo de promocion. Tomado bajo lease CLAUDE 2026-08-11 con el operador
+        #     autorizando en modo degradado; ADITIVO sobre la regla de Codex, que queda
+        #     intacta como respaldo en (2).
+        #
+        # El criterio `_YYYY` + `production.model_version` funciona HOY, pero solo porque
+        # oro y BTC NO tienen puntero de produccion en su manifest. Simulado darselo -que
+        # es exactamente lo que ocurre cuando el operador PROMUEVE oro-, la rama `elif`
+        # deriva la autoridad anual de los sellos de entrada, un trade huerfano del
+        # 2025-12-30 reclama TODO 2025, y la cartera vuelve de 19.48/3.22 a 14.79/0.89
+        # re-destruyendo 8 trades de `gold_dynamic_exit` y 3 de `gold_trend_simple`.
+        # Sin error y sin aviso.
+        #
+        # El artefacto ya publica su cobertura: `gold_dynamic_exit.json` declara
+        # `date_range 2026-01-01..2026-07-21` y `smart_simple_v11_2025.json` declara
+        # `2025-01-01..2026-01-02`. Leer el campo que el fichero escribe es invariante al
+        # puntero del manifest Y al nombre del fichero, y cierra ademas el gatillo de
+        # calendario: en enero de 2027 el generico `smart_simple_v11.json` traera un trade
+        # entrado en dic-2026 y con la regla de sellos reclamaria 2026 entero.
+        # ---------------------------------------------------------------------------
+        declarado: set[int] = set()
+        if isinstance(raw, dict):
+            dr = raw.get("date_range") or {}
+            ini, fin = _as_date(dr.get("start")), _as_date(dr.get("end"))
+            if ini and fin and fin >= ini:
+                declarado = set(range(ini.year, fin.year + 1))
+            elif raw.get("year"):
+                try:
+                    declarado = {int(raw["year"])}
+                except (TypeError, ValueError):
+                    declarado = set()
+        if declarado:
+            authoritative_years |= declarado
+            continue
+
+        # ---------------------------------------------------------------------------
+        # (2) RESPALDO — regla de Codex (`be9f4f95`), intacta, para artefactos que NO
+        #     declaran cobertura. Authority is a property of the artifact contract, never
+        #     of how many trades it happens to contain. ``*_YYYY.json`` explicitly owns
+        #     that year. A generic file owns its observed years only when the manifest
+        #     points at a production version; otherwise it is a partial operational
+        #     extract (the BTC/Gold case) and may be completed from the published bundle.
+        # ---------------------------------------------------------------------------
         named_year = re.search(r"_(20\d{2})(?:\D|$)", path.stem)
         if named_year:
             authoritative_years.add(int(named_year.group(1)))
