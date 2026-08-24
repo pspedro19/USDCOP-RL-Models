@@ -31,10 +31,22 @@ files:
 - src/strategies/spx500_regime_gated_v1/engine.py
 - src/strategies/spx500_regime_gated_v1/load_real.py
 asset_id: spx500
-code_hash_sha256_16: ea76413e60621521  # verificado 2026-07-28 metodo canonico LF (CXD-041):
-  # fuentes ya LF en working tree => hash identico al blob git; sin cambio
-manifest_frozen_at: '2026-07-27'
-manifest_version: 3
+code_hash_sha256_16: 8362da2476e596fc  # re-freeze v4 2026-08-24, metodo canonico LF (CXD-041)
+manifest_frozen_at: '2026-08-24'
+manifest_version: 4
+refreeze_note_v4: >-
+  Re-freeze v4 (2026-08-24): el commit 1b8edc1d (BL-18, "source SPX DSR trials from
+  registry") edito engine.py y policies.py DESPUES del freeze v3 y nadie re-congelo;
+  el guard llevaba desde el 2026-08-06 en rojo señalando ea76413e vs 8362da24.
+  Diff auditado linea a linea: es EXCLUSIVAMENTE fontaneria de imports — se cambia
+  `from costs import CostModel` por `if __package__: from .costs import ...` con
+  fallback al runner standalone, en engine.py y policies.py. Formula INTACTA
+  (MA200 x TSMOM 12-1 x techo de regimen), cero parametros tocados, `__all__`
+  identico, ninguna metrica re-medida. 0 TRIALS por el mismo criterio que fijo
+  refreeze_note_v2 ("misma formula, cero parametros tocados"): la constitucion
+  cobra trial por MIRAR un resultado, y aqui no se observo ninguno.
+  NO relacionado con el trabajo C039 de publish_spx500_bundles.py, que no figura
+  en `files:` y por tanto no entra en este hash.
 refreeze_note_v3: >-
   Re-freeze v3 (2026-07-27, BL-13): discriminador surface:action añadido (aditivo,
   señal intacta, code_hash sin cambio — el hash cubre files:, no el yaml).
