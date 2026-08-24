@@ -23,7 +23,7 @@
 - [x] `pytest.ini` (pytest configuration)
 
 ### Documentation
-- [x] `tests/TEST_SUITE_README.md` (~250 lines)
+- [x] `tests/docs/TEST_SUITE_README.md` (~250 lines)
 - [x] `TESTING_SUITE_SUMMARY.md` (~300 lines)
 - [x] `tests/VERIFICATION_CHECKLIST.md` (this file)
 

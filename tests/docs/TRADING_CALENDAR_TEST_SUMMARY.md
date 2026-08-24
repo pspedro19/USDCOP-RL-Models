@@ -370,7 +370,7 @@ jobs:
 1. **tests/test_trading_calendar.py** (714 lines)
    - Main test suite with 44 tests
 
-2. **tests/README_TRADING_CALENDAR_TESTS.md**
+2. **tests/docs/README_TRADING_CALENDAR_TESTS.md**
    - Comprehensive documentation and usage guide
 
 3. **tests/TRADING_CALENDAR_TEST_SUMMARY.md** (this file)
@@ -416,7 +416,7 @@ jobs:
 
 For issues or questions, refer to:
 - Main project README
-- `tests/README_TRADING_CALENDAR_TESTS.md`
+- `tests/docs/README_TRADING_CALENDAR_TESTS.md`
 - GitHub issues
 
 ---

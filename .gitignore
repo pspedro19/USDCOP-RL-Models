@@ -211,13 +211,43 @@ research/
 # BUT exclude local settings (contains secrets/tokens)
 .claude/settings.local.json
 
+# ---------------------------------------------------------------------------
+# Basura efimera DENTRO de .claude/  (auditoria de organizacion 2026-08-24)
+# `!.claude/**` (arriba) es una doble negacion que reactiva TODO lo que hay bajo
+# .claude/, incluidas las reglas globales de __pycache__/, *.pyc, *.log y
+# artifacts/. Resultado medido: 10 .pyc, 16 .log y 41 MB de trazas binarias de
+# Playwright commiteados. Estas re-exclusiones devuelven esas reglas SOLO para
+# .claude/, sin tocar el tracking de rules/specs/skills. El orden importa: la
+# ultima regla que casa es la que manda, por eso van DESPUES de la negacion.
+# ---------------------------------------------------------------------------
+.claude/**/__pycache__/
+.claude/**/*.pyc
+.claude/**/*.log
+.claude/**/.pytest_cache/
+# Trazas binarias de Playwright: artefactos de depuracion regenerables. La
+# evidencia DE REGISTRO son los JSON (results.json, *-audit.json) y los PNG,
+# que siguen versionados.
+.claude/**/trace.zip
+.claude/codex/evidence/playwright/html/data/*.zip
+
 # Claude Code temporary files and directories
 tmpclaude-*/
 tmpclaude-*
 **/tmpclaude-*
 
-# Windows null file artifacts
+# ---------------------------------------------------------------------------
+# Artefactos de redireccion de shell en Windows (auditoria 2026-08-24)
+# `cmd > nul` y `sh > /dev/null` ejecutados desde Git Bash sobre NTFS no
+# descartan la salida: CREAN un fichero/directorio real con ese nombre. Asi
+# entraron al indice `=`, `close`, `Microsoft/` y `dev/null/` (este ultimo con
+# cuatro copias inertes de los hooks LFS que ya viven en .git/hooks/).
+# ---------------------------------------------------------------------------
 nul
+NUL
+/=
+/close
+/Microsoft/
+/dev/
 
 # Node.js (for dashboard)
 node_modules/
@@ -229,6 +259,31 @@ node_modules/
 test-results/
 playwright-report/
 playwright/.cache/
+coverage/
+.nyc_output/
+
+# Salidas puntuales de auditorias del dashboard (regenerables, no son fuente)
+/usdcop-trading-dashboard/audit.json
+/usdcop-trading-dashboard/audit-current.json
+/usdcop-trading-dashboard/audit-fix-plan.json
+/usdcop-trading-dashboard/shots/
+/usdcop-trading-dashboard/series_*.png
+
+# Clones de arbol para revision adversarial (Codex): repos completos efimeros
+/.tmp/
+
+# ---------------------------------------------------------------------------
+# Scratch de pytest y del harness de agentes que aterrizaba en la RAIZ del repo
+# (auditoria 2026-08-24: se encontraron 40 directorios `pytest-cache-files-*`
+# vacios ensuciando la raiz, mas cuatro temporales de Codex). Vacios no aparecen
+# en `git status` -- git no versiona directorios vacios -- asi que se acumulaban
+# invisibles para el flujo normal y solo visibles al listar el arbol.
+# ---------------------------------------------------------------------------
+/pytest-cache-files-*/
+/.codex-pytest-tmp-loose/
+/.tmp-codex-runtime/
+/codex-test-temp-indexes/
+/.agents/
 
 # Compiled outputs
 *.wasm
@@ -350,7 +405,10 @@ video-pitch/out/
 video-pitch/public/
 
 # Knowledge-system junk (CTR-KNOWLEDGE-001): duplicate snapshots + ephemeral session state
-.claude/*.zip
+# La regla era `.claude/*.zip`, que solo casa la RAIZ de .claude/ y dejaba pasar
+# `.claude/archive/Proyecto.zip` (snapshot de 132 entradas de rules/ y specs/ —
+# ficheros que git ya versiona). Ampliada a cualquier profundidad. 2026-08-24.
+.claude/**/*.zip
 .claude/scheduled_tasks.lock
 
 # Vendored quant skill library (CTR-QUANT-LIBRARY-001)

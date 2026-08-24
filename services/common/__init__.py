@@ -14,11 +14,16 @@ Modules:
     - redis_streams_manager: Redis Streams for multi-model signal streaming
     - tracing: Distributed tracing with OpenTelemetry/Jaeger
     - prometheus_metrics: Prometheus metrics for observability
+    - feature_flags: Feature flag management with hot reload
 
 Author: Pedro @ Lean Tech Solutions
 Created: 2025-12-17
 Updated: 2025-12-26 - Added Redis Streams manager
 Updated: 2025-01-14 - Added tracing and prometheus metrics (FASE 8)
+Updated: 2026-08-24 - Absorbido `services/shared/` (un solo modulo, feature_flags),
+    que declaraba en su propio docstring el mismo proposito que este paquete:
+    "utilidades comunes compartidas entre servicios". Dos paquetes hermanos con
+    la misma definicion no son una jerarquia, son una ambiguedad de ownership.
 """
 
 from .config import (
@@ -34,6 +39,12 @@ from .database import (
     get_connection_pool,
     get_db_config,
     get_db_connection,
+)
+from .feature_flags import (
+    FeatureFlag,
+    FeatureFlags,
+    get_feature_flags,
+    reset_feature_flags,
 )
 from .prometheus_metrics import (
     # Gauges
@@ -123,6 +134,11 @@ __all__ = [
     'get_trading_hours',
     'ServiceConfig',
     'TradingHoursConfig',
+    # Feature flags
+    'FeatureFlag',
+    'FeatureFlags',
+    'get_feature_flags',
+    'reset_feature_flags',
     # Validation
     'validate_symbol',
     'validate_timeframe',
