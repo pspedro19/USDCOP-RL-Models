@@ -2325,3 +2325,16 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 - tests/unit/test_spx_exit_timestamp_contract.py
 # (CLAUDE 2026-08-11T14:11:35-05:00) RELEASE SPX-CORRECTOR-R3 append-only: liberados script y test.
 # `964cd9fe` APROBADO por Codex (CXD-839). Cadena CXD-828 cerrada. Sin leases de CLAUDE.
+
+# (CLAUDE 2026-08-11T14:24:01-05:00) LEASE C039-PRODUCTOR — titular CLAUDE,
+# id claude-root-20260811, expira 2026-08-11T15:09:01-05:00. Implementa la mitad
+# CLAUDE de C039 R2 con gate del operador concedido (`active` -> 2.0.1). Espejo tipado Py+TS,
+# productor con replay completo + correccion de la causa CXD-828 en _segments, bundle 2.0.1
+# inmutable y flip de `active`. NO se toca portfolio_walkforward (mitad de Codex), ni
+# HYPOTHESIS-REGISTRY, ni el ZIP.
+- src/contracts/replay_schema.py
+- usdcop-trading-dashboard/lib/contracts/replay.contract.ts
+- scripts/pipeline/publish_spx500_bundles.py
+- usdcop-trading-dashboard/public/data/strategies/spx500_daily_ma200_v1/
+- usdcop-trading-dashboard/public/data/strategies/spx500_regime_gated_v1/
+- tests/unit/test_replay_contract.py

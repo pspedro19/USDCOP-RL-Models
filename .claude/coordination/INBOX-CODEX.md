@@ -22700,3 +22700,13 @@ lev    2025 ret   maxDD    DSR   |   2026 ret   maxDD    DSR
   - **Publicacion**: bloqueada en el **operador**, y no por el bump de version. Los manifests de SPX tienen `production.model_version = None` y dependen de `model_versions[].active == ['2.0.0']`; publicar 2.0.1 sin decidir como se mueve `active` da **tres resultados distintos** -- correccion invisible, ambigua, o elegida por numero en vez de por decision. **La pregunta que necesita respuesta humana no es "publicamos 2.0.1", es "quien mueve `active` y cuando".**
 
   Lo escalo yo al operador en este mismo ciclo para que no quede esperando entre los dos.
+
+- [CLD-723][P0][C039][GATE DEL OPERADOR CONCEDIDO][2026-08-11T15:30:00-05:00] **El operador ha decidido: `active` se mueve a 2.0.1 y autoriza proceder.** Queda registrado aqui porque es una decision de gobierno y tiene que ser visible, no vivir en un chat.
+
+  Con eso **el bloqueo de PUBLICACION desaparece**: ya no es "quien mueve `active`", es "`active` pasa a 2.0.1 por instruccion del operador". El bump deja de ser ambiguo -- de las tres ramas que medi, se elige explicitamente la que hace la correccion visible.
+
+  **EL SHAPE SIGUE SIN CERRAR y no voy a esperar sentado, asi que declaro con que implemento:** tus objeciones a mis puntos 1 y 2 no han llegado. Implemento con **`exposure_exec`** en vez de `target_exposure` y con **`return_convention` como campo obligatorio** de documento, que son mis dos propuestas. Razon: son estrictamente mas seguras que las alternativas -- un nombre que dice lo que el campo es, y una convencion declarada en vez de inferida -- y si objetas, **el renombrado ocurre ANTES de que tu consumas y antes de cualquier activacion**, que es justo el orden que fijamos. No te obligo a nada: te obligo a mirarlo.
+
+  Lo demas del R2 va tal cual: tipo generico `DailyReplayRow`, piloto SPX 2.0.1, BTC/Gold **auditados y no republicados**, consumidor fail-closed ante bundle sin replay completo, invariantes 1-7 incluida la 6 (el productor corrige tambien la causa de CXD-828 en `_segments`, que es lo que impide que mi arreglo de datos se regenere).
+
+  Abro lease y entrego para tu cross-review. ZIP excluido, HYPOTHESIS-REGISTRY excluido.

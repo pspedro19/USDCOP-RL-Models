@@ -1,5 +1,5 @@
 {
-  "created_at": "2026-08-11T15:30:21.810493+00:00",
+  "created_at": "2026-08-11T20:01:23.281923+00:00",
   "tables": {
     "news_articles": {
       "status": "ok",
@@ -31,9 +31,9 @@
     },
     "forecast_h5_predictions": {
       "status": "ok",
-      "rows": 0,
-      "sha256": "4f33184f669bad593148b9103e87b19cc1482485ee312082436ef87218d1794d",
-      "latest": null,
+      "rows": 18,
+      "sha256": "19d08e15951dd42b70916913e16243940ffe43e53257e2186c778a43d9eac37d",
+      "latest": "2026-07-07 04:38:31.127306+00:00",
       "file": "forecast_h5_predictions.parquet"
     },
     "forecast_h5_signals": {
@@ -66,32 +66,44 @@
     },
     "asset_daily_ohlcv": {
       "status": "ok",
-      "rows": 60432,
-      "sha256": "f1ffdead519a46e696b18d36fb9685dab186efc16bb4d8b18a84656ca18f6bc6",
-      "latest": "2026-07-29 00:00:00+00:00",
+      "rows": 69985,
+      "sha256": "1b224eb5a4f5164a2f12576502f49de0d8eb637cf32feaef68da6d37f37e1537",
+      "latest": "2026-08-11 21:00:00+00:00",
       "file": "asset_daily_ohlcv.parquet"
     },
     "usdcop_m5_ohlcv": {
       "status": "ok",
-      "rows": 2206723,
-      "sha256": "c2f9db8d2c14dfa084a34739c4ad108335175092e95a651a82bf28a878f52962",
-      "latest": "2026-08-11 15:25:00+00:00",
+      "rows": 2213940,
+      "sha256": "e6115bed4907dc2ab35a056d4dc4e0857bba37cc9fb46e6a51021c92e7c479c5",
+      "latest": "2026-08-11 17:50:00+00:00",
       "file": "usdcop_m5_ohlcv.parquet"
     },
     "asset_native_ohlcv": {
-      "status": "absent"
+      "status": "ok",
+      "rows": 303066,
+      "sha256": "80521944a3aee794c3d382c2ab6d24cf4c41e21ebfc1af961fc615cfae165ced",
+      "latest": "2026-08-11 17:00:00+00:00",
+      "file": "asset_native_ohlcv.parquet"
     },
     "market_ingestion_manifest": {
-      "status": "absent"
+      "status": "ok",
+      "rows": 4914,
+      "sha256": "98ca47fefbb1dfbd4c12b22d9be53923351b434bde617d6f73efc870d61879ea",
+      "latest": "2026-08-11 17:05:25.764278+00:00",
+      "file": "market_ingestion_manifest.parquet"
     },
     "crypto_derivatives_daily": {
-      "status": "absent"
+      "status": "ok",
+      "rows": 2506,
+      "sha256": "27516da85920bcd21e2b74d4203da05aa148b50ab6958a41190fab3989dd69cc",
+      "latest": "2026-07-20 00:00:00",
+      "file": "crypto_derivatives_daily.parquet"
     },
     "macro_indicators_monthly": {
       "status": "ok",
-      "rows": 864,
-      "sha256": "07728f98968dd1745079e6583147c3d672e1bec0c07631a14e6d00ce6df75ded",
-      "latest": "2026-06-01 00:00:00",
+      "rows": 865,
+      "sha256": "3ac67e68ffdaf970d7c3c26aa4d072ba62be564bc6324c20e68a684c0572b47c",
+      "latest": "2026-07-01 00:00:00",
       "file": "macro_indicators_monthly.parquet"
     },
     "macro_indicators_quarterly": {

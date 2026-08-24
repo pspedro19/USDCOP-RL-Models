@@ -1,8 +1,8 @@
 {
-  "backup_timestamp": "2026-08-11T15:31:17Z",
+  "backup_timestamp": "2026-08-11T20:02:15Z",
   "ohlcv": {
     "file": "usdcop_m5_ohlcv_backup.parquet",
-    "rows": 2206723,
+    "rows": 2213940,
     "symbols": [
       "BTC/USDT",
       "USD/BRL",
@@ -14,18 +14,18 @@
       "2017-08-16",
       "2026-08-11"
     ],
-    "size_bytes": 61860916,
-    "sha256": "70c3cffb5936e05520426f5bf748c9ef7b688654f998557ec6262ab1613116cb"
+    "size_bytes": 62090402,
+    "sha256": "0aebffd899baee97056e02bb791a0e10bd50f1321921541c3417585cc417a38c"
   },
   "macro": {
     "file": "macro_indicators_daily_backup.parquet",
-    "rows": 26336,
+    "rows": 26340,
     "date_range": [
       "1954-07-01",
-      "2026-08-07"
+      "2026-08-11"
     ],
-    "size_bytes": 482191,
-    "sha256": "eece971ab89006b3272b0fe1bafc87062bf4116a21aff01bb1ac001f36236af9",
+    "size_bytes": 485396,
+    "sha256": "fe9ff7ced28cff7979b6fefc12b4eba056bd333cdc388a5513e9fa0849172d08",
     "skipped": false
   }
 }
