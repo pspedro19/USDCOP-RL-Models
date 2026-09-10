@@ -2,13 +2,14 @@
 kind: as-built
 status: IMPLEMENTED
 version: 1.0.0
-last_verified: 2026-07-20
+last_verified: 2026-09-10
 supersedes: []
 code_anchors:
   - config/execution/smart_simple_v1.yaml
   - database/migrations/043_forecast_h5_tables.sql
   - airflow/dags/forecast_h5_l3_weekly_training.py
   - airflow/dags/forecast_h5_l4_backtest_promotion.py
+  - airflow/dags/forecast_h5_l4b_production_deploy.py
   - airflow/dags/forecast_h5_l5_weekly_signal.py
   - airflow/dags/forecast_h5_l5_vol_targeting.py
   - airflow/dags/forecast_h5_l7_multiday_executor.py
@@ -19,6 +20,7 @@ code_anchors:
 > Governs the H5 (5-day horizon) weekly forecasting pipeline with Smart Simple v2.0 execution.
 > This is the PRIMARY production track. H1 daily pipeline is PAUSED.
 > Created: 2026-02-16 | Updated: 2026-04-06 (v2.0 — regime gate + effective HS + dynamic leverage)
+> | 2026-09-10 (KPIs re-anchored to the official 2026-07-21 bundle; XGBoost off; L4b deploy DAG)
 
 ---
 
@@ -31,7 +33,9 @@ A 10-agent audit revealed:
 - Q1 2026: Hurst = 0.28 (mean-reverting). Gate correctly blocked 13 of 14 weeks.
 
 v2.0 additions: Regime Gate (Hurst R/S), Effective HS (portfolio cap), Dynamic Leverage,
-XGBoost in ensemble, vol_regime_ratio + trend_slope_60d features, weekly retraining restored.
+vol_regime_ratio + trend_slope_60d features, weekly retraining restored. XGBoost = offline
+experiment only, never promoted (`use_xgboost: false`, `smart_simple_v1.yaml:206`): the live
+ensemble is Ridge + BayesianRidge.
 
 ---
 
@@ -42,7 +46,8 @@ Sunday 01:30 COT
     |
     v
 H5-L3: Weekly Training (forecast_h5_l3_weekly_training.py)
-    |  Train Ridge + BayesianRidge (+ XGBoost) on expanding window (2020 -> last Friday)
+    |  Train Ridge + BayesianRidge on expanding window (2020 -> last Friday)
+    |  (XGBoost = offline experiment, use_xgboost: false — not in the live ensemble)
     |  23 features (21 base + vol_regime_ratio + trend_slope_60d)
     |  target = ln(close[t+5]/close[t])
     |  Write to forecast_h5_predictions
@@ -51,7 +56,7 @@ Monday 08:15 COT
     |
     v
 H5-L5: Weekly Signal (forecast_h5_l5_weekly_signal.py)
-    |  Generate ensemble prediction (mean of Ridge + BR [+ XGB])
+    |  Generate ensemble prediction (mean of Ridge + BR; XGB off, use_xgboost: false)
     |  Score confidence (3-tier: HIGH/MEDIUM/LOW)
     |  Skip LOW-confidence LONGs
     |  Write to forecast_h5_signals
@@ -107,9 +112,10 @@ H5-L6: Weekly Monitor (forecast_h5_l6_weekly_monitor.py)
 
 ---
 
-## Smart Simple v1.1 Config
+## Smart Simple v2.0 Config
 
-**File**: `config/execution/smart_simple_v1.yaml`
+**File**: `config/execution/smart_simple_v1.yaml` (file name is historical; `version: 2.0.0`,
+`use_xgboost: false`)
 
 ### Key Parameters (DO NOT change without backtest evidence)
 
@@ -177,7 +183,8 @@ Examples (vol_multiplier=2.0):
 | DAG | File | Schedule (COT) |
 |-----|------|-----------------|
 | H5-L3 Training | `airflow/dags/forecast_h5_l3_weekly_training.py` | Sun 01:30 |
-| H5-L4 Backtest Promotion | `airflow/dags/forecast_h5_l4_backtest_promotion.py` | Manual |
+| H5-L4 Backtest Promotion | `airflow/dags/forecast_h5_l4_backtest_promotion.py` | Manual / event-driven (Vote 1) |
+| H5-L4b Production Deploy | `airflow/dags/forecast_h5_l4b_production_deploy.py` | Event-driven, post-Vote-2 (dashboard → Airflow REST; `guard_approved` re-checks `status == APPROVED` server-side) |
 | H5-L5 Signal | `airflow/dags/forecast_h5_l5_weekly_signal.py` | Mon 08:15 |
 | H5-L5 Vol-Target | `airflow/dags/forecast_h5_l5_vol_targeting.py` | Mon 08:45 |
 | H5-L7 Executor | `airflow/dags/forecast_h5_l7_multiday_executor.py` | Mon-Fri */30 08:00-12:55 (`*/30 13-17 * * 1-5`) |
@@ -206,31 +213,40 @@ Examples (vol_multiplier=2.0):
 
 ---
 
-## Backtest Results (v2.0, 2025 OOS)
+## Backtest Results (v2.0, 2025 OOS — official bundle)
 
-| Metric | v1.1 (old) | v2.0 (current) |
-|--------|------------|----------------|
-| Return | +20.03% | **+25.63%** |
-| Sharpe | 3.516 | **3.347** |
-| p-value | 0.0097 | **0.0063** |
-| MaxDD | -3.83% | **-6.12%** |
-| Trades | 24 | **34 (5L/29S)** |
-| WR | 70.8% | **82.4%** |
-| TP exits | 9 | **21 (62%)** |
-| HS exits | 0 | **2** (effective HS works) |
-| $10K -> | $12,003 | **$12,563** |
+> **Source of truth**: `usdcop-trading-dashboard/public/data/production/summary_2025.json`
+> (generated 2026-07-21) = [HYPOTHESIS-REGISTRY.md](../assets/usdcop/HYPOTHESIS-REGISTRY.md)
+> § "RE-MEDICIÓN #3". Honesty cascade: +26.05 → +13.05 (data fix) → +7.66 (purge) → **+7.35**
+> (open-aware HS fills). The earlier **+25.63% / Sharpe 3.35 / p=0.006 / 34 trades / $12,563**
+> and **+20.03% / p=0.0097 / 24 trades** figures are **SUPERSEDED** — do not quote them.
 
-### 2026 YTD (as of 2026-04-06)
+| Metric | v2.0 (official, 2026-07-21) |
+|--------|-----------------------------|
+| Return | **+7.35%** |
+| Sharpe | 0.942 |
+| p-value | 0.2277 — **NOT statistically significant** |
+| MaxDD | 7.84% |
+| Trades | 32 (2L / 30S) |
+| WR | 71.9% |
+| Exits | TP 16 / week_end 11 / HS 5 |
+| $10K -> | **$10,734.62** |
 
-| Metric | v1.1.0 (no gate) | v2.0 (with gate) |
-|--------|-----------------|------------------|
-| Return | -5.17% | **+0.61%** |
-| Trades | 6 (4 losses) | **1 (0 losses)** |
-| Gate blocked | 0 weeks | **13 of 14 weeks** |
-| $10K -> | $9,483 | **$10,061** |
+Trial-aware DSR = 0.50-0.92 < 0.95 in every scenario (`approval_state.json` gate value 0.0587),
+so the 2025 backtest cannot prove edge after selection: **v11 is FROZEN and the 2026 forward is
+the only clean judge** (`../../rules/quant-constitution.md` §2, `WITHDRAWAL-PROTOCOL.md`).
 
-The regime gate is the MVP of v2.0. It correctly identified Q1 2026 as mean-reverting
-(Hurst 0.16-0.44) and blocked trading, preventing ~$570 in losses.
+### 2026 (v2.0) — two honest series, both must be labeled
+
+| Series | Source | Return | Trades | $10K -> |
+|--------|--------|--------|--------|---------|
+| (a) Corrected replay of 2026, purged method | `public/data/production/summary.json` (2026-07-21) | +3.36% | 11 (`insufficient_trades: true`) | ≈$10,336 |
+| (b) Forward paper ledger, as actually run by the DAGs | `public/data/production/paper/candidates_ledger_2026.json` (2026-08-28) | **+0.66% YTD** | 12 through ISO 2026-W33 (last trade 2026-08-10) | **$10,066** |
+
+Both series have **N < 20 trades**: per `quant-constitution.md` §6 only count and PnL are
+reported — **no Sharpe, no p-value**. The regime gate is still what kept 2026 small: Hurst
+0.28-0.49 (mean-reverting → transitioning) blocked most weeks. The older "+0.61%, 1 trade,
+13 of 14 weeks blocked" reading (2026-04-06) was a point-in-time snapshot superseded by (b).
 
 ---
 
@@ -242,8 +258,7 @@ See these specs for the full data flow:
 - `.claude/rules/strategy-contract.md` — Universal strategy schemas (trades, metrics, exit reasons)
 - `.claude/specs/platform/dashboard-integration.md` — JSON file schemas, PNG conventions
 - `.claude/rules/approval-gates.md` — Approval lifecycle and gates
-- `.claude/specs/platform/mlops-lifecycle.md` — 8-stage pipeline lifecycle
-- `.claude/specs/platform/mlops-lifecycle.md` — Master lifecycle (bootstrap to production)
+- `.claude/specs/platform/mlops-lifecycle.md` — Master lifecycle (bootstrap to production, 8 stages)
 
 ### Export Script
 
@@ -296,6 +311,6 @@ These are read by the Airflow DAGs but NOT by the dashboard frontend:
 
 ## Reconciliation (audit 2026-07)
 
-> See `../../audit/AUDIT-2026-07-remediation.md` §A3.
+> See [AUDIT-2026-07-remediation.md](../audit/AUDIT-2026-07-remediation.md) §A3.
 
-- **Feature parity fixed (A3-02).** The headline **+25.63% / 34-trade** backtest was produced on the **23-feature** v2.0 model (base 21 + `vol_regime_ratio` + `trend_slope_60d`). As of 2026-07 the live weekly **L3 training and L5 signal** also build the identical 23-feature set via the shared `src/forecasting/enhance_v2.py`; L3 persists the trained feature list to `feature_cols_h5.json` and L5 reads it — so live models now match the approved backtest. Re-run of the export reproduced the headline exactly.
+- **Feature parity fixed (A3-02).** The then-headline **+25.63% / 34-trade** backtest was produced on the **23-feature** v2.0 model (base 21 + `vol_regime_ratio` + `trend_slope_60d`). As of 2026-07 the live weekly **L3 training and L5 signal** also build the identical 23-feature set via the shared `src/forecasting/enhance_v2.py`; L3 persists the trained feature list to `feature_cols_h5.json` and L5 reads it — so live models match the backtest. The A3-02 re-run reproduced that then-headline; it was itself **superseded by re-measurement #3 (2026-07-21)** — data fix, purge and open-aware HS fills brought the official 2025 OOS to **+7.35% / 32 trades** (see [HYPOTHESIS-REGISTRY.md](../assets/usdcop/HYPOTHESIS-REGISTRY.md) § "RE-MEDICIÓN #3" and § Backtest Results above).

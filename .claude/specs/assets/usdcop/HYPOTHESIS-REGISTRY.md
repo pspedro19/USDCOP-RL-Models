@@ -12,7 +12,7 @@ code_anchors:
 # Conteo de trials LEGIBLE POR MÁQUINA. `scripts/analysis/profitability_evidence.py` lo lee de
 # aquí y lanza excepción si falta: el DSR jamás debe depender de un número hardcodeado en el
 # código (era el caso en cop_trials_dsr.py:TRIALS_SCENARIOS y publish_gold_dynexit.py:48).
-n_trials_total: 111   # reconciliación BL-12-r2 (2026-07-27): 109→111 para igualar el ledger interno (líneas H1 DAILY SHADOW V1 "110 globales" y H1 LATAM TRANSPORT V1 "Contabilidad final: 111 globales"); 0 trials nuevos
+n_trials_total: 115   # +2 AT carril forward (H-FWD-LLM-01, H-FWD-PPO-K59-01); +2 AT H-TESIS-RL-01; reconciliación BL-12-r2 (2026-07-27): 109→111 para igualar el ledger interno (líneas H1 DAILY SHADOW V1 "110 globales" y H1 LATAM TRANSPORT V1 "Contabilidad final: 111 globales"); 0 trials nuevos
 n_trials_scenarios: [46, 58, 72]   # conservador / central / amplio — se publican los tres
 n_trials_sources:
   - "EXPERIMENT_LOG.md: FC-H5-SIMPLE-001 + FC-SIZE-001 (reconstrucción retroactiva v1.0→v11)"
@@ -1642,3 +1642,296 @@ direccionales". Ningún pre-registro, hipótesis, umbral ni asiento histórico f
 anti-regresión: `tests/regression/test_hypothesis_registry_consistency.py` (falla si el
 header queda por debajo del máximo "N globales" del cuerpo o difiere de la última
 "Contabilidad final").
+
+---
+
+## APERTURA H-TESIS-RL-01 (2026-08-25, +2 AT) — PPO intradía sobre sesión acotada · trials 111→113
+
+**Pre-registro**: `.claude/specs/planes/06-PRE-REGISTRATION.md` · plan
+`.claude/specs/planes/06-tesis-rl-llm-hibrido.md` · partición
+`config/research/partition.yaml` (CTR-RESEARCH-PARTITION-001).
+
+### Hipótesis (declaradas ex-ante, antes de evaluar nada)
+
+- **H1** — un agente PPO sobre la sesión 08:00-12:55 COT bate a `always_flat` neto de costos.
+  `always_flat` es el listón real y no una formalidad: con el contrato de costos de §9.3 una
+  política acotada por sesión paga **4,81 pips/sesión de media = 71,4% del nocional sobre 584
+  sesiones**. El intradía de USD/COP es de suma negativa antes de que entre skill.
+- **H2** — la información de régimen (4 posteriores filtrados del HMM) mejora al agente. Es la
+  única **confirmatoria**, y por tanto la familia de Holm tiene un miembro: no hay corrección
+  por multiplicidad. Es consecuencia del recorte de alcance a 2 brazos, no una ventaja.
+
+### Trials que cobra esta apertura: **+2 AT**, ninguno FT
+
+Las dos configuraciones (`ppo_regime`, `ppo_backbone`) se evalúan sobre el bloque de
+SELECCIÓN y elegir entre ellas mirándolo es un acto de selección. `provenance`:
+`action_trial_id: [AT-TESIS-01, AT-TESIS-02]`, `forecast_trial_ids: []`,
+`research_cluster: tesis-rl-intradia`.
+
+**Lo que NO se cuenta, y por qué se declara**: la selección de K ∈ {2,3,4,5} del HMM por BIC
+con la histéresis de §8.2 ocurrió **íntegramente dentro de desarrollo**, con un criterio
+declarado antes de mirar nada y sin tocar selección ni hold-out. Ajustar un hiperparámetro
+sobre datos de entrenamiento con un criterio de información es ajuste, no selección — el
+precedente que sí cobró (las 42 celdas de FC-H5-SIMPLE-001) cobró porque se recorrió sobre el
+OOS 2025. Un revisor que discrepe debe sumar **4 FT** y releer el DSR con N=117; la conclusión
+no depende de eso (ver el RESULTADO cuando se publique).
+
+**Tampoco hay trials de HPO**: los hiperparámetros salen congelados de
+`config/experiments/v215b_baseline.yaml`, o sea un prior declarado ex-ante. El precio de esa
+decisión es que el universo de candidatos queda en **dos**, lo que deja sin sentido a White RC
+y Hansen SPA — se declara la omisión en vez de publicar un número vacío
+(`src/research/inference.py::WHITE_SPA_OMISSION`).
+
+### Advertencia heredada sobre el hold-out
+
+`partition.yaml` declara `holdout_partially_looked_at: true`: **2025 ya fue grid-searched** por
+el track H5 de producción (42 celdas, "#8 de 42") y está dentro del hold-out 2024-2026H1. Se
+mantiene ahí a conciencia, por potencia (584 sesiones efectivas > el umbral de 500 de §11.2),
+con el N heredado declarado y el DSR deflactado con él. No se presentará como hold-out virgen.
+
+### Potencia, medida y no supuesta (§11.2)
+
+Con n=584 y la correlación observada entre brazos (ρ≈0,92, que es lo que hace válido el
+bootstrap pareado), el contraste resuelve:
+
+| ΔSharpe verdadero | potencia |
+|---|---|
+| 0,41 | 45% |
+| 0,83 | 90% |
+| ≥1,55 | 100% |
+
+**Mínimo detectable al 80% ≈ ΔSharpe 0,7.** Una diferencia menor que eso saldrá INDECIDIBLE, y
+se reportará como tal — no como "sin diferencias" (§11.1).
+
+### Compromisos de redacción firmados aquí, antes de ver un resultado
+
+1. Si `ppo_regime` no bate a `always_flat`, la conclusión escrita es que **no operar es la
+   estrategia** — la versión concreta de "el baseline ES la estrategia" (constitución §3).
+2. H1 se reporta **indecidible** si el IC incluye el cero, nunca como "sin diferencias".
+3. Los resultados negativos se publican igual.
+
+Contabilidad final: **113 globales** (111 heredados + 2 AT).
+
+---
+
+## RESULTADO H-TESIS-RL-01 (2026-08-25) — **RECHAZADA** · trials 111→113 · FAMILIA CERRADA
+
+Ledger: `AT-0185` (`ppo_regime`) y `AT-0186` (`ppo_backbone`), familia
+`registries/families/usdcop_rl_intraday.yaml`, cluster `rl_intraday`, `deflation_scope: family`.
+Cadena de hashes verificada (`scripts/validation/check_trial_ledger.py`: OK).
+
+### H1 — RECHAZADA con diferencia decidible EN CONTRA
+
+Sobre el bloque de SELECCIÓN (2023, n=234 sesiones efectivas):
+
+| | Retorno | Sharpe | IC 95% |
+|---|---|---|---|
+| **always_flat** | **0,00%** | — | — |
+| ppo_regime (media 5 semillas) | −29,85% | −4,64 | [−6,79, −2,80] |
+| ppo_backbone (media 5 semillas) | −35,43% | −6,76 | [−8,71, −5,13] |
+
+`ppo_regime` vs `always_flat`: **ΔSharpe −4,640**, IC 95% [−6,793, −2,796], **p < 0,0001**
+(bootstrap estacionario pareado, 10.000 réplicas, bloques 5-20). También por debajo de
+`B1_pasivo` (ΔSharpe −3,196, p = 0,0014).
+
+**0 de 10 semillas positivas.** **DSR = 0,0000** con `n_trials = 113` (el conteo del ACTIVO tras esta apertura, no el heredado). **Muere al doble de
+costos** ⇒ REJECT por constitución §3.4. **B1′** (exposición emparejada 0,86×) también
+negativo (−16,61%/año), así que tampoco rescata nada.
+
+### H2 — DECIDIBLE A FAVOR, y no cambia el veredicto
+
+`ppo_regime` supera a `ppo_backbone`: **ΔSharpe +2,120**, IC 95% [+0,238, +4,087],
+**p = 0,0276**, ρ = 0,97. La ablación es limpia: única diferencia entre brazos, los 4
+posteriores de régimen (puestos a CERO en el backbone, no eliminados, para que ambas redes
+tengan los mismos parámetros).
+
+La figura 5 muestra el mecanismo: `ppo_regime` condiciona su exposición al régimen (86% largo
+en `intermedio_2`, 50% corto en `shock`), mientras `ppo_backbone` reparte casi igual en los
+cuatro. **La señal de régimen es real y el agente la usa — para perder menos, no para ganar.**
+
+### El hallazgo del refit
+
+El refit sobre desarrollo+selección (paso F8 del pre-registro) revela que **los modelos siguen
+perdiendo en 2023 con 2023 dentro de su entrenamiento** (−8,6% a −17,9%). No es un fallo de
+generalización: la política rentable **no existe** dentro del espacio de acción y el contrato de
+costos dados. Un agente que no es rentable in-sample no está sobreajustando; topa con una
+restricción estructural.
+
+### Mecanismo, medido
+
+Los agentes mantienen |exposición| ≈ 0,75-0,86 y ejecutan 433-813 cambios en 234 sesiones:
+**33-47% del nocional en costos**. A 4,81 pips/sesión, cualquier política que opere necesita un
+edge bruto > ~0,12% diario solo para llegar a cero, sobre una desviación diaria del orden del
+0,4%. El intradía de USD/COP es de suma negativa antes de que entre skill.
+
+### Conclusión firmada ex-ante, ahora aplicada
+
+**No operar es la estrategia.** Es el compromiso de la apertura y la versión concreta de «el
+baseline ES la estrategia» (constitución §3). Se publica el negativo (constitución §3.6).
+
+**Lo que NO se concluye**: que PPO no pueda funcionar. Solo que esta receta (hiperparámetros
+congelados de `v215b_baseline.yaml`, 300k pasos, 39 features, 5 niveles) sobre estos datos y
+contra estos costos no funciona. Sin HPO no hay evidencia sobre el mejor PPO alcanzable —
+limitación declarada, no descuido.
+
+**Familia CERRADA.** El hold-out se abrió una vez (`outputs/thesis/holdout_opening.json`) y no
+reabre la búsqueda: el veredicto ya estaba tomado sobre selección.
+
+Contabilidad final: **113 globales** (111 heredados + 2 AT).
+
+---
+
+## HOLD-OUT ABIERTO H-TESIS-RL-01 (2026-08-25 16:43 UTC, 0 trials nuevos) — confirma el rechazo, **H2 no replica**
+
+Apertura única, con el pre-registro en `IMPLEMENTED`. Constancia:
+`outputs/thesis/holdout_opening.json` (584 sesiones, 2024-01-02 → 2026-08-24, máscara
+`f6958be1b59e9767`, modelos `refit`). **0 trials nuevos**: evaluar el universo ya cerrado sobre
+el bloque pre-registrado no cobra — el trial se cobró al abrir la hipótesis.
+
+| | Retorno | Sharpe | IC 95% |
+|---|---|---|---|
+| **always_flat** | **0,00%** | — | — |
+| ppo_regime (media 5) | −54,87% | −6,21 | [−7,54, −4,96] |
+| ppo_backbone (media 5) | −56,44% | −6,65 | [−8,52, −5,02] |
+
+`ppo_regime` vs `always_flat`: **ΔSharpe −6,215**, p < 0,0001. 0/10 semillas positivas,
+DSR 0,0000 (n_trials=113), muere a ×2 y ×3. Costos del **89-119% del nocional** sobre 584 sesiones.
+
+### El hallazgo del hold-out: **H2 no replica**
+
+| Bloque | n | ΔSharpe (regime − backbone) | IC 95% | Veredicto |
+|---|---|---|---|---|
+| Selección 2023 | 234 | +2,120 | [+0,238, +4,087] | DECIDIBLE |
+| **Hold-out** | **584** | **+0,432** | **[−0,883, +1,861]** | **INDECIDIBLE** |
+
+**Corrección sobre la lectura fácil**: NO se puede afirmar que «el efecto se desvaneció». La
+correlación entre brazos cayó de **ρ=0,97 (selección) a ρ=0,58 (hold-out)**, y el bootstrap
+pareado pierde potencia justo cuando esa correlación baja. Medido a n=584: con ρ=0,92 la
+potencia frente a ΔSharpe 1,2 es del 95%; **con ρ=0,58 es del 35%**. El hold-out no habría
+resuelto con fiabilidad ni el +2,12 de selección. Dos causas que estos datos no separan: efecto
+menor, o test con menos potencia.
+
+El **PBO del hold-out sale 0,211, por encima del 0,20 pre-registrado**, y apunta en la misma
+dirección de cautela. Se aplica la regla escrita antes de calcularlo
+(pre-registro §4): no se retunea nada, **se suspende la pretensión confirmatoria**, y todos
+los resultados del hold-out se etiquetan como **evaluación con riesgo alto de selección**.
+
+**H2 pasa a NO CONFIRMADA** (no refutada: los datos no bastan para distinguirla de cero). El
+resultado favorable de selección **no se presenta como hallazgo**.
+
+**El rechazo de H1 no depende de esa etiqueta**: un PBO alto advierte de que el ganador
+elegido puede no replicar, y aquí no hay ganador que proteger — ambas configuraciones pierden
+contra `always_flat` con p < 0,0001 en los dos bloques.
+
+Contabilidad final: **113 globales** (sin cambios; la apertura no cobra trial).
+
+---
+
+## DESCOMPOSICIÓN H-TESIS-RL-01 (2026-08-25, **0 trials**) — el rechazo, explicado
+
+**No cobra trial.** Es descomposición descriptiva de un resultado ya obtenido: el universo
+sigue cerrado, el hold-out abierto una sola vez, y no se selecciona ninguna variante nueva.
+Mismo criterio con el que no se cobró la selección de K del HMM. Un revisor que discrepe
+recomputaría el DSR con N=114 en vez de 113; el DSR sale 0,0000 con cualquiera de los dos.
+
+**Fiabilidad**: el replay de los 10 modelos reproduce la evaluación original con delta
+**0,00e+00**. Artefactos: `outputs/thesis/{decomposition,explanation}_holdout.json`.
+
+### El agente sí aprende — el rechazo es de ejecución, no de predicción
+
+| Hold-out (584 sesiones) | `ppo_regime` | `ppo_backbone` |
+|---|---|---|
+| **BRUTO** (costo cero, cota superior **inalcanzable**) | +27,95% | +31,51% |
+| Costos | 107,1% | 114,3% |
+| Sharpe bruto · IC 95% | +2,23 · [+1,21, +3,29] | +2,37 · [+1,33, +3,43] |
+
+IC que **excluye el cero** en ambas; **10/10 corridas con bruto positivo**. La señal es real.
+
+El bruto **no es un claim de edge**: exige costo cero, que no existe.
+
+### El hallazgo que blinda la conclusión: `s*` negativo
+
+Spread de break-even **−0,29 pips** (`ppo_regime`) y **−0,21** (`ppo_backbone`). Alfa 0,67
+pips/op contra costo 2,55. **Ni con spread cero** el alfa cubre la comisión de 0,5 pips/lado.
+
+Eso elimina la amenaza principal a la validez del trabajo. `SPREAD_PIPS_BY_LEVEL =
+(2.0, 3.0, 6.0)` es una constante **declarada y nunca medida** (el seed solo tiene OHLCV), y
+era razonable temer que el veredicto dependiera de ella. **No depende**: se sostiene en el
+límite de spread cero, y por tanto también bajo el supuesto de producción (~0,89 pips/lado,
+2,5× más barato).
+
+### Corrección a la intuición de partida: bajar la frecuencia NO basta
+
+Re-scoring de las mismas decisiones cada `k` barras (`ppo_regime`, media de 5 semillas):
+
+| k | dec/sesión | BRUTO | Neto |
+|---|---|---|---|
+| 1 | 59 | +27,95% | −79,2% |
+| 30 | 2 | +9,67% | −54,1% |
+| 59 | 1 | **−5,95%** | −33,2% |
+
+El neto mejora, **pero el bruto se desploma con él** y a una decisión por sesión ya es
+negativo. **El alfa vive en la alta frecuencia igual que el costo.** Matiza la línea 1 de
+`BL-48`: la cadencia por sí sola no rescata nada.
+
+### La paradoja del always-flat
+
+`w = 0` estaba en el espacio de acción y **el agente no encontró la política óptima del
+bloque**: `0,0` solo el 16,7% de las barras, 68 sesiones enteras en flat de 2.920. El plan
+(§10.1) temía el colapso **A** flat y fijó `ent_coef=0.01` para evitarlo: ocurrió la inversión
+del riesgo previsto.
+
+Contabilidad final: **113 globales** (sin cambios).
+
+---
+
+## APERTURA H-FWD-LLM-01 y H-FWD-PPO-K59-01 (2026-08-25, +2 AT) — carril forward · trials 113→115
+
+**Pre-registro**: `config/research/preregistration_forward.yaml` (`CTR-RESEARCH-FORWARD-001`,
+`status: exploratory`) · familia `registries/families/usdcop_llm_forward.yaml` ·
+DAG `research_forward_arms`.
+
+### Qué se abre, y por qué son dos trials y no cuatro
+
+| Brazo | Decisiones/sesión | Trials | Razón |
+|---|---|---|---|
+| `llm_direct_fwd_v1` | 1, sella 07:15 COT | **+1 AT** | hipótesis nueva |
+| `ppo_regime_fwd_k59` | 1, sella 08:00 COT | **+1 AT** | 1 decisión/sesión es una política **distinta** de la evaluada |
+| `ppo_regime_fwd_k1` | 59, nativo | **0** | la política ya evaluada sobre datos nuevos = evidencia forward |
+| `always_flat` | 0 | **0** | baseline |
+
+### Por qué esto NO puede volverse confirmatorio
+
+El hold-out de `H-TESIS-RL-01` se abrió **una vez**, el 2026-08-25 16:43 UTC, y el PBO quedó en
+**0,211 > 0,20** pre-registrado — lo que ya obligó a suspender la pretensión confirmatoria de
+aquel trabajo. Un brazo que arranca hoy es un experimento nuevo y **no rescata H1 ni H2**.
+
+`status: exploratory` está en el pre-registro para que el fichero mismo impida la afirmación más
+adelante, cuando el contexto se haya olvidado y la tentación sea mayor.
+
+**Y no habrá potencia**: ~250 sesiones al año, ~85 hasta diciembre. En el hold-out ni 584
+resolvieron H2. Esto es **un piloto de factibilidad y un artefacto de ingeniería, no un test**.
+
+### La compuerta que puede cerrarlo antes de gastar un token
+
+Inventario de fuentes: 5 días hábiles observando qué feeds publican material accionable antes de
+las 08:00 COT. Sondeo del 2026-08-25: de las tres URL del arnés, **dos daban 404**
+(`banrep.gov.co/rss/noticias.xml`, `portafolio.co/rss/economia`) y `larepublica.co/rss/finanzas`
+servía 60 ítems con **6 pre-apertura**.
+
+**Si la mediana de documentos pre-apertura queda por debajo de 1, el brazo se cierra ahí** y se
+escribe. Descubrirlo el día 5 cuesta cinco días; descubrirlo en el mes tres cuesta la ventana.
+
+### Lo que hace comparable la rama, y que no es opinable
+
+Los cuatro brazos deciden sobre **las mismas sesiones**, se liquidan con **el mismo motor**
+(`session_env::run_session`) y **el mismo contrato de costos** (§9.3). Verificado: liquidar una
+senda del hold-out por el carril forward reproduce **exactamente** —bruto, costo, neto,
+turnover— lo que registró `decomposition_holdout.json`
+(`tests/regression/test_forward_arms_parity.py`).
+
+**Asimetría declarada**: el RL ve la barra 0 para construir su observación y el LLM no. Los dos
+sellan antes de que exista `r_1`, así que los dos son causalmente limpios, pero no con la misma
+información. Va en `information_edge` de cada registro RL.
+
+Contabilidad final: **115 globales** (113 + 2 AT).

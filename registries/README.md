@@ -12,16 +12,18 @@ YAML delimitado que `scripts/validation/check_trial_ledger.py::check_declared_to
 compara **campo a campo** con el recomputo del ledger. Si divergen, el validador sale 1.
 
 <!-- LEDGER-TOTALS
-n_global: 239
+n_global: 243
 n_ft: 55
-n_at: 184
+n_at: 188
 per_asset:
-  usdcop: 111
+  usdcop: 115
   xauusd: 77
   btcusdt: 34
   spx500: 17
 per_family:
   usdcop_direction: 50
+  usdcop_llm_forward: 2
+  usdcop_rl_intraday: 2
   usdcop_vol: 1
   smart_simple: 60
   trend_regime: 94

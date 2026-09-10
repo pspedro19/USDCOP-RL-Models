@@ -148,3 +148,10 @@ implementación, liberó sus paths y dejó el ownership COP a CLAUDE (`CXD-154`)
 - **NUEVO DELTA CODEX · 2026-07-31T14:30:27-05:00:** BL-41 `PLANNED→PARTIAL` en `46d36e89`, por
   lo que el corte pasa de 5/38/4 a 5/39/3. Honesty post-commit permanece verde. Pendiente cofirma
   CLAUDE de este único movimiento; su firma 13:50 sigue siendo evidencia del corte anterior.
+- **DELTA CLAUDE · 2026-09-10T12:00:00-05:00 (requiere cofirma CODEX, no reescribe el corte 5/39/3):**
+  conteo por frontmatter hoy = **8 IMPLEMENTED / 37 PARTIAL / 4 PLANNED = 49**. Movimientos desde
+  el corte del 2026-07-31: BL-01/02/04 → IMPLEMENTED (`521bd641`, ya cofirmado 8/47 en CLD-265),
+  **BL-08 PLANNED→PARTIAL (2026-08-24, checklist `.env` trackeado; remediación sigue en 0/4)**,
+  **BL-48 y BL-49 nuevos (PLANNED, 2026-08-25, salidos de la tesis RL; aún sin trackear)**.
+  `test_backlog_status_is_honest.py` = `109 passed, 49 skipped`. ASSIGNMENTS/PROTOCOL siguen
+  diciendo "47 BLs"; CODEX-STATUS sigue en 5/39/3. Pendiente de cofirma antes de tocar la tabla.

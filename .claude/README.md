@@ -74,7 +74,7 @@ carga automáticamente). `AGENTS.md` no duplica reglas: apunta aquí.
 <!-- inv:specs_tree -->
 ```
 . (1)
-adr/ (3)
+adr/ (4)
 assets/ (5)
 assets/btcusdt/ (2)
 assets/btcusdt/adr/ (1)
@@ -91,8 +91,8 @@ audit/ (5)
 data/ (1)
 operations/ (2)
 pipelines/ (3)
-planes/ (9)
-planes/backlog/ (47)
+planes/ (12)
+planes/backlog/ (49)
 platform/ (22)
 tracks/ (1)
 tracks/news-analysis/ (13)
@@ -100,7 +100,7 @@ tracks/news-analysis/ (13)
 <!-- /inv -->
 
 <!-- inv:knowledge -->
-**10 rules** (~2,910 palabras auto-cargadas) · **165 specs** · **32 skills** · **3 agents**
+**10 rules** (~2,910 palabras auto-cargadas) · **171 specs** · **32 skills** · **3 agents**
 <!-- /inv -->
 
 ## Capacidades y responsabilidades (generado)

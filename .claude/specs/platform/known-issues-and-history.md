@@ -3,7 +3,7 @@ kind: as-built
 status: IMPLEMENTED
 contract: CTR-HISTORY-001
 version: 1.0.0
-last_verified: 2026-07-20
+last_verified: 2026-09-10
 supersedes: []
 code_anchors:
   - src/contracts/strategy_schema.py
@@ -40,8 +40,10 @@ code_anchors:
 
 | Track | Estrategia | Retorno 2025 | Sharpe | p-value | $10K → | Estado |
 |-------|-----------|--------------|--------|---------|--------|--------|
-| **H5 Weekly** | **Smart Simple v2.0** | **+25.63%** | **3.35** | **0.006** | **$12,563** | **PRODUCTION** |
-| H5 Weekly | v2.0 (2026 YTD) | +0.61% | — | — | $10,061 | Gate activo (1 trade) |
+| **H5 Weekly** | **Smart Simple v2.0 (oficial, bundle 2026-07-21)** | **+7.35%** | 0.942 | 0.2277 (NO significativo) | **$10,734.62** | **PRODUCTION (v11 CONGELADA)** — 32 trades (2L/30S), WR 71.9%, MaxDD 7.84%, TP 16 / week_end 11 / HS 5 |
+| H5 Weekly | ~~v2.0 +25.63% / 3.35 / 0.006 / 34 trades / $12,563~~ | SUPERSEDIDO | — | — | — | Cascada de honestidad +26.05 → +13.05 (data fix) → +7.66 (purga) → +7.35 (fills HS open-aware); ver [HYPOTHESIS-REGISTRY](../assets/usdcop/HYPOTHESIS-REGISTRY.md) § "RE-MEDICIÓN #3" |
+| H5 Weekly | v2.0 2026 (a) replay corregido, método purgado (`summary.json` 2026-07-21) | +3.36% | — | — | ≈$10,336 | 11 trades, `insufficient_trades: true` (N<20: sólo conteo y PnL) |
+| H5 Weekly | v2.0 2026 (b) ledger paper forward, como lo corren los DAGs (`paper/candidates_ledger_2026.json` 2026-08-28) | +0.66% YTD | — | — | $10,066 | 12 trades hasta ISO 2026-W33 (último 2026-08-10); N<20: sólo conteo y PnL |
 | H1 Daily | Forecast+VT+Trailing | +36.84% | 3.135 | 0.0178 | $13,684 | PAUSED |
 | RL | V21.5b | +2.51% | 0.321 | 0.272 | $10,251 | NO significativo |
 | Baseline | Buy & Hold | -12.29% | — | — | $8,771 | — |
@@ -53,7 +55,8 @@ code_anchors:
 
 ### v1.1 → v2.0 (2026-03-18)
 
-Añadidos: regime gate (Hurst), effective HS (cap 3.5% de portafolio), XGBoost al ensemble,
+Añadidos: regime gate (Hurst), effective HS (cap 3.5% de portafolio), XGBoost como experimento
+offline (nunca promovido: `use_xgboost: false`, el ensemble vivo es Ridge + BR),
 features `vol_regime_ratio` + `trend_slope_60d`, leverage dinámico, circuit breaker.
 Retraining semanal restaurado (era mensual en v1.1.0 — bug metodológico).
 

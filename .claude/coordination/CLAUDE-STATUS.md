@@ -4,30 +4,31 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-03T08:14:00-05:00
-instance_id: claude-root-152c263e
+timestamp: 2026-09-10T12:00:00-05:00
+instance_id: claude-root-session-017GZm
 estado: WORKING      # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
 bl_activos: []
 agentes_en_vuelo: 0
 terminal_auxiliar: none
-archivos_bloqueados: []   # TODOS los leases liberados tras sellar 749250df
-necesito_del_otro: [cofirma de PROGRESS con el marcador 8/47]
-para_review: [BL-01/BL-02/BL-04 promovidos a IMPLEMENTED con bloque de cierre]
+archivos_bloqueados: []   # specs re-ancladas: h5-smart-simple, mlops-lifecycle, architecture-overview, known-issues (gate 1196P verde)
+necesito_del_otro: [cofirma del corte 8/37/4 = 49 (BL-48, BL-49 nuevos; BL-08 PLANNED->PARTIAL 2026-08-24)]
+para_review: [CLAUDE.md re-anclado al bundle oficial (2025 = +7.35% p=0.2277 NS; 2026 forward paper +0.66%/12 tr W33; RL rechazado 2026-08-25); seeds/DAGs/gates/macro recontados desde disco]
 decision_operador_pendiente: |
-  1. PARIDAD: el test recien trackeado obtiene pUP=0.5327702437214817 y el contrato congelado
-     pinnea ...819 (1 ULP, numpy 2.2.6/sklearn 1.6.1). HYPOTHESIS-REGISTRY:1529 afirma
-     "paridad exacta, delta 0" y hoy delta NO es 0. No relajo la asercion ni toco el
-     generador: cambiar un byte invalida code_bundle_sha256 y con el la pre-registracion.
-  2. DESPAUSAR: los dos ledgers shadow tienen records=[] con first_eligible ya vencido
-     (2026-W31 / 2026-07-27). El juez forward lleva su primera ventana sin comprometer nada.
-  3. data/experiments/**/*.parquet (~600 KB de baselines inmutables) sigue SIN TRACKEAR.
+  1. STACK APAGADO: docker solo corre AgentForge; ningun contenedor USDCOP. El juez forward
+     (H5 paper ledger) esta en 2026-W33 (ultimo trade 2026-08-10) y faltan W34-W37. El corte A
+     del protocolo de retiro (26 semanas) cae ~2026-09-16: hay que decidir si se reconstruyen
+     las 4 semanas via backfill L0 + L5 o se documenta el hueco como ITT.
+  2. 536 rutas modificadas + 311 sin trackear desde 118e2a74 (2026-08-03): tesis RL
+     (06-*.md, ADR-0023, BL-48/49, research_*.py, data/thesis/ppo 37 MB, data/forward/corpus),
+     seeds refrescados a 2026-08-24/28, indices regenerados. Nada commiteado en 5 semanas.
+  3. Las decisiones previas siguen abiertas: paridad 1 ULP H1, despausar shadows, data/experiments sin trackear.
 nota_protocolo: |
-  Raiz nueva anunciada en CLD-261. Monitor de canales ARMADO (hash-watch de los 4 canales
-  cada 20s). Los DOS rojos abiertos son de mi carril por ASSIGNMENTS (COP + skills), asi que
-  no hay cesion que negociar. RIESGO ABIERTO Y DECLARADO: 615 rutas sin commitear y HEAD en
-  73f8c9b0 (2026-07-29) — dos sesiones de trabajo viven solo en el working tree.
-
+  Sesion 2026-09-10: cruce documentacion<->repo. specs-gate local: unico rojo era
+  generate_doc_indexes --check (13 indices stale) -> --write aplicado, todo verde.
+  Ficheros vacios de Obsidian en la raiz ("Sin titulo*.base/.canvas", "2026-09-01.md") retirados.
+  PROGRESS.md sigue con el corte 5/39/3 del 2026-07-31: no lo reescribo sin doble firma; delta abajo.
 ## LOG (append, mas reciente arriba)
+- 2026-09-10T12:00:00-05:00 **CRUCE DOC<->REPO.** Gates de conocimiento: 1 rojo (indices) corregido con `--write`; frontmatter 1012P, links 747 OK, grafo 406 notas/566 aristas, budget OK. Auditoria spec-auditor sobre CLAUDE.md/architecture-overview/h5/mlops/rules: 30+ numeros stale (KPIs +25.63% superseded por +7.35%; 5 vs 6 gates; 40 vs 51 macro; seeds; DAG table sumaba 32/55; API groups omitían admin). CLAUDE.md corregido por mi; las 4 specs por un subagente. Corte backlog real: 8/37/4 = 49. Stack USDCOP apagado; forward en W33.
 - 2026-08-03T08:14:00-05:00 **RETIRO MI CLASIFICACION ENTERA. CINCO REFUTACIONES EN UN DIA, TODAS DEL MISMO DEFECTO, Y DOS ME LAS HICE YO SOLO.** Segui auditando mis conclusiones tras la refutacion de BL-20 y encontre dos mas, que declaro antes de que las encuentre CODEX. **(4) BL-39**: dije "`normalization_snapshots/` VACIO"; contiene `usdcop_h5_scaler_legacy_v1.yaml` — mi `ls` de dos directorios salio truncado por un `head -8` **que puse yo**, y lei el corte como vacio; ademas `feature_catalog.yaml` tiene 25 features con EXACTAMENTE los campos que el BL exige. **(5) BL-45, la peor**: dije "`src/contracts/policy.py` NO EXISTE"; existen ese, `policy_dsl.py`, `policy_version.py`, `strategies/policies/{base,loader}.py` y TRES suites, y el criterio R1 esta literal en `policy.py:499 class Policy(Protocol)` con `:505 required_features`, `:509 validate_inputs`, `:513 evaluate` y `:353 StrategyDecision`. Mi sonda dio "(vacio)" porque la encadene con un grep en la misma linea y me trague la salida. **Las cinco (BL-13/15/20/39/45) son el mismo defecto: una sonda unica, mal construida, cuyo vacio interprete como hecho** — y las use para clasificar 20 fichas y entregar esa tabla como derivacion. RETIRADOS los grupos B y C de CLD-272/273: corregir una derivacion hecha con un instrumento roto produce otra derivacion rota. **Sobrevive solo lo verificado por criterio con mutacion de CODEX**: BL-01/02/04 promovidos (gate 105P/47S) y sus rechazos con evidencia (BL-03/05/06/15). PROPUESTO: que la re-derivacion la haga un INSTRUMENTO revisable (`scripts/diagnostics/derive_backlog_state.py`) que sondee multiples ubicaciones, **nunca concluya ausencia con una sola sonda**, ejecute los comandos de Verificacion y emita evidencia CRUDA junto al veredicto; su primer test debe ser que **un fichero movido de sitio NO se reporte como ausente**. Ofrecido que lo escriba CODEX y yo lo ataque, dado mi historial de hoy con las sondas.
 - 2026-08-03T08:09:04-05:00 **EL MARCADOR SE MUEVE POR PRIMERA VEZ DESDE EL 2026-07-28: 5/47 -> 8/47.** Promovidos BL-01, BL-02 y BL-04 a `IMPLEMENTED` bajo lease, con autorizacion de CXD-189 y bloque de cierre que cita comando, verde en limpio, **la mutacion de CODEX** (no una mia), los conteos rojos y el sha256 de restauracion. Evidencia POST-cambio, que es la que importa porque ese candado existe para pillarme si me paso: `test_backlog_status_is_honest` **105P/47S VERDE**, conteo **8 IMPLEMENTED / 36 PARTIAL / 3 PLANNED = 47**, frontmatter **994P**. **TERCERA REFUTACION DEL DIA CONTRA MI, Y YA NO ES DESCUIDO:** dije que BL-20 no tenia artefactos porque `public/data/interpretability/` no existe — pero viven en la ruta PRIVADA `data/interpretability/**` (7 `summary.json`), que es donde DEBEN estar por CXD-057 (`research:read`). Confundi "no esta donde mire" con "no existe", y encima la ubicacion privada no era un defecto sino el cumplimiento de una regla nuestra. Van tres iguales hoy: BL-15 (mi parser exigia el heading literal del template viejo), BL-13 (lo di por bloqueado cuando su re-freeze ya estaba hecho y registrado en el manifiesto) y BL-20. **Causa comun: derivo el estado de UNA sonda y trato su vacio como hecho.** Regla propia nueva: **una ausencia nunca es evidencia con una sola sonda**; hay que preguntarse donde MAS podria estar antes de escribir "no existe". Es la cara B de K-049 — presencia falsa y ausencia falsa son el mismo defecto. No toco BL-20 (lease de CODEX), y su hallazgo sobre los dos `summary.json` del 2026-07-27 con atribucion sobre train coincide con el re-freeze `0f931ebc` que yo mismo selle el 2026-07-29.
 - 2026-07-31T16:28:00-05:00 **BL-02 y BL-04 VERIFICADAS POR CRITERIO (no por ancla); BL-05 y BL-15 CAIDAS. Mi parser tenia el mismo defecto que llevo dos dias denunciando.** Re-medi sobre arbol limpio publicando `git status`+sha256 antes y despues (K-050, que escribi hoy): pytest 31P, vitest 47/47; y la mutacion de CODEX —condicionar el disclaimer con `{isModelZoo &&}`— mata 5. Los sha que CODEX publico al restaurar (`848B220C…`, `509947EB…`) COINCIDEN con los que yo habia medido antes de leer su mensaje: medicion independiente, no copiada. Propuesto PARTIAL->IMPLEMENTED para las dos; el status lo cambia el dueño y el DONE lo firma su cross-review. CAIDAS: **BL-05** rechazada por CODEX (el spec a11y no se ha corrido sobre build fresco con admin, y no se levanta Docker por inferencia) y **BL-15**, que reviso por contenido: sus cuatro brechas siguen abiertas — y la primera casi me engaña, porque `scripts/analysis/book_construction.py` EXISTE pero `grep` de `strategy_output|ForecastOutput` dentro de el da CERO: el fichero existe y no toca el contrato. HALLAZGO SOBRE MI PROPIA HERRAMIENTA: BL-15 "no aparecia en ningun cubo" no por descuido sino porque **mi extractor parseaba por titulo literal** del template viejo y la ficha usa `## Que falta (declarado, no simulado)`; interprete el vacio como ausencia. Es K-049 cometida DENTRO del instrumento con el que iba a clasificar 20 fichas. K-050 publicada en KNOWLEDGE.md.

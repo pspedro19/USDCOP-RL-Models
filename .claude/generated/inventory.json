@@ -91,6 +91,8 @@
       "news_weekly_digest": "news_weekly_digest.py",
       "rbac_entitlements_daily": "rbac_entitlements_daily.py",
       "reconciliation_daily": "reconciliation_daily.py",
+      "research_forward_arms": "research_forward_arms.py",
+      "research_thesis_ppo_training": "research_thesis_ppo_training.py",
       "rl_l1_01_feature_refresh": "l1_feature_refresh.py",
       "rl_l1_03_model_promotion": "l1_model_promotion.py",
       "rl_l2_01_dataset_build": "l2_dataset_builder.py",
@@ -104,9 +106,9 @@
       "rl_l6_01_production_monitor": "l6_production_monitoring.py",
       "rl_l6_02_drift_monitor": "mlops_drift_monitor.py"
     },
-    "modules": 51,
-    "static_ids": 50,
-    "total_ids": 53
+    "modules": 53,
+    "static_ids": 52,
+    "total_ids": 55
   },
   "frontend": {
     "api_routes": 98,
@@ -338,15 +340,15 @@
       "xasset-alpha-engine"
     ],
     "skills": 32,
-    "specs": 165
+    "specs": 171
   },
   "migrations": {
-    "count": 71,
+    "count": 72,
     "latest": "rollback_033_event_triggers.sql"
   },
   "specs_tree": [
     ". (1)",
-    "adr/ (3)",
+    "adr/ (4)",
     "assets/ (5)",
     "assets/btcusdt/ (2)",
     "assets/btcusdt/adr/ (1)",
@@ -363,8 +365,8 @@
     "data/ (1)",
     "operations/ (2)",
     "pipelines/ (3)",
-    "planes/ (9)",
-    "planes/backlog/ (47)",
+    "planes/ (12)",
+    "planes/backlog/ (49)",
     "platform/ (22)",
     "tracks/ (1)",
     "tracks/news-analysis/ (13)"

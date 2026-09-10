@@ -211,13 +211,39 @@ research/
 # BUT exclude local settings (contains secrets/tokens)
 .claude/settings.local.json
 
+# ...and re-apply the GLOBAL junk rules that `!.claude/**` had switched off.
+# La doble negacion de arriba desactiva __pycache__/, *.pyc y *.log DENTRO de
+# .claude/. Eso metio en git 10 .pyc, 14 logs y 46,9 MB de trace.zip de Playwright
+# DUPLICADOS (mismo contenido en html/data/<sha>.zip y en artifacts/<test>/trace.zip).
+# Auditoria 2026-08-24. No se reescribe historia: solo se corta la fuga.
+.claude/**/__pycache__/
+.claude/**/*.pyc
+.claude/**/*.pyo
+.claude/**/*.log
+# Nota: los .log de `.claude/codex/evidence/{harness_bundle,ci-playwright-*}/` YA estan
+# tracked y siguen estandolo — .gitignore no afecta a lo ya versionado, y estan CITADOS
+# como evidencia en audits/FINAL-VERIFICATION-2026-07-20.md (test_knowledge_links.py los
+# valida). La regla corta logs NUEVOS; no borra evidencia referenciada.
+# Evidencia efimera de Playwright: traces/zips/videos/webm de UNA corrida, no conocimiento.
+# 46,8 MB desligados el 2026-08-24; el mismo trace vivia DUPLICADO en html/data/ y artifacts/.
+.claude/codex/evidence/playwright/
+
 # Claude Code temporary files and directories
 tmpclaude-*/
 tmpclaude-*
 **/tmpclaude-*
 
-# Windows null file artifacts
+# Windows/shell artefactos accidentales en la RAIZ (auditoria 2026-08-24).
+# `nul`/`NUL`: el dispositivo nulo de Windows escrito como fichero real.
+# `dev/`: un `> /dev/null` bajo Git Bash en Windows creo un DIRECTORIO real
+#   `dev/null/` con 4 git hooks dentro, y se commitearon.
+# `=`: fichero vacio de 0 bytes, artefacto de una redireccion de shell.
+# `Microsoft/`: cache de PowerShell del $HOME que cayo dentro del repo.
 nul
+NUL
+/=
+/dev/
+/Microsoft/
 
 # Node.js (for dashboard)
 node_modules/
@@ -383,3 +409,21 @@ vendor/quant-skills/**/__pycache__/
 .obsidian/cache/
 .obsidian/plugins/*/data.json
 .trash/
+
+# --- Dashboard: artefactos de build/test/reporte (auditoria 2026-08-24) --------
+# Salidas regenerables que ensucian `git status` y rompen el DoD de F0
+# ("git status limpio tras make report"). No son entregables.
+usdcop-trading-dashboard/coverage/
+usdcop-trading-dashboard/playwright-report/
+usdcop-trading-dashboard/test-results/
+usdcop-trading-dashboard/shots/
+usdcop-trading-dashboard/tsconfig.tsbuildinfo
+usdcop-trading-dashboard/series_*.png
+usdcop-trading-dashboard/audit.json
+usdcop-trading-dashboard/audit-current.json
+usdcop-trading-dashboard/audit-fix-plan.json
+usdcop-trading-dashboard/mejora-frontend-dashboard-trading/
+
+# npm-audit one-off outputs (2026-07-27) — regenerables, no se versionan
+usdcop-trading-dashboard/audit-current.json
+usdcop-trading-dashboard/audit-fix-plan.json

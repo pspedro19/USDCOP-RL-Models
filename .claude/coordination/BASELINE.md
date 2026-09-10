@@ -5,9 +5,15 @@
 
 ## Python — pytest
 
-- **test_knowledge_frontmatter: 47 failed pre-existentes** (ADR-0021 sin front-matter,
-  BOOK-LEVERAGE, EXP-DIR, `.claude/codex/*` legacy, etc. — anteriores al protocolo).
-  Re-medido 2026-07-28: sigue en 47. Saneo = BL futuro, no bloqueo.
+- **test_knowledge_frontmatter: 0 failed pre-existentes** — deuda PAGADA.
+  Historico: 47 fallos (ADR-0021 sin front-matter, BOOK-LEVERAGE, EXP-DIR,
+  `.claude/codex/*` legacy, etc. — anteriores al protocolo); re-medido 2026-07-28
+  seguia en 47. El saneo se hizo en el carril de conocimiento (front matter tipado
+  en todo `.claude/`), pero **la linea base nunca se re-registro**, asi que el gate
+  llevaba desde entonces en rojo falso por DELTA -47 ("la deuda se pago, re-registrala").
+  Re-medido y re-registrado 2026-08-24 (auditoria de limpieza): 0 failed.
+  A partir de aqui, cualquier documento nuevo sin front matter es un fallo NUEVO
+  y bloquea — que es el comportamiento que se queria desde el principio.
 
 - **test_backlog_status_is_honest: 17 failed pre-existentes** (candado NUEVO 2026-07-28,
   `tests/regression/test_backlog_status_is_honest.py`, CTR-BACKLOG-HONESTY-001).

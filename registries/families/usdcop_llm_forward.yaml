@@ -1,0 +1,67 @@
+# Familia ACTION del carril forward (CTR-RESEARCH-FORWARD-001, ADR-0022).
+# Dos brazos que deciden UNA vez por sesion, sobre las MISMAS sesiones y con el mismo
+# contrato de costos, para que la comparacion signifique algo.
+family_id: usdcop_llm_forward
+kind: action
+cluster_id: forward_arms
+hypothesis_key: usdcop_preopen_signal_one_decision
+sibling_families: []
+deflation_scope: family
+declared_at: "2026-08-25"
+declared_by: claude-forward   # operador Pedro, protocolo .claude/coordination
+question: >-
+  Una senal emitida ANTES de la apertura —de un LLM leyendo prensa, o de la politica RL
+  congelada— sostiene una posicion rentable durante la sesion, neta de costos?
+bar: >-
+  Batir `always_flat` con IC95 de la diferencia pareada que excluya 0, sobrevivir al stress de
+  costos x2 (quant-constitution 3.4) y alcanzar DSR > 0.95 con el N del activo.
+label: documented
+
+governance:
+  gate: "DSR_family > 0.95, recomputado con el n_trials del ACTIVO (115)"
+  claims_edge: false
+  claims_edge_note: >-
+    NO PUEDE reclamar edge, y no por sus numeros sino por su diseno: arranca DESPUES de que el
+    hold-out de H-TESIS-RL-01 se abriera (2026-08-25 16:43 UTC) y con el PBO en 0,211 > 0,20.
+    `config/research/preregistration_forward.yaml` lo fija en `status: exploratory` para que
+    el fichero mismo impida la afirmacion mas adelante. Ademas ~85 sesiones hasta diciembre no
+    dan potencia: en el hold-out ni 584 resolvieron H2.
+  candidates: []
+
+cells:
+  - asset: usdcop
+    variant: llm_direct_fwd_v1
+    cell_kind: atomic
+    trial_id: AT-0187
+    n_trials: 1
+    hypothesis_id: H-FWD-LLM-01
+    status: OPEN
+    result: PENDING
+    note: >-
+      documented - LLM leyendo prensa colombiana publicada antes de las 08:00 COT. Sella a las
+      07:15. Compuerta previa: inventario de fuentes de 5 dias habiles; si la mediana de
+      documentos pre-apertura es < 1, el brazo se cierra sin gastar tokens.
+  - asset: usdcop
+    variant: ppo_regime_fwd_k59
+    cell_kind: atomic
+    trial_id: AT-0188
+    n_trials: 1
+    hypothesis_id: H-FWD-PPO-K59-01
+    status: OPEN
+    result: PENDING
+    note: >-
+      documented - la politica congelada de la tesis operada a UNA decision por sesion, para
+      ser comparable con el LLM. Cobra trial porque 1 decision/sesion es una politica distinta
+      de la evaluada (59). Anclaje ya medido en el hold-out: bruto -5,95%, neto -33,2%.
+
+provenance:
+  crosses_wall: false
+  note: >-
+    `llm_direct_fwd_v1` no hereda ningun forecast: el LLM emite directamente la senal economica.
+    `ppo_regime_fwd_k59` reusa la politica de `usdcop_rl_intraday` sin heredar trials FT — esa
+    familia tampoco cruzaba la muralla. El brazo `ppo_regime_fwd_k1` NO figura aqui: es la
+    politica ya evaluada corriendo sobre datos nuevos, o sea evidencia forward, y no cobra.
+
+trials_charged: 2
+closed: false
+closure_note: null

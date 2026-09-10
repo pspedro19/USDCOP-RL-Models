@@ -2,10 +2,13 @@
 kind: as-built
 status: IMPLEMENTED
 version: 1.0.0
-last_verified: 2026-07-20
+last_verified: 2026-09-10
 supersedes: []
 code_anchors:
   - config/execution/smart_simple_v1.yaml
+  - scripts/pipeline/train_and_export_smart_simple.py
+  - airflow/dags/forecast_h5_l4b_production_deploy.py
+  - usdcop-trading-dashboard/lib/approvals/store.ts
 ---
 # SDD Spec: MLOps Lifecycle — Bootstrap to Production
 
@@ -14,6 +17,9 @@ code_anchors:
 > Follow stages sequentially for initial setup; Stage 7 runs automatically via Airflow.
 > **Updated 2026-04-06**: Smart Simple v2.0 with regime gate, effective HS, dynamic leverage.
 > H1 pipeline PAUSED. H5 is the PRIMARY production track.
+> **Updated 2026-09-10**: KPIs re-anchored to the official 2026-07-21 bundle (+7.35%, p=0.2277,
+> NOT significant); 6 gates; approval state lives in `data/approvals/`; post-Vote-2 deploy is the
+> `forecast_h5_l4b_production_deploy` DAG.
 >
 > **Responsibility**: End-to-end operator workflow (WHAT to do, WHEN, and WHY).
 > For deep-dives into specific concerns, see the cross-referenced specs below.
@@ -23,7 +29,7 @@ code_anchors:
 > | Strategy schemas (TradeRecord, MetricsSummary) | `strategy-contract.md` |
 > | Approval gates, 2-vote system, approval_state.json | `approval-gates.md` |
 > | JSON/CSV/PNG file schemas, page data flows | `dashboard-integration.md` |
-> | Quick-reference lifecycle + CLI conventions | `mlops-lifecycle.md` |
+> | DAG schedule / collision-free timeline (SSOT) | [`../operations/elite-operations.md`](../operations/elite-operations.md) |
 >
 > Created: 2026-02-16
 
@@ -44,7 +50,7 @@ Stage 4: BACKTEST REVIEW   /dashboard shows 2025 OOS results → KPIs, trades, g
     |
 Stage 5: HUMAN APPROVAL    Vote 2/2 on /dashboard → APPROVED or REJECTED
     |
-Stage 6: PRODUCTION DEPLOY Retrain with 2025 data → /production shows 2026 YTD
+Stage 6: PRODUCTION DEPLOY DAG forecast_h5_l4b_production_deploy (post-Vote-2) → /production shows 2026 YTD
     |
 Stage 7: MONITORING        Airflow weekly cycle → retrain, signal, execute, evaluate
 ```
@@ -64,22 +70,30 @@ Docker Compose starts PostgreSQL + TimescaleDB. Init scripts run in order:
 docker-compose up -d
     |
     v
-00-extensions.sql         → Enable TimescaleDB, pg_cron
-01-essential-tables.sql   → Core tables: usdcop_m5_ohlcv, macro_indicators_*
-02-macro-tables.sql       → 4-table macro architecture (daily, monthly, quarterly)
-03-views.sql              → Monitoring views: fx_latest_bar, fx_daily_bar_counts
-04-data-seeding.py        → Detect empty DB → restore from seed parquets
+00-init-extensions.sql              → Enable TimescaleDB, pg_cron
+01-essential-usdcop-init.sql        → Core tables: usdcop_m5_ohlcv, macro_indicators_*
+02-macro-indicators-schema.sql      → Macro indicator schema (4-table architecture lives in 25-macro-4table-architecture.sql)
+03-inference-features-views-v2.sql  → Inference feature views (fx_latest_bar, fx_daily_bar_counts)
+04-data-seeding.py                  → Detect empty DB → restore from seed parquets
 ```
+
+(Real file names under `init-scripts/`; later numbered scripts — 05/06/10-12/15/20/21/25-27 —
+add model/experiment registry, paper trading, forecasting, SignalBridge, macro 4-table, PIT.)
 
 ### Seed Restore (`04-data-seeding.py`)
 
 The seeding script detects empty tables and restores from local parquets:
 
-| Seed File | Target Table | Rows | Coverage |
-|-----------|-------------|------|----------|
-| `seeds/latest/fx_multi_m5_ohlcv.parquet` | `usdcop_m5_ohlcv` | ~266K | 3 FX pairs, 5-min bars (2019-2026) |
-| `seeds/latest/usdcop_daily_ohlcv.parquet` | (file-based, no table) | ~3K | Daily OHLCV for H1/H5 training |
-| `data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet` | `macro_indicators_daily` | ~10K | 17 macro cols (2015-2026) |
+| Seed File | Target Table | Rows (2026-09-10) | Coverage |
+|-----------|-------------|-------------------|----------|
+| `seeds/latest/fx_multi_m5_ohlcv.parquet` | `usdcop_m5_ohlcv` | 143,548 | 5 symbols, 5-min bars: COP 99,714 / XAU 21,560 / BTC 12,945 / MXN 4,679 / BRL 4,650 |
+| `seeds/latest/usdcop_m5_ohlcv.parquet` | `usdcop_m5_ohlcv` (COP slice) | 99,714 | 5-min COP → 2026-08-24 |
+| `seeds/latest/usdcop_daily_ohlcv.parquet` | (file-based, no table) | 1,727 | Daily COP 2019-12-18 → 2026-08-28 for H1/H5 training (+ `usdcop_daily_ohlcv_full.parquet`, 1,213 rows, 2015-2019 slice) |
+| `seeds/latest/macro_indicators_daily.parquet` | `macro_indicators_daily` | 10,866 | All macro columns, 1954 → 2026 |
+| `data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet` | (file-based; H1/H5 macro features) | 26,352 | 28 cols, 1954-07 → 2026-08-24 |
+
+Also in `seeds/latest/`: `usdmxn_m5` (4,679) / `usdbrl_m5` (4,650), `btcusdt_{daily,derivatives_daily,m5}`,
+`xauusd_{daily,m5}`, `spx500_daily`, `usdcop_1h`. Counts rot — re-read the parquets before quoting.
 
 ### State After Stage 0
 
@@ -128,7 +142,7 @@ After initial alignment, realtime DAGs keep data fresh automatically:
 | DAG | Schedule (COT) | Action |
 |-----|----------------|--------|
 | `core_l0_02_ohlcv_realtime` | `*/5 8:00-12:55 Mon-Fri` | 3 FX pairs, circuit breaker |
-| `core_l0_04_macro_update` | `hourly 8:00-12:00 Mon-Fri` | 40 vars, 7 sources |
+| `core_l0_04_macro_update` | `hourly 8:00-12:00 Mon-Fri` | 51 vars (`config/macro_variables_ssot.yaml`), 7 sources |
 
 ### Key Contract
 
@@ -185,21 +199,27 @@ python scripts/pipeline/train_and_export_smart_simple.py --phase backtest
 
 **Input**: Same daily OHLCV + macro parquets. Config from `config/execution/smart_simple_v1.yaml`.
 
-**Output** (written to `usdcop-trading-dashboard/public/data/production/`):
-- `summary_2025.json` — OOS backtest metrics
-- `approval_state.json` — 5 gates evaluated automatically (Vote 1/2)
-- `trades/smart_simple_v11_2025.json` — 24 trades with entry/exit/PnL/confidence
+**Output**:
+- `usdcop-trading-dashboard/public/data/production/summary_2025.json` — OOS backtest metrics (official bundle, generated 2026-07-21)
+- `data/approvals/approval_state.json` (repo root, **private** — NOT under `public/`; read by `app/api/production/status/route.ts` via `lib/approvals/store.ts`) — 6 gates evaluated automatically (Vote 1/2)
+- `usdcop-trading-dashboard/public/data/production/trades/smart_simple_v11_2025.json` — 32 trades with entry/exit/PnL/confidence
 - Optional PNGs: `equity_curve_2025.png`, `monthly_pnl_2025.png`, `trade_distribution_2025.png`
 
-**Vote 1/2 (Automatic)**: The export script evaluates 5 gates and writes the recommendation:
+**Vote 1/2 (Automatic)**: The export script evaluates **6 gates** (`train_and_export_smart_simple.py:1253-1278`,
+mirrored in `lib/contracts/production-approval.contract.ts`) and writes the recommendation:
 
-| Gate | Threshold | Smart Simple v1.1 Result |
-|------|-----------|--------------------------|
-| `min_return_pct` | > -15% | +20.03% PASS |
-| `min_sharpe_ratio` | > 0.0 | 3.516 PASS |
-| `max_drawdown_pct` | < 20% | 3.83% PASS |
-| `min_trades` | >= 10 | 24 PASS |
-| `statistical_significance` | p < 0.05 | 0.0097 PASS |
+| Gate | Threshold | Smart Simple v2.0 result (official 2025 OOS, 2026-07-21) |
+|------|-----------|-----------------------------------------------------------|
+| `min_return_pct` | > -15% | +7.35% PASS |
+| `min_sharpe_ratio` | > 0.0 | 0.942 PASS |
+| `max_drawdown_pct` | < 20% | 7.84% PASS |
+| `min_trades` | >= 10 | 32 PASS |
+| `statistical_significance` | p < 0.05 | 0.2277 **FAIL** (NOT significant) |
+| `dsr_trial_aware` | > 0.95 (least favourable sigma) | 0.0587 in `approval_state.json` (registry scenarios 0.50-0.92) **FAIL** |
+
+4/6 gates pass → recommendation is **not** PROMOTE; v11 is FROZEN and the 2026 forward is the judge
+(`../assets/usdcop/HYPOTHESIS-REGISTRY.md` § "RE-MEDICIÓN #3"). The old +20.03% / 3.516 / 0.0097 / 24-trade
+and +25.63% / 34-trade rows are SUPERSEDED.
 
 ### State After Stage 2
 
@@ -213,8 +233,8 @@ python scripts/pipeline/train_and_export_smart_simple.py --phase backtest
 [ ] generate_weekly_forecasts.py completed (check bi_dashboard_unified.csv exists)
 [ ] train_and_export_smart_simple.py --phase backtest completed
 [ ] summary_2025.json exists in public/data/production/
-[ ] approval_state.json shows status: PENDING_APPROVAL
-[ ] All 5 gates show passed: true
+[ ] data/approvals/approval_state.json shows status: PENDING_APPROVAL
+[ ] All 6 gates evaluated (v11 as-built: 4/6 pass — p-value and DSR fail; do not expect 6/6)
 ```
 
 ---
@@ -252,7 +272,7 @@ The `ForecastingBacktestSection` component (top of `/dashboard`) loads 2025 OOS 
 /dashboard loads:
     |
     ├── GET /data/production/summary_2025.json          (backtest metrics)
-    ├── GET /api/production/status                      (approval state + gates)
+    ├── GET /api/production/status                      (approval state + gates, read from data/approvals/)
     └── GET /data/production/trades/{strategy_id}_2025.json  (trade details)
          |
          v
@@ -260,19 +280,20 @@ The `ForecastingBacktestSection` component (top of `/dashboard`) loads 2025 OOS 
     ├── 5 KPI cards (return, Sharpe, WR, MaxDD, p-value)
     ├── p-value significance badge (green if < 0.05)
     ├── 2025 candlestick chart with trade entry/exit markers
-    ├── Full trade table (24 rows: confidence, HS%, TP%, exit reason, PnL)
+    ├── Full trade table (32 rows: confidence, HS%, TP%, exit reason, PnL)
     ├── Interactive replay (startDate="2025-01-01", endDate="2025-12-31")
-    └── Gates panel (5/5 passed)
+    └── Gates panel (6 gates; v11 = 4/6)
 ```
 
-### What the Operator Reviews
+### What the Operator Reviews (official 2025 OOS bundle, 2026-07-21)
 
-1. **Return vs Buy-and-Hold**: +20.03% vs -12.29% (32.32 pp alpha)
-2. **Statistical Significance**: p=0.0097 (highly significant)
-3. **Risk Metrics**: Sharpe 3.516, MaxDD 3.83%
-4. **Trade Quality**: 70.8% WR, 24 trades (all SHORT), 0 hard stops
-5. **Exit Composition**: 9 take_profit + 15 week_end (no forced exits)
-6. **Gate Results**: All 5/5 passed → recommendation = PROMOTE
+1. **Return vs Buy-and-Hold**: +7.35% vs -12.29% (19.64 pp alpha)
+2. **Statistical Significance**: p=0.2277 — **NOT statistically significant**
+3. **Risk Metrics**: Sharpe 0.942, MaxDD 7.84%
+4. **Trade Quality**: 71.9% WR, 32 trades (2 LONG / 30 SHORT), 5 hard stops
+5. **Exit Composition**: 16 take_profit + 11 week_end + 5 hard_stop
+6. **Gate Results**: 4/6 passed (p-value + DSR fail) → recommendation is not PROMOTE; Vote 2 is emitted
+   on these bundle numbers, never on frontend-recomputed metrics (`approval-gates.md` invariant 2)
 
 ### State After Stage 4
 
@@ -286,20 +307,21 @@ The `ForecastingBacktestSection` component (top of `/dashboard`) loads 2025 OOS 
 > **IMPORTANT**: Vote 2 happens on `/dashboard`, NOT on `/production`.
 > The `/production` page is read-only — status badge only, no interactive buttons.
 
-On `/dashboard`, the operator clicks **"Aprobar"** (Approve) or **"Rechazar"** (Reject).
-The API updates `approval_state.json` accordingly.
+On `/dashboard`, the operator (`admin` only, audit-logged) clicks **"Aprobar"** (Approve) or
+**"Rechazar"** (Reject). The API updates `data/approvals/approval_state.json` accordingly
+(`lib/approvals/store.ts`).
 
 For the full two-vote system, gate schema, approval_state.json format, and dashboard
 components (ApprovalPanel vs ApprovalStatusCard), see `approval-gates.md`.
 
 | Outcome | Next Step |
 |---------|-----------|
-| **APPROVED** | Proceed to Stage 6 (`--phase production`) |
+| **APPROVED** | Stage 6 runs automatically: the dashboard triggers DAG `forecast_h5_l4b_production_deploy` via Airflow REST |
 | **REJECTED** | Fix issues, then `--reset-approval` to re-evaluate |
 
 ### State After Stage 5
 
-- `approval_state.json` has `status: "APPROVED"` (or `"REJECTED"`)
+- `data/approvals/approval_state.json` has `status: "APPROVED"` (or `"REJECTED"`)
 - `/production` shows read-only status badge
 
 ---
@@ -308,10 +330,18 @@ components (ApprovalPanel vs ApprovalStatusCard), see `approval-gates.md`.
 
 ### What Happens
 
-After approval, the operator runs the production phase. This retrains models on an expanded window that NOW INCLUDES 2025 data.
+After Vote 2, the deploy is **event-driven, not an operator command**: the dashboard's approve
+action calls the Airflow REST API and triggers DAG `forecast_h5_l4b_production_deploy`
+(`airflow/dags/forecast_h5_l4b_production_deploy.py`, 2026-07-07). Its first task
+`guard_approved` re-reads `data/approvals/approval_state.json` and re-checks
+`status == APPROVED` server-side — the UI is not the authority. The DAG then reads the
+`deploy_manifest` embedded by `--phase backtest` and runs the production phase with `--seed-db`,
+retraining on an expanded window that NOW INCLUDES 2025 data.
+
+Manual fallback (same script the DAG spawns, e.g. when Airflow is down):
 
 ```bash
-python scripts/pipeline/train_and_export_smart_simple.py --phase production
+python scripts/pipeline/train_and_export_smart_simple.py --phase production --seed-db
 ```
 
 ### Why Retrain?
@@ -342,13 +372,13 @@ After Stage 6, `/production` shows:
 ```
 /production loads:
     |
-    ├── GET /data/production/summary.json               (2026 YTD metrics)
-    ├── GET /api/production/status                      (read-only approval state)
+    ├── GET /data/production/summary.json               (2026 replay metrics; paper ledger in /data/production/paper/)
+    ├── GET /api/production/status                      (read-only approval state, from data/approvals/)
     └── GET /data/production/trades/{strategy_id}.json  (2026 trades)
          |
          v
     Renders:
-    ├── 5 KPI cards (2026 YTD: return, Sharpe, WR, MaxDD, trades)
+    ├── 5 KPI cards (2026 YTD: return, trades, WR, MaxDD; Sharpe/p-value hidden while N < 20)
     ├── Full-year candlestick chart with trade markers
     ├── Trade table (2026 trades only)
     ├── Read-only status badge: APPROVED
@@ -364,7 +394,7 @@ After Stage 6, `/production` shows:
 ### Operator Checklist
 
 ```
-[ ] train_and_export_smart_simple.py --phase production completed
+[ ] DAG forecast_h5_l4b_production_deploy succeeded (guard_approved → deploy → verify), or the manual fallback completed
 [ ] summary.json exists in public/data/production/
 [ ] /production page shows 2026 YTD trades
 [ ] Airflow DAGs are configured and unpaused (see Stage 7)
@@ -380,12 +410,13 @@ Airflow DAGs run the weekly cycle automatically. No operator action required unl
 
 ### Weekly Cycle Summary
 
-Two pipelines run in parallel, each with 5 DAGs:
+Two pipelines run in parallel — **H5 = 7 DAGs** (L3, L4 promotion, L4b deploy, L5 signal, L5 vol-target,
+L7 executor, L6 monitor) and **H1 = 6 DAGs (+3 shadow), PAUSED** — counts from `.claude/generated/inventory.json`:
 
-**H5 Weekly** (Smart Simple v1.1): Sun retrain → Mon signal+entry → Mon-Fri TP/HS monitor → Fri close+evaluate
+**H5 Weekly** (Smart Simple v2.0): Sun retrain → Mon signal+entry → Mon-Fri TP/HS monitor → Fri close+evaluate
 **H1 Daily** (Forecast VT+Trail): Sun retrain → Mon-Fri signal+execute+trail → Mon-Fri paper monitor
 
-For complete DAG schedules, see `mlops-lifecycle.md` § Monitoring.
+For complete DAG schedules, see [`../operations/elite-operations.md`](../operations/elite-operations.md).
 For H5 pipeline architecture and DAG details, see `h5-smart-simple.md`.
 
 ### Guardrails
@@ -409,7 +440,7 @@ See `h5-smart-simple.md` § Promotion Gates for full threshold table.
 
 ---
 
-## Strategy Execution — How Smart Simple v1.1 Makes Money
+## Strategy Execution — How Smart Simple v2.0 Makes Money
 
 ### The Edge
 
@@ -417,7 +448,7 @@ See `h5-smart-simple.md` § Promotion Gates for full threshold table.
 
 2. **SHORT Bias**: The 2026 regime change (p=0.0014) broke LONG profitability (WR 58% → 28%). SHORTs still work (WR 56%). Both pipelines are SHORT-biased.
 
-3. **Vol-Adaptive Stops**: Hard stop = `clamp(vol * sqrt(5) * 2.0, 1%, 3%)`. Wider in volatile markets, tighter in calm. Take profit = 50% of hard stop. This eliminates premature stop-outs (v1.0 had 2 hard stops, v1.1 has 0).
+3. **Vol-Adaptive Stops**: Hard stop = `clamp(vol * sqrt(5) * 2.0, 1%, 3%)`. Wider in volatile markets, tighter in calm. Take profit = 50% of hard stop. This reduces premature stop-outs (v1.0 had 2 hard stops; the official v2.0 2025 bundle records 5 HS exits of 32 trades with open-aware fills).
 
 4. **Confidence Filtering**: 3-tier scoring from model agreement + magnitude. LOW-confidence LONGs are skipped entirely (net effect if taken = -0.75%).
 
@@ -439,28 +470,33 @@ Monday 09:00: Limit entry order placed at current price (0% maker fee)
 - LONG MEDIUM: 0.5x leverage
 - LONG LOW: **SKIP** (do not trade)
 
-### 2025 Backtest Results (v2.0)
+### 2025 Backtest Results (v2.0 — official bundle `summary_2025.json`, 2026-07-21)
 
-| Metric | v1.1 (old) | v2.0 (current) |
-|--------|------------|----------------|
-| Return | +20.03% | **+25.63%** |
-| Sharpe | 3.516 | **3.347** |
-| p-value | 0.0097 | **0.0063** |
-| MaxDD | -3.83% | **-6.12%** |
-| Trades | 24 | **34 (5L/29S)** |
-| WR | 70.8% | **82.4%** |
-| TP exits | 9 | **21 (62%)** |
-| HS exits | 0 | **2** (effective HS) |
-| $10K → | $12,003 | **$12,563** |
+| Metric | v2.0 (official) |
+|--------|-----------------|
+| Return | **+7.35%** |
+| Sharpe | 0.942 |
+| p-value | 0.2277 — **NOT statistically significant** |
+| MaxDD | 7.84% |
+| Trades | 32 (2L/30S) |
+| WR | 71.9% |
+| Exits | TP 16 / week_end 11 / HS 5 |
+| $10K → | **$10,734.62** |
 
-### 2026 YTD (v2.0, as of 2026-04-06)
+Honesty cascade: +26.05 → +13.05 (data fix) → +7.66 (purge) → +7.35 (open-aware HS fills). The
++25.63% / 3.347 / 0.0063 / 34-trade / $12,563 and +20.03% / 3.516 / 0.0097 / 24-trade rows are
+**SUPERSEDED** (`../assets/usdcop/HYPOTHESIS-REGISTRY.md` § "RE-MEDICIÓN #3"). Trial-aware DSR
+< 0.95 in every scenario → v11 FROZEN; the 2026 forward is the only clean judge.
 
-| Metric | Value |
-|--------|-------|
-| Return | +0.61% ($10K → $10,061) |
-| Trades | 1 (0L/1S, 0 losses) |
-| Gate blocked | 13 of 14 weeks (mean-reverting) |
-| Alpha vs B&H | +3.43 pp |
+### 2026 (v2.0) — two honest series, both labeled
+
+| Series | Source | Return | Trades | $10K → |
+|--------|--------|--------|--------|--------|
+| (a) Corrected replay of 2026, purged method | `public/data/production/summary.json` (2026-07-21) | +3.36% | 11 (`insufficient_trades: true`) | ≈$10,336 |
+| (b) Forward paper ledger, as run by the DAGs | `public/data/production/paper/candidates_ledger_2026.json` (2026-08-28) | **+0.66% YTD** | 12 through ISO 2026-W33 (last trade 2026-08-10) | **$10,066** |
+
+N < 20 in both → per `quant-constitution.md` §6 only count and PnL are reported (no Sharpe, no
+p-value). The 2026-04-06 "+0.61%, 1 trade, 13 of 14 weeks blocked" snapshot is superseded by (b).
 
 ---
 
@@ -476,7 +512,7 @@ Monday 09:00: Limit entry order placed at current price (0% maker fee)
 | 3 | (automatic — dashboard reads generated files) | Forecasting |
 | 4 | (navigate to `/dashboard` and review) | Review |
 | 5 | (click Approve/Reject on `/dashboard`) | Approve |
-| 6 | `python scripts/pipeline/train_and_export_smart_simple.py --phase production` | Deploy |
+| 6 | (automatic — Approve on `/dashboard` triggers DAG `forecast_h5_l4b_production_deploy`; manual fallback `--phase production --seed-db`) | Deploy |
 | 7 | (Airflow DAGs — automated weekly cycle) | Monitor |
 
 ### Combined Command (Stages 2b + 6)
@@ -505,7 +541,7 @@ python scripts/pipeline/train_and_export_smart_simple.py --phase both --no-png
 | `strategy-contract.md` | Universal strategy schemas (TradeRecord, MetricsSummary, ExitReasons) |
 | `approval-gates.md` | Approval lifecycle, gate system, 2-vote flow |
 | `dashboard-integration.md` | JSON/PNG file schemas, page data flows |
-| `mlops-lifecycle.md` | 8-stage lifecycle quick reference + DAG schedules |
+| [`../operations/elite-operations.md`](../operations/elite-operations.md) | DAG schedule / collision-free timeline (SSOT) + recovery playbooks |
 | `h5-smart-simple.md` | H5 weekly pipeline architecture + DAGs |
 | `inference-l1-l5.md` | RL inference pipeline (deprioritized) |
 | `data-governance.md` | L0 data layer: OHLCV + macro DAGs |
@@ -517,7 +553,8 @@ python scripts/pipeline/train_and_export_smart_simple.py --phase both --no-png
 
 - Do NOT skip Stage 1 (data alignment) — models trained on stale data will underperform
 - Do NOT run Stage 6 before Stage 5 — production deploy requires human approval
-- Do NOT modify `approval_state.json` manually — use `--reset-approval` CLI or dashboard API
+- Do NOT modify `data/approvals/approval_state*.json` manually — use `--reset-approval` CLI or dashboard API
+- Do NOT look for approval state under `public/data/production/` — it is private (`data/approvals/`, `research:read`)
 - Do NOT retrain manually once Stage 7 is active — Airflow handles weekly retraining
 - Do NOT take LONG trades with LOW confidence — net effect is negative (-0.75%)
 - Do NOT compare H5 vs H1 returns directly — different horizons, different trade frequency

@@ -1,0 +1,66 @@
+# Familia ACTION del brazo PPO de la tesis (CTR-RESEARCH-PPO-001, ADR-0022).
+# Dos configuraciones, una sola variable entre ellas: la presencia de los 4 posteriores de
+# regimen en la observacion. Las 5 semillas son replicas y NO multiplican el conteo
+# (`experiment-protocol.md` regla 2).
+family_id: usdcop_rl_intraday
+kind: action
+cluster_id: rl_intraday
+hypothesis_key: usdcop_intraday_ppo_session_bounded
+sibling_families: []
+deflation_scope: family
+declared_at: "2026-08-25"
+declared_by: claude-tesis   # operador Pedro, protocolo .claude/coordination
+question: "Un agente PPO sobre la sesion 08:00-12:55 COT bate a NO OPERAR, neto de costos?"
+bar: >-
+  Batir `always_flat` con IC95 de la diferencia pareada de Sharpe que excluya 0, sobrevivir
+  al stress de costos x2 (quant-constitution 3.4) y alcanzar DSR > 0.95 con el N del activo.
+label: documented
+
+governance:
+  gate: "DSR_family > 0.95, recomputado con el n_trials del ACTIVO (113), no del universo de candidatos"
+  claims_edge: false
+  claims_edge_note: >-
+    Ninguna de las dos configuraciones reclama edge: ambas quedan POR DEBAJO de no operar
+    con diferencia decidible (p < 0.0001 en seleccion), 0 de 10 semillas positivas, DSR
+    0.0000 y muerte al doble de costos. El resultado se publica igual (constitucion 3.6).
+  candidates: []
+
+cells:
+  - asset: usdcop
+    variant: ppo_regime
+    cell_kind: atomic
+    trial_id: AT-0185
+    n_trials: 1
+    hypothesis_id: H-TESIS-RL-01
+    status: EVALUATED
+    result: RECHAZADA
+    note: >-
+      documented - seleccion 2023 (n=234): ret -29.85%, Sharpe -4.64. Por debajo de
+      always_flat con dSharpe -4.640 (p<0.0001). 5 semillas, 0 positivas.
+  - asset: usdcop
+    variant: ppo_backbone
+    cell_kind: atomic
+    trial_id: AT-0186
+    n_trials: 1
+    hypothesis_id: H-TESIS-RL-01
+    status: EVALUATED
+    result: RECHAZADA
+    note: >-
+      documented - ablacion controlada sin los 4 posteriores de regimen. Seleccion 2023:
+      ret -35.43%, Sharpe -6.76. Peor que ppo_regime (H2 decidible, p=0.0276) y tambien
+      por debajo de always_flat.
+
+provenance:
+  crosses_wall: false
+  note: >-
+    No hereda ningun forecast: la politica se entrena de extremo a extremo sobre el vector
+    de observacion y no consume la salida de ningun modelo predictivo de otra familia. Los
+    4 posteriores de regimen provienen de un HMM ajustado DENTRO de esta misma tesis, sobre
+    desarrollo, con criterio BIC pre-declarado; no son un trial FT heredado (ver la
+    discusion explicita en APERTURA H-TESIS-RL-01 del HYPOTHESIS-REGISTRY).
+
+trials_charged: 2
+closed: true
+closure_note: >-
+  Familia CERRADA con el resultado de seleccion. El hold-out se abre una vez y no puede
+  reabrir la busqueda: el veredicto ya esta tomado (pre-registro 9).

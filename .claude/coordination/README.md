@@ -46,9 +46,16 @@ efímeros, **gitignorado**).
 ## Higiene aprendida a golpes
 
 - **`tmp/` está gitignorado por un incidente real**: un `git add .claude/coordination/` se
-  llevó 681 ficheros de directorios temporales a un commit que debía tener tres. Hoy pesa
-  varios GB en worktrees desechables. Nunca se versiona, y ni el gate de enlaces ni el de
-  front matter lo escanean.
+  llevó 681 ficheros de directorios temporales a un commit que debía tener tres. Nunca se
+  versiona, y ni el gate de enlaces ni el de front matter lo escanean.
+- **Los worktrees efímeros NO van aquí (regla nueva, 2026-08-24).** Gitignorar no basta:
+  este repo vive dentro de **OneDrive**, así que todo lo que se escriba bajo `tmp/` se
+  sincroniza a la nube igualmente. La auditoría de limpieza encontró **71 tars (2,1 GB) y
+  33.703 ficheros** de worktrees ya huérfanos — `git worktree list` solo listaba el
+  principal. Era además la causa de que `du` y `grep -r` dieran timeout sobre el repo.
+  A partir de ahora: `git worktree add "$TMPDIR/<bl>-<sha>"` (`%TEMP%` en Windows),
+  **fuera de OneDrive**, y en `tmp/` solo punteros y notas cortas. Las rutas `tmp/…`
+  citadas en `reviews/BL-*.md` son referencias históricas, no dependencias vivas.
 - **Este directorio está excluido del índice de Obsidian** salvo los ficheros de protocolo:
   indexar los worktrees metería miles de notas basura en el grafo.
 - Los heartbeats reflejan el momento en que se escribieron. **Un STATUS de ayer con leases

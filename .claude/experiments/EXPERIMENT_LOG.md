@@ -558,3 +558,156 @@ Recommendation: Return to 5-min frequency and continue experiment queue (trailin
 - 2 YAML edits (+6.28pp return, +0.65 Sharpe) demonstrate value of systematic diagnostic
 - H5 (weekly) achieves higher Sharpe than H1 (daily) despite lower absolute return
 - The 26.8% capture of theoretical ceiling is competitive for single EM pair with linear model
+
+---
+
+## EXP-TESIS-RL-01: PPO intradía sobre sesión acotada (USD/COP) — 2026-08-25
+
+**Contrato**: CTR-RESEARCH-PPO-001 · **Registro**: `HYPOTHESIS-REGISTRY.md::APERTURA H-TESIS-RL-01`
+(+2 AT, trials 111→113) · **Pre-registro**: `06-PRE-REGISTRATION.md`
+
+**Variable cambiada (regla 1)**: UNA — la presencia de los 4 posteriores de régimen en la
+observación. Todo lo demás es idéntico entre brazos: hiperparámetros, semillas, datos, pasos,
+arquitectura. `ppo_backbone` recibe los mismos 39 inputs con los 4 de régimen **puestos a cero**
+(no eliminados), para que las dos redes tengan exactamente los mismos parámetros y la
+comparación no mida capacidad además de información.
+
+**Semillas (regla 2)**: `[42, 123, 456, 789, 1337]`, las cinco, en ambas configuraciones.
+
+**Hiperparámetros**: congelados de `config/experiments/v215b_baseline.yaml` — `lr 3e-4`,
+`n_steps 4096`, `batch 128`, `n_epochs 10`, `γ 0.98`, `gae_λ 0.95`, `clip 0.2`, `ent_coef 0.01`,
+net `[256,256]`, CPU (regla 6). **Sin HPO**: prior ex-ante, no suma trials.
+300.000 pasos ≈ 10 pasadas sobre desarrollo (los 2M del baseline serían 68 pasadas sobre
+29.441 pasos, y ese número está atado a otro tamaño de muestra).
+
+**Entorno**: sesión 08:00-12:55 COT, 60 barras, **59 decisiones operables**, exposición
+∈ {−1, −0.5, 0, +0.5, +1}, cierre forzado y cobrado. Costos §9.3 en pips con spread esperado
+del posterior del HMM (K=4, ajustado solo en desarrollo).
+
+### Resultados — bloque de SELECCIÓN (2023, n=234 sesiones efectivas)
+
+| Configuración | Semilla | Retorno % | Sharpe | Ops | \|exp\| | Costos % |
+|---|---|---|---|---|---|---|
+| ppo_regime | 42 | −34.97 | −4.03 | 623 | 0.86 | 38.6 |
+| ppo_regime | 123 | −34.02 | −4.07 | 639 | 0.92 | 39.8 |
+| ppo_regime | 456 | −31.43 | −3.45 | 680 | 0.88 | 40.7 |
+| ppo_regime | 789 | −15.87 | −1.98 | 697 | 0.73 | 37.2 |
+| ppo_regime | 1337 | −32.10 | −3.65 | 433 | 0.92 | 32.6 |
+| **ppo_regime media-5** | — | **−29.85** | **−4.64** | — | 0.86 | — |
+| ppo_backbone | 42 | −38.85 | −4.75 | 708 | 0.81 | 41.5 |
+| ppo_backbone | 123 | −40.00 | −4.78 | 809 | 0.77 | 46.6 |
+| ppo_backbone | 456 | −36.78 | −4.43 | 653 | 0.93 | 41.6 |
+| ppo_backbone | 789 | −39.05 | −5.69 | 813 | 0.62 | 45.5 |
+| ppo_backbone | 1337 | −21.55 | −2.95 | 691 | 0.60 | 44.1 |
+| **ppo_backbone media-5** | — | **−35.43** | **−6.76** | — | 0.75 | — |
+
+**Baselines sobre las mismas 234 sesiones**: `always_flat` **0.00%** · `B1_pasivo` −20.6% ·
+`B1_sesion_1x` −34.7% · `NULL_A_corto_1x` −12.5%.
+
+### Validación estadística (regla 3, regla 5)
+
+- **H2 — DECIDIBLE**: `ppo_regime` supera a `ppo_backbone`, ΔSharpe **+2.120**,
+  IC 95% [+0.238, +4.087], **p = 0.0276**, ρ = 0.97. La información de régimen **sí** aporta…
+  para perder menos. Los dos brazos pierden.
+- **H1 — DECIDIBLE, en contra**: `ppo_regime` queda **por debajo** de `always_flat`,
+  ΔSharpe −4.640, IC 95% [−6.793, −2.796], **p < 0.0001**. También por debajo de `B1_pasivo`
+  (ΔSharpe −3.196, p = 0.0014).
+- **0 de 10 semillas positivas** (la regla 3 pide ≥3/5 por configuración; se obtiene 0/5 y 0/5).
+- **DSR = 0.0000** en ambas, con `n_trials = 113` — el conteo del ACTIVO tras esta apertura.
+  Los 2 AT que cobró esta tesis deflactan también su propio claim (constitución §2). No pasa el
+  bar de 0.95.
+- **PBO = 0.116** sobre 12.870 particiones (por debajo del 0.20 pre-registrado — irrelevante:
+  el PBO mide si el ganador in-sample sobrevive fuera, y aquí no hay ganador que preservar).
+- **Stress de costos**: muere a ×2 y a ×3 ⇒ REJECT por constitución §3.4.
+- **B1′** (exposición constante 0.86×): −16.61%/año, también negativo — 2023 fue malo para
+  estar largo COP. No rescata a ningún brazo.
+
+### Veredicto
+
+**RECHAZADA H1.** Con el contrato de costos de §9.3, un agente PPO sobre la sesión intradía de
+USD/COP **no bate a no operar**, y la diferencia es estadísticamente decidible en contra.
+
+El mecanismo es transparente y no requiere interpretación: los agentes mantienen |exposición|
+≈ 0.75-0.86 y ejecutan 430-810 cambios en 234 sesiones, lo que consume **33-47% del nocional en
+costos**. La Fase E ya lo había anticipado midiendo que cualquier política acotada por sesión
+paga ~4.81 pips/sesión. El intradía de este par es de suma negativa antes de que entre skill.
+
+**Compromiso pre-firmado, ahora aplicado**: *si `ppo_regime` no bate a `always_flat`, la
+conclusión escrita es que no operar es la estrategia*. Es la versión concreta de «el baseline ES
+la estrategia» (constitución §3).
+
+**Lo que este resultado NO dice**: que PPO no pueda funcionar. Dice que **esta receta**
+(hiperparámetros de v215b, 300k pasos, 39 features, 5 niveles de exposición) sobre **estos
+datos** contra **estos costos** no funciona. Sin HPO no hay evidencia sobre el mejor PPO
+alcanzable — y esa limitación es consecuencia declarada de la decisión de §15, no un descuido.
+
+### Hold-out (2024-01-02 → 2026-08-24, n=584) — abierto una vez el 2026-08-25 16:43 UTC
+
+| | Retorno | Sharpe | IC 95% |
+|---|---|---|---|
+| **always_flat** | **0,00%** | — | — |
+| ppo_regime (media 5) | −54,87% | −6,21 | [−7,54, −4,96] |
+| ppo_backbone (media 5) | −56,44% | −6,65 | [−8,52, −5,02] |
+
+`ppo_regime` vs `always_flat`: ΔSharpe **−6,215**, p < 0,0001. 0/10 semillas positivas,
+DSR 0,0000 (n_trials=113), muere a ×2 y ×3. Costos 89-119% del nocional.
+
+**H2 NO SE CONFIRMA**: decidible en selección (+2,120, p=0,0276), **indecidible en hold-out**
+(+0,432, IC [−0,883, +1,861]). **No se afirma que el efecto desapareciera**: ρ entre brazos cayó
+de 0,97 a 0,58 y con ρ=0,58 la potencia a n=584 frente a ΔSharpe 1,2 es del 35% (frente al 95%
+con ρ=0,92). Efecto menor o test con menos potencia: estos datos no lo separan. PBO del hold-out
+**0,211 > 0,20** pre-registrado, en la misma dirección de cautela.
+
+Se aplica la regla escrita antes de calcularlo (pre-registro §4): no se retunea nada, se
+**suspende la pretensión confirmatoria**, y el hold-out se etiqueta como evaluación con
+**riesgo alto de selección**. H2 queda **NO CONFIRMADA**.
+
+El rechazo de H1 no depende de esa etiqueta: no hay ganador que proteger.
+
+### Descomposición (2026-08-25, 0 trials) — el rechazo, explicado
+
+**BRUTO +27,95%** (`ppo_regime`, hold-out), Sharpe bruto **+2,23** IC [+1,21, +3,29],
+**10/10 corridas positivas**. El agente SÍ aprende; el costo de ejecutarlo lo anula 4×.
+El bruto exige costo cero: es una cota superior inalcanzable, no un claim de edge.
+
+**Break-even `s* = −0,29 pips`**: ni con spread cero el alfa (0,67 pips/op) cubre la comisión
+de 0,5 pips/lado. Eso hace la conclusión **robusta al supuesto de spread que nunca se midió**.
+
+**Bajar la frecuencia no basta**: a 1 decisión/sesión el bruto ya es negativo (−5,95%). El alfa
+vive en la alta frecuencia igual que el costo.
+
+**Always-flat**: `w=0` estaba disponible y el agente lo eligió solo el 16,7% de las barras.
+
+Detalle completo: `.claude/specs/planes/06-RESULTADOS.md` §5b.
+
+### Rama forward RL vs LLM (2026-08-25, **+2 AT** → 115) — CTR-RESEARCH-FORWARD-001
+
+**Exploratoria por diseño.** El hold-out se abrió una vez y el PBO quedó en 0,211 > 0,20: un
+brazo que arranca hoy es un experimento nuevo, no rescata H1 ni H2, y
+`config/research/preregistration_forward.yaml` lo fija en `status: exploratory` para que el
+fichero mismo impida la afirmación cuando el contexto se haya olvidado.
+
+**Por qué forward y no retrospectivo**: no hay corpus histórico (181 artículos en 12 días frente
+a 1.383 sesiones) y un LLM que hoy lee una noticia de 2021 ya sabe cómo terminó 2021.
+
+| `arm_id` | Decisiones/sesión | Sella (COT) | Trials |
+|---|---|---|---|
+| `llm_direct_fwd_v1` | 1 | 07:15 | **+1 AT** |
+| `ppo_regime_fwd_k59` | 1 | 08:00 | **+1 AT** — 1 decisión/sesión es una política distinta |
+| `ppo_regime_fwd_k1` | 59 | 08:00 | 0 — evidencia forward de la política ya evaluada |
+| `always_flat` | 0 | — | 0 — el listón que batió a todo en el hold-out |
+
+**Las dos igualdades que lo anclan a la tesis** (sin ellas mediría otra cosa sin decirlo):
+`build_live_spec` reproduce el spec del batch con delta **0,000e+00** en features y contexto, y
+liquidar una senda del hold-out por el carril forward reproduce **exactamente** bruto, costo,
+neto y turnover de `decomposition_holdout.json`.
+
+**Asimetría declarada**: el RL ve la barra 0 y el LLM no. Los dos sellan antes de que exista
+`r_1`, así que los dos son causalmente limpios, pero no con la misma información.
+
+**Potencia**: ~85 sesiones hasta diciembre, cuando ni 584 resolvieron H2. Es un **piloto de
+factibilidad**, no un test. Va dicho en la primera línea del pre-registro, no en limitaciones.
+
+**Compuerta pendiente**: inventario de fuentes de 5 días hábiles. Día 1 dio 52 documentos
+pre-apertura, pero los tres feeds viables son del mismo medio — riesgo de concentración
+declarado. Dos de las tres URL que traía el arnés estaban muertas (404).

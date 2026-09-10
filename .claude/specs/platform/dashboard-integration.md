@@ -489,6 +489,62 @@ onError={(e) => {
 
 This means missing PNGs silently hide their container — no broken image icons.
 
+### Determinismo y peso en git (CTR-PNG-DETERMINISM-001, 2026-08-24)
+
+`CLAUDE.md` obliga a versionar `public/forecasting/**` para que **un clon limpio renderice
+todas las páginas**. La auditoría de limpieza midió lo que eso cuesta:
+
+| Métrica | Valor |
+|---|---|
+| Pack de `.git` | 811 MB |
+| PNG bajo `public/forecasting/` en HEAD | 1.492 ficheros |
+| Blobs PNG **únicos** en toda la historia | 2.788 |
+| Espacio que ocupan en el pack | **305,5 MB (38% del total)** |
+| De eso, versiones ya superadas | ~142 MB |
+
+Es sostenible **solo porque matplotlib no incrusta timestamp en el PNG**: el mismo gráfico
+con los mismos datos produce bytes idénticos y git deduplica, así que el peso crece
+únicamente cuando el contenido cambia de verdad. La regeneración semanal
+(`forecast_weekly_generation --num-weeks 30`) rehace un año entero de gráficos y, para
+las semanas ya cerradas, **no crea blobs nuevos**.
+
+La única fuga era un chunk `tEXt` con la versión de la librería:
+
+```
+Software  Matplotlib version3.11.1, https://matplotlib.org/
+```
+
+Con él, un `pip install -U matplotlib` cambia ese chunk en **los 1.492 ficheros a la vez**:
+~163 MB de blobs nuevos en un commit cuyo diff no significa nada.
+
+**Contrato**: todo generador que escriba PNG servidos por el dashboard llama a
+`enable_deterministic_png()` (`src/utils/plot_determinism.py`) inmediatamente después de
+`matplotlib.use("Agg")` y **antes del primer `savefig`**. El helper omite el chunk
+(`metadata={"Software": None}` — omitir, no cadena vacía, que escribiría un `tEXt` vacío y
+seguiría siendo un byte de diferencia), es idempotente, respeta un `metadata=` del llamador
+y no toca PDF/SVG, donde `Software` no es una clave válida.
+
+Generadores cubiertos hoy: `generate_weekly_forecasts.py`, `generate_asset_forward_charts.py`,
+`generate_usdcop_directional_replay.py`, `train_and_export_smart_simple.py`.
+
+Los PNG **ya versionados** conservan el chunk a propósito: reescribirlos costaría exactamente
+el commit de 163 MB que esta regla existe para evitar. Se limpian solos, fichero a fichero,
+según los DAGs los regeneren por cambios reales.
+
+Guard: `tests/regression/test_png_determinism.py` (11 aserciones — existencia del helper,
+cableado en los 4 generadores, orden `enable` antes de `savefig`, y un round-trip que exige
+bytes idénticos entre dos guardados).
+
+**Complemento LFS**: `seeds/**/*.parquet` ya estaba en LFS (blobs de ~130 B en HEAD), pero
+el patrón está anclado a la raíz y **nunca cubrió `data/backups/**` — 129,5 MB en crudo
+dentro del pack**, y esos ficheros rotan. Regla añadida en `.gitattributes`; aplica a commits
+futuros (no se reescribe historia: decisión del operador de *parar la sangría*, no purgar).
+
+**DO NOT**
+- Do NOT añadir un generador de PNG servidos por el dashboard sin `enable_deterministic_png()`.
+- Do NOT reescribir en masa los PNG existentes para quitarles el chunk — es justo el commit que se evita.
+- Do NOT versionar binarios nuevos que roten sin su regla LFS en `.gitattributes`.
+
 ---
 
 ## Dashboard Page (`/dashboard`) Lookup Flow — Backtest 2025 + Approval

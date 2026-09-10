@@ -30,3 +30,25 @@ operator_actions:
 release_policy:
   push_allowed: false
   reason: remote exposure and credential revocation remain unverified
+
+# -----------------------------------------------------------------------------
+# Registro de decisiones del operador. Append-only: una decision no se edita, se
+# anade otra. Sirve para distinguir "se decidio esperar" de "se olvido".
+# -----------------------------------------------------------------------------
+operator_decision_log:
+  - date: '2026-08-24'
+    decision: defer_rotation
+    rationale: >-
+      Entorno de pruebas; el operador decide no rotar las credenciales por ahora y
+      pide recordatorio para mas adelante. Decision consciente y fechada.
+    scope_note: >-
+      El aplazamiento acota DONDE se usan las claves, no QUIEN puede leerlas: siguen
+      servidas por raw.githubusercontent.com en las revisiones publicas ee91273 y
+      1d41812, accesibles por cualquiera con independencia del entorno.
+    unchanged:
+      - operator_actions (las cuatro siguen complete: false)
+      - release_policy.push_allowed (sigue false)
+      - "ASSIGNMENTS.md:29 — git push PROHIBIDO hasta BL-08 cerrado"
+    reminder: >-
+      Registrado tambien en la memoria de proyecto (env-leak-github-public) para que
+      reaparezca al inicio de futuras sesiones.
