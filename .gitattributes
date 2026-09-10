@@ -68,3 +68,32 @@ data/news/*.json filter=lfs diff=lfs merge=lfs -text
 # Weekly analysis exports (Git LFS - 300-600KB each, grows weekly)
 # =============================================================================
 usdcop-trading-dashboard/public/data/analysis/weekly_*.json filter=lfs diff=lfs merge=lfs -text
+
+# =============================================================================
+# Backups restore-criticos (Git LFS) — brecha detectada en la auditoria 2026-08-24
+# =============================================================================
+# `seeds/**/*.parquet` YA estaba en LFS (sus blobs en HEAD son punteros de ~130 B),
+# pero las reglas nunca cubrieron `data/backups/`, que es donde viven los ficheros
+# MAS grandes del repo y se guardaban EN CRUDO dentro del pack:
+#
+#   data/backups/seeds/usdcop_m5_ohlcv_backup.parquet   59,0 MB
+#   data/backups/features/usdcop_m5_ohlcv.parquet       53,5 MB
+#   data/backups/features/asset_native_ohlcv.parquet     8,0 MB
+#   ...                                        total   129,5 MB
+#
+# `seeds/**/*.parquet` NO coincide con `data/backups/seeds/*.parquet`: el patron esta
+# anclado a la raiz. Son el fallback de restore (CLAUDE.md los versiona a proposito) y
+# rotan, asi que cada rotacion metia decenas de MB nuevos en el pack.
+#
+# Esto solo afecta a commits FUTUROS — los blobs ya versionados siguen en la historia;
+# no se reescribe (decision del operador: parar la sangria, no reescribir historia).
+data/backups/**/*.parquet filter=lfs diff=lfs merge=lfs -text
+data/experiments/**/*.parquet filter=lfs diff=lfs merge=lfs -text
+
+# =============================================================================
+# Tesis RL (EXP-TESIS-RL-01, 2026-08-25): checkpoints PPO + VecNormalize (~37 MB,
+# 42 ficheros de ~1,9 MB). Son la evidencia congelada del pre-registro
+# (code_bundle_sha256), asi que se versionan, pero via LFS para no engordar el pack.
+# =============================================================================
+data/thesis/**/*.zip filter=lfs diff=lfs merge=lfs -text
+data/thesis/**/*.pkl filter=lfs diff=lfs merge=lfs -text

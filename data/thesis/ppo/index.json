@@ -1,0 +1,246 @@
+{
+  "runs": [
+    {
+      "config": "ppo_regime",
+      "seed": 42,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.34971388758822963,
+        "sharpe": -4.028119698633478,
+        "mean_daily": -0.001814978798914764,
+        "std_daily": 0.006698311276287504,
+        "n_ops": 623,
+        "mean_abs_exposure": 0.8565840938722294,
+        "total_cost": 0.38562068424842244
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": 0.12013337952471836,
+        "sharpe": 0.5322989378629818,
+        "mean_daily": 0.00025203718638162654,
+        "std_daily": 0.007038905910036676,
+        "n_ops": 1238,
+        "mean_abs_exposure": 0.8269929689888251,
+        "total_cost": 0.7255895306534227
+      }
+    },
+    {
+      "config": "ppo_regime",
+      "seed": 123,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.34023617717688603,
+        "sharpe": -4.0669369132003705,
+        "mean_daily": -0.001755147506940102,
+        "std_daily": 0.006415674512965017,
+        "n_ops": 639,
+        "mean_abs_exposure": 0.9190931479067074,
+        "total_cost": 0.3977419328953326
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": 0.07296453932846947,
+        "sharpe": 0.35502188287990016,
+        "mean_daily": 0.000164844568872357,
+        "std_daily": 0.006902646883621948,
+        "n_ops": 1421,
+        "mean_abs_exposure": 0.8997826160796168,
+        "total_cost": 0.7959682141709451
+      }
+    },
+    {
+      "config": "ppo_regime",
+      "seed": 456,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.3143260273845957,
+        "sharpe": -3.450220194264854,
+        "mean_daily": -0.0015879174144713879,
+        "std_daily": 0.0068419080868621805,
+        "n_ops": 680,
+        "mean_abs_exposure": 0.8806678255830799,
+        "total_cost": 0.40704482681150245
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": 0.1654421613202579,
+        "sharpe": 0.7117803710442234,
+        "mean_daily": 0.0003305482559750443,
+        "std_daily": 0.006903749102299895,
+        "n_ops": 1398,
+        "mean_abs_exposure": 0.8702489725213137,
+        "total_cost": 0.7703126358224212
+      }
+    },
+    {
+      "config": "ppo_regime",
+      "seed": 789,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.1586780285619117,
+        "sharpe": -1.975830899691003,
+        "mean_daily": -0.0007233266671496201,
+        "std_daily": 0.005442279479633946,
+        "n_ops": 697,
+        "mean_abs_exposure": 0.7265681587715486,
+        "total_cost": 0.3719727486726415
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.009935084622473167,
+        "sharpe": -0.00970026605131267,
+        "mean_daily": -3.731626153575506e-06,
+        "std_daily": 0.005718875198359966,
+        "n_ops": 1560,
+        "mean_abs_exposure": 0.6857783363336842,
+        "total_cost": 0.750989429732173
+      }
+    },
+    {
+      "config": "ppo_regime",
+      "seed": 1337,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.3210251394467247,
+        "sharpe": -3.6536278880816373,
+        "mean_daily": -0.001631248980483862,
+        "std_daily": 0.006637309608614544,
+        "n_ops": 433,
+        "mean_abs_exposure": 0.9177893669419094,
+        "total_cost": 0.3259053682461182
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": 0.12612050065325575,
+        "sharpe": 0.5619861561876435,
+        "mean_daily": 0.00026202550931535366,
+        "std_daily": 0.006931290374584569,
+        "n_ops": 978,
+        "mean_abs_exposure": 0.9066098298291498,
+        "total_cost": 0.672795321989648
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 42,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.3884765191298237,
+        "sharpe": -4.750071725683545,
+        "mean_daily": -0.0020783792219965227,
+        "std_daily": 0.006504602494766006,
+        "n_ops": 708,
+        "mean_abs_exposure": 0.8148268868607852,
+        "total_cost": 0.41468963321865243
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.1473317635681044,
+        "sharpe": -0.7372005767029857,
+        "mean_daily": -0.00030102993242141023,
+        "std_daily": 0.0060704397307875906,
+        "n_ops": 1315,
+        "mean_abs_exposure": 0.7820726198159028,
+        "total_cost": 0.7327892937488357
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 123,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.40001882308240666,
+        "sharpe": -4.775973936541277,
+        "mean_daily": -0.002158202400441113,
+        "std_daily": 0.006717789016834623,
+        "n_ops": 809,
+        "mean_abs_exposure": 0.7700275242648125,
+        "total_cost": 0.4664981485699859
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.18649725744814394,
+        "sharpe": -0.907993720609394,
+        "mean_daily": -0.0003929774439807396,
+        "std_daily": 0.006433997907433041,
+        "n_ops": 1644,
+        "mean_abs_exposure": 0.7829047926361197,
+        "total_cost": 0.9018755293049626
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 456,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.36779368938131685,
+        "sharpe": -4.428995787893723,
+        "mean_daily": -0.0019365940193171755,
+        "std_daily": 0.0065002409587989925,
+        "n_ops": 653,
+        "mean_abs_exposure": 0.9280747501086484,
+        "total_cost": 0.41585279453098195
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": 0.11168001370710479,
+        "sharpe": 0.5083113010061407,
+        "mean_daily": 0.00023583591472050818,
+        "std_daily": 0.006897255509334948,
+        "n_ops": 1299,
+        "mean_abs_exposure": 0.9201623586155362,
+        "total_cost": 0.8204822067006998
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 789,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.39049527925821215,
+        "sharpe": -5.685179461325779,
+        "mean_daily": -0.002098532827079635,
+        "std_daily": 0.005487413983690748,
+        "n_ops": 813,
+        "mean_abs_exposure": 0.616507315659858,
+        "total_cost": 0.4553199053840408
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.19912146031084177,
+        "sharpe": -1.3305743446904925,
+        "mean_daily": -0.00043322373472345156,
+        "std_daily": 0.004840266046815298,
+        "n_ops": 1508,
+        "mean_abs_exposure": 0.5594918650861045,
+        "total_cost": 0.805084145426104
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 1337,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.21550485469569913,
+        "sharpe": -2.950446734146714,
+        "mean_daily": -0.0010234092658420095,
+        "std_daily": 0.005156531831797354,
+        "n_ops": 691,
+        "mean_abs_exposure": 0.6010430247718384,
+        "total_cost": 0.4408941805008687
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.04521545008573735,
+        "sharpe": -0.22279071030369277,
+        "mean_daily": -7.897882965738708e-05,
+        "std_daily": 0.005269989532638126,
+        "n_ops": 1297,
+        "mean_abs_exposure": 0.52019292822934,
+        "total_cost": 0.7537314580683993
+      }
+    }
+  ],
+  "n": 10,
+  "expected": 10
+}

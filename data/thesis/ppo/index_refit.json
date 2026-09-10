@@ -1,0 +1,266 @@
+{
+  "runs": [
+    {
+      "config": "ppo_regime",
+      "seed": 42,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.17810465205597636,
+        "sharpe": -1.7677354606697937,
+        "mean_daily": -0.0008144030683340885,
+        "std_daily": 0.006848859612339489,
+        "n_ops": 850,
+        "mean_abs_exposure": 0.8665435317977691,
+        "total_cost": 0.47854855305213867,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.15377700825002283,
+        "sharpe": -0.6579005576568758,
+        "mean_daily": -0.0003101200404304748,
+        "std_daily": 0.007007542078061423,
+        "n_ops": 1787,
+        "mean_abs_exposure": 0.8581909581875615,
+        "total_cost": 0.9753391848514432,
+        "in_sample": true
+      }
+    },
+    {
+      "config": "ppo_regime",
+      "seed": 123,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.1785406903664578,
+        "sharpe": -2.190194790100709,
+        "mean_daily": -0.0008245182640525528,
+        "std_daily": 0.005596463498235857,
+        "n_ops": 861,
+        "mean_abs_exposure": 0.7060698247138926,
+        "total_cost": 0.4573875891760499,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.0914127232229962,
+        "sharpe": -0.4352513130527174,
+        "mean_daily": -0.00017445675191034586,
+        "std_daily": 0.005958594470728154,
+        "n_ops": 1446,
+        "mean_abs_exposure": 0.7412791685065045,
+        "total_cost": 0.8148465335981545,
+        "in_sample": true
+      }
+    },
+    {
+      "config": "ppo_regime",
+      "seed": 456,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.10612335777593773,
+        "sharpe": -1.3515114474950236,
+        "mean_daily": -0.00046622324743074553,
+        "std_daily": 0.005128263516191245,
+        "n_ops": 871,
+        "mean_abs_exposure": 0.6840141967260611,
+        "total_cost": 0.4303089764200241,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.06065153887788377,
+        "sharpe": -0.28479632600871296,
+        "mean_daily": -0.00010921823722997321,
+        "std_daily": 0.00570107713774387,
+        "n_ops": 1579,
+        "mean_abs_exposure": 0.7206107129513263,
+        "total_cost": 0.7626659248009079,
+        "in_sample": true
+      }
+    },
+    {
+      "config": "ppo_regime",
+      "seed": 789,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.10206287966453198,
+        "sharpe": -1.1937357588812432,
+        "mean_daily": -0.00044464415942493393,
+        "std_daily": 0.005537331518241227,
+        "n_ops": 751,
+        "mean_abs_exposure": 0.6830001448645516,
+        "total_cost": 0.40519717769134506,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.3085526218907546,
+        "sharpe": -1.9221204686870206,
+        "mean_daily": -0.0007234458532727891,
+        "std_daily": 0.005595276656651112,
+        "n_ops": 1612,
+        "mean_abs_exposure": 0.7230902482931965,
+        "total_cost": 0.8137454113919865,
+        "in_sample": true
+      }
+    },
+    {
+      "config": "ppo_regime",
+      "seed": 1337,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.08611525600077141,
+        "sharpe": -0.9766723408284331,
+        "mean_daily": -0.00036903454767321105,
+        "std_daily": 0.005617127389101783,
+        "n_ops": 1026,
+        "mean_abs_exposure": 0.7004201071997681,
+        "total_cost": 0.5029182271586862,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.14835932839977606,
+        "sharpe": -0.868032727481295,
+        "mean_daily": -0.0003079233954176351,
+        "std_daily": 0.005273545824094455,
+        "n_ops": 2143,
+        "mean_abs_exposure": 0.6291226520838286,
+        "total_cost": 0.966985488675705,
+        "in_sample": true
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 42,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.21723629315244486,
+        "sharpe": -2.8944662810974116,
+        "mean_daily": -0.0010321492667406506,
+        "std_daily": 0.005301150701622046,
+        "n_ops": 910,
+        "mean_abs_exposure": 0.760937273649138,
+        "total_cost": 0.46280710623985566,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.12088215620524079,
+        "sharpe": -0.5889392154204968,
+        "mean_daily": -0.00023991609281317055,
+        "std_daily": 0.006055988523029693,
+        "n_ops": 1581,
+        "mean_abs_exposure": 0.7711185082028463,
+        "total_cost": 0.8313662222213719,
+        "in_sample": true
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 123,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.037095855920620036,
+        "sharpe": -0.36442688739994306,
+        "mean_daily": -0.00014428307076632955,
+        "std_daily": 0.005885740386472953,
+        "n_ops": 839,
+        "mean_abs_exposure": 0.7944372012168621,
+        "total_cost": 0.48656428100235216,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.25159297932251146,
+        "sharpe": -1.336208389453428,
+        "mean_daily": -0.000561188988091549,
+        "std_daily": 0.006243542656261587,
+        "n_ops": 1550,
+        "mean_abs_exposure": 0.8093814748140349,
+        "total_cost": 0.9135391614095151,
+        "in_sample": true
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 456,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": -0.24591483259163405,
+        "sharpe": -2.833498172877679,
+        "mean_daily": -0.001186171039569542,
+        "std_daily": 0.006223296838201389,
+        "n_ops": 908,
+        "mean_abs_exposure": 0.8275025351296538,
+        "total_cost": 0.505960255404468,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.37193721479619,
+        "sharpe": -2.13509292309922,
+        "mean_daily": -0.0009115337693002952,
+        "std_daily": 0.006346760617917533,
+        "n_ops": 1606,
+        "mean_abs_exposure": 0.8419550966339457,
+        "total_cost": 0.9089515961910587,
+        "in_sample": true
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 789,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": 0.008469575377513694,
+        "sharpe": 0.14126021224168955,
+        "mean_daily": 4.965389782871264e-05,
+        "std_daily": 0.005225521376330777,
+        "n_ops": 836,
+        "mean_abs_exposure": 0.6458423873678111,
+        "total_cost": 0.43937631770498936,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.27186900168067685,
+        "sharpe": -1.602071158409197,
+        "mean_daily": -0.0006191616577108807,
+        "std_daily": 0.00574537511702876,
+        "n_ops": 1607,
+        "mean_abs_exposure": 0.6759111443225435,
+        "total_cost": 0.820214160277829,
+        "in_sample": true
+      }
+    },
+    {
+      "config": "ppo_backbone",
+      "seed": 1337,
+      "selection": {
+        "n_sessions": 234,
+        "total_return": 0.032331953740552644,
+        "sharpe": 0.3694988547225168,
+        "mean_daily": 0.00015540732292700234,
+        "std_daily": 0.006252511792504772,
+        "n_ops": 795,
+        "mean_abs_exposure": 0.7107779226423293,
+        "total_cost": 0.47539284349577765,
+        "in_sample": true
+      },
+      "development": {
+        "n_sessions": 499,
+        "total_return": -0.31831893627852126,
+        "sharpe": -2.3023889561856326,
+        "mean_daily": -0.0007557460818164301,
+        "std_daily": 0.0048797025270711095,
+        "n_ops": 1464,
+        "mean_abs_exposure": 0.690652491423525,
+        "total_cost": 0.8425403742318976,
+        "in_sample": true
+      }
+    }
+  ],
+  "n": 10,
+  "expected": 10
+}

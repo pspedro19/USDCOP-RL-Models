@@ -1,0 +1,86 @@
+# =============================================================================
+# trading_config.yaml — umbrales de señal y límites de riesgo
+# =============================================================================
+#
+# Contract: CTR-TRADING-CONFIG-001 · Version: 1.0.0 · Date: 2026-08-24
+#
+# ## Por qué existe este fichero
+#
+# Hasta el 2026-08-24 **no existía**, pero OCHO sitios lo citaban como SSOT:
+#
+#   airflow/dags/l5_multi_model_inference.py:241  "SSOT: config/trading_config.yaml
+#                                                  (thresholds.long/short = 0.33/-0.33)"
+#   airflow/dags/l5_multi_model_inference.py:293  "Default thresholds - from ... SSOT"
+#   airflow/dags/l5_multi_model_inference.py:408  "Fallback values from ... SSOT"
+#   airflow/dags/l5_multi_model_inference.py:552  "matches trading_config.yaml"
+#   src/risk/risk_manager.py::RiskLimits          (comentarios de los defaults)
+#   config/date_ranges.yaml:9 y :128              ("Referenced by: config/trading_config.yaml")
+#   docs/adr/ADR-0005-ppo-for-trading.md:91       "### Configuration (config/trading_config.yaml)"
+#   docs/guides/ONBOARDING_NEW_TEAM_MEMBER.md:53  "SSOT for parameters"
+#
+# Un ancla colgante repetida ocho veces no es un descuido: es una SSOT que alguien dio por
+# hecha. Los valores vivían duplicados en literales de Python, y ya habían derivado — el
+# docstring de `RiskLimits` decía 3/30 mientras el código devolvía 5/60 (corregido el mismo
+# día; ver la nota de procedencia en `src/risk/risk_manager.py`).
+#
+# ## Estado honesto: DECLARATIVO, todavía no leído
+#
+# Este fichero **reconstruye** los valores que el código usa HOY. Todavía no lo lee nadie:
+# cablearlo cambiaría el `code_hash` de módulos dentro del muro de congelación de los
+# manifiestos de estrategia, y eso es gobierno de modelado, no fontanería (ver el xfail
+# BLOCKED_OPERATOR_DECISION en `tests/regression/test_approval_mutual_exclusion.py`).
+#
+# Mientras tanto, `tests/regression/test_trading_config_matches_code.py` verifica que estos
+# números y los del código **no divergan**. Convertir el fichero en la fuente real (y
+# borrar los literales) requiere aprobación del operador y re-freeze de los manifiestos en
+# el mismo commit.
+#
+# =============================================================================
+
+version: "1.0.0"
+contract_id: "CTR-TRADING-CONFIG-001"
+status: "declarative"   # los valores son verdad; el código aún no los lee
+asset: "usdcop"
+
+# -----------------------------------------------------------------------------
+# Umbrales de señal (RL, L5)
+# -----------------------------------------------------------------------------
+# La acción continua del PPO se discretiza a LONG / FLAT / SHORT con estos cortes.
+# Fuente: airflow/dags/l5_multi_model_inference.py:243-244 y :294-295.
+thresholds:
+  long: 0.33
+  short: -0.33
+  # Entre ambos, FLAT. La banda muerta es deliberada: `smart_simple_v1.yaml` documenta que
+  # no operar es parte del edge (el regime gate bloqueó 11 de 12 semanas en 2026).
+
+# -----------------------------------------------------------------------------
+# Límites de riesgo
+# -----------------------------------------------------------------------------
+# Fuente: src/risk/risk_manager.py::RiskLimits (defaults) y
+# airflow/dags/l5_multi_model_inference.py:553-559, que ya coincidían entre sí.
+risk:
+  max_drawdown_pct: 15.0      # kill switch
+  max_daily_loss_pct: 5.0     # detiene el trading del día
+  max_trades_per_day: 20      # pausa
+  cooldown_after_losses: 5    # circuit breaker por pérdidas consecutivas
+  cooldown_minutes: 60        # 12 barras × 5 min
+
+# -----------------------------------------------------------------------------
+# Capital de referencia
+# -----------------------------------------------------------------------------
+# Fuente: airflow/dags/l5_multi_model_inference.py:562 (`PaperTrader`).
+paper:
+  initial_capital: 10000.0
+
+# -----------------------------------------------------------------------------
+# Rangos de fechas
+# -----------------------------------------------------------------------------
+# NO se duplican aquí. `config/date_ranges.yaml` es su SSOT y se declara a sí mismo como
+# "the AUTHORITATIVE source for all date ranges". Duplicarlos crearía la segunda verdad que
+# este fichero existe para eliminar.
+#
+# Ojo: `date_ranges.yaml` gobierna el track de PRODUCCIÓN (H1/H5, barras diarias). El carril
+# de investigación de la tesis usa `config/research/partition.yaml`, que es otra partición
+# para otro propósito y no debe mezclarse.
+date_ranges_ssot: "config/date_ranges.yaml"
+research_partition_ssot: "config/research/partition.yaml"

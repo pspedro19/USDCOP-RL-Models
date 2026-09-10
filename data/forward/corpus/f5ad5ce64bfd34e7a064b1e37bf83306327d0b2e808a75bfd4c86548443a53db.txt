@@ -1,0 +1,1 @@
+La función utiliza la cámara frontal del teléfono del conductor y notifica a un tutor autorizado si hay una transmisión en vivo disponible en la aplicación
