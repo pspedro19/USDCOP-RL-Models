@@ -1,8 +1,8 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.2.0
-last_verified: 2026-07-31
+version: 1.4.0
+last_verified: 2026-08-06
 supersedes: []
 code_anchors:
   - .claude/specs/planes/03-institutional-readiness.md
@@ -55,22 +55,26 @@ El corte factual adicional produjo:
 - links relativos: `664 internal links resolve`;
 - contrato RBAC y cobertura RBAC: verdes.
 
-Los tres fallos amplios se preservan como evidencia adversa, no se maquillan como fallo de BL-33:
-
-1. dos consumidores de `MetricEngine` siguen pasando `annualization_by_asset` a un constructor que
-   ya no acepta ese argumento;
-2. el plan `fabric-v1` ya no coincide con su digest pinneado.
-
-La matriz los registra como `RISK-06` y `TECH-06`, ambos `PARTIAL`.
+Los tres fallos amplios pertenecen al corte original y no se maquillan como fallos de BL-33.
+Dos mostraban deriva del constructor de `MetricEngine`; la secuencia `bf1e02f8`, `89a7732d` y
+`2fea6f7e` migró los fixtures afectados a `MetricEngine.from_asset_registry`, y el gate de seguridad
+fue revalidado en **35 passed** el 2026-08-06. BL-18 ya tiene el productor
+`persist_governed_metric_events` y un consumidor de `control.metric_event`; `RISK-06` sigue `PARTIAL`
+porque esa costura no está generalizada, el allowlist heredado conserva entradas y queda por decidir
+la colisión de identidad semántica. El tercer fallo histórico —el digest divergente de
+`fabric-v1`— permanece visible en `TECH-06`.
 
 ## Qué falta para cierre
 
-1. Cross-review de CLAUDE sobre el commit compensatorio R2; el primer review quedó
-   `APROBADO_PARCIAL` y produjo la remediación de correspondencia.
-2. Resolver o asignar formalmente los dos gaps nuevos sin cambiar digests ni APIs por conveniencia.
-3. Incorporar evidencia operativa real: simulacros, sign-off humano independiente, Vault/roles,
+El cross-review R2 ya se ejecutó en `CLD-271`: sustituir la evidencia de `INV-04` por `LICENSE`
+produjo **1F/4P**, la restauración fue byte-exacta y Claude cerró su objeción. La garantía
+resultante es deliberadamente de inmutabilidad de targets revisados, no de verdad material; toda
+actualización legítima exige revisar y mover el pin, nunca relajar el test por conveniencia.
+
+1. Resolver o asignar formalmente los dos gaps nuevos sin cambiar digests ni APIs por conveniencia.
+2. Incorporar evidencia operativa real: simulacros, sign-off humano independiente, Vault/roles,
    RTO/RPO, reconciliación firmada y controles del Caso B cuando correspondan.
-4. Mantener el registro actualizado por evidencia; una fila no sube porque exista el archivo que
+3. Mantener el registro actualizado por evidencia; una fila no sube porque exista el archivo que
    describe la intención.
 
 Por estas brechas el BL avanza de `PLANNED` a `PARTIAL`, no a `IMPLEMENTED` ni DONE.

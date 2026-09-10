@@ -4,88 +4,203 @@
   "title": "InterpSummary",
   "description": "Schema COMPARTIDO (C-006/CXD-040) de los artefactos summary.json de interpretabilidad. Lo valida en runtime la API TS (app/api/admin/interpretability/_lib/artifact-schema.ts, con STRIP de campos desconocidos) y en CI un test Python contra los artefactos del generador (usdcop-trading-dashboard/tests/test_interpretability_schema.py, estricto). Espejo de los tipos InterpSummary en lib/contracts/admin-console.contract.ts. Nota: JSON Schema no puede expresar finitud numerica; ambos lados la imponen por codigo ademas de este schema.",
   "oneOf": [
-    { "$ref": "#/definitions/linearSummary" },
-    { "$ref": "#/definitions/treeSummary" },
-    { "$ref": "#/definitions/treeUnavailableSummary" },
-    { "$ref": "#/definitions/ruleSummary" }
+    {
+      "$ref": "#/definitions/linearSummary"
+    },
+    {
+      "$ref": "#/definitions/treeSummary"
+    },
+    {
+      "$ref": "#/definitions/treeUnavailableSummary"
+    },
+    {
+      "$ref": "#/definitions/ruleSummary"
+    },
+    {
+      "$ref": "#/definitions/hybridSummary"
+    }
   ],
   "definitions": {
     "provenance": {
       "description": "BL-20 remedio: la `version` (ultimo dia del dataset) NO identifica la evidencia. Estas cuatro huellas comprometen datos/codigo/config/modelo y alimentan el `artifact_id`; republicar contenido distinto bajo la misma version es un error del generador, no un overwrite.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["data_fingerprint", "code_fingerprint", "config_fingerprint", "model_fingerprint", "model_fingerprint_basis"],
+      "required": [
+        "data_fingerprint",
+        "code_fingerprint",
+        "config_fingerprint",
+        "model_fingerprint",
+        "model_fingerprint_basis"
+      ],
       "properties": {
-        "data_fingerprint": { "type": "string" },
-        "code_fingerprint": { "type": "string" },
-        "config_fingerprint": { "type": "string" },
-        "model_fingerprint": { "type": "string" },
-        "model_fingerprint_basis": { "type": "string" },
-        "nota": { "type": "string" }
+        "data_fingerprint": {
+          "type": "string"
+        },
+        "code_fingerprint": {
+          "type": "string"
+        },
+        "config_fingerprint": {
+          "type": "string"
+        },
+        "model_fingerprint": {
+          "type": "string"
+        },
+        "model_fingerprint_basis": {
+          "type": "string"
+        },
+        "nota": {
+          "type": "string"
+        }
       }
     },
     "featureRow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rank", "feature", "coef", "mean_abs_shap", "mean_shap"],
+      "required": [
+        "rank",
+        "feature",
+        "coef",
+        "mean_abs_shap",
+        "mean_shap"
+      ],
       "properties": {
-        "rank": { "type": "number" },
-        "feature": { "type": "string" },
-        "coef": { "type": "number" },
-        "mean_abs_shap": { "type": "number" },
-        "mean_shap": { "type": "number" }
+        "rank": {
+          "type": "number"
+        },
+        "feature": {
+          "type": "string"
+        },
+        "coef": {
+          "type": "number"
+        },
+        "mean_abs_shap": {
+          "type": "number"
+        },
+        "mean_shap": {
+          "type": "number"
+        }
       }
     },
     "yearFeatureRow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["feature", "mean_abs_shap", "mean_shap"],
+      "required": [
+        "feature",
+        "mean_abs_shap",
+        "mean_shap"
+      ],
       "properties": {
-        "feature": { "type": "string" },
-        "mean_abs_shap": { "type": "number" },
-        "mean_shap": { "type": "number" }
+        "feature": {
+          "type": "string"
+        },
+        "mean_abs_shap": {
+          "type": "number"
+        },
+        "mean_shap": {
+          "type": "number"
+        }
       }
     },
     "treeFeatureRow": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["rank", "feature", "mean_abs_shap", "mean_shap"],
+      "required": [
+        "rank",
+        "feature",
+        "mean_abs_shap",
+        "mean_shap"
+      ],
       "properties": {
-        "rank": { "type": "number" },
-        "feature": { "type": "string" },
-        "mean_abs_shap": { "type": "number" },
-        "mean_shap": { "type": "number" }
+        "rank": {
+          "type": "number"
+        },
+        "feature": {
+          "type": "string"
+        },
+        "mean_abs_shap": {
+          "type": "number"
+        },
+        "mean_shap": {
+          "type": "number"
+        }
       }
     },
     "foldRow": {
       "description": "Bitacora de un fold del walk-forward expanding anual. La comparten las DOS rutas del zoo (lineal y arbol): desde 2026-07-28 la lineal tambien refitea por fold y atribuye solo sobre el test-fold, asi que su bitacora es la misma.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["year", "n_train", "n_test", "train_start", "train_end", "base_value", "fold_fingerprint"],
+      "required": [
+        "year",
+        "n_train",
+        "n_test",
+        "train_start",
+        "train_end",
+        "base_value",
+        "fold_fingerprint"
+      ],
       "properties": {
-        "year": { "type": "number" },
-        "n_train": { "type": "number" },
-        "n_test": { "type": "number" },
-        "train_start": { "type": "string" },
-        "train_end": { "type": "string" },
-        "base_value": { "type": "number" },
-        "fold_fingerprint": { "type": "string" }
+        "year": {
+          "type": "number"
+        },
+        "n_train": {
+          "type": "number"
+        },
+        "n_test": {
+          "type": "number"
+        },
+        "train_start": {
+          "type": "string"
+        },
+        "train_end": {
+          "type": "string"
+        },
+        "base_value": {
+          "type": "number"
+        },
+        "fold_fingerprint": {
+          "type": "string"
+        }
       }
     },
     "ruleYear": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["n_days", "pnl_gross", "pnl_beta", "pnl_timing_cov_pos_ret", "costs", "pnl_net"],
+      "required": [
+        "n_days",
+        "pnl_gross",
+        "pnl_beta",
+        "pnl_timing_cov_pos_ret",
+        "costs",
+        "pnl_net"
+      ],
       "properties": {
-        "n_days": { "type": "number" },
-        "pnl_gross": { "type": "number" },
-        "pnl_beta": { "type": "number" },
-        "pnl_timing_cov_pos_ret": { "type": "number" },
-        "costs": { "type": "number" },
-        "pnl_net": { "type": "number" },
-        "pct_days_trend_on": { "type": "number" },
-        "pct_days_position_active": { "type": "number" },
-        "avg_exposure": { "type": "number" }
+        "n_days": {
+          "type": "number"
+        },
+        "pnl_gross": {
+          "type": "number"
+        },
+        "pnl_beta": {
+          "type": "number"
+        },
+        "pnl_timing_cov_pos_ret": {
+          "type": "number"
+        },
+        "costs": {
+          "type": "number"
+        },
+        "pnl_net": {
+          "type": "number"
+        },
+        "pct_days_trend_on": {
+          "type": "number"
+        },
+        "pct_days_position_active": {
+          "type": "number"
+        },
+        "avg_exposure": {
+          "type": "number"
+        }
       }
     },
     "linearSummary": {
@@ -93,81 +208,198 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "nota", "surface", "asset", "model_id", "model_type", "method",
-        "attribution_not_shap", "version", "generated_at", "artifact_id", "provenance",
-        "additivity_max_abs_err", "fit", "folds", "scope",
-        "base_value", "n_rows", "n_features", "n_folds", "top_features", "by_year",
-        "by_regime", "regime_gate", "kill_flags_sign_change_by_year",
+        "nota",
+        "surface",
+        "asset",
+        "model_id",
+        "model_type",
+        "method",
+        "attribution_not_shap",
+        "version",
+        "generated_at",
+        "artifact_id",
+        "provenance",
+        "additivity_max_abs_err",
+        "fit",
+        "folds",
+        "scope",
+        "base_value",
+        "n_rows",
+        "n_features",
+        "n_folds",
+        "top_features",
+        "by_year",
+        "by_regime",
+        "regime_gate",
+        "kill_flags_sign_change_by_year",
         "kill_flags_sign_change_by_regime"
       ],
       "properties": {
-        "artifact_id": { "type": "string" },
-        "provenance": { "$ref": "#/definitions/provenance" },
-        "supersedes": { "type": ["string", "null"] },
-        "nota": { "type": "string" },
-        "surface": { "type": "string" },
-        "asset": { "type": "string" },
-        "model_id": { "type": "string" },
-        "model_type": { "const": "linear" },
-        "method": { "const": "linear_shap_closed_form" },
-        "attribution_not_shap": { "const": false },
-        "version": { "type": "string" },
-        "generated_at": { "type": "string" },
-        "scope": { "type": "string" },
-        "regime_gate": { "type": "string" },
-        "additivity_max_abs_err": { "type": "number" },
+        "artifact_id": {
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/definitions/provenance"
+        },
+        "supersedes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nota": {
+          "type": "string"
+        },
+        "surface": {
+          "type": "string"
+        },
+        "asset": {
+          "type": "string"
+        },
+        "model_id": {
+          "type": "string"
+        },
+        "model_type": {
+          "const": "linear"
+        },
+        "method": {
+          "const": "linear_shap_closed_form"
+        },
+        "attribution_not_shap": {
+          "const": false
+        },
+        "version": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "regime_gate": {
+          "type": "string"
+        },
+        "additivity_max_abs_err": {
+          "type": "number"
+        },
         "fit": {
           "type": "object",
           "additionalProperties": false,
           "description": "N de entrenamiento NO ambiguo: en expanding los trains son ANIDADOS, asi que la SUMA por folds contaria las mismas filas varias veces y no es un N. Se publica el N del ultimo fit, las filas distintas y el detalle por fold. `n_fits` > 1 es la condicion que hace CIERTO el header 'solo test-folds'.",
-          "required": ["scheme", "origin", "n_fits", "n_train_last_fit", "n_train_distinct_rows", "n_train_by_fold", "n_train_note", "horizon", "purge_days", "scaler", "params"],
+          "required": [
+            "scheme",
+            "origin",
+            "n_fits",
+            "n_train_last_fit",
+            "n_train_distinct_rows",
+            "n_train_by_fold",
+            "n_train_note",
+            "horizon",
+            "purge_days",
+            "scaler",
+            "params"
+          ],
           "properties": {
-            "scheme": { "type": "string" },
-            "origin": { "type": "string" },
-            "n_fits": { "type": "number" },
-            "n_train_last_fit": { "type": "number" },
-            "n_train_distinct_rows": { "type": "number" },
-            "n_train_by_fold": { "type": "array", "items": { "type": "number" } },
-            "n_train_note": { "type": "string" },
-            "horizon": { "type": "number" },
-            "purge_days": { "type": "number" },
-            "scaler": { "type": "string" },
+            "scheme": {
+              "type": "string"
+            },
+            "origin": {
+              "type": "string"
+            },
+            "n_fits": {
+              "type": "number"
+            },
+            "n_train_last_fit": {
+              "type": "number"
+            },
+            "n_train_distinct_rows": {
+              "type": "number"
+            },
+            "n_train_by_fold": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "n_train_note": {
+              "type": "string"
+            },
+            "horizon": {
+              "type": "number"
+            },
+            "purge_days": {
+              "type": "number"
+            },
+            "scaler": {
+              "type": "string"
+            },
             "params": {
               "type": "object",
-              "additionalProperties": { "type": ["number", "string", "boolean", "null"] }
+              "additionalProperties": {
+                "type": [
+                  "number",
+                  "string",
+                  "boolean",
+                  "null"
+                ]
+              }
             }
           }
         },
-        "folds": { "type": "array", "items": { "$ref": "#/definitions/foldRow" } },
-        "base_value": { "type": "number" },
-        "n_rows": { "type": "number" },
-        "n_features": { "type": "number" },
-        "n_folds": { "type": "number" },
+        "folds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/foldRow"
+          }
+        },
+        "base_value": {
+          "type": "number"
+        },
+        "n_rows": {
+          "type": "number"
+        },
+        "n_features": {
+          "type": "number"
+        },
+        "n_folds": {
+          "type": "number"
+        },
         "top_features": {
           "type": "array",
-          "items": { "$ref": "#/definitions/featureRow" }
+          "items": {
+            "$ref": "#/definitions/featureRow"
+          }
         },
         "by_year": {
           "type": "object",
           "additionalProperties": {
             "type": "array",
-            "items": { "$ref": "#/definitions/yearFeatureRow" }
+            "items": {
+              "$ref": "#/definitions/yearFeatureRow"
+            }
           }
         },
         "by_regime": {
           "type": "object",
           "additionalProperties": {
             "type": "array",
-            "items": { "$ref": "#/definitions/yearFeatureRow" }
+            "items": {
+              "$ref": "#/definitions/yearFeatureRow"
+            }
           }
         },
         "kill_flags_sign_change_by_year": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "kill_flags_sign_change_by_regime": {
           "type": "array",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -176,78 +408,203 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "nota", "surface", "asset", "model_id", "model_type", "method",
-        "attribution_not_shap", "version", "generated_at", "artifact_id", "provenance",
+        "nota",
+        "surface",
+        "asset",
+        "model_id",
+        "model_type",
+        "method",
+        "attribution_not_shap",
+        "version",
+        "generated_at",
+        "artifact_id",
+        "provenance",
         "shap_backend",
-        "shap_package_available", "additivity_max_abs_err", "fit", "folds", "scope",
-        "base_value", "n_rows", "n_features", "n_folds", "top_features", "by_year",
-        "by_regime", "regime_gate", "kill_flags_sign_change_by_year",
+        "shap_package_available",
+        "additivity_max_abs_err",
+        "fit",
+        "folds",
+        "scope",
+        "base_value",
+        "n_rows",
+        "n_features",
+        "n_folds",
+        "top_features",
+        "by_year",
+        "by_regime",
+        "regime_gate",
+        "kill_flags_sign_change_by_year",
         "kill_flags_sign_change_by_regime"
       ],
       "properties": {
-        "nota": { "type": "string" },
-        "surface": { "type": "string" },
-        "asset": { "type": "string" },
-        "model_id": { "type": "string" },
-        "artifact_id": { "type": "string" },
-        "provenance": { "$ref": "#/definitions/provenance" },
-        "supersedes": { "type": ["string", "null"] },
-        "model_type": { "const": "tree" },
-        "method": { "const": "tree_shap" },
-        "attribution_not_shap": { "const": false },
-        "version": { "type": "string" },
-        "generated_at": { "type": "string" },
-        "shap_backend": { "type": "string" },
-        "shap_package_available": { "type": "boolean" },
-        "additivity_max_abs_err": { "type": "number" },
-        "scope": { "type": "string" },
-        "regime_gate": { "type": "string" },
+        "nota": {
+          "type": "string"
+        },
+        "surface": {
+          "type": "string"
+        },
+        "asset": {
+          "type": "string"
+        },
+        "model_id": {
+          "type": "string"
+        },
+        "artifact_id": {
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/definitions/provenance"
+        },
+        "supersedes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model_type": {
+          "const": "tree"
+        },
+        "method": {
+          "const": "tree_shap"
+        },
+        "attribution_not_shap": {
+          "const": false
+        },
+        "version": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "shap_backend": {
+          "type": "string"
+        },
+        "shap_package_available": {
+          "type": "boolean"
+        },
+        "additivity_max_abs_err": {
+          "type": "number"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "regime_gate": {
+          "type": "string"
+        },
         "fit": {
           "type": "object",
           "additionalProperties": false,
           "description": "N de entrenamiento NO ambiguo: en expanding los trains son ANIDADOS, asi que la SUMA por folds contaria las mismas filas varias veces y no es un N. Se publica el N del ultimo fit, las filas distintas y el detalle por fold.",
-          "required": ["scheme", "origin", "n_train_last_fit", "n_train_distinct_rows", "n_train_by_fold", "n_train_note", "horizon", "purge_days", "scaler", "params"],
+          "required": [
+            "scheme",
+            "origin",
+            "n_train_last_fit",
+            "n_train_distinct_rows",
+            "n_train_by_fold",
+            "n_train_note",
+            "horizon",
+            "purge_days",
+            "scaler",
+            "params"
+          ],
           "properties": {
-            "scheme": { "type": "string" },
-            "origin": { "type": "string" },
-            "n_train_last_fit": { "type": "number" },
-            "n_train_distinct_rows": { "type": "number" },
-            "n_train_by_fold": { "type": "array", "items": { "type": "number" } },
-            "n_train_note": { "type": "string" },
-            "horizon": { "type": "number" },
-            "purge_days": { "type": "number" },
-            "scaler": { "type": "string" },
+            "scheme": {
+              "type": "string"
+            },
+            "origin": {
+              "type": "string"
+            },
+            "n_train_last_fit": {
+              "type": "number"
+            },
+            "n_train_distinct_rows": {
+              "type": "number"
+            },
+            "n_train_by_fold": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "n_train_note": {
+              "type": "string"
+            },
+            "horizon": {
+              "type": "number"
+            },
+            "purge_days": {
+              "type": "number"
+            },
+            "scaler": {
+              "type": "string"
+            },
             "params": {
               "type": "object",
-              "additionalProperties": { "type": ["number", "string", "boolean", "null"] }
+              "additionalProperties": {
+                "type": [
+                  "number",
+                  "string",
+                  "boolean",
+                  "null"
+                ]
+              }
             }
           }
         },
-        "folds": { "type": "array", "items": { "$ref": "#/definitions/foldRow" } },
-        "base_value": { "type": "number" },
-        "n_rows": { "type": "number" },
-        "n_features": { "type": "number" },
-        "n_folds": { "type": "number" },
+        "folds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/foldRow"
+          }
+        },
+        "base_value": {
+          "type": "number"
+        },
+        "n_rows": {
+          "type": "number"
+        },
+        "n_features": {
+          "type": "number"
+        },
+        "n_folds": {
+          "type": "number"
+        },
         "top_features": {
           "type": "array",
-          "items": { "$ref": "#/definitions/treeFeatureRow" }
+          "items": {
+            "$ref": "#/definitions/treeFeatureRow"
+          }
         },
         "by_year": {
           "type": "object",
           "additionalProperties": {
             "type": "array",
-            "items": { "$ref": "#/definitions/yearFeatureRow" }
+            "items": {
+              "$ref": "#/definitions/yearFeatureRow"
+            }
           }
         },
         "by_regime": {
           "type": "object",
           "additionalProperties": {
             "type": "array",
-            "items": { "$ref": "#/definitions/yearFeatureRow" }
+            "items": {
+              "$ref": "#/definitions/yearFeatureRow"
+            }
           }
         },
-        "kill_flags_sign_change_by_year": { "type": "array", "items": { "type": "string" } },
-        "kill_flags_sign_change_by_regime": { "type": "array", "items": { "type": "string" } }
+        "kill_flags_sign_change_by_year": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "kill_flags_sign_change_by_regime": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "treeUnavailableSummary": {
@@ -255,68 +612,390 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "nota", "surface", "asset", "model_id", "model_type", "method",
-        "attribution_not_shap", "version", "generated_at", "artifact_id", "provenance",
-        "scope", "status", "reason", "detail"
+        "nota",
+        "surface",
+        "asset",
+        "model_id",
+        "model_type",
+        "method",
+        "attribution_not_shap",
+        "version",
+        "generated_at",
+        "artifact_id",
+        "provenance",
+        "scope",
+        "status",
+        "reason",
+        "detail"
       ],
       "properties": {
-        "artifact_id": { "type": "string" },
-        "provenance": { "$ref": "#/definitions/provenance" },
-        "supersedes": { "type": ["string", "null"] },
-        "nota": { "type": "string" },
-        "surface": { "type": "string" },
-        "asset": { "type": "string" },
-        "model_id": { "type": "string" },
-        "model_type": { "const": "tree" },
-        "method": { "const": "tree_shap_unavailable" },
-        "attribution_not_shap": { "const": false },
-        "version": { "type": "string" },
-        "generated_at": { "type": "string" },
-        "scope": { "type": "string" },
-        "status": { "const": "tree_shap_unavailable" },
-        "reason": { "enum": ["backend_import_failed", "shap_computation_failed", "model_artifact_missing"] },
-        "detail": { "type": "string" }
+        "artifact_id": {
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/definitions/provenance"
+        },
+        "supersedes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nota": {
+          "type": "string"
+        },
+        "surface": {
+          "type": "string"
+        },
+        "asset": {
+          "type": "string"
+        },
+        "model_id": {
+          "type": "string"
+        },
+        "model_type": {
+          "const": "tree"
+        },
+        "method": {
+          "const": "tree_shap_unavailable"
+        },
+        "attribution_not_shap": {
+          "const": false
+        },
+        "version": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "status": {
+          "const": "tree_shap_unavailable"
+        },
+        "reason": {
+          "enum": [
+            "backend_import_failed",
+            "shap_computation_failed",
+            "model_artifact_missing"
+          ]
+        },
+        "detail": {
+          "type": "string"
+        }
       }
     },
     "ruleSummary": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "nota", "surface", "asset", "model_id", "model_type", "method",
-        "attribution_not_shap", "version", "generated_at", "artifact_id", "provenance",
+        "nota",
+        "surface",
+        "asset",
+        "model_id",
+        "model_type",
+        "method",
+        "attribution_not_shap",
+        "version",
+        "generated_at",
+        "artifact_id",
+        "provenance",
         "scope",
-        "rules", "pnl_decomposition", "by_year"
+        "rules",
+        "pnl_decomposition",
+        "by_year"
       ],
       "properties": {
-        "artifact_id": { "type": "string" },
-        "provenance": { "$ref": "#/definitions/provenance" },
-        "supersedes": { "type": ["string", "null"] },
-        "nota": { "type": "string" },
-        "surface": { "type": "string" },
-        "asset": { "type": "string" },
-        "model_id": { "type": "string" },
-        "model_type": { "const": "rule_based" },
-        "method": { "const": "rule_attribution" },
-        "attribution_not_shap": { "const": true },
-        "version": { "type": "string" },
-        "generated_at": { "type": "string" },
-        "scope": { "type": "string" },
+        "artifact_id": {
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/definitions/provenance"
+        },
+        "supersedes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nota": {
+          "type": "string"
+        },
+        "surface": {
+          "type": "string"
+        },
+        "asset": {
+          "type": "string"
+        },
+        "model_id": {
+          "type": "string"
+        },
+        "model_type": {
+          "const": "rule_based"
+        },
+        "method": {
+          "const": "rule_attribution"
+        },
+        "attribution_not_shap": {
+          "const": true
+        },
+        "version": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "scope": {
+          "type": "string"
+        },
         "rules": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["gate", "pct_days_trend_on", "pct_days_position_active", "avg_exposure", "n_trades"],
+          "required": [
+            "gate",
+            "pct_days_trend_on",
+            "pct_days_position_active",
+            "avg_exposure",
+            "n_trades"
+          ],
           "properties": {
-            "gate": { "type": "string" },
-            "pct_days_trend_on": { "type": "number" },
-            "pct_days_position_active": { "type": "number" },
-            "avg_exposure": { "type": "number" },
-            "n_trades": { "type": "number" }
+            "gate": {
+              "type": "string"
+            },
+            "pct_days_trend_on": {
+              "type": "number"
+            },
+            "pct_days_position_active": {
+              "type": "number"
+            },
+            "avg_exposure": {
+              "type": "number"
+            },
+            "n_trades": {
+              "type": "number"
+            }
           }
         },
-        "pnl_decomposition": { "$ref": "#/definitions/ruleYear" },
+        "pnl_decomposition": {
+          "$ref": "#/definitions/ruleYear"
+        },
         "by_year": {
           "type": "object",
-          "additionalProperties": { "$ref": "#/definitions/ruleYear" }
+          "additionalProperties": {
+            "$ref": "#/definitions/ruleYear"
+          }
+        }
+      }
+    },
+    "hybridSummary": {
+      "description": "C035 — hibrido (linear+booster). SHAP EXACTO por DESCOMPOSICION CONVEXA, no TreeSHAP sobre el conjunto: pred = (1-a)*boost(X) + a*ridge(scaler(X)), y SHAP es aditivo y lineal en la salida, luego phi = (1-a)*phi_tree + a*phi_lin. La exactitud NO se afirma: additivity_max_abs_err la comprueba contra la prediccion del hibrido COMPLETO y el productor se NIEGA a publicar si no cuadra (degrada a treeUnavailableSummary).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "nota",
+        "surface",
+        "asset",
+        "model_id",
+        "model_type",
+        "method",
+        "attribution_not_shap",
+        "version",
+        "generated_at",
+        "artifact_id",
+        "provenance",
+        "shap_backend",
+        "shap_package_available",
+        "additivity_max_abs_err",
+        "fit",
+        "folds",
+        "scope",
+        "base_value",
+        "n_rows",
+        "n_features",
+        "n_folds",
+        "top_features",
+        "by_year",
+        "by_regime",
+        "regime_gate",
+        "kill_flags_sign_change_by_year",
+        "kill_flags_sign_change_by_regime",
+        "hybrid_alpha"
+      ],
+      "properties": {
+        "nota": {
+          "type": "string"
+        },
+        "surface": {
+          "type": "string"
+        },
+        "asset": {
+          "type": "string"
+        },
+        "model_id": {
+          "type": "string"
+        },
+        "artifact_id": {
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/definitions/provenance"
+        },
+        "supersedes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "model_type": {
+          "const": "hybrid"
+        },
+        "method": {
+          "const": "hybrid_shap_convex_decomposition"
+        },
+        "attribution_not_shap": {
+          "const": false
+        },
+        "version": {
+          "type": "string"
+        },
+        "generated_at": {
+          "type": "string"
+        },
+        "shap_backend": {
+          "type": "string"
+        },
+        "shap_package_available": {
+          "type": "boolean"
+        },
+        "additivity_max_abs_err": {
+          "type": "number"
+        },
+        "scope": {
+          "type": "string"
+        },
+        "regime_gate": {
+          "type": "string"
+        },
+        "fit": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "N de entrenamiento NO ambiguo: en expanding los trains son ANIDADOS, asi que la SUMA por folds contaria las mismas filas varias veces y no es un N. Se publica el N del ultimo fit, las filas distintas y el detalle por fold.",
+          "required": [
+            "scheme",
+            "origin",
+            "n_train_last_fit",
+            "n_train_distinct_rows",
+            "n_train_by_fold",
+            "n_train_note",
+            "horizon",
+            "purge_days",
+            "scaler",
+            "params"
+          ],
+          "properties": {
+            "scheme": {
+              "type": "string"
+            },
+            "origin": {
+              "type": "string"
+            },
+            "n_train_last_fit": {
+              "type": "number"
+            },
+            "n_train_distinct_rows": {
+              "type": "number"
+            },
+            "n_train_by_fold": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            },
+            "n_train_note": {
+              "type": "string"
+            },
+            "horizon": {
+              "type": "number"
+            },
+            "purge_days": {
+              "type": "number"
+            },
+            "scaler": {
+              "type": "string"
+            },
+            "params": {
+              "type": "object",
+              "additionalProperties": {
+                "type": [
+                  "number",
+                  "string",
+                  "boolean",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "folds": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/foldRow"
+          }
+        },
+        "base_value": {
+          "type": "number"
+        },
+        "n_rows": {
+          "type": "number"
+        },
+        "n_features": {
+          "type": "number"
+        },
+        "n_folds": {
+          "type": "number"
+        },
+        "top_features": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/treeFeatureRow"
+          }
+        },
+        "by_year": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/yearFeatureRow"
+            }
+          }
+        },
+        "by_regime": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/yearFeatureRow"
+            }
+          }
+        },
+        "kill_flags_sign_change_by_year": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "kill_flags_sign_change_by_regime": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "hybrid_alpha": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "peso del termino LINEAL en la combinacion convexa (1-alpha para el booster)"
         }
       }
     }

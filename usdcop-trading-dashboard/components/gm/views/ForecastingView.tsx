@@ -1028,8 +1028,21 @@ export function ForecastingView() {
   // ── estado en la URL (querystring) ──
   const asset = resolveAnalysisAsset(sp.get('asset'));
   const assetMeta = ANALYSIS_ASSETS.find((a) => a.asset_id === asset) ?? ANALYSIS_ASSETS[0];
-  // Model-zoo assets (USD/COP + BTC) share the 9-model ML surface; Gold = weekly inference.
+  // Model-zoo assets share the 9-model ML surface. The branch is `forecast_mode`, never a
+  // hardcoded asset list — and the comment used to name USD/COP + BTC and call Gold
+  // "weekly inference" while the very next line sent Gold to the zoo (analysis-assets.ts
+  // declares xauusd as model_zoo). Measured 2026-08-05: xauusd and btcusdt each publish
+  // 459 zoo artifacts (bi_dashboard_unified.csv + per-model PNGs), so the DATA agrees with
+  // `forecast_mode` and the prose was the thing that was wrong. Assets also carrying
+  // weekly_inference_*.json keep it as a secondary surface, not as this branch's input.
   const isModelZoo = assetMeta.forecast_mode === 'model_zoo';
+  // C034 / CXD-549: la rama es EXHAUSTIVA sobre los TRES valores de `forecast_mode`, nunca
+  // un booleano. `'none'` NO es "lo que no es model_zoo": declara que el activo no tiene
+  // superficie publicada, y mandarlo a weekly hacía que la vista AFIRMARA una superficie
+  // inexistente y pidiera `/api/forecasting/spx500/{index,forward,weekly_inference_*}.json`
+  // — el contrato decía una cosa y el código hacía otra. Aquí no se pide NADA.
+  const hasNoSurface = assetMeta.forecast_mode === 'none';
+  const isWeekly = assetMeta.forecast_mode === 'weekly_inference';
   // USD/COP keeps root paths (470 files unmoved); other zoo assets are namespaced by asset_id.
   const csvPath = isModelZoo
     ? (asset === 'usdcop'
@@ -1049,8 +1062,8 @@ export function ForecastingView() {
 
   // ── datos (por activo; hooks incondicionales con path null) ──
   const csv = useForecastCsv(csvPath);
-  const index = useGmQuery<WeeklyInferenceIndex>(!isModelZoo ? `/api/forecasting/${asset}/index.json` : null);
-  const forward = useGmQuery<ForwardDoc>(!isModelZoo ? `/api/forecasting/${asset}/forward.json` : null);
+  const index = useGmQuery<WeeklyInferenceIndex>(isWeekly ? `/api/forecasting/${asset}/index.json` : null);
+  const forward = useGmQuery<ForwardDoc>(isWeekly ? `/api/forecasting/${asset}/forward.json` : null);
   const directional = useGmQuery<DirectionalReplayIndex>(
     asset === 'usdcop' ? '/api/forecasting/usdcop/directional_replay_index.json' : null,
   );
@@ -1101,7 +1114,7 @@ export function ForecastingView() {
       : yearsAvail.includes(2025) ? 2025 : yearsAvail[0] ?? null)
     : null;
   const weekly = useGmQuery<AssetWeeklyInference>(
-    !isModelZoo && year != null ? `/api/forecasting/${asset}/weekly_inference_${year}.json` : null,
+    isWeekly && year != null ? `/api/forecasting/${asset}/weekly_inference_${year}.json` : null,
   );
   const strategies = index.data?.strategies ?? [];
   const strategyId = strategies.some((st) => st.strategy_id === modelParam)
@@ -1109,7 +1122,11 @@ export function ForecastingView() {
     : (index.data?.primary_strategy_id || strategies[0]?.strategy_id || '');
 
   // ── opciones de los 4 dropdowns del prototipo ──
-  const assetOptions = ANALYSIS_ASSETS.map((a) => ({ value: a.asset_id, label: a.display_name }));
+  // El selector sólo ofrece activos con superficie publicada: `forecast_mode: 'none'` fuera.
+  // spx500 estaba declarado `model_zoo` con CERO artefactos y su csvPath apuntaba a un fichero
+  // inexistente (medido 2026-08-05). Se filtra AQUÍ y no con un export ya filtrado del contrato
+  // a propósito: ese módulo lo sustituye `vi.mock` entero en los tests.
+  const assetOptions = ANALYSIS_ASSETS.filter((a) => a.forecast_mode !== 'none').map((a) => ({ value: a.asset_id, label: a.display_name }));
 
   const periodOptions = isModelZoo
     ? [
@@ -1154,6 +1171,32 @@ export function ForecastingView() {
       ? isLocked(csv.error)
       : (isLocked(index.error) || isLocked(weekly.error) || isLocked(forward.error))
   );
+
+  // ── C034 / CXD-549: rama EXHAUSTIVA para `forecast_mode: 'none'` ──────────────────
+  // Sale ANTES de cualquier cabecera, badge o disclaimer de modo: un activo sin superficie
+  // publicada no puede afirmar «ML Model Zoo» ni «Weekly Inference», que son afirmaciones
+  // de hecho sobre algo que no existe. Los tres fetch de weekly ya están acotados a
+  // `isWeekly` y `csvPath` es null aquí, así que esta rama no pide NINGÚN artefacto.
+  if (hasNoSurface) {
+    return (
+      <div data-testid="forecasting-view">
+        <GmPageHeader
+          kicker="Predicción semanal"
+          title="Forecasting"
+          subtitle={`${assetMeta.display_name} · sin superficie de forecasting publicada`}
+          actions={<GmBadge tone="neutral">Sin superficie publicada</GmBadge>}
+        />
+        <GmPanel title="Sin datos">
+          <p data-testid="forecasting-no-surface" className="text-sm">
+            <strong>{assetMeta.display_name}</strong> se analiza en <code>/analysis</code>, pero
+            no publica artefactos de forecasting: no hay model zoo ni inferencia semanal para
+            este activo. No se muestra ninguna predicción porque no existe ninguna —
+            declararlo es más honesto que renderizar una superficie vacía.
+          </p>
+        </GmPanel>
+      </div>
+    );
+  }
 
   return (
     <div data-testid="forecasting-view">

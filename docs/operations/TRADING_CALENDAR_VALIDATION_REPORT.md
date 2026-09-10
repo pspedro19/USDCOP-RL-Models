@@ -516,8 +516,8 @@ pip install holidays pytz pandas numpy pytest
 ### Documentation Files
 
 1. **tests/test_trading_calendar.py** - Main test suite (714 lines)
-2. **tests/README_TRADING_CALENDAR_TESTS.md** - Detailed testing guide
-3. **tests/TRADING_CALENDAR_TEST_SUMMARY.md** - Execution summary
+2. **tests/docs/README_TRADING_CALENDAR_TESTS.md** - Detailed testing guide
+3. **tests/docs/TRADING_CALENDAR_TEST_SUMMARY.md** - Execution summary
 4. **scripts/validate_dataset_calendar.py** - Standalone validator
 5. **docs/TRADING_CALENDAR_VALIDATION_REPORT.md** - This document
 

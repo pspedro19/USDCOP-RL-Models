@@ -26,6 +26,7 @@ import asyncio
 import hashlib
 import logging
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -51,6 +52,44 @@ MIGRATION_PLANS = {
             "082_checkout_order_retry_transition.sql",
         )
     ),
+    "commerce-surface-v1": (
+        PROJECT_ROOT / "database" / "migrations" / "057_catalog_watchlist_cart.sql",
+    ),
+    "identity-admin-v1": tuple(
+        PROJECT_ROOT / "database" / "migrations" / name
+        for name in (
+            "056_admin_console_is_test.sql",
+            "056_rbac_dynamic_roles.sql",
+        )
+    ),
+    "h5-identity-v1": tuple(
+        PROJECT_ROOT / "database" / "migrations" / name
+        for name in (
+            "064_h5_strategy_id.sql",
+            "083_h5_strategy_performance_view.sql",
+        )
+    ),
+    "feature-status-provenance-v1": (
+        PROJECT_ROOT / "database" / "migrations" / "085_feature_status_provenance.sql",
+    ),
+    "lineage-verification-v1": (
+        PROJECT_ROOT / "database" / "migrations" / "086_lineage_last_verified_at.sql",
+    ),
+    # Fresh-clone platform schema.  This deliberately uses the consolidated H5
+    # migration (050) instead of replaying its superseded 043/044 path, and
+    # keeps optional extensions such as pgvector (047) out of the baseline.
+    "platform-bootstrap-v1": tuple(
+        PROJECT_ROOT / "database" / "migrations" / name
+        for name in (
+            "045_newsengine_initial.sql",
+            "046_weekly_analysis_tables.sql",
+            "050_consolidated_h5_ddl.sql",
+            "051_asset_daily_ohlcv.sql",
+            "053_sb_user_approval.sql",
+            "054_h5_subtrades_unique.sql",
+            "055_rbac_monetization.sql",
+        )
+    ),
     "fabric-v1": tuple(
         PROJECT_ROOT / "database" / "migrations" / name
         for name in (
@@ -66,10 +105,38 @@ MIGRATION_PLANS = {
             "079_fabric_integrity_remediation.sql",
             "080_market_physical_profile.sql",
             "081_synthetic_demo_isolation.sql",
+            "084_quality_correction_context.sql",
         )
     ),
 }
-REVIEW_GATED_PLANS = frozenset({"commerce-v1", "fabric-v1"})
+REVIEW_GATED_PLANS = frozenset(
+    {
+        "commerce-v1",
+        "commerce-surface-v1",
+        "feature-status-provenance-v1",
+        "h5-identity-v1",
+        "identity-admin-v1",
+        "lineage-verification-v1",
+        "platform-bootstrap-v1",
+        "fabric-v1",
+    }
+)
+PLAN_PREREQUISITE_TABLES = {
+    "commerce-surface-v1": ("public.sb_users",),
+    "feature-status-provenance-v1": ("quality.feature_status",),
+    "lineage-verification-v1": ("lineage.node",),
+    "h5-identity-v1": (
+        "public.forecast_h5_signals",
+        "public.forecast_h5_executions",
+        "public.forecast_h5_paper_trading",
+    ),
+    "identity-admin-v1": ("public.sb_users",),
+    "platform-bootstrap-v1": (
+        "public.sb_users",
+        "public.usdcop_m5_ohlcv",
+        "public.macro_indicators_daily",
+    ),
+}
 # These values are changed only in the same reviewed commit that changes a
 # gated migration plan.  A digest supplied by the operator is a second factor,
 # not a way for modified on-disk SQL to authorize itself.
@@ -77,8 +144,26 @@ PINNED_PLAN_DIGESTS = {
     "commerce-v1": (
         "sha256:3fdb2d845fbe90e26b294bd09fb1d02b889b17ee71d4836ce47af9b60d49a261"
     ),
+    "commerce-surface-v1": (
+        "sha256:7c93d0dd3f242f8d9dc578d6fa56485975c49b900833b16e96408f298069e5ef"
+    ),
+    "lineage-verification-v1": (
+        "sha256:90ee1aa036e9f57fb1b227583579a73fa08076c032882cf30c8e624c7b6f67c0"
+    ),
+    "identity-admin-v1": (
+        "sha256:dcb51c61dd3509a0a6aa66494fe655b0134f572b9b12ffc0c0467957362487dd"
+    ),
+    "h5-identity-v1": (
+        "sha256:17b9c70f1d7152b5a85e8c7a59896a88dcd1b45447ecd5edba4bece01e1ecb41"
+    ),
+    "feature-status-provenance-v1": (
+        "sha256:29b3f7dc2dcff3c558057567a4033de30797058f361f801dae357e0ae185fb0b"
+    ),
+    "platform-bootstrap-v1": (
+        "sha256:9d6e2d40fa974aca3474c70336b5e0912c04f5b75c7474e62ea172a01388c06d"
+    ),
     "fabric-v1": (
-        "sha256:b83bf454e7447714b4606140164261177396f62dd2755cf4f6eab4cc86f87852"
+        "sha256:35b1f98997128e8581bc4544e018cf4a33ce7fa9e4b5d4854dcd40b68cff52a8"
     ),
 }
 
@@ -104,6 +189,16 @@ LEGACY_REQUIRED_TABLES = {
 
     # Metrics
     "metrics.model_performance": "Model performance metrics",
+}
+
+PLATFORM_BOOTSTRAP_REQUIRED_TABLES = {
+    "public.forecast_h5_signals": "H5 ensemble signals",
+    "public.forecast_h5_subtrades": "H5 subtrade ledger",
+    "public.news_articles": "NewsEngine articles",
+    "public.weekly_analysis": "Weekly analysis output",
+    "public.asset_daily_ohlcv": "Multi-asset daily bars",
+    "public.audit_log": "Append-only authorization audit ledger",
+    "public.user_exchange_keys": "Per-user encrypted exchange-key records",
 }
 
 FABRIC_REQUIRED_TABLES = {
@@ -153,17 +248,75 @@ FABRIC_REQUIRED_TABLES = {
     "portfolio.kill_switch_event": "Kill-switch event ledger",
     "portfolio.kill_switch_action": "Fenced kill-switch effects",
     "portfolio.kill_switch_action_event": "Kill-switch attempt events",
-    "market.resample_policy": "Session-aware resampling policy",
     "demo.synthetic_model": "Synthetic models isolated from real performance",
 }
 
 REQUIRED_TABLES_BY_PLAN = {
     "legacy-init": LEGACY_REQUIRED_TABLES,
+    "feature-status-provenance-v1": {
+        "quality.feature_status": "Governed feature availability measurements",
+    },
+    "lineage-verification-v1": {
+        "lineage.node": "Lineage nodes with producer verification clock",
+    },
+    "platform-bootstrap-v1": PLATFORM_BOOTSTRAP_REQUIRED_TABLES,
     "commerce-v1": {
         "public.checkout_orders": "Immutable sealed checkout quotes",
         "public.billing_events": "Provider-event idempotency ledger",
     },
+    "commerce-surface-v1": {
+        "public.user_watchlist": "Per-user catalog watchlist",
+        "public.user_cart": "Per-user add-on cart",
+    },
+    "identity-admin-v1": {
+        "public.rbac_role_permissions": "Dynamic role-permission assignments",
+        "public.rbac_user_overrides": "Per-user RBAC overrides",
+    },
+    "h5-identity-v1": {
+        "public.v_h5_performance_summary": "Strategy-safe H5 performance view",
+    },
     "fabric-v1": FABRIC_REQUIRED_TABLES,
+}
+REQUIRED_COLUMNS_BY_PLAN = {
+    "feature-status-provenance-v1": {
+        "quality.feature_status": {
+            "created_at": "Database-owned feature-status creation seal",
+        },
+    },
+    "lineage-verification-v1": {
+        "lineage.node": {
+            "last_verified_at": "Latest producer-observed verification time",
+        },
+    },
+    "commerce-surface-v1": {
+        "public.user_watchlist": {
+            "user_id": "User ownership",
+            "asset_id": "Catalog asset identity",
+            "created_at": "Insertion timestamp",
+        },
+        "public.user_cart": {
+            "user_id": "User ownership",
+            "asset_id": "Catalog asset identity",
+            "created_at": "Insertion timestamp",
+        },
+    },
+    "h5-identity-v1": {
+        "public.forecast_h5_signals": {"strategy_id": "H5 signal identity"},
+        "public.forecast_h5_executions": {
+            "strategy_id": "H5 execution identity"
+        },
+        "public.forecast_h5_paper_trading": {
+            "strategy_id": "H5 paper-trading identity"
+        },
+        "public.v_h5_performance_summary": {
+            "strategy_id": "Strategy-safe H5 performance projection"
+        },
+    },
+    "identity-admin-v1": {
+        "public.sb_users": {
+            "is_test": "Admin-console test-user classification",
+        },
+    },
 }
 # Compatibility alias for old importers. CLI callers must select a plan.
 REQUIRED_TABLES = LEGACY_REQUIRED_TABLES
@@ -183,11 +336,21 @@ async def get_connection():
     """Get database connection."""
     import asyncpg
 
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        return await asyncpg.connect(dsn=database_url)
+
+    password = os.getenv("POSTGRES_PASSWORD")
+    if password is None:
+        raise RuntimeError(
+            "database connection is not configured: set DATABASE_URL or "
+            "POSTGRES_PASSWORD with POSTGRES_HOST/PORT/USER/DB"
+        )
     return await asyncpg.connect(
         host=os.getenv("POSTGRES_HOST", "localhost"),
         port=int(os.getenv("POSTGRES_PORT", "5432")),
         user=os.getenv("POSTGRES_USER", "admin"),
-        password=os.getenv("POSTGRES_PASSWORD", ""),
+        password=password,
         database=os.getenv("POSTGRES_DB", "usdcop_trading"),
     )
 
@@ -247,6 +410,30 @@ def get_plan_digest(plan: str) -> str:
         digest.update(path.read_bytes())
         digest.update(b"\0")
     return "sha256:" + digest.hexdigest()
+
+
+def created_tables_for_plan(plan: str) -> set[str]:
+    """Return statically declared tables, resolving bare names to ``public``.
+
+    This is a source-contract guard, not a SQL interpreter: it does not resolve
+    control flow or dynamic SQL. Runtime ``--validate`` remains authoritative
+    for objects whose creation depends on execution.
+    """
+    ddl = "\n".join(
+        path.read_text(encoding="utf-8") for path in get_migration_files(plan)
+    )
+    ddl = re.sub(r"/\*.*?\*/", "", ddl, flags=re.DOTALL)
+    ddl = re.sub(r"--[^\n]*", "", ddl)
+    created: set[str] = set()
+    pattern = re.compile(
+        r"\bCREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?"
+        r"(?P<name>(?:\"?[a-z_]\w*\"?\.)?\"?[a-z_]\w*\"?)",
+        flags=re.IGNORECASE,
+    )
+    for match in pattern.finditer(ddl):
+        name = match.group("name").replace('"', "").lower()
+        created.add(name if "." in name else f"public.{name}")
+    return created
 
 
 def classify_migrations(
@@ -406,6 +593,56 @@ async def table_exists(conn, full_table_name: str) -> bool:
     return result
 
 
+async def column_exists(conn, full_table_name: str, column_name: str) -> bool:
+    """Check whether a required column exists on a schema-qualified table."""
+    if "." in full_table_name:
+        schema, table = full_table_name.split(".", 1)
+    else:
+        schema, table = "public", full_table_name
+
+    return await conn.fetchval("""
+        SELECT EXISTS (
+            SELECT FROM information_schema.columns
+            WHERE table_schema = $1 AND table_name = $2 AND column_name = $3
+        )
+    """, schema, table, column_name)
+
+
+async def get_missing_required_columns(conn, plan: str) -> list[str]:
+    """Return and report every absent postcondition column for a plan."""
+    missing = []
+    for table, columns in REQUIRED_COLUMNS_BY_PLAN.get(plan, {}).items():
+        for column, description in columns.items():
+            if not await column_exists(conn, table, column):
+                missing.append(f"{table}.{column}")
+                logger.warning(
+                    "  ✗ %s.%s - MISSING (%s)", table, column, description
+                )
+    return missing
+
+
+async def validate_required_columns(conn, plan: str) -> bool:
+    """Fail closed when a plan's postcondition columns are absent."""
+    return not await get_missing_required_columns(conn, plan)
+
+
+async def validate_plan_prerequisites(conn, plan: str) -> bool:
+    """Fail closed before plan DDL when an upstream schema is absent."""
+    missing = [
+        table
+        for table in PLAN_PREREQUISITE_TABLES.get(plan, ())
+        if not await table_exists(conn, table)
+    ]
+    if missing:
+        logger.error(
+            "Plan %s prerequisites are missing: %s",
+            plan,
+            ", ".join(missing),
+        )
+        return False
+    return True
+
+
 async def run_migrations(
     plan: str = "legacy-init", reviewed_digest: str | None = None
 ) -> bool:
@@ -424,6 +661,8 @@ async def run_migrations(
 
     plan_lock_acquired = False
     try:
+        if not await validate_plan_prerequisites(conn, plan):
+            return False
         # Ensure migrations table exists
         await ensure_migrations_table(conn)
         await conn.fetchval(
@@ -567,10 +806,17 @@ async def validate_tables(plan: str = "legacy-init") -> bool:
                 missing.append(table_name)
                 logger.warning(f"  ✗ {table_name} - MISSING ({description})")
 
-        logger.info("-" * 60)
-        logger.info(f"Present: {len(present)}, Missing: {len(missing)}")
+        missing_columns = await get_missing_required_columns(conn, plan)
 
-        if missing:
+        logger.info("-" * 60)
+        logger.info(
+            "Present tables: %d, Missing tables: %d, Missing columns: %d",
+            len(present),
+            len(missing),
+            len(missing_columns),
+        )
+
+        if missing or missing_columns:
             logger.error(
                 "Run scripts/ops/db_migrate.py with --plan %s and its reviewed "
                 "digest to create missing tables",

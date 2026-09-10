@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-25T15:05:24.616562+00:00",
+  "generated_at": "2026-08-06T21:27:49.219792+00:00",
   "files": [
     {
       "path": "data\\backups\\features\\asset_daily_ohlcv.parquet",
       "readable": true,
-      "rows": 60599,
+      "rows": 60432,
       "columns": [
         "time",
         "symbol",
@@ -15,14 +15,13 @@
         "close",
         "volume",
         "source",
-        "updated_at",
-        "available_at"
+        "updated_at"
       ],
       "time_column": "time",
       "start": "1979-12-27T00:00:00+00:00",
-      "end": "2026-08-24T21:00:00+00:00",
+      "end": "2026-07-29T00:00:00+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 32462,
+      "duplicate_timestamps": 32365,
       "median_gap_days": 0.0,
       "p95_gap_days": 1.0,
       "missing_pct": {
@@ -37,7 +36,7 @@
     {
       "path": "data\\backups\\features\\asset_native_ohlcv.parquet",
       "readable": true,
-      "rows": 290448,
+      "rows": 286428,
       "columns": [
         "time",
         "symbol",
@@ -53,9 +52,9 @@
       ],
       "time_column": "time",
       "start": "1971-12-01T00:00:00+00:00",
-      "end": "2026-08-24T19:00:00+00:00",
+      "end": "2026-07-29T00:00:00+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 211030,
+      "duplicate_timestamps": 207653,
       "median_gap_days": 0.0,
       "p95_gap_days": 0.041666666666666664,
       "missing_pct": {
@@ -93,7 +92,7 @@
     {
       "path": "data\\backups\\features\\crypto_derivatives_daily.parquet",
       "readable": true,
-      "rows": 2541,
+      "rows": 2506,
       "columns": [
         "date",
         "symbol",
@@ -109,7 +108,7 @@
       ],
       "time_column": "date",
       "start": "2019-09-10T00:00:00+00:00",
-      "end": "2026-08-24T00:00:00+00:00",
+      "end": "2026-07-20T00:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
@@ -234,36 +233,33 @@
     {
       "path": "data\\backups\\features\\forecast_h5_predictions.parquet",
       "readable": true,
-      "rows": 20,
+      "rows": 0,
       "columns": [
         "id",
         "inference_date",
         "inference_week",
         "inference_year",
-        "target_date",
-        "model_id",
-        "horizon_id",
-        "base_price",
-        "predicted_price",
-        "predicted_return_pct",
+        "model_name",
+        "pred_return",
+        "pred_direction",
         "direction",
         "collapse_flag",
         "collapse_std",
         "created_at"
       ],
       "time_column": "created_at",
-      "start": "2026-07-05T22:54:54.605434+00:00",
-      "end": "2026-08-24T19:44:33.689172+00:00",
+      "start": null,
+      "end": null,
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 17,
-      "median_gap_days": 0.0,
-      "p95_gap_days": 5.977675067955918,
+      "duplicate_timestamps": 0,
+      "median_gap_days": null,
+      "p95_gap_days": null,
       "missing_pct": {}
     },
     {
       "path": "data\\backups\\features\\forecast_h5_signals.parquet",
       "readable": true,
-      "rows": 11,
+      "rows": 10,
       "columns": [
         "id",
         "signal_date",
@@ -300,11 +296,11 @@
       ],
       "time_column": "created_at",
       "start": "2026-07-05T22:54:54.605434+00:00",
-      "end": "2026-08-24T19:44:33.689172+00:00",
+      "end": "2026-07-07T04:48:24.968279+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 7,
       "median_gap_days": 0.0,
-      "p95_gap_days": 27.299655455249372,
+      "p95_gap_days": 0.7459195545416661,
       "missing_pct": {}
     },
     {
@@ -409,7 +405,7 @@
     {
       "path": "data\\backups\\features\\market_ingestion_manifest.parquet",
       "readable": true,
-      "rows": 4193,
+      "rows": 3775,
       "columns": [
         "id",
         "run_at",
@@ -431,7 +427,7 @@
     {
       "path": "data\\backups\\features\\news_articles.parquet",
       "readable": true,
-      "rows": 159,
+      "rows": 132,
       "columns": [
         "id",
         "source_id",
@@ -462,17 +458,17 @@
       ],
       "time_column": "created_at",
       "start": "2026-07-05T19:59:18.296545+00:00",
-      "end": "2026-08-24T20:00:38.901340+00:00",
+      "end": "2026-07-28T12:09:01.457906+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 133,
+      "duplicate_timestamps": 111,
       "median_gap_days": 0.0,
-      "p95_gap_days": 0.51373101273669,
+      "p95_gap_days": 0.39580185968750004,
       "missing_pct": {}
     },
     {
       "path": "data\\backups\\features\\news_feature_snapshots.parquet",
       "readable": true,
-      "rows": 10,
+      "rows": 8,
       "columns": [
         "id",
         "snapshot_date",
@@ -484,11 +480,11 @@
       ],
       "time_column": "created_at",
       "start": "2026-07-05T19:59:32.020830+00:00",
-      "end": "2026-08-24T19:51:40.954138+00:00",
+      "end": "2026-07-28T07:17:57.849877+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
-      "median_gap_days": 0.9997496091319445,
-      "p95_gap_days": 21.309657366254626,
+      "median_gap_days": 0.9996512889351853,
+      "p95_gap_days": 10.72711615579629,
       "missing_pct": {}
     },
     {
@@ -527,7 +523,7 @@
     {
       "path": "data\\backups\\features\\usdcop_m5_ohlcv.parquet",
       "readable": true,
-      "rows": 2238238,
+      "rows": 2206214,
       "columns": [
         "time",
         "symbol",
@@ -543,9 +539,9 @@
       ],
       "time_column": "time",
       "start": "2017-08-17T04:00:00+00:00",
-      "end": "2026-08-24T19:35:00+00:00",
+      "end": "2026-07-29T00:10:00+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 1290816,
+      "duplicate_timestamps": 1266513,
       "median_gap_days": 0.0,
       "p95_gap_days": 0.003472222222222222,
       "missing_pct": {
@@ -592,104 +588,9 @@
       "missing_pct": {}
     },
     {
-      "path": "data\\backups\\macro\\MACRO_DAILY_CLEAN_scale_backup_20260824_161206.parquet",
-      "readable": true,
-      "rows": 26352,
-      "columns": [
-        "FXRT_INDEX_DXY_USA_D_DXY",
-        "FXRT_SPOT_USDMXN_MEX_D_USDMXN",
-        "FXRT_SPOT_USDCLP_CHL_D_USDCLP",
-        "FXRT_SPOT_USDCOP_COL_D_USDCOP",
-        "VOLT_VIX_USA_D_VIX",
-        "CRSK_SPREAD_EMBI_COL_D_EMBI",
-        "COMM_OIL_WTI_GLB_D_WTI",
-        "COMM_OIL_BRENT_GLB_D_BRENT",
-        "COMM_METAL_GOLD_GLB_D_GOLD",
-        "COMM_AGRI_COFFEE_GLB_D_COFFEE",
-        "FINC_BOND_YIELD10Y_USA_D_UST10Y",
-        "FINC_BOND_YIELD2Y_USA_D_DGS2",
-        "POLR_PRIME_RATE_USA_D_PRIME",
-        "FINC_RATE_IBR_OVERNIGHT_COL_D_IBR",
-        "POLR_POLICY_RATE_COL_M_TPM",
-        "FINC_BOND_YIELD10Y_COL_D_COL10Y",
-        "FINC_BOND_YIELD5Y_COL_D_COL5Y",
-        "EQTY_INDEX_COLCAP_COL_D_COLCAP",
-        "FINC_SPREAD_HYOAS_USA_D_HYOAS",
-        "FINC_CURVE_T10Y2Y_USA_D_T10Y2Y",
-        "FINC_CURVE_T10Y3M_USA_D_T10Y3M",
-        "INFL_BREAKEVEN10Y_USA_D_T10YIE",
-        "FINC_REALYIELD10Y_USA_D_DFII10",
-        "VOLT_NFCI_USA_D_NFCI",
-        "VOLT_STRESS_STLFSI_USA_D_STLFSI4",
-        "LABR_CLAIMS_ICSA_USA_D_ICSA",
-        "FINC_SPREAD_BAA10Y_USA_D_BAA10Y",
-        "POLR_FED_FUNDS_USA_D_DFF"
-      ],
-      "time_column": null,
-      "missing_pct": {}
-    },
-    {
-      "path": "data\\backups\\seeds\\fx_multi_m5_ohlcv_predbsync_20260824_144750.parquet",
-      "readable": true,
-      "rows": 141093,
-      "columns": [
-        "time",
-        "symbol",
-        "open",
-        "high",
-        "low",
-        "close",
-        "volume"
-      ],
-      "time_column": "time",
-      "start": "2020-01-02T13:00:00+00:00",
-      "end": "2026-07-20T22:40:00+00:00",
-      "invalid_timestamps": 0,
-      "duplicate_timestamps": 19366,
-      "median_gap_days": 0.003472222222222222,
-      "p95_gap_days": 0.003472222222222222,
-      "missing_pct": {
-        "open": 0.0,
-        "high": 0.0,
-        "low": 0.0,
-        "close": 0.0,
-        "volume": 0.0
-      },
-      "ohlc_invalid": 0
-    },
-    {
-      "path": "data\\backups\\seeds\\fx_multi_m5_ohlcv_tz_backup_20260824_143406.parquet",
-      "readable": true,
-      "rows": 141994,
-      "columns": [
-        "time",
-        "symbol",
-        "open",
-        "high",
-        "low",
-        "close",
-        "volume"
-      ],
-      "time_column": "time",
-      "start": "2020-01-02T08:00:00+00:00",
-      "end": "2026-07-20T22:40:00+00:00",
-      "invalid_timestamps": 0,
-      "duplicate_timestamps": 19066,
-      "median_gap_days": 0.003472222222222222,
-      "p95_gap_days": 0.003472222222222222,
-      "missing_pct": {
-        "open": 0.0,
-        "high": 0.0,
-        "low": 0.0,
-        "close": 0.0,
-        "volume": 0.0
-      },
-      "ohlc_invalid": 0
-    },
-    {
       "path": "data\\backups\\seeds\\macro_indicators_daily_backup.parquet",
       "readable": true,
-      "rows": 26352,
+      "rows": 26326,
       "columns": [
         "fecha",
         "fxrt_index_dxy_usa_d_dxy",
@@ -714,21 +615,11 @@
         "updated_at",
         "is_complete",
         "ffill_count",
-        "source_date",
-        "finc_spread_hyoas_usa_d_hyoas",
-        "finc_curve_t10y2y_usa_d_t10y2y",
-        "finc_curve_t10y3m_usa_d_t10y3m",
-        "infl_breakeven10y_usa_d_t10yie",
-        "finc_realyield10y_usa_d_dfii10",
-        "volt_nfci_usa_d_nfci",
-        "volt_stress_stlfsi_usa_d_stlfsi4",
-        "labr_claims_icsa_usa_d_icsa",
-        "finc_spread_baa10y_usa_d_baa10y",
-        "polr_fed_funds_usa_d_dff"
+        "source_date"
       ],
       "time_column": "fecha",
       "start": "1954-07-01T00:00:00+00:00",
-      "end": "2026-08-24T00:00:00+00:00",
+      "end": "2026-07-28T00:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
@@ -738,7 +629,7 @@
     {
       "path": "data\\backups\\seeds\\usdcop_m5_ohlcv_backup.parquet",
       "readable": true,
-      "rows": 2238238,
+      "rows": 2206214,
       "columns": [
         "time",
         "symbol",
@@ -751,68 +642,10 @@
       ],
       "time_column": "time",
       "start": "2017-08-17T04:00:00+00:00",
-      "end": "2026-08-24T19:35:00+00:00",
+      "end": "2026-07-29T00:10:00+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 1290816,
+      "duplicate_timestamps": 1266513,
       "median_gap_days": 0.0,
-      "p95_gap_days": 0.003472222222222222,
-      "missing_pct": {
-        "open": 0.0,
-        "high": 0.0,
-        "low": 0.0,
-        "close": 0.0,
-        "volume": 0.0
-      },
-      "ohlc_invalid": 0
-    },
-    {
-      "path": "data\\backups\\seeds\\usdcop_m5_ohlcv_predbsync_20260824_144750.parquet",
-      "readable": true,
-      "rows": 97259,
-      "columns": [
-        "time",
-        "symbol",
-        "open",
-        "high",
-        "low",
-        "close",
-        "volume"
-      ],
-      "time_column": "time",
-      "start": "2020-01-02T13:00:00+00:00",
-      "end": "2026-07-17T17:55:00+00:00",
-      "invalid_timestamps": 0,
-      "duplicate_timestamps": 0,
-      "median_gap_days": 0.003472222222222222,
-      "p95_gap_days": 0.003472222222222222,
-      "missing_pct": {
-        "open": 0.0,
-        "high": 0.0,
-        "low": 0.0,
-        "close": 0.0,
-        "volume": 0.0
-      },
-      "ohlc_invalid": 0
-    },
-    {
-      "path": "data\\backups\\seeds\\usdcop_m5_ohlcv_tz_backup_20260824_143406.parquet",
-      "readable": true,
-      "rows": 98160,
-      "columns": [
-        "time",
-        "symbol",
-        "open",
-        "high",
-        "low",
-        "close",
-        "volume"
-      ],
-      "time_column": "time",
-      "start": "2020-01-02T08:00:00+00:00",
-      "end": "2026-07-17T12:55:00+00:00",
-      "invalid_timestamps": 0,
-      "duplicate_timestamps": 0,
-      "median_gap_days": 0.003472222222222222,
       "p95_gap_days": 0.003472222222222222,
       "missing_pct": {
         "open": 0.0,
@@ -826,7 +659,7 @@
     {
       "path": "seeds\\latest\\btcusdt_daily_ohlcv.parquet",
       "readable": true,
-      "rows": 3295,
+      "rows": 3260,
       "columns": [
         "time",
         "symbol",
@@ -838,7 +671,7 @@
       ],
       "time_column": "time",
       "start": "2017-08-17T00:00:00+00:00",
-      "end": "2026-08-24T00:00:00+00:00",
+      "end": "2026-07-20T00:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
@@ -855,7 +688,7 @@
     {
       "path": "seeds\\latest\\btcusdt_derivatives_daily.parquet",
       "readable": true,
-      "rows": 2541,
+      "rows": 2506,
       "columns": [
         "date",
         "funding_rate",
@@ -869,7 +702,7 @@
       ],
       "time_column": "date",
       "start": "2019-09-10T00:00:00+00:00",
-      "end": "2026-08-24T00:00:00+00:00",
+      "end": "2026-07-20T00:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
@@ -890,8 +723,8 @@
         "volume"
       ],
       "time_column": "time",
-      "start": "2026-07-25T19:35:00+00:00",
-      "end": "2026-08-24T19:30:00+00:00",
+      "start": "2026-06-20T22:45:00+00:00",
+      "end": "2026-07-20T22:40:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 0.003472222222222222,
@@ -908,7 +741,7 @@
     {
       "path": "seeds\\latest\\fx_multi_m5_ohlcv.parquet",
       "readable": true,
-      "rows": 143548,
+      "rows": 141994,
       "columns": [
         "time",
         "symbol",
@@ -919,10 +752,10 @@
         "volume"
       ],
       "time_column": "time",
-      "start": "2019-12-18T13:00:00+00:00",
-      "end": "2026-08-24T17:55:00+00:00",
+      "start": "2020-01-02T08:00:00+00:00",
+      "end": "2026-07-20T22:40:00+00:00",
       "invalid_timestamps": 0,
-      "duplicate_timestamps": 19666,
+      "duplicate_timestamps": 19066,
       "median_gap_days": 0.003472222222222222,
       "p95_gap_days": 0.003472222222222222,
       "missing_pct": {
@@ -993,7 +826,7 @@
     {
       "path": "seeds\\latest\\spx500_daily_ohlcv.parquet",
       "readable": true,
-      "rows": 7962,
+      "rows": 7943,
       "columns": [
         "time",
         "symbol",
@@ -1005,7 +838,7 @@
       ],
       "time_column": "time",
       "start": "1995-01-03T21:00:00+00:00",
-      "end": "2026-08-24T20:00:00+00:00",
+      "end": "2026-07-28T20:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
@@ -1073,7 +906,7 @@
     {
       "path": "seeds\\latest\\usdcop_daily_ohlcv.parquet",
       "readable": true,
-      "rows": 1723,
+      "rows": 1704,
       "columns": [
         "time",
         "open",
@@ -1083,7 +916,7 @@
       ],
       "time_column": "time",
       "start": "2019-12-18T00:00:00+00:00",
-      "end": "2026-08-24T00:00:00+00:00",
+      "end": "2026-07-28T00:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
@@ -1129,7 +962,7 @@
     {
       "path": "seeds\\latest\\usdcop_m5_ohlcv.parquet",
       "readable": true,
-      "rows": 99714,
+      "rows": 98160,
       "columns": [
         "time",
         "symbol",
@@ -1140,8 +973,8 @@
         "volume"
       ],
       "time_column": "time",
-      "start": "2019-12-18T13:00:00+00:00",
-      "end": "2026-08-24T17:55:00+00:00",
+      "start": "2020-01-02T08:00:00+00:00",
+      "end": "2026-07-17T12:55:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 0.003472222222222222,
@@ -1187,7 +1020,7 @@
     {
       "path": "seeds\\latest\\xauusd_daily_ohlcv.parquet",
       "readable": true,
-      "rows": 5897,
+      "rows": 5871,
       "columns": [
         "time",
         "symbol",
@@ -1199,7 +1032,7 @@
       ],
       "time_column": "time",
       "start": "2004-01-02T22:00:00+00:00",
-      "end": "2026-08-24T21:00:00+00:00",
+      "end": "2026-07-21T21:00:00+00:00",
       "invalid_timestamps": 0,
       "duplicate_timestamps": 0,
       "median_gap_days": 1.0,
@@ -1251,10 +1084,10 @@
     "public_yahoo": true
   },
   "summary": {
-    "files": 39,
-    "readable": 39,
+    "files": 34,
+    "readable": 34,
     "unreadable": 0,
-    "rows": 5704323
+    "rows": 5127459
   },
   "decision": "PASS"
 }

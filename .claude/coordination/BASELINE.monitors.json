@@ -16,20 +16,20 @@
         "--junitxml={report}"
       ],
       "owner": "shared",
-      "note": "Deuda PAGADA. Historico: 47 fallos pre-existentes (documentos sin front-matter anteriores al protocolo: ADR-0021, BOOK-LEVERAGE, EXP-DIR, .claude/codex/* legacy). El saneo se hizo en el carril de conocimiento pero la linea base no se re-registro, dejando el gate en rojo falso por DELTA -47. Re-medido y re-registrado 2026-08-24 (auditoria de limpieza): 0 failed. Desde aqui, un documento nuevo sin front matter es un fallo NUEVO y bloquea.",
+      "note": "No registered frontmatter failures. Re-measured on the tracked 2026-08-05 tree after the legacy paths were removed or repaired; any failure is now new debt and must fail CI.",
       "count": 0,
       "secondary_count": 0,
       "baseline_md": {
         "assertions": [
           "test_knowledge_frontmatter: \\d+ failed pre-existentes",
-          "Re-medido y re-registrado 2026-08-24"
+          "Re-medido 2026-08-05: baseline saneado a 0"
         ],
         "number_pattern": "test_knowledge_frontmatter: (\\d+) failed pre-existentes",
         "number_authoritative": true
       },
       "failures": [],
       "secondary_failures": [],
-      "measured_at": "2026-08-24T13:20:51-05:00"
+      "measured_at": "2026-08-05T15:46:09-05:00"
     },
     "vitest_dashboard_unit": {
       "runner": "vitest",

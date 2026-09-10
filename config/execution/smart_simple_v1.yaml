@@ -14,6 +14,30 @@
 # Fecha: 2026-02-16
 # ============================================================================
 
+# ============================================================================
+# Declaración de gobernanza (BL-16 / CTR-QLAB-FABRIC-004 §gobierno)
+# ----------------------------------------------------------------------------
+# La lee `src/governance/strategy_declaration.py` y la valida contra la matriz
+# 26/96 de `validate_declaration()` — la misma cuya paridad con los CHECK vivos
+# de `control.strategy_declaration` se verificó en `1e805c73`.
+#
+# `capital_tier: SHADOW` NO es una elección de implementación: es la convención
+# declarada por la spec normativa, cuyo ejemplo canónico para una estrategia en
+# paper es exactamente PAPER + SHADOW + NOMINAL
+# (`.claude/specs/planes/04-CTR-QLAB-FABRIC-004.md:410-411`). Y coincide con el
+# hecho medible: la estrategia paper-tradea de verdad — sus ejecuciones están
+# espejadas en `forecast_h5_paper_trading` — con `TRADING_MODE=PAPER`, sin
+# órdenes reales. No es ZERO (ausencia de actividad) sino capital en sombra.
+#
+# `dag_declared` NO se declara aquí a propósito: se deriva de
+# `DAG_ELIGIBLE_STATES`. Si fuera declarable, alguien podría afirmar `true`
+# sobre un estado que no es elegible.
+# ============================================================================
+governance:
+  research_state: PAPER
+  capital_tier: SHADOW
+  operational_state: NOMINAL
+
 executor:
   name: "smart_simple_v1"
   description: "Bidirectional, flat SHORT 1.5x, adaptive stops HS 2.0x, sin trailing"

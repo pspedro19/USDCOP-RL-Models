@@ -326,7 +326,17 @@ REQUIRE_DB = os.environ.get("BL42_REQUIRE_DB") == "1"
 def _db_unavailable(msg: str):
     if REQUIRE_DB:
         pytest.fail(f"BL42_REQUIRE_DB=1 but {msg}")
-    pytest.skip(f"{msg} — DB unit-convention check runs only where the stack is up")
+    # El mensaje decia "runs only where the stack is up" y era ENGAÑOSO: se ha medido
+    # con el stack ARRIBA (contenedor healthy, 5432 publicado en 0.0.0.0, puerto
+    # abierto desde el host, `POSTGRES_DB` real == el default de este fichero) y aun
+    # asi salta. El requisito real no es "stack arriba" sino las CUATRO cosas:
+    # driver `psycopg2`, credenciales validas, esquema cargado y datos representativos.
+    # Un skip que nombra mal su propia condicion invita a leerlo como "aqui no hay
+    # stack" y a no volver a mirarlo.
+    pytest.skip(
+        f"{msg} — la comprobacion de unidades en DB exige driver + credenciales + "
+        f"esquema + datos representativos, no solo que el contenedor este arriba"
+    )
 
 
 def _conn():
@@ -351,7 +361,20 @@ def test_db_available_when_required():
     (including our _db_unavailable fail) as 'expected' — so unavailability must turn
     red HERE, outside the xfail, or the requirement is vacuous."""
     if not REQUIRE_DB:
-        pytest.skip("BL42_REQUIRE_DB not set — advisory mode, DB tests may skip")
+        # NADIE arma esta bandera hoy: no aparece en ningun workflow ni en el Makefile
+        # (grep vacio, 2026-08-06). O sea que este canario --bien pensado, y colocado
+        # a proposito FUERA del xfail para que la indisponibilidad no se tragara-- nunca
+        # llega a dispararse. Es un candado correcto con el seguro puesto.
+        #
+        # NO se arma en los jobs actuales a proposito (CXD-649): el `postgres:15` de
+        # `ci.yml` usa `test_db` sin esquema ni fixtures, asi que la bandera probaria la
+        # CONEXION y dejaria las queries de unidades vacias -- un gate nominal, no
+        # evidencia de convencion. Armarlo exige antes un job con esquema + fixture
+        # representativo gobernado, que hoy NO existe.
+        pytest.skip(
+            "BL42_REQUIRE_DB not set — modo advisory. La bandera no la arma ningun job "
+            "hoy; ver la ficha BL-42 para por que no se arma en el CI actual"
+        )
     _conn().close()
 
 

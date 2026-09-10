@@ -106,28 +106,18 @@ def load_gdelt_articles(
         return []
 
 
-def load_gdelt_sentiment(
-    start_date: str | None = None,
-    end_date: str | None = None,
-) -> pd.DataFrame:
-    """Load GDELT daily sentiment CSV."""
-    path = PROJECT_ROOT / "data/news/gdelt_daily_sentiment.csv"
-    if not path.exists():
-        return pd.DataFrame()
-
-    try:
-        df = pd.read_csv(path, parse_dates=["date"])
-        df = df.set_index("date").sort_index()
-
-        if start_date:
-            df = df[df.index >= pd.Timestamp(start_date)]
-        if end_date:
-            df = df[df.index <= pd.Timestamp(end_date)]
-
-        return df
-    except Exception as e:
-        logger.warning(f"Failed to load GDELT sentiment: {e}")
-        return pd.DataFrame()
+# NO hay lector de sentimiento numérico aquí, y es deliberado (C-031, review CLD-490).
+#
+# Existía `load_gdelt_sentiment()`, que devolvía las columnas `tone_*` de
+# `data/news/gdelt_daily_sentiment.csv` tal cual. Ese CSV no tiene `feature_status`, ni
+# cutoff causal, ni cota de frescura, ni provenance: es un número sin gobierno. No tenía
+# ningún llamador —`agent_graph` importa `load_gdelt_articles`, que trae TÍTULOS, no tono—
+# así que era un bypass cargado y sin gatillo del gate de disponibilidad C028, que existe
+# precisamente para que un sentimiento no medido salga como `UNAVAILABLE` y no como cifra.
+#
+# Si alguna superficie necesita tono agregado, la vía es el registry de disponibilidad
+# (`config/quality/feature_availability.yaml` + `quality.feature_status`), no este archivo.
+# `tests/unit/test_agent_tools_no_ungoverned_sentiment.py` mantiene la puerta cerrada.
 
 
 def get_cop_series(daily_df: pd.DataFrame) -> pd.Series:

@@ -18,10 +18,13 @@ Features:
 
 import logging
 from typing import List, Dict, Any, Optional, Literal
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from pathlib import Path
 
 import pandas as pd
+
+from src.lineage.graph import RevisionType
+from src.lineage.macro_revision import MacroRevisionWriter
 
 logger = logging.getLogger(__name__)
 
@@ -158,7 +161,12 @@ class UpsertService:
         self,
         df: pd.DataFrame,
         columns: List[str],
-        n: int = 5
+        n: int = 5,
+        *,
+        revision_type: Optional[RevisionType] = None,
+        actor: Optional[str] = None,
+        run_id: Optional[str] = None,
+        event_time: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """
         UPSERT the last N records from DataFrame.
@@ -191,7 +199,14 @@ class UpsertService:
         # Take last N records
         df_upsert = df.tail(n).copy()
 
-        return self._execute_upsert(df_upsert, columns)
+        return self._execute_upsert(
+            df_upsert,
+            columns,
+            revision_type=revision_type,
+            actor=actor,
+            run_id=run_id,
+            event_time=event_time,
+        )
 
     def upsert_range(
         self,
@@ -220,7 +235,12 @@ class UpsertService:
     def _execute_upsert(
         self,
         df: pd.DataFrame,
-        columns: List[str]
+        columns: List[str],
+        *,
+        revision_type: Optional[RevisionType] = None,
+        actor: Optional[str] = None,
+        run_id: Optional[str] = None,
+        event_time: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """Execute the actual UPSERT operation.
 
@@ -229,6 +249,7 @@ class UpsertService:
         seeds, que hasta ahora se saltaba la validacion entera. Filtrar aqui cubre las dos sin
         depender de que el grafo del DAG este bien cableado.
         """
+        cur = None
         try:
             # Filter columns to only those present in DataFrame
             available_cols = [c for c in columns if c in df.columns]
@@ -289,12 +310,29 @@ class UpsertService:
                 ]
                 data.append(tuple(values))
 
-            # Execute batch
+            # Lock/read prior observations and emit lineage before the data
+            # write. Both operations use this cursor and a single commit.
             cur = self.conn.cursor()
+            lineage_result = None
+            if revision_type is not None:
+                if not actor or not run_id:
+                    raise ValueError(
+                        "actor and run_id are required when lineage emission is enabled"
+                    )
+                lineage_result = MacroRevisionWriter(schema=self.schema).record_before_upsert(
+                    cur,
+                    table=self.table,
+                    date_column=self.date_col,
+                    rows=data,
+                    columns=available_cols,
+                    revision_type=revision_type,
+                    actor=actor,
+                    run_id=run_id,
+                    event_time=event_time or datetime.now(timezone.utc),
+                )
             from psycopg2.extras import execute_batch
             execute_batch(cur, query, data, page_size=100)
             self.conn.commit()
-            cur.close()
 
             logger.info(
                 "[UpsertService] Upserted %d rows to %s",
@@ -308,6 +346,9 @@ class UpsertService:
             }
             if quarantined:
                 out['quarantine'] = quarantined
+            if lineage_result is not None:
+                out['lineage_nodes'] = lineage_result.nodes_recorded
+                out['revision_events'] = lineage_result.revisions_recorded
             return out
 
         except QuarantineBlocked:
@@ -324,6 +365,9 @@ class UpsertService:
                 'success': False,
                 'error': str(e)
             }
+        finally:
+            if cur is not None:
+                cur.close()
 
     def get_latest_date(self, column: Optional[str] = None) -> Optional[datetime]:
         """Get the most recent date in the table."""
@@ -403,7 +447,12 @@ class FrequencyRoutedUpsertService:
         self,
         variable_name: str,
         df: pd.DataFrame,
-        n: int = 15
+        n: int = 15,
+        *,
+        revision_type: Optional[RevisionType] = None,
+        actor: Optional[str] = None,
+        run_id: Optional[str] = None,
+        event_time: Optional[datetime] = None,
     ) -> Dict[str, Any]:
         """
         UPSERT a variable to the correct table based on its frequency.
@@ -473,7 +522,15 @@ class FrequencyRoutedUpsertService:
         df, quarantine = _quarantine_filter(variable_name, df, date_col)
 
         # Execute upsert
-        result = service.upsert_last_n(df, [variable_name], n=n)
+        result = service.upsert_last_n(
+            df,
+            [variable_name],
+            n=n,
+            revision_type=revision_type,
+            actor=actor,
+            run_id=run_id,
+            event_time=event_time,
+        )
 
         # Enrich result
         result['variable'] = variable_name

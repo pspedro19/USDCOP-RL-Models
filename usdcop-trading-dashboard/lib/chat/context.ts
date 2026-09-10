@@ -38,7 +38,12 @@ export function buildWeekContext(weekData: any, asset: AnalysisAsset): string {
     parts.push(`Régimen macro: ${r.label}${r.confidence != null ? ` (conf ${r.confidence})` : ''}`);
   }
   if (weekData.news_context) {
-    parts.push(`Noticias: ${weekData.news_context.article_count} artículos, sentimiento medio ${weekData.news_context.avg_sentiment}`);
+    const sentiment = weekData.news_context.avg_sentiment;
+    parts.push(
+      sentiment == null
+        ? `Noticias: ${weekData.news_context.article_count} artículos, sentimiento no disponible (${weekData.news_context.sentiment_unavailable_reason ?? 'feature.not_measured'})`
+        : `Noticias: ${weekData.news_context.article_count} artículos, sentimiento medio ${sentiment}`,
+    );
   }
   const clusters = weekData.news_intelligence?.clusters;
   if (Array.isArray(clusters) && clusters.length > 0) {

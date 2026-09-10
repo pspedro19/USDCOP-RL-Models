@@ -410,9 +410,19 @@ def test_deprecated_tables_disclose_the_readers_that_still_exist():
         keyword = RETIRE_RE.search(decision)
         if not keyword:
             continue
+        # El SUJETO del retiro es la PRIMERA columna, jamás una tabla citada en la prosa
+        # de la decisión (2026-08-05). Antes se recogían los backticks de TODAS las celdas,
+        # así que la tabla nombrada como AUTORIDAD SUSTITUTA se contaba como si fuera lo
+        # que se propone eliminar. Caso real que lo delató:
+        #   | `metrics.model_performance` | … | Eliminar; autoridad = `control.metric_event` |
+        # El test acusaba de "proponer Eliminar `control.metric_event`" — la tabla que la
+        # fila propone CONSERVAR. Se puso rojo el día que `control.metric_event` ganó su
+        # primer lector real (`control_system_health.py`, consumidor de C031): un rojo por
+        # la razón equivocada, que es tan corrosivo como un verde por la razón equivocada
+        # porque enseña a ignorar el candado.
         entries = {
             e["key"]: e
-            for name in (n for c in cells for n in BACKTICK.findall(c))
+            for name in BACKTICK.findall(cells[0] if cells else "")
             for e in _expand(name)
             if not e["ambiguous_name"]
         }

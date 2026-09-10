@@ -22,14 +22,98 @@ Version: 1.0.0
 
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from src.forecasting.ssot_config import ForecastingSSOTConfig
+from src.identity.canonical import semantic_hash
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class SourceProvenance:
+    kind: str
+    storage_uri: str
+    semantic_hash: str
+    row_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class DatasetProvenance:
+    """Content identity of the exact frame offered to forecasting consumers."""
+
+    snapshot_semantic_hash: str
+    snapshot_columns: tuple[str, ...]
+    row_count: int
+    min_event_time: str
+    max_event_time: str
+    ohlcv: SourceProvenance
+    macro: SourceProvenance
+
+
+def _canonical_scalar(value: Any) -> Any:
+    if pd.isna(value):
+        return None
+    if hasattr(value, "to_pydatetime"):
+        value = value.to_pydatetime()
+    if hasattr(value, "item"):
+        value = value.item()
+    if isinstance(value, (pd.Timestamp,)):
+        return value.isoformat()
+    # Dataset dates are deliberately represented as ISO wall dates.  They are
+    # daily economic keys, not timezone-naive instants.
+    if hasattr(value, "isoformat") and type(value).__module__ == "datetime":
+        return value.isoformat()
+    return value
+
+
+def _frame_payload(frame: pd.DataFrame, columns: list[str]) -> dict[str, Any]:
+    rows = [
+        [_canonical_scalar(value) for value in row]
+        for row in frame.loc[:, columns].itertuples(index=False, name=None)
+    ]
+    return {"columns": columns, "rows": rows}
+
+
+def _frame_semantic_hash(frame: pd.DataFrame, columns: list[str]) -> str:
+    return semantic_hash(_frame_payload(frame, columns))
+
+
+def rebind_dataset_provenance(
+    provenance: DatasetProvenance,
+    frame: pd.DataFrame,
+    feature_columns: list[str],
+) -> DatasetProvenance:
+    """Bind existing source provenance to a downstream frame actually consumed."""
+    columns = [
+        column
+        for column in ["date", "open", "high", "low", "close", *feature_columns]
+        if column in frame.columns
+    ]
+    return DatasetProvenance(
+        snapshot_semantic_hash=_frame_semantic_hash(frame, columns),
+        snapshot_columns=tuple(columns),
+        row_count=len(frame),
+        min_event_time=pd.Timestamp(frame["date"].min()).isoformat(),
+        max_event_time=pd.Timestamp(frame["date"].max()).isoformat(),
+        ohlcv=provenance.ohlcv,
+        macro=provenance.macro,
+    )
+
+
+def load_data_with_provenance(
+    *, project_root: Path | None = None, target_horizon: int = 5
+) -> tuple[pd.DataFrame, list[str], DatasetProvenance]:
+    """Load the production dataset while retaining its content provenance."""
+    config = ForecastingSSOTConfig.load()
+    loader = ForecastingDatasetLoader(config, project_root=project_root)
+    frame, feature_columns = loader.load_dataset(target_horizon=target_horizon)
+    return frame, feature_columns, loader.provenance
 
 
 def _find_project_root() -> Path:
@@ -57,6 +141,15 @@ class ForecastingDatasetLoader:
         self.config = config
         self.db_url = db_url or os.environ.get("DATABASE_URL")
         self.project_root = project_root or _find_project_root()
+        self._ohlcv_provenance: SourceProvenance | None = None
+        self._macro_provenance: SourceProvenance | None = None
+        self._last_provenance: DatasetProvenance | None = None
+
+    @property
+    def provenance(self) -> DatasetProvenance:
+        if self._last_provenance is None:
+            raise RuntimeError("dataset provenance is unavailable before load_dataset()")
+        return self._last_provenance
 
     def load_dataset(
         self,
@@ -94,6 +187,22 @@ class ForecastingDatasetLoader:
             df[col_name] = np.log(df["close"].shift(-target_horizon) / df["close"])
 
         feature_cols = list(self.config.get_feature_columns())
+        if self._ohlcv_provenance is None or self._macro_provenance is None:
+            raise RuntimeError("dataset sources completed without provenance")
+        snapshot_columns = [
+            column
+            for column in ["date", "open", "high", "low", "close", *feature_cols]
+            if column in df.columns
+        ]
+        self._last_provenance = DatasetProvenance(
+            snapshot_semantic_hash=_frame_semantic_hash(df, snapshot_columns),
+            snapshot_columns=tuple(snapshot_columns),
+            row_count=len(df),
+            min_event_time=pd.Timestamp(df["date"].min()).isoformat(),
+            max_event_time=pd.Timestamp(df["date"].max()).isoformat(),
+            ohlcv=self._ohlcv_provenance,
+            macro=self._macro_provenance,
+        )
         return df, feature_cols
 
     # ------------------------------------------------------------------
@@ -104,8 +213,23 @@ class ForecastingDatasetLoader:
         """Load daily OHLCV. Try DB first, fall back to parquet."""
         df = self._load_ohlcv_from_db()
         if df is not None and len(df) > 0:
+            table = self.config.get_data_source("ohlcv")["db_table"]
+            self._ohlcv_provenance = SourceProvenance(
+                kind="postgresql",
+                storage_uri=f"db://{table}",
+                semantic_hash=_frame_semantic_hash(df, list(df.columns)),
+                row_count=len(df),
+            )
             return df
-        return self._load_ohlcv_from_parquet()
+        df = self._load_ohlcv_from_parquet()
+        fallback_path = Path(self.config.get_data_source("ohlcv")["fallback_parquet"])
+        self._ohlcv_provenance = SourceProvenance(
+            kind="parquet",
+            storage_uri=f"repo://{fallback_path.as_posix()}",
+            semantic_hash=_frame_semantic_hash(df, list(df.columns)),
+            row_count=len(df),
+        )
+        return df
 
     def _load_ohlcv_from_db(self) -> pd.DataFrame | None:
         """Try loading OHLCV from PostgreSQL."""
@@ -177,8 +301,23 @@ class ForecastingDatasetLoader:
         """Load macro data. Try DB first, fall back to parquet."""
         df = self._load_macro_from_db()
         if df is not None and len(df) > 0:
+            table = self.config.get_data_source("macro")["db_table"]
+            self._macro_provenance = SourceProvenance(
+                kind="postgresql",
+                storage_uri=f"db://{table}",
+                semantic_hash=_frame_semantic_hash(df, list(df.columns)),
+                row_count=len(df),
+            )
             return df
-        return self._load_macro_from_parquet()
+        df = self._load_macro_from_parquet()
+        fallback_path = Path(self.config.get_data_source("macro")["fallback_parquet"])
+        self._macro_provenance = SourceProvenance(
+            kind="parquet",
+            storage_uri=f"repo://{fallback_path.as_posix()}",
+            semantic_hash=_frame_semantic_hash(df, list(df.columns)),
+            row_count=len(df),
+        )
+        return df
 
     def _load_macro_from_db(self) -> pd.DataFrame | None:
         """Try loading macro from PostgreSQL."""

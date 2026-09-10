@@ -9,6 +9,7 @@ ready.
 
 from __future__ import annotations
 
+import ast
 import re
 from pathlib import Path
 
@@ -290,3 +291,40 @@ def test_matrix_defines_state_semantics_and_scope_limit() -> None:
     assert "no autoriza capital" in text.lower()
     assert "caso b" in text.lower()
     assert "✅" not in text and "❌" not in text
+
+
+def test_risk06_reports_current_metric_engine_gaps() -> None:
+    risk06 = next(row for row in _register() if row["Control ID"] == "RISK-06")
+    evidence = risk06["Observed evidence"].lower()
+
+    assert "persist_governed_metric_events" in evidence
+    assert "control.metric_event" in evidence
+    assert "allowlist" in evidence
+    assert "colisión" in evidence
+    assert "falla hoy" not in evidence
+    assert "annualization_by_asset" not in evidence
+
+
+def test_removed_metric_engine_constructor_argument_is_not_reintroduced() -> None:
+    offenders: list[str] = []
+    for base in ("src", "services", "scripts", "airflow"):
+        for path in (ROOT / base).rglob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                is_metric_engine = (
+                    isinstance(node.func, ast.Name) and node.func.id == "MetricEngine"
+                ) or (
+                    isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "MetricEngine"
+                )
+                if is_metric_engine and any(
+                    keyword.arg == "annualization_by_asset" for keyword in node.keywords
+                ):
+                    offenders.append(str(path.relative_to(ROOT)))
+
+    assert offenders == [], (
+        "MetricEngine callers must derive annualization from the asset registry; "
+        f"obsolete annualization_by_asset callers: {sorted(set(offenders))}"
+    )

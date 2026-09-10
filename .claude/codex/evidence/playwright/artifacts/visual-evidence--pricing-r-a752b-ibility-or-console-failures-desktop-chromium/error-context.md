@@ -1,0 +1,145 @@
+---
+kind: audit
+status: HISTORICAL
+version: 1.0.0
+last_verified: 2026-07-20
+supersedes: []
+code_anchors: []
+---
+
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - link "GlobalMarkets — inicio" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img [ref=e6]
+        - generic [ref=e9]: GlobalMarkets
+      - link "Planes" [ref=e10] [cursor=pointer]:
+        - /url: /pricing
+      - button "Idioma" [ref=e11]:
+        - img [ref=e12]
+        - text: ES
+      - link "Iniciar sesión" [ref=e16] [cursor=pointer]:
+        - /url: /login
+      - link "Crear cuenta" [ref=e17] [cursor=pointer]:
+        - /url: /register
+    - main [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - heading "Planes y precios" [level=1] [ref=e21]
+          - paragraph [ref=e22]:
+            - text: Señales cuantitativas multi-activo con gestión de riesgo institucional. Las métricas publicadas corresponden al desempeño
+            - strong [ref=e23]: forward de producción
+            - text: .
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - generic [ref=e26]:
+              - img [ref=e27]
+              - heading "Free" [level=2] [ref=e30]
+            - paragraph [ref=e31]: Conoce el sistema
+            - paragraph [ref=e32]: Gratis
+            - list [ref=e33]:
+              - listitem [ref=e34]:
+                - img [ref=e35]
+                - generic [ref=e37]: Análisis y forecasting (contenido base)
+              - listitem [ref=e38]:
+                - img [ref=e39]
+                - generic [ref=e42]: Análisis y forecasting al día (sin retraso)
+              - listitem [ref=e43]:
+                - img [ref=e44]
+                - generic [ref=e47]: Señales en vivo (USD/COP)
+              - listitem [ref=e48]:
+                - img [ref=e49]
+                - generic [ref=e52]: Add-ons por activo (Oro / BTC)
+              - listitem [ref=e53]:
+                - img [ref=e54]
+                - generic [ref=e57]: Notificaciones email / telegram
+              - listitem [ref=e58]:
+                - img [ref=e59]
+                - generic [ref=e62]: Ejecución automática (SignalBridge, paper-first)
+            - button "Crear cuenta" [ref=e63]
+          - generic [ref=e64]:
+            - generic [ref=e65]: MÁS POPULAR
+            - generic [ref=e66]:
+              - img [ref=e67]
+              - heading "Señales Pro" [level=2] [ref=e73]
+            - paragraph [ref=e74]: Señales y análisis al día
+            - paragraph [ref=e75]: $ 99.000/mes
+            - list [ref=e76]:
+              - listitem [ref=e77]:
+                - img [ref=e78]
+                - generic [ref=e80]: Análisis y forecasting (contenido base)
+              - listitem [ref=e81]:
+                - img [ref=e82]
+                - generic [ref=e84]: Análisis y forecasting al día (sin retraso)
+              - listitem [ref=e85]:
+                - img [ref=e86]
+                - generic [ref=e88]: Señales en vivo (USD/COP)
+              - listitem [ref=e89]:
+                - img [ref=e90]
+                - generic [ref=e92]: Add-ons por activo (Oro / BTC)
+              - listitem [ref=e93]:
+                - img [ref=e94]
+                - generic [ref=e96]: Notificaciones email / telegram
+              - listitem [ref=e97]:
+                - img [ref=e98]
+                - generic [ref=e101]: Ejecución automática (SignalBridge, paper-first)
+            - button "Suscribirme" [ref=e102]
+          - generic [ref=e103]:
+            - generic [ref=e104]:
+              - img [ref=e105]
+              - heading "Auto Premium" [level=2] [ref=e108]
+            - paragraph [ref=e109]: Ejecución en tu propio exchange
+            - paragraph [ref=e110]: $ 299.000/mes
+            - list [ref=e111]:
+              - listitem [ref=e112]:
+                - img [ref=e113]
+                - generic [ref=e115]: Análisis y forecasting (contenido base)
+              - listitem [ref=e116]:
+                - img [ref=e117]
+                - generic [ref=e119]: Análisis y forecasting al día (sin retraso)
+              - listitem [ref=e120]:
+                - img [ref=e121]
+                - generic [ref=e123]: Señales en vivo (USD/COP)
+              - listitem [ref=e124]:
+                - img [ref=e125]
+                - generic [ref=e127]: Add-ons por activo (Oro / BTC)
+              - listitem [ref=e128]:
+                - img [ref=e129]
+                - generic [ref=e131]: Notificaciones email / telegram
+              - listitem [ref=e132]:
+                - img [ref=e133]
+                - generic [ref=e135]: Ejecución automática (SignalBridge, paper-first)
+            - button "Suscribirme" [ref=e136]
+        - generic [ref=e137]:
+          - generic [ref=e138]:
+            - img [ref=e139]
+            - heading "Add-ons por activo" [level=2] [ref=e142]
+          - paragraph [ref=e143]: Añade activos individuales a tu plan Señales o Auto. El catálogo sale del registry publicado.
+          - generic [ref=e144]:
+            - paragraph [ref=e145]: Crea tu cuenta para ver el catálogo de activos y añadir add-ons a tu plan.
+            - button "Crear cuenta" [ref=e146]
+        - generic [ref=e147]:
+          - paragraph [ref=e148]:
+            - text: El tier Auto opera
+            - strong [ref=e149]: paper-first
+            - text: ": 4 semanas simuladas antes de habilitar dinero real, con kill switch propio."
+          - paragraph [ref=e150]: Contenido informativo y educativo; no constituye asesoría financiera. Rendimientos pasados no garantizan resultados futuros.
+    - contentinfo [ref=e151]:
+      - generic [ref=e152]:
+        - paragraph [ref=e153]: Contenido informativo y educativo; no constituye asesoría financiera. Rendimientos pasados no garantizan resultados futuros. Operar divisas y criptoactivos implica riesgo de pérdida total del capital.
+        - navigation "Legal" [ref=e154]:
+          - link "Metodología" [ref=e155] [cursor=pointer]:
+            - /url: /metodologia
+          - generic [ref=e156]: ·
+          - link "Términos" [ref=e157] [cursor=pointer]:
+            - /url: /legal/terminos
+          - generic [ref=e158]: ·
+          - link "Planes" [ref=e159] [cursor=pointer]:
+            - /url: /pricing
+        - paragraph [ref=e160]: © 2026 GlobalMarkets Terminal
+  - alert [ref=e161]
+```

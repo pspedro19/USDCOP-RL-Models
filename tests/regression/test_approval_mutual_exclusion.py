@@ -137,6 +137,140 @@ def test_naive_read_modify_write_really_races(tmp_path):
 
 # ═══════════════════ 2 · el store: exactamente un ganador, resto en conflicto ════════
 
+
+def test_windows_permission_error_with_visible_lock_is_contention(tmp_path, monkeypatch):
+    """EACCES transitorio sobre un lock visible respeta el contrato de timeout."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    lock.write_text("held", encoding="utf-8")
+
+    def denied(*args, **kwargs):
+        raise PermissionError("simulated Windows lock deletion race")
+
+    monkeypatch.setattr(store.os, "open", denied)
+    with pytest.raises(store.ApprovalLockTimeout, match="approval state busy"):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un lock en contencion no puede adquirirse")
+
+
+def test_transient_windows_permission_error_retries_once(tmp_path, monkeypatch):
+    """Si el lock desaparece durante EACCES, una reapertura adquiere sin falso ACL."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    real_open = store.os.open
+    attempts = 0
+
+    def transient(path, flags, *args, **kwargs):
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            lock.unlink(missing_ok=True)
+            raise PermissionError("simulated Windows lock release race")
+        return real_open(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(store.os, "open", transient)
+    with store.acquire_approval_lock(target, timeout_s=0):
+        assert lock.exists()
+
+    assert attempts == 2, "el caso causal debe ejercer exactamente una reapertura"
+    assert not lock.exists()
+
+
+def test_lock_write_failure_closes_and_removes_lock(tmp_path, monkeypatch):
+    """Una falla al publicar el PID no deja descriptor ni lock huérfanos."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+
+    def denied(*args, **kwargs):
+        raise PermissionError("simulated lock write denial")
+
+    monkeypatch.setattr(store.os, "write", denied)
+    with pytest.raises(PermissionError, match="simulated lock write denial"):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un lock cuyo PID no se publicó no puede adquirirse")
+
+    assert not lock.exists()
+
+
+def test_permission_error_without_visible_lock_is_not_disguised(tmp_path, monkeypatch):
+    """Un ACL/EACCES real conserva PermissionError; no se convierte en BUSY."""
+    target = tmp_path / "approval_state.json"
+    attempts = 0
+
+    def denied(*args, **kwargs):
+        nonlocal attempts
+        attempts += 1
+        raise PermissionError("simulated ACL denial")
+
+    monkeypatch.setattr(store.os, "open", denied)
+    with pytest.raises(PermissionError, match="simulated ACL denial"):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un path sin permisos no puede adquirirse")
+    assert attempts == 2, "un ACL persistente debe confirmarse con una sola reapertura"
+
+
+def test_old_orphan_lock_is_never_reclaimed_automatically(tmp_path):
+    """Un huérfano visible queda fail-closed hasta una operación comprobada."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    lock.write_text('{"pid": 999999}', encoding="utf-8")
+    os.utime(lock, (1, 1))
+
+    with pytest.raises(store.ApprovalLockTimeout, match="verify no approval writer"):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un lock viejo no puede robarse por mtime")
+    assert lock.exists(), "el lock huérfano solo se retira tras comprobar writers vivos"
+
+
+def test_old_live_lock_is_never_reclaimed_automatically(tmp_path):
+    """Un titular lento conserva exclusión aunque su mtime supere el umbral retirado.
+
+    La mutación que reintroduce ``unlink`` es observable aquí en POSIX/CI. En Windows,
+    el handle abierto impide el borrado antes de que el código pueda robar el lock; el
+    detector portable de abajo cubre allí la decisión de intentar el reclaim.
+    """
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    lock.write_text(f'{{"pid": {os.getpid()}}}', encoding="utf-8")
+    os.utime(lock, (1, 1))
+    holder = os.open(lock, os.O_RDONLY)
+    try:
+        with pytest.raises(store.ApprovalLockTimeout):
+            with store.acquire_approval_lock(target, timeout_s=0):
+                pytest.fail("un titular vivo no puede perder el lock por mtime")
+        assert lock.exists()
+    finally:
+        os.close(holder)
+
+
+def test_old_visible_lock_never_attempts_unlink(tmp_path, monkeypatch):
+    """C036 prohíbe incluso intentar reclamar por edad, con independencia del SO."""
+    target = tmp_path / "approval_state.json"
+    lock = Path(str(target) + store.LOCK_SUFFIX)
+    lock.write_text('{"pid": 999999}', encoding="utf-8")
+    os.utime(lock, (1, 1))
+
+    original_unlink = Path.unlink
+    attempted_lock_unlinks: list[Path] = []
+
+    def spy_unlink(path: Path, *args, **kwargs):
+        if path == lock:
+            attempted_lock_unlinks.append(path)
+            # Hace determinista la observación también en POSIX: un reclaim
+            # defectuoso no llega a adquirir el lock después de registrarse.
+            raise PermissionError("simulated visible-lock sharing violation")
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", spy_unlink)
+    with pytest.raises(store.ApprovalLockTimeout):
+        with store.acquire_approval_lock(target, timeout_s=0):
+            pytest.fail("un lock visible no puede reclamarse por edad")
+
+    assert attempted_lock_unlinks == [], (
+        "C036 prohíbe llamar unlink sobre un lock visible, no sólo que el SO rechace el borrado"
+    )
+
+
 _STORE = '''
 import json, os, sys, time
 sys.path.insert(0, os.environ["REPO_ROOT"])
@@ -315,22 +449,16 @@ def test_node_is_excluded_by_the_python_lock(tmp_path):
     assert r.stdout.strip() == "HELD", (r.returncode, r.stdout, r.stderr)
 
 
-def test_lock_timings_are_identical_on_both_sides():
-    """El sufijo compartido no basta: las VENTANAS también tienen que coincidir.
-
-    Ambos lados retiran un lock que consideran "viejo" (solo puede venir de un proceso
-    muerto). Si Python considerase viejo a los 5 s lo que Node aún sostiene a los 30 s,
-    Python **borraría un lock vivo** y volvería a haber dos escritores — exclusión rota
-    con los dos ficheros diciendo `.lock`. Igual con la espera máxima: si un lado
-    esperase mucho menos, degradaría a 409/BUSY donde el otro sí espera.
-    """
+def test_lock_protocol_is_identical_on_both_sides():
+    """Ambos lados esperan igual y ninguno roba locks por una edad ambigua."""
     ts = STORE_TS.read_text(encoding="utf-8")
-    stale_ms = int(re.search(r"LOCK_STALE_MS = ([\d_]+)", ts).group(1).replace("_", ""))
     wait_ms = int(re.search(r"LOCK_WAIT_MS = ([\d_]+)", ts).group(1).replace("_", ""))
     retry_ms = int(re.search(r"LOCK_RETRY_MS = ([\d_]+)", ts).group(1).replace("_", ""))
-    assert stale_ms / 1000.0 == store._LOCK_STALE_S, (stale_ms, store._LOCK_STALE_S)
     assert wait_ms / 1000.0 == store._LOCK_WAIT_S, (wait_ms, store._LOCK_WAIT_S)
     assert f"time.sleep({retry_ms / 1000.0})" in \
+        (REPO / "src" / "contracts" / "approval_store.py").read_text(encoding="utf-8")
+    assert "LOCK_STALE" not in ts
+    assert "_LOCK_STALE" not in \
         (REPO / "src" / "contracts" / "approval_store.py").read_text(encoding="utf-8")
 
 

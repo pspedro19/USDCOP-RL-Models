@@ -23,6 +23,9 @@
 | [`PROGRESS.md`](PROGRESS.md) | Avance **co-firmado** por ambos agentes | Ambos |
 
 Complementarios: [`KNOWLEDGE.md`](KNOWLEDGE.md) (reglas K-nnn acumuladas),
+[`HANDOFF-CODEX.md`](HANDOFF-CODEX.md) (entrega operativa vigente del carril Codex),
+[`TRIAGE-CLAUDE-PARTIAL.md`](TRIAGE-CLAUDE-PARTIAL.md) (triage de los PARTIAL del carril CLAUDE:
+comando declarado por cada ficha, resultado medido y brecha viva — **verde ≠ cerrable**),
 [`BASELINE.md`](BASELINE.md) (línea base de monitores),
 [`INTEGRATION-AUDIT.md`](INTEGRATION-AUDIT.md),
 [`PROTOCOL-COMMS-v2.md`](PROTOCOL-COMMS-v2.md) (staging de enmiendas, no vigente por sí solo).

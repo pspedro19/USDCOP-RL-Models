@@ -24,6 +24,9 @@ What this file enforces (BL-39 Verificación + DATA-STRATEGY §40-48 + Plan Cons
 5. Bit-check: the v11 signal of the last artifact week is reproduced from the
    DECLARED feature_set + normalization_snapshot and must be bit-identical to the
    as-built H5-L5b pipeline path (scripts/validation/bitcheck_v11_signal.py).
+6. C032 scopes catalog identity by asset and ties repeated physical observables
+   with `series_id`; every feature set resolves exact-one and cannot silently
+   bind XAU/BTC/SPX `close` to the COP contract.
 
 HASH METHOD (CXD-041/043): hashes over SOURCE files use the canonical LF form
 (CRLF->LF normalized bytes == git blob under .gitattributes text eol=lf), so a
@@ -48,6 +51,8 @@ from pathlib import Path
 
 import pytest
 import yaml
+
+from src.identity.source_hash import file_code_hash
 
 ROOT = Path(__file__).resolve().parents[2]
 FEATURES_DIR = ROOT / "config" / "features"
@@ -77,10 +82,21 @@ FEATURE_COLS_JSON_SHA16 = "c3393242ef998896"
 SCALER_SHA16 = "3302221e2b9dee39"
 
 RULE_BASED_MINIMAL = {
-    # asset -> (strategy_id, minimal ordered input features)  — §45-47: "MA200 solo close"
-    "xauusd": ("gold_trend_simple", ["close"]),
-    "btcusdt": ("btc_hodl_b1", ["close"]),
-    "spx500": ("spx500_regime_gated_v1", ["close"]),
+    # asset -> (strategy_id, minimal ordered input features)
+    #
+    # La premisa original —§45-47, "MA200 solo close": los indicadores se derivan
+    # dentro del codigo congelado— resulto FALSA para las policies que CONSUMEN esos
+    # indicadores en vez de derivarlos. El cruce `required_features` x
+    # `ordered_features` (gate `test_cross_ssot_feature_declarations.py`) lo midio:
+    # `BtcHodlB1Policy` declara `required = ("realized_vol_20",)` y
+    # `GoldTrendSimplePolicy` consume sus tres SMA — ninguna las deriva.
+    #
+    # `btcusdt` y `xauusd` ya estan corregidos (slices BTC y Gold): sus sets ordenan
+    # lo que las policies consumen. Ya NO queda deuda ejecutable, asi que el gate
+    # cross-SSOT perdio su allowlist y pasa a ser un juez directo sobre todas.
+    "xauusd": ("gold_trend_simple", ["close", "sma_63", "sma_126", "sma_252", "realized_vol_20"]),
+    "btcusdt": ("btc_hodl_b1", ["close", "realized_vol_20"]),
+    "spx500": ("spx500_regime_gated_v1", ["close"]),     # la CODED: si deriva dentro
 }
 
 
@@ -110,10 +126,8 @@ def _sha16_raw(path: Path) -> str:
 
 
 def _sha16_lf(path: Path) -> str:
-    """Hash canónico LF for SOURCE files: CRLF->LF normalized bytes, equal to
-    hashing the git blob (`git show :<path>`) on any OS (CXD-041/043)."""
-    return hashlib.sha256(
-        path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()[:16]
+    """Delegate source hashing to the production SSOT (no circular test copy)."""
+    return file_code_hash(path)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -122,13 +136,15 @@ def _sha16_lf(path: Path) -> str:
 
 def _valid_entry(**overrides) -> dict:
     entry = {
+        "asset_id": "synthetic",
         "feature_id": "synthetic_ok",
+        "series_id": "synthetic.synthetic_ok",
         "unit": "decimal",
         "feature_group": "returns",
         "causality_policy": "same_bar",
-        "source_contract": "market.canonical_bar",
-        "transformation": "pct_change",
-        "lookback": "P1D",
+        "source_contract": "market.canonical_bar[asset_id=synthetic]",
+        "transformation": "identity",
+        "lookback": "P0D",
         "compute_location": "python",
         "code_reference": None,
         "sign_prior": "positive",
@@ -137,6 +153,119 @@ def _valid_entry(**overrides) -> dict:
     }
     entry.update(overrides)
     return entry
+
+
+def test_c032_requires_asset_and_physical_series_identity():
+    v = _load_validator()
+    for missing in ("asset_id", "series_id"):
+        entry = _valid_entry()
+        del entry[missing]
+        errors = v.validate_entries([entry])
+        assert any(missing in error for error in errors), errors
+
+
+def test_c032_identity_is_composite_and_duplicate_composites_fail():
+    v = _load_validator()
+    usdcop = _valid_entry(asset_id="usdcop", feature_id="close",
+                          series_id="usdcop.close",
+                          source_contract="market.canonical_bar[asset_id=usdcop]")
+    btc = _valid_entry(asset_id="btcusdt", feature_id="close",
+                       series_id="btcusdt.close",
+                       source_contract="market.canonical_bar[asset_id=btcusdt]")
+    assert v.validate_entries([usdcop, btc]) == []
+    errors = v.validate_entries([usdcop, dict(usdcop)])
+    assert any("duplicate" in error and "usdcop" in error for error in errors), errors
+
+
+def test_c032_same_series_cannot_diverge_physically():
+    v = _load_validator()
+    cop = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="fxrt_index_dxy_usa_d_dxy", unit="index_level",
+        source_contract="macro.observation", transformation="identity",
+    )
+    btc = dict(cop, asset_id="btcusdt", unit="cop_per_usd")
+    errors = v.validate_entries([cop, btc])
+    assert any("series_id" in error and "unit" in error for error in errors), errors
+
+
+def test_c032_series_id_cannot_relabel_a_different_observable():
+    v = _load_validator()
+    dxy = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="fxrt_index_dxy_usa_d_dxy", unit="index_level",
+        source_contract="macro.observation", transformation="identity",
+    )
+    mislabeled_vix = dict(dxy, feature_id="vix_close_lag1")
+    errors = v.validate_entries([dxy, mislabeled_vix])
+    assert any(
+        "series_id" in error and "multiple feature_id" in error
+        for error in errors
+    ), errors
+
+
+def test_c032_same_series_and_feature_can_be_shared_across_assets():
+    v = _load_validator()
+    cop = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="fxrt_index_dxy_usa_d_dxy", unit="index_level",
+        source_contract="macro.observation", transformation="identity",
+    )
+    btc = dict(cop, asset_id="btcusdt")
+    assert v.validate_entries([cop, btc]) == []
+
+
+def test_c032_materialization_and_consumer_prior_are_not_physical_identity():
+    v = _load_validator()
+    cop = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="fxrt_index_dxy_usa_d_dxy", unit="index_level",
+        source_contract="macro.observation", transformation="identity",
+        asbuilt_source="macro_indicators_daily", sign_prior="positive",
+    )
+    btc = dict(cop, asset_id="btcusdt", asbuilt_source="btc_macro_seed.parquet",
+               sign_prior="ambiguous", sign_prior_note="consumer-specific prior")
+    assert v.validate_entries([cop, btc]) == []
+
+
+def test_c032_macro_series_id_must_resolve_to_ssot_canonical_name():
+    v = _load_validator()
+    entry = _valid_entry(
+        asset_id="usdcop", feature_id="dxy_close_lag1",
+        series_id="macro.does_not_exist", source_contract="macro.observation",
+        transformation="level_lag1",
+    )
+    errors = v.validate_entries([entry])
+    assert any("canonical_name" in error and "series_id" in error for error in errors), errors
+
+
+def test_c032_market_source_contract_discriminates_asset():
+    v = _load_validator()
+    entry = _valid_entry(
+        asset_id="xauusd", feature_id="close", series_id="xauusd.close",
+        unit="usd_per_troy_ounce", source_contract="market.canonical_bar",
+        transformation="identity", lookback="P0D", code_reference=None,
+    )
+    errors = v.validate_entries([entry])
+    assert any("source_contract" in error and "xauusd" in error for error in errors), errors
+
+
+def test_c032_all_feature_sets_resolve_exactly_one_asset_contract():
+    v = _load_validator()
+    catalog = _catalog()["features"]
+    feature_sets = [
+        _feature_set(path.stem)
+        for path in sorted(SETS_DIR.glob("*.yaml"))
+    ]
+    errors = v.validate_feature_sets(catalog, feature_sets)
+    assert errors == [], errors
+
+    # CLD-503: the old global resolver falsely bound XAU close to COP close.
+    xau = next(fs for fs in feature_sets if fs["asset_id"] == "xauusd")
+    forged = [entry for entry in catalog
+              if not (entry["asset_id"] == "xauusd" and entry["feature_id"] == "close")]
+    errors = v.validate_feature_sets(forged, [xau])
+    assert any("xauusd" in error and "close" in error for error in errors), errors
 
 
 def test_gate_rejects_feature_without_causality_policy():
@@ -351,8 +480,11 @@ def test_v11_recipe25_contract():
     assert orders == list(range(25)), "order must be dense 0..24"
     assert all(f["required"] is True for f in fs["ordered_features"])
 
-    cat_ids = {f["feature_id"] for f in _catalog()["features"]}
-    missing = [f for f in ordered if f not in cat_ids]
+    cat_ids = {
+        (f["asset_id"], f["feature_id"])
+        for f in _catalog()["features"]
+    }
+    missing = [f for f in ordered if (fs["asset_id"], f) not in cat_ids]
     assert not missing, f"feature_set references features absent from catalog: {missing}"
 
     # §42.5: v12/v14 share v11's decision input — declared, so comparison is paired.
@@ -414,8 +546,18 @@ def test_v11_dag_legacy23_contract_locked_not_resolved():
 
 
 def test_rule_based_champions_declare_minimal_sets():
-    """§45-47 fixture: rule-based strategies declare their minimal input set
-    (MA200 solo close); indicators are derived inside frozen policy code."""
+    """Cada estrategia rule-based ordena EXACTAMENTE los inputs que consume.
+
+    El docstring decia "MA200 solo close; indicators are derived inside frozen policy
+    code" como si fuera universal. **No lo es**: sólo vale para las policies que de
+    verdad derivan dentro (la SPX *coded*). Las que CONSUMEN el indicador deben
+    ordenarlo, o ningun productor lo materializa y la policy falla por `missing` en
+    toda corrida — que es lo que el gate cross-SSOT destapo.
+
+    Este candado fija el estado ACTUAL declarado; el invariante de que lo requerido
+    este declarado como input vive en `test_cross_ssot_feature_declarations.py`, con
+    la deuda de Gold en xfail estricto.
+    """
     for asset, (sid, minimal) in RULE_BASED_MINIMAL.items():
         fs = _feature_set(sid)
         assert fs["strategy_id"] == sid

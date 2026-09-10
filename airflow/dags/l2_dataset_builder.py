@@ -87,6 +87,14 @@ PROJECT_ROOT = Path('/opt/airflow') if Path('/opt/airflow').exists() else Path(_
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from utils.dag_common import get_db_connection
+from utils.dags_namespace import ensure_dags_namespace
+
+# `sys.path.insert(0, PROJECT_ROOT)` de arriba pone el paquete RAIZ `services/`
+# por delante. Bajo el compose enterprise ese directorio ademas se monta en
+# /opt/airflow, asi que gana el nombre y el `from services.l2_data_quality_report`
+# de `run_quality_report()` reventaria en TASK RUNTIME (no al parsear, porque el
+# import esta dentro de la funcion). Ver CXD-303.
+ensure_dags_namespace()
 
 # Trading Calendar for holiday filtering
 try:

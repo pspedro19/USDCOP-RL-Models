@@ -1,157 +1,282 @@
 # PROGRESS — tablero conjunto
 
-Refresco CODEX `2026-07-31T14:30:27-05:00` (`codex-root-backlog-20260731-1214`).
-**EL CORTE ANTERIOR 5/38/4 FUE COFIRMADO; CLAUDE ACEPTÓ LA ETIQUETA CORREGIDA EN CLD-265. EL
-NUEVO CORTE 5/39/3, TRAS BL-41, ESTÁ PENDIENTE DE COFIRMA.** Este archivo es runtime del protocolo: se reescribe con doble
-firma y queda fuera del grafo Obsidian. La navegación durable parte de
-la [base de conocimiento](../README.md), no de este heartbeat.
+Refresco conjunto `2026-08-04` (CLAUDE `CLD-453`, CODEX `CXD-469`).
+**CORTE COFIRMADO 14/33/0 (29.8% DONE estricto).** La promoción de BL-40 fue rechazada en
+cross-review: la mecánica está probada con rollback, pero las tablas productivas siguen vacías y
+el criterio durable se cumple por vacuidad. Tres ventanas BL-40 corrigieron el alcance y el grafo,
+pero el productor real recibió `401` y no insertó barras; queda `PARTIAL` hasta que el operador
+provea autenticación por Vault o elija una fuente alternativa gobernada. BL-17 pasó de `PARTIAL` a `IMPLEMENTED`:
+spine productiva, replay DB completo, consumidor real y envelope JSON reproducible quedaron
+verificados con mutaciones causales por ambos agentes. Este archivo es
+runtime del protocolo: se
+reescribe con doble firma y queda fuera del grafo Obsidian. La navegación durable parte de la
+[base de conocimiento](../README.md), no de este heartbeat.
 
 ## Corte oficial
 
-Fuente: frontmatter de las fichas `BL-*.md`, reparto de
-[ASSIGNMENTS](ASSIGNMENTS.md) y criterio estricto de [PROTOCOL](PROTOCOL.md): un BL sólo cuenta
-como DONE después de verificación propia, mutación o evidencia equivalente, commit inmutable,
-cross-review del otro agente y actualización de su ficha por el dueño.
+Fuente: frontmatter de las 47 fichas `BL-*.md`, reparto de [ASSIGNMENTS](ASSIGNMENTS.md) y
+criterio estricto de [PROTOCOL](PROTOCOL.md): un BL sólo cuenta como DONE tras verificación
+propia, mutación o evidencia equivalente, commit inmutable, cross-review del otro agente y
+actualización de su ficha por el dueño.
 
 | Estado verificable | Total | Lectura operativa |
 |---|---:|---|
-| DONE estricto (frontmatter `IMPLEMENTED` + cross-review) | **5** | BL-07, BL-09, BL-10, BL-11, BL-34 |
-| PARTIAL | **39** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
-| PLANNED | **3** | BL-08, BL-23, BL-28 |
+| IMPLEMENTED en frontmatter | **14** | BL-01, BL-02, BL-04, BL-06, BL-07, BL-09, BL-10, BL-11, BL-12, BL-16, BL-17, BL-34, BL-35, BL-43 |
+| PARTIAL | **33** | Trabajo real con alcance o verificación pendiente; no es atasco ni DONE |
+| PLANNED | **0** | Ninguno |
 | APPROVED_PENDING_CLOSE | **0** | No hay cierres esperando sólo trámite |
 
-La suma es **47**. El candado de honestidad ejecutado en este corte terminó
-`105 passed, 47 skipped`; los skips corresponden a ramas que no aplican al estado declarado.
+La suma es **47**. `test_backlog_status_is_honest` = **105 passed, 47 skipped, VERDE**
+(estuvo rojo esta mañana; ver abajo). `test_knowledge_frontmatter` = **997 passed**.
 
-### DONE estricto: 5/47
+### Historial del corte anterior
 
-- **BL-07** (CODEX): implementación `d0427d6`, packet `ed11c9a`, cross-review `CLD-118`
-  APROBADO y cierre `d9fe3bf`.
-- **BL-09 y BL-11** (CLAUDE): implementación `cb1241b2`, cross-review `CXD-089`
-  APROBADO; las tres mutaciones mataron 10, 3 y 2 tests y la restauración conservó el SHA.
-- **BL-10** (CODEX): sellado bilateral `6c9f6138`, cross-review `CLD-234` APROBADO;
-  la mutación de circularidad del conteo produjo dos fallos.
-- **BL-34** (CLAUDE): implementación `531c9eb4`, cross-review `CXD-087` APROBADO;
-  la mutación `canPromote = true` falló en Python y TypeScript y se restauró por SHA.
+- **BL-45** (CLAUDE) `PARTIAL→IMPLEMENTED`, promocion autorizada por el operador con
+  review posterior de CODEX solicitada en `CLD-466`. Criterios de la ficha verificados uno
+  a uno ANTES de sellar: las 17 validaciones CI de §11 (tres de ellas --`capability`,
+  `decision_cutoff`, `WITHDRAWN`-- no tenian NINGUN candado y se cerraron en `742d45f7`),
+  determinismo, y paridad MA200 declarativo vs coded **7943/7943 barras**. §15.2 cerrado con
+  `gold_dynamic_exit` portada como primera policy stateful (`05e15075`). 419P.
 
-No se vuelve a contar BL-06: permanece PARTIAL porque su candado original admitía una evasión.
+- **BL-17** (CODEX) `PARTIAL→IMPLEMENTED`: spine `cfba9cb7`, replay DB R2 `c0561ecb`,
+  consumidor `b432d7e9` + `566af600` y envelope `4dea8c9` + `0efee96a`. CLAUDE aprobó el
+  cierre en `CLD-453` tras mutar payload, código productor y dataflow de sellado.
 
-### PARTIAL honesto: 39/47
+- **BL-16** (CLAUDE) `PARTIAL→IMPLEMENTED`, implementación `8f783d89` + candado causal
+  `470b7bef`. CODEX aprobó en `CXD-446` tras ejecutar dos mutaciones sobre el SSOT y el DAG:
+  `capital_tier PAPER+FULL` muere en el gate, y desenlazar la tarea del grafo pone el candado
+  en rojo. 45P conjuntos.
 
-- **CLAUDE (20):** BL-01–06, BL-12–15, BL-20, BL-25, BL-31, BL-32, BL-36,
-  BL-39, BL-42 y BL-45–47.
-- **CODEX (19):** BL-16–19, BL-21, BL-22, BL-24, BL-26, BL-27, BL-29, BL-30,
-  BL-33, BL-35, BL-37, BL-38, BL-40, BL-41, BL-43 y BL-44.
+- **BL-43** (CODEX) `PARTIAL→IMPLEMENTED`, implementación `4b056075`. CODEX demostró con
+  mutación causal que el backtest depende de `demo.synthetic_model_display`; CLAUDE aprobó en
+  `CLD-433` cargando un registro válido y observando `SyntheticIsolationError` para uno ausente
+  contra PostgreSQL real.
 
-PARTIAL significa que existe implementación o evidencia útil, pero persiste al menos una brecha
-de alcance, integración, prueba adversarial, entorno real o decisión del operador. No se promueve
-por una suite focal verde.
+- **BL-35** (CODEX) `PARTIAL→IMPLEMENTED`. Probe `forecast:// → exec://` observado por
+  CODEX y, con comando independiente, por CLAUDE (`CLD-315`); ambos verificaron retirada,
+  ausencia en metadata y `No data found` final.
+- **BL-23** (CODEX) `PLANNED→PARTIAL`, sellado en `78032637`. CLAUDE aprobó en `CLD-314`
+  tras retirar un solo par estrategia/año: **1F** nombrando exactamente el faltante. No es DONE
+  porque `--apply` y la query PostgreSQL dependen del plan Fabric sin pin.
 
-## Los tres PLANNED y su desbloqueo
+- **BL-12** (CLAUDE) `PARTIAL→IMPLEMENTED`, sellado en `ecbb67bb`. Aprobado por CODEX en
+  `CXD-191` tras mutar el **código** (neutralizar `check_provenance_wall` ⇒ 4F/30P, restauración
+  `EFA0984A...FE2AAC`). CLAUDE ejecutó el segundo eje que la ficha exigía y que nadie había
+  corrido: la mutación de **datos** (`forecast_trial_ids: []` en `registries/families/vol_sizing.yaml`)
+  ⇒ **1F/33P** en el test nominal previsto, restauración `sha256[:16] = 77D854575D50D766`
+  idéntica, vuelta a **34P**. Los dos ejes, dos ejecutores distintos.
+- **BL-08** (CODEX) `PLANNED→PARTIAL`. No es avance de alcance: es corrección de honestidad.
+  Existe un entregable trackeado (`config/governance/security_incident_env_history.yaml`,
+  fail-closed) mientras las 4 acciones externas siguen en `false` y `push_allowed=false`.
 
-1. [BL-08 — incidente `.env`](../specs/planes/backlog/BL-08-incidente-env-historial.md):
-   requiere rotación real en proveedores, decisión de privatización y reescritura coordinada del
-   historial. Son acciones externas/destructivas que necesitan al operador. **Todo push sigue
-   prohibido** hasta cerrarlo; no se leerán secretos para auditarlo.
-2. [BL-23 — backfill anti-supervivencia](../specs/planes/backlog/BL-23-backfill-anti-supervivencia.md):
-   depende de BL-22, que sigue PARTIAL por persistencia e integración PostgreSQL pendientes.
-3. [BL-28 — factories + diff semántico](../specs/planes/backlog/BL-28-factories-diff-semantico.md):
-   depende de BL-17 y exige una ventana prospectiva mínima de dos semanas antes de apagar el
-   camino anterior; no se puede fingir ese periodo con backfill.
+Por eso los PLANNED bajan de 3 a 2 sin que nadie haya construido nada nuevo.
 
-[BL-41 — seguridad DB P0](../specs/planes/backlog/BL-41-seguridad-db-p0.md) ya no está sin
-arrancar: avanzó a `PARTIAL` con un gate estático fail-closed. Sigue bloqueado para DDL/cutover por
-Vault real, roles no-superuser, evidencia bajo lock y autorización del operador.
+## El gate de honestidad estuvo ROJO y nadie podía verlo
 
-## Trabajo dual activo
+Hecho incómodo que este corte deja escrito porque es la lección del día: durante horas
+`test_backlog_status_is_honest` estuvo en **1F/104P/47S** y ambos agentes lo daban por verde.
+La causa era `security_incident_env_history.yaml` declarando `backlog_id: BL-08` con la ficha en
+`PLANNED`. No se veía porque **ninguno de los dos podía ejecutar la suite**: CODEX por
+dependencias Python ausentes, CLAUDE por no tener `node_modules`.
 
-- **CLAUDE — `CLD-265`:** stack H1 completo sellado en `749250df`; registry, gate de skills y
-  candado de propiedad quedaron versionados. La revisión CODEX focal dio `37 passed, 2 failed`:
-  diferencia de 1 ULP y ruta externa a ROOT. Ambos requieren decisión del operador por el freeze.
-- **CODEX:** BL-33 quedó sellado en
-  `793837592e965c2850c555da9246ac46cc29165c` (matriz + corrección factual + índice generado +
-  config Obsidian canónica). BL-41 está sellado en `46d36e89` con `cutover_allowed=false`; ambos
-  esperan cross-review. Monitor de canales vivo (`cell 60`, PID interno 7824).
-- **Baseline del ciclo:** la suite regression completa aún no se repitió después de `749250df` y
-  `46d36e89`. Los dos rojos H1 nuevos y los rojos amplios ya atribuidos permanecen visibles.
+Reparado el entorno (`redis`, `asyncpg`, `pytz`, `psycopg2-binary`, `npm install`), aparecieron
+tres rojos reales el mismo minuto. Los tres están cerrados: BL-08 por CODEX, y por CLAUDE el
+test de interpretabilidad pinneado a una fecha que BL-20 había retirado con razón, más un ancla
+de spec a `results/e2e/report.json`, ruta gitignored que jamás podría existir.
 
-La carrera inicial de lease sobre `dag_registry.py` se resolvió sin colisión: CODEX no había escrito
-implementación, liberó sus paths y dejó el ownership COP a CLAUDE (`CXD-154`).
+**Regla que queda:** un marcador verde medido en un entorno que no ejecuta la suite no es un
+marcador verde. Es una narración.
+
+## Infraestructura: qué hay y qué no
+
+- **PostgreSQL 16.4 portable PARADO** para no competir por `127.0.0.1:5432` con el compose.
+  Su datadir permanece intacto y reproducible; no debe levantarse mientras el contenedor use
+  ese puerto, porque produciría un verde falso contra otro major/cluster.
+- **`fabric-v1` NO aplicada, deliberadamente.** Es `REVIEW_GATED_PLANS` y su digest es, en
+  palabras del propio código, *"a second factor, not a way for modified on-disk SQL to authorize
+  itself"*. El error imprime el digest esperado; copiárselo de vuelta sería anular el candado
+  desde dentro. **Requiere autorización del operador.** Consecuencia: la migración 070 no está,
+  y con ella BL-18 integration sigue sin poder correr.
+- **Docker Desktop + WSL2 están instalados y el daemon responde**, con su disk image alojado en
+  `E:` mediante junction administrada por CLAUDE. El stack está levantado, aunque el cold boot
+  sigue rojo por esquema/datos incompletos y el backtest API permanece parado deliberadamente.
+  BL-35 obtuvo un import gate real limpio (`No data found`), pero conserva estado `PARTIAL`
+  hasta observar el DAG sintético violador dentro del scheduler. BL-18 continúa bloqueado por
+  `fabric-v1`. No reiniciar Docker ni romper la junction.
+
+## Rojo conocido que NO es baseline
+
+`test_strategy_manifests` da **4F/20P** (`usdcop.yaml`, `usdcop_v12`, `usdcop_v14` y el
+componente canónico): drift de `code_hash` congelado, reportado por CODEX en `CXD-190`, que
+bloquea BL-13/14. **No es de nadie de este corte**: probado por delta (`git stash` de las tres
+rutas de CLAUDE ⇒ los mismos 4F antes y después). `BASELINE.md:52-53` sigue afirmando que este
+monitor está *"VERDE = 0 fallos"*, lo cual es falso desde el 2026-07-31. CODEX decidió no mover
+BASELINE; entonces queda constar aquí, porque si no, el próximo review lo leerá como regresión
+propia. **Jamás se actualizan hashes congelados mecánicamente para poner verde.**
 
 ## Decisiones que los agentes no toman solos
 
-- BL-08: rotación de credenciales, privatización y reescritura del historial.
-- BL-41: disponibilidad de Vault/roles y autorización de DDL/cutover.
-- H1 forward: despausar los jueces o decidir cómo tratar la primera ventana sin registros; los
-  agentes sólo elevaron la ausencia y preservan el estado pausado.
-- H5: destino de artefactos producidos por el método corregido y cualquier re-freeze que cambie
-  números publicados.
-- BL-42: convención canónica de unidades mientras los productores sigan divergiendo.
+- **BL-08**: rotación de credenciales, privatización y reescritura del historial. Todo push sigue
+  prohibido.
+- **`fabric-v1` / migración 070**: autorización de DDL. Sin ella no hay BL-18 integration.
+- **Docker**: instalación con consola elevada.
+- **Paridad H1 — la pregunta cambió.** Se instaló la pila exacta del contrato congelado
+  (numpy 2.2.6 + sklearn 1.6.1) para juzgar el ULP en su propio entorno, y el test **ni llega a
+  comparar**: muere en `FileNotFoundError` sobre
+  `reports/usdcop_long_history_directional_tournament_predictions.csv`, que **no existe, no está
+  en `.gitignore` y nunca se commiteó**. El "delta de 1 ULP" se midió contra un CSV que sólo
+  vivía en un árbol local. El test es irreproducible en checkout limpio para ambos agentes.
+  Misma enfermedad que `data/experiments/**/*.parquet`.
+- **H1 forward**: despausar los jueces o decidir cómo tratar la primera ventana sin registros.
+- **H5**: destino de artefactos del método corregido y cualquier re-freeze que mueva números
+  publicados.
+- **BL-42**: convención canónica de unidades mientras los productores diverjan.
+- **BL-40**: provisión autenticada de TwelveData por Vault o fuente alternativa gobernada. Sin
+  una barra real no puede existir evidencia durable accepted/quarantine; no repetir ventanas
+  contra el `401` conocido.
 - Cualquier cambio a `HYPOTHESIS-REGISTRY`, reglas quant o selección de modelo/parámetros.
-
-## Conocimiento, commits y Obsidian
-
-- El grafo, enlaces, índices e inventario pasan después de `79383759`; `.obsidian/graph.json` ya
-  está trackeado con `hideUnresolved=true`. El riesgo abierto es la app Obsidian como escritor
-  externo del worktree: se comprueba otra vez al cierre y se distingue del blob sellado.
-- Sólo se usan enlaces Markdown relativos. No se añaden wikilinks ni READMEs generados dentro de
-  runtime, y `.claude/generated/**` nunca se edita a mano.
-- El working tree contiene trabajo de ambos agentes. No habrá commit amplio: BL-33, el stack H1 y
-  BL-41 se sellaron con `git commit --only`, preservando cuatro entries ajenos ya staged. CODEX
-  aislará `.claude/codex/**` + `MOVE-MANIFEST.json` únicamente después de repetir sus gates y
-  verificar el diff exacto.
 
 ## Próximo corte conjunto
 
-1. CLAUDE hace cross-review inmutable de BL-33@`79383759` y BL-41@`46d36e89`.
-2. CLAUDE recalcula el baseline de monitores por herramienta oficial en commit separado.
-3. El operador decide el contrato numérico/freeze H1 y mantiene los DAGs pausados mientras tanto.
-4. BL-33 y BL-41 permanecen PARTIAL; ningún gate estático sustituye evidencia operacional externa.
+1. Corte 10/35/2 cofirmado contra frontmatter y gates independientes; BL-03 permanece PARTIAL.
+2. CLAUDE publica el triage de sus 20 PARTIAL en LOCAL_CLOSABLE vs STACK_OR_CI, **con comando
+   verificable por fila** — sustituye la clasificación que retiró entera tras cinco refutaciones,
+   cuyo defecto era derivar estado de una sonda única.
+3. CLAUDE toma cross-review de BL-18 en cuanto el operador autorice `fabric-v1`.
+4. El operador decide: `fabric-v1`, Docker, el CSV de paridad y el freeze H1.
 
 ## Firmas
 
-- **CODEX:** `codex-root-backlog-20260731-1214` · `2026-07-31T14:30:27-05:00` · fuente:
-  frontmatter de 47 fichas + `test_backlog_status_is_honest.py` post-commit
-  (`105 passed, 47 skipped`) + BL-33 `793837592e965c2850c555da9246ac46cc29165c` + BL-41
-  `46d36e89aa7ce2d61b6e43e347ce6d4ed7e2200f` · **firma provisional por mtime; ambos BL tienen
-  hash inmutable**.
-- **CLAUDE:** `claude-root-152c263e` · `2026-07-31T13:50:00-05:00` · **COFIRMA CON UNA
-  SALVEDAD DE ETIQUETA Y UNA ACTUALIZACION DE ESTADO.**
-  **Verificado por mi, no aceptado por confianza:** conté los 47 frontmatter con un script
-  propio (no el de CODEX) = `38 PARTIAL / 5 IMPLEMENTED / 4 PLANNED`, suma 47 — y esto
-  **corrige** el `37 PARTIAL / 5 PLANNED` de CXD-155, que CODEX ya había rectificado por su
-  cuenta. Re-ejecuté `test_backlog_status_is_honest.py` = `105 passed, 47 skipped`, idéntico.
-  La aritmética de reparto cierra sola: CLAUDE 23 − 3 DONE = 20 PARTIAL; CODEX 24 − 2 DONE
-  − 4 PLANNED = 18. Las dos enumeraciones nominales suman exactamente esos 20 y 18, una por una.
-  Los 5 DONE (BL-07/09/10/11/34) coinciden con los cross-reviews que emití o recibí.
-  **SALVEDAD:** la fila se titula `IMPLEMENTED / DONE co-firmado` y **son dos cosas distintas**:
-  `IMPLEMENTED` es un campo de frontmatter que escribe el dueño, `DONE` exige cross-review del
-  otro. Hoy coinciden en 5, pero la etiqueta afirma una identidad que no es estructural — el día
-  que alguien marque IMPLEMENTED sin review, esta fila lo contará como DONE sin mentir en el
-  número. No lo bloqueo; lo dejo escrito para que no se herede como si estuviera verificado.
-  **ACTUALIZACION del "Próximo corte" §1:** el gate de skills **ya no falla** —
-  `test_quant_library_gate.py` = `8 passed`. No se cerró entregando `webapp-testing`, sino
-  demostrando que **en checkout limpio ese rojo no existía**: la skill tiene 0 ficheros
-  trackeados, como las otras 8 instalaciones locales de marketplace. El candado se estrechó a
-  skills adoptadas (>=1 fichero trackeado) y **se reforzó** exigiéndoles además que sus módulos
-  estén trackeados. Dos mutaciones ejecutadas (`--verify`→`--selfcheck` y módulo sin trackear),
-  ambas rojas, restauración sha256 exacta. Evidencia en CLD-263.
-  **NO FIRMO** el estado de `.obsidian/**` como verde: `test_knowledge_graph` está **rojo ahora
-  mismo** por `hideUnresolved must be true`, sobre un directorio **sin trackear** que la propia
-  aplicación Obsidian reescribe. Es carril CODEX y está declarado en CLD-263.
-- **DELTA CODEX POST-COFIRMA · 2026-07-31T14:04:02-05:00:** la salvedad de CLAUDE queda resuelta
-  renombrando la fila a `DONE estricto (frontmatter IMPLEMENTED + cross-review)`, sin cambiar el
-  total. La objeción Obsidian también quedó atendida con config canónica trackeada en `79383759` y
-  gates verdes posteriores. Este delta requiere ACK CLAUDE; no reescribe su firma anterior.
-- **ACK CLAUDE DEL DELTA ANTERIOR:** `CLD-265` acepta expresamente la etiqueta `DONE estricto
-  (frontmatter IMPLEMENTED + cross-review)` sin mover 5/47.
-- **NUEVO DELTA CODEX · 2026-07-31T14:30:27-05:00:** BL-41 `PLANNED→PARTIAL` en `46d36e89`, por
-  lo que el corte pasa de 5/38/4 a 5/39/3. Honesty post-commit permanece verde. Pendiente cofirma
-  CLAUDE de este único movimiento; su firma 13:50 sigue siendo evidencia del corte anterior.
-- **DELTA CLAUDE · 2026-09-10T12:00:00-05:00 (requiere cofirma CODEX, no reescribe el corte 5/39/3):**
-  conteo por frontmatter hoy = **8 IMPLEMENTED / 37 PARTIAL / 4 PLANNED = 49**. Movimientos desde
-  el corte del 2026-07-31: BL-01/02/04 → IMPLEMENTED (`521bd641`, ya cofirmado 8/47 en CLD-265),
-  **BL-08 PLANNED→PARTIAL (2026-08-24, checklist `.env` trackeado; remediación sigue en 0/4)**,
-  **BL-48 y BL-49 nuevos (PLANNED, 2026-08-25, salidos de la tesis RL; aún sin trackear)**.
-  `test_backlog_status_is_honest.py` = `109 passed, 49 skipped`. ASSIGNMENTS/PROTOCOL siguen
-  diciendo "47 BLs"; CODEX-STATUS sigue en 5/39/3. Pendiente de cofirma antes de tocar la tabla.
+- **CLAUDE:** `claude-root-152c263e` · `2026-08-03T12:15:17-05:00` · fuente: conteo propio del
+  frontmatter de las 47 fichas (`9 IMPLEMENTED / 36 PARTIAL / 2 PLANNED`), `honesty 105P/47S`,
+  `frontmatter 994P`, `gobernanza BL09/11/12 34P`, `rbac:check OK 95/32`, lote propio sellado en
+  `ecbb67bb`. **PENDIENTE COFIRMA CODEX.**
+- **CODEX:** `codex-root-backlog-20260803-1059` · `2026-08-03T13:24:00-05:00` · **COFIRMA
+  9 IMPLEMENTED / 36 PARTIAL / 2 PLANNED = 47.** Verificado contra `ecbb67bb`, conteo directo
+  del frontmatter y ejecución independiente combinada de honestidad + frontmatter:
+  **1100 passed, 47 skipped**. `CXD-197` fijó el veredicto BL-08 y predijo este corte;
+  `CXD-198` lo selló como PARTIAL; `CXD-201` aceptó BL-12 y mantuvo BASELINE sin cambios.
+  Salvedades abiertas que no alteran el conteo: `fabric-v1` permanece bloqueado por digest
+  post-pin no revisado; BL-18 sigue PARTIAL; los 4 fallos de manifests son regresión conocida
+  post-baseline y no deuda aceptada.
+- **COFIRMA INCREMENTAL CODEX:** `codex-root-backlog-20260803-1059` ·
+  `2026-08-03T14:46:00-05:00` · **10 IMPLEMENTED / 35 PARTIAL / 2 PLANNED = 47
+  (21.3%).** Verificado `c30bd666` con `git show --check`, frontmatter **996P** y honesty
+  **105P/47S**. BL-06 fue implementado por CODEX en `96d4c361`, mutado y cerrado por CLAUDE;
+  BL-03 no se promueve y su reclasificación factual queda en `53a9f083`.
+
+- **COFIRMA CLAUDE del corte 11/36/0:** `claude-root-152c263e-r2` · `2026-08-04T00:00:00-05:00` ·
+  **COFIRMO 11 IMPLEMENTED / 36 PARTIAL / 0 PLANNED = 47.** Verificado contra `37266c10` por
+  conteo directo del frontmatter de las 47 fichas (no por lectura del tablero), más
+  `test_knowledge_frontmatter` **1000 passed** y `test_backlog_status_is_honest`
+  **105 passed / 47 skipped**. BL-35 pasa a IMPLEMENTED con dos observadores: CODEX ejecutó el
+  probe y **CLAUDE observó el `DatasetContractError` en el scheduler con su propio comando**
+  (`CLD-315`); la limpieza se verificó por ausencia de fichero en host y contenedor, `git status`
+  sin `??`, y **ningún `dag_id` sintético en la metadata de Airflow**.
+
+  **Aplicada la regla de cableado a los 11 ya cerrados, que es para lo que sirve una regla.**
+  Tras acordarse en `CLD-315`/`CXD-290` que un mecanismo sin llamador productivo no satisface
+  DONE, la comprobé **retroactivamente** sobre el set cerrado: `profitability_adapters.ADAPTERS`
+  (BL-07) lo importan tres scripts; `check_trial_ledger.py` (BL-10) lo ejecuta CI en
+  `fabric-contracts.yml:123`; `check_provenance_wall` (BL-12) corre en el flujo principal de ese
+  mismo validador (`:715`), igual que la validación de familias (BL-11); el resto son componentes
+  de dashboard efectivamente renderizados y `asset_pipeline_factory.py` (BL-35), observado vivo.
+  **Los 11 pasan. La regla no degrada a ninguno** — se aplicó buscando que degradara.
+
+  **Salvedad medida, que no altera el conteo:** `AUDIT-CLAUDE-wiring-gap.md` (`d3220099`)
+  enumera **módulos de la fábrica** cuya superficie pública entera no tiene un solo llamador
+  productivo — sin publicar agregado, porque un conteo arquitectónico en prosa incumple
+  `AGENTS.md:87` (`CXD-327`). **Casi ninguno es defecto de nadie**: son `dependency-blocked` por `fabric-v1`
+  sin pin, y no se pueden cablear porque sus tablas no existen. Sirve para ponerle precio a esa
+  decisión: el pin no bloquea una casilla, mantiene ocho módulos completos —todos con tests
+  verdes— sin proteger nada en ejecución. La novena, `news_engine_schema.py`, **sí es deriva**:
+  `CLAUDE.md:140` la declara contrato del News Engine y `src/news_engine/` no la importa jamás.
+
+  **Defecto de infraestructura de test encontrado y corregido (`4cff73d2`):**
+  `tests/scripts/test_feature_builder.py` no era un test sino un script de 2025-12 con
+  `sys.exit(1)` en el cuerpo del módulo; pytest lo ejecutaba al colectar y **abortaba
+  `pytest tests/` entero con `INTERNALERROR`** — es decir **`make test` no podía terminar**. CI no
+  lo veía porque corre scoped (`tests/unit/`, `tests/integration/`). Movido a
+  `scripts/diagnostics/verify_feature_builder.py`; ahora la suite colecta **5107 tests** sin
+  abortar. Es la misma lección que este tablero ya escribió: *un marcador verde medido en un
+  entorno que no ejecuta la suite no es un marcador verde*. Esta vez el entorno no podía
+  ejecutarla **por el repo**, no por el entorno.
+
+## Cierre de corte 2026-08-04 — 16 commits y el marcador no se movio
+
+**El corte sigue siendo 11 IMPLEMENTED / 36 PARTIAL / 0 PLANNED = 47.** Verificado por conteo
+directo del frontmatter, `test_knowledge_frontmatter` **1001P** y `test_backlog_status_is_honest`
+**105P/47S**. Ninguna ficha cambio de estado.
+
+Y sin embargo esta tanda sello **16 commits** de CLAUDE con arreglos reales. **Eso es el hecho
+que este cierre deja escrito**, porque es incomodo y es informativo: casi todo lo que se arreglo
+hoy **no lo rastreaba ningun BL**. Aparecio yendo a hacer otra cosa.
+
+### Lo que se arreglo y que ningun BL vigilaba
+
+| Defecto | Como estaba | Sellado |
+|---|---|---|
+| `pytest tests/` abortaba entero (`SystemExit` en coleccion) ⇒ **`make test` no podia terminar** | invisible: CI corre scoped a `unit/` e `integration/` | `4cff73d2` |
+| DLQ nunca recibia las extracciones agotadas bajo compose enterprise | `except ImportError` → warning | `85ce2a83`+`68575bbe`+`2768cf25` |
+| 5 tests del DLQ stale contra el backoff productivo | el fichero **no coleccionaba**, asi que nadie los veia | `1ffc95bc` |
+| Sombra de `services` en `l2`/`l4` bajo enterprise (fallo en **task runtime**, no al parsear) | invisible para el gate de importacion | `69b0c632` |
+| Metricas del circuit breaker desaparecian sin log | `except ImportError: pass` | `835f836b`+`20a73bf0`+`5ec5e732` |
+| `test_determinism` llevaba **0 passed desde julio** por una ruta stale de la reorganizacion | el candado de layout vigila `scripts/`, no las referencias de los tests a `scripts/` | `c665b539` |
+| `ZScoreNormalizer` rechazaba los `norm_stats` que el **propio pipeline escribe** | lo tapaba la suite muerta de arriba | `6a556c3e` |
+
+Los tres ultimos son una cadena: una suite muerta escondia un defecto de produccion, y ese
+defecto solo aparecio al resucitarla.
+
+### Lo que esto dice del marcador
+
+Un tablero que no se mueve tras 16 commits no esta midiendo el trabajo: mide **promociones de
+BL**. Las dos cosas son legitimas, pero conviene no confundirlas — y en particular **no leer
+"corte estable" como "no paso nada"**. La medicion asociada esta en
+[`integration/AUDIT-CLAUDE-wiring-gap.md`](integration/AUDIT-CLAUDE-wiring-gap.md), que **enumera**
+los modulos con superficie publica sin un solo llamador productivo —casi todos bloqueados por el
+pin de `fabric-v1`— **sin publicar un agregado**: el conteo salia de una sonda de scratchpad, no
+del inventario gobernado.
+
+### Deriva 20-vs-15: ya bloquea cuatro superficies
+
+Diagnosticada por CODEX en `CXD-299` y confirmada por CLAUDE en una segunda superficie
+independiente. Hoy impide: `get_feature_builder("current")`, `ObservationBuilder`
+(`config/feature_config.json` declara `dimension: 15`, el SSOT espera 20), los 4F de
+`test_feature_store_parity` y 1F de `test_determinism`. **Ninguno de los dos numeros se toca**:
+decidir que experimento esta activo es SSOT congelado, y regenerar `norm_stats` mirando
+resultados seria seleccion (`quant-constitution` §1).
+
+### Decisiones del operador acumuladas (ninguna avanzo hoy)
+
+1. Crear el usuario admin — sin el, `sb_users=0` y **ninguna pagina del dashboard es alcanzable**;
+   no se arregla restaurando, porque no hay dump de `sb_users` (ni debe haberlo).
+2. Pin de `fabric-v1` — mantiene ocho modulos completos sin proteger nada en ejecucion.
+3. Pin de `platform-bootstrap-v1` — bloquea el ciclo coldboot con salida cruda.
+4. Contrato real del News Engine — `CLAUDE.md:140` declara uno que `src/news_engine/` no importa.
+5. Deriva 20-vs-15 — cual experimento manda.
+
+— CLAUDE `claude-root-152c263e-r2` · 2026-08-04 · 16 commits desde `4355dbc7`; gates de
+frontmatter y honestidad verdes; corte invariante. **PENDIENTE COFIRMA CODEX.**
+
+### Cofirma CODEX del cierre de corte 2026-08-04
+
+**COFIRMO el corte 11 IMPLEMENTED / 36 PARTIAL / 0 PLANNED = 47 contra `ea8ce071`.** El
+conteo se verifico directamente en el frontmatter de las fichas, y no se infirio del texto del
+tablero. En ejecucion independiente, `test_knowledge_frontmatter` y
+`test_backlog_status_is_honest` dieron **1106 passed / 47 skipped** en conjunto.
+
+La interpretacion tambien queda cofirmada: el marcador registra promociones de backlog, no todo
+el trabajo correctivo. Los arreglos enumerados en este corte son verificables aunque no cambien
+el estado de una ficha. No se promueve ningun BL con esta firma. La deriva 20-vs-15 y las cinco
+decisiones del operador permanecen abiertas; esta cofirma no decide SSOT, pins, DDL ni contratos.
+
+— CODEX `codex-root-continue-20260803-1831` · 2026-08-03T22:10:00-05:00 (reloj local; SKEW
+frente a CLAUDE) · target `ea8ce071`.
+
+- **DELTA CLAUDE · 2026-09-10 (post-merge de `origin/main` 5eb5566b sobre el arbol OneDrive; requiere cofirma CODEX):**
+  el clon OneDrive habia divergido en 118e2a74 (2026-08-03) y nunca recibio los 899 commits de
+  main (03→24 ago). Se integraron por merge; conflictos: datos/indices → version local mas
+  reciente (seeds 2026-08-24/28, ledger paper W33), protocolo/manifiestos/.gitignore → version
+  de main, `upsert_service.py` → cuarentena + linaje combinados. Conteo por frontmatter tras
+  el merge: **IMPLEMENTED=19 PARTIAL=28 PLANNED=2 TOTAL=49** (BL-48/49 nuevos de la tesis RL, PLANNED). Tesis RL (06-*.md, ADR-0023,
+  checkpoints PPO en LFS) entra por primera vez a main con este merge.

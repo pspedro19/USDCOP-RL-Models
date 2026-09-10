@@ -8,7 +8,10 @@ import numpy as np
 import pandas as pd
 from scipy.optimize import brentq
 
-from kernels import sharpe
+if __package__:
+    from .kernels import sharpe
+else:  # soporte del runner standalone documentado
+    from kernels import sharpe
 
 __all__ = ["CostModel", "STRESS_SCENARIOS", "break_even_cost"]
 
@@ -41,12 +44,12 @@ def break_even_cost(returns_gross: pd.Series, turnover: pd.Series) -> float:
     g = returns_gross.to_numpy(dtype=float)
     tvr = turnover.to_numpy(dtype=float)
 
-    def net_sharpe(c_bps: float) -> float:
+    def net_ratio(c_bps: float) -> float:
         return sharpe(g - c_bps * 1e-4 * tvr)
 
     lo, hi = 0.0, 100.0  # 0 a 100 pb
-    if net_sharpe(lo) <= 0:
+    if net_ratio(lo) <= 0:
         return 0.0
-    if net_sharpe(hi) > 0:
+    if net_ratio(hi) > 0:
         return float(hi)   # sobrevive incluso a 100 pb: alfa muy robusto (o irreal)
-    return float(brentq(net_sharpe, lo, hi))
+    return float(brentq(net_ratio, lo, hi))

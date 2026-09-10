@@ -153,6 +153,66 @@ def _flat_decision(
     )
 
 
+def validate_policy_inputs(
+    policy: Policy,
+    snapshot: Mapping[str, Any],
+    context: PolicyContext,
+    *,
+    missing_input_policy: str = "FAIL_CLOSED",
+    stale_input_policy: str = "FAIL_CLOSED",
+) -> StrategyDecision | None:
+    """Aplica los fallbacks DECLARADOS a los inputs. Segundo eslabon de la cadena R3.
+
+    Devuelve ``None`` si los inputs son validos —o sea, «sigue adelante»—, una decision
+    ``FLAT`` explicita con su reason code si el fallback declarado es ``FLAT``, y **levanta**
+    si es ``FAIL_CLOSED``. Nunca adivina: invariante 9 (sin default, sin freeze).
+
+    Existe como funcion PROPIA porque el pipeline declarado es
+    ``resolve_feature_snapshot -> validate_policy_inputs -> evaluate_policy -> publish`` y
+    hasta ahora el segundo eslabon vivia **dentro** de :func:`evaluate_policy`: el factory no
+    tenia como ejecutarlo por separado, asi que una validacion fallida no era observable como
+    tarea propia — se veia como «evaluate fallo». Se extrae, NO se duplica: `evaluate_policy`
+    la llama, de modo que hay **una implementacion y dos consumidores** y no pueden divergir.
+    """
+    # ORDEN: `missing` ANTES que `stale` (acordado en CXD-606 tras CLD-563).
+    # No se puede preguntar "¿este dato es viejo?" por un dato que NO TIENES: la
+    # completitud del conjunto requerido es PRECONDICION de la frescura, no una
+    # alternativa a ella. Con el orden anterior (stale primero), la EDAD de un
+    # dato declarado OPCIONAL podia reclasificar la ausencia total del nucleo
+    # requerido —opcional vieja daba FLAT/INPUT_STALE; opcional fresca daba el
+    # missing FAIL_CLOSED declarado—: mismo estado de datos, dos veredictos, y el
+    # que decidia era el dato que la policy dice no necesitar.
+    errors = policy.validate_inputs(snapshot)
+    if errors:
+        if missing_input_policy == "FAIL_CLOSED":
+            raise ValueError(f"invalid policy inputs: {'; '.join(errors)}")
+        return _flat_decision(
+            policy, context, REASON_INPUT_MISSING, "; ".join(errors)[:200]
+        )
+
+    # Aqui los inputs requeridos ya son validos, asi que la frescura ES medible y
+    # se EXIGE como bool. Antes habia un `.get("snapshot_is_stale", False)`: la
+    # ausencia del hecho se leia como "fresco" — el mismo `False` fabricado que
+    # CXD-600 encontro en el factory, una capa mas abajo y sin que nadie lo mirara.
+    # `None` (frescura no medible) llega hasta aqui SOLO si el conjunto requerido
+    # esta completo, y entonces es una contradiccion: falla cerrado (CXD-606 §4),
+    # para que el transporte nullable no abra un bypass.
+    stale = context.extras.get("snapshot_is_stale")
+    if not isinstance(stale, bool):
+        raise ValueError(
+            f"context.extras['snapshot_is_stale'] must be a bool once required inputs "
+            f"are valid, got {stale!r} — a snapshot whose freshness was never measured "
+            f"is not evaluated"
+        )
+    if stale:
+        if stale_input_policy == "FAIL_CLOSED":
+            raise ValueError(
+                "snapshot is stale and stale_input_policy=FAIL_CLOSED — not publishing"
+            )
+        return _flat_decision(policy, context, REASON_INPUT_STALE, "snapshot marked stale")
+    return None
+
+
 def evaluate_policy(
     policy: Policy,
     snapshot: Mapping[str, Any],
@@ -181,25 +241,13 @@ def evaluate_policy(
     if not context.as_of:
         raise ValueError("context.as_of is required (decisions never carry an empty as_of)")
 
-    stale = context.extras.get("snapshot_is_stale", False)
-    if not isinstance(stale, bool):
-        raise ValueError(
-            f"context.extras['snapshot_is_stale'] must be a bool, got {stale!r}"
-        )
-    if stale:
-        if stale_input_policy == "FAIL_CLOSED":
-            raise ValueError(
-                "snapshot is stale and stale_input_policy=FAIL_CLOSED — not publishing"
-            )
-        return _flat_decision(policy, context, REASON_INPUT_STALE, "snapshot marked stale")
-
-    errors = policy.validate_inputs(snapshot)
-    if errors:
-        if missing_input_policy == "FAIL_CLOSED":
-            raise ValueError(f"invalid policy inputs: {'; '.join(errors)}")
-        return _flat_decision(
-            policy, context, REASON_INPUT_MISSING, "; ".join(errors)[:200]
-        )
+    degraded = validate_policy_inputs(
+        policy, snapshot, context,
+        missing_input_policy=missing_input_policy,
+        stale_input_policy=stale_input_policy,
+    )
+    if degraded is not None:
+        return degraded
 
     return policy.evaluate(snapshot, context)
 

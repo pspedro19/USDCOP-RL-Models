@@ -32,6 +32,17 @@ from src.core.constants import CLIP_MAX, CLIP_MIN
 DEFAULT_STATS_PATH = "config/norm_stats.json"
 
 
+# Claves de nivel superior que los productores de `norm_stats` escriben como
+# METADATOS, no como features. Se enumeran a proposito en vez de aceptar
+# cualquier `_...`: saltar todo lo que empiece por guion bajo convertiria una
+# feature malformada en invisible (CXD-316).
+#   `_meta`     -> src/data/ssot_dataset_builder.py:632
+#   `_metadata` -> src/training/engine.py:705, scripts/data/generate_dataset_variants.py:355
+# Cual de las dos convenciones es la canonica es una decision de SSOT y NO se
+# toma aqui; este modulo solo deja de rechazar los ficheros que ya se producen.
+RESERVED_METADATA_KEYS = frozenset({"_meta", "_metadata"})
+
+
 class ZScoreNormalizer:
     """
     Z-Score normalizer that loads statistics from configuration.
@@ -139,6 +150,10 @@ class ZScoreNormalizer:
         for feature_name, feature_stats in stats.items():
             if not isinstance(feature_stats, dict):
                 raise ValueError(f"Stats for {feature_name} must be a dictionary")
+            if feature_name in RESERVED_METADATA_KEYS:
+                # Bloque de metadatos, no una feature: no se le exige mean/std.
+                # Sigue teniendo que ser un objeto (comprobado arriba).
+                continue
             if "mean" not in feature_stats or "std" not in feature_stats:
                 raise ValueError(
                     f"Stats for {feature_name} must have 'mean' and 'std' keys"
@@ -151,6 +166,8 @@ class ZScoreNormalizer:
         Build lookup cache for fast normalization.
         """
         for feature_name, feature_stats in self._stats.items():
+            if feature_name in RESERVED_METADATA_KEYS:
+                continue  # metadato: nunca es una feature normalizable
             mean = float(feature_stats.get("mean", 0.0))
             std = float(feature_stats.get("std", 1.0))
             # Protect against zero std

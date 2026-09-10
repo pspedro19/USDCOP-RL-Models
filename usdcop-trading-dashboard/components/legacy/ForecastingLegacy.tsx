@@ -54,7 +54,19 @@ function MarketStatusBadge() {
 export default function ForecastingPage() {
   const [lastUpdate, setLastUpdate] = useState<string>('--:--:--');
   const [selectedAsset, setSelectedAsset] = useState<string>(DEFAULT_ANALYSIS_ASSET);
-  const isUsdcop = selectedAsset === 'usdcop';
+  // La puerta es `forecast_mode` del contrato, NUNCA `selectedAsset === 'usdcop'`.
+  // Hasta el 2026-08-05 esta vista ramificaba por `selectedAsset === 'usdcop'`, así que Oro y BTC
+  // afirmaban "política basada en REGLAS: no hay conjunto de modelos ML" mientras
+  // /forecasting (vista GM) les servía el zoo de 9 modelos — dos afirmaciones de HECHO
+  // contradictorias sobre el mismo producto. Medido: xauusd y btcusdt publican 459
+  // artefactos de zoo cada uno, así que la afirmación falsa era la de esta vista.
+  const mode = ANALYSIS_ASSETS.find((a) => a.asset_id === selectedAsset)?.forecast_mode;
+  const isModelZoo = mode === 'model_zoo';
+  // C034 / CXD-549: la rama es EXHAUSTIVA sobre los TRES valores. `'none'` NO es
+  // "todo lo que no es model_zoo": declara que no hay superficie publicada, y mandarlo
+  // a WeeklyInferenceView hacía que esta vista AFIRMARA una inferencia semanal que no
+  // existe y pidiera artefactos ausentes.
+  const hasNoSurface = mode === 'none';
 
   useEffect(() => {
     setLastUpdate(new Date().toLocaleTimeString());
@@ -90,8 +102,10 @@ export default function ForecastingPage() {
 
             {/* Subtitle - asset-aware */}
             <p className="text-sm sm:text-base lg:text-lg text-slate-400 max-w-2xl mx-auto mb-4 sm:mb-6 leading-relaxed">
-              {isUsdcop
-                ? 'Predicciones de precio USD/COP con 9 modelos de Machine Learning (walk-forward)'
+              {hasNoSurface
+                ? 'Este activo no publica superficie de forecasting'
+                : isModelZoo
+                ? 'Predicciones de precio con 9 modelos de Machine Learning (walk-forward)'
                 : 'Inferencia semanal basada en reglas: posicionamiento causal (dirección · exposición · régimen) para todo el año'}
             </p>
 
@@ -99,7 +113,7 @@ export default function ForecastingPage() {
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               <Badge variant="outline" className="bg-purple-500/10 text-purple-400 border-purple-500/30 text-xs px-3 py-1">
                 <TrendingUp className="w-3 h-3 mr-1.5" />
-                {isUsdcop ? 'ML MODEL ZOO' : 'WEEKLY INFERENCE'}
+                {hasNoSurface ? 'SIN SUPERFICIE PUBLICADA' : isModelZoo ? 'ML MODEL ZOO' : 'WEEKLY INFERENCE'}
               </Badge>
               <MarketStatusBadge />
               {/* Update Time inline with badges */}
@@ -111,15 +125,23 @@ export default function ForecastingPage() {
 
             {/* Pair selector — same segmented control as /analysis (DRY) */}
             <div className="mt-6 flex justify-center">
-              <AssetSelector assets={ANALYSIS_ASSETS} selected={selectedAsset} onSelect={setSelectedAsset} />
+              <AssetSelector assets={ANALYSIS_ASSETS.filter((a) => a.forecast_mode !== 'none')} selected={selectedAsset} onSelect={setSelectedAsset} />
             </div>
           </div>
         </section>
 
-        {/* Main Forecasting Section — USD/COP: ML model-zoo · Gold/BTC: rule-based weekly inference */}
+        {/* Main Forecasting Section — la puerta es forecast_mode, no el asset_id */}
         <section className="w-full flex flex-col items-center py-8 sm:py-10 lg:py-12">
           <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            {isUsdcop
+            {hasNoSurface
+              ? (
+                <p data-testid="forecasting-no-surface" className="text-sm text-slate-400 text-center">
+                  Este activo se analiza en <code>/analysis</code>, pero <strong>no publica
+                  artefactos de forecasting</strong>: no hay model zoo ni inferencia semanal.
+                  No se muestra ninguna predicción porque no existe ninguna.
+                </p>
+              )
+              : isModelZoo
               ? <ForecastingDashboard />
               : <WeeklyInferenceView key={selectedAsset} assetId={selectedAsset} />}
           </div>
@@ -132,7 +154,7 @@ export default function ForecastingPage() {
               Multi-Asset Weekly Forecasting System — USD/COP · Oro · Bitcoin
             </p>
             <p className="mt-2 text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
-              {isUsdcop
+              {isModelZoo
                 ? 'Powered by Bayesian Regression, XGBoost, CatBoost & Hybrid Ensembles'
                 : 'Rule-based science stack · vol-targeting × regime gating · backtest 2025 / producción 2026'}
             </p>

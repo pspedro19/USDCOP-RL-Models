@@ -63,13 +63,13 @@ def expected_max_sharpe(
     if sr_variance < 0:
         raise ValueError("sr_variance no puede ser negativa")
 
-    a = norm.ppf(1.0 - 1.0 / n_trials)
-    b = norm.ppf(1.0 - 1.0 / (n_trials * np.e))
-    sr_star = np.sqrt(sr_variance) * ((1.0 - EULER_MASCHERONI) * a + EULER_MASCHERONI * b)
+    # DELEGADO al SSOT constitucional (BL-18). `services/common/metrics.py` es el
+    # gate de release segun `quant-constitution.md`; una copia local del mismo
+    # estadistico convertia el numero con el que se promueve en algo que dependia de
+    # que fichero se importara.
+    from services.common.metrics import expected_max_sharpe_null
 
-    if periods_per_year > 1:  # sr_variance venía anualizada; SR* también
-        return float(sr_star)
-    return float(sr_star)
+    return float(expected_max_sharpe_null(n_trials, float(np.sqrt(sr_variance))))
 
 
 def probabilistic_sharpe(
@@ -88,6 +88,11 @@ def probabilistic_sharpe(
     if t < 2:
         raise ValueError("Se requieren al menos 2 observaciones")
 
+    # DELEGADO al SSOT (BL-18). La de-anualizacion se conserva AQUI porque es la
+    # convencion de entrada de este modulo (documentada arriba); el SSOT recibe ya el
+    # Sharpe por observacion, que es lo que su contrato pide.
+    from services.common.metrics import probabilistic_sharpe_ratio
+
     ppy = periods_per_year
     sr_pp = sr / np.sqrt(ppy) if ppy > 1 else sr
     sr_star_pp = sr_star / np.sqrt(ppy) if ppy > 1 else sr_star
@@ -100,8 +105,11 @@ def probabilistic_sharpe(
             "la distribución de retornos es demasiado patológica para el PSR"
         )
 
-    z = (sr_pp - sr_star_pp) * np.sqrt(t - 1.0) / np.sqrt(variance)
-    return float(norm.cdf(z))
+    return float(
+        probabilistic_sharpe_ratio(
+            sr_pp, t, skew=skew, kurtosis=kurt, sr_benchmark=sr_star_pp
+        )
+    )
 
 
 def deflated_sharpe(

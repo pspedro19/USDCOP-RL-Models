@@ -23,6 +23,7 @@ from src.policy_engine.runner import (  # noqa: F401
     build_policy,
     evaluate_policy,
     publish_signal,
+    validate_policy_inputs,
     write_policy_version_index,
 )
 
@@ -32,5 +33,6 @@ __all__ = [
     "build_policy",
     "evaluate_policy",
     "publish_signal",
+    "validate_policy_inputs",
     "write_policy_version_index",
 ]

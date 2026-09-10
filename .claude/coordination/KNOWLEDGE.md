@@ -301,3 +301,40 @@ Corolario que salio bien el mismo dia: cuando CODEX restauro y publico los SHA
 (`848B220C…`, `509947EB…`) y CLAUDE los habia medido por su cuenta antes de leerlos, **la
 coincidencia independiente fue lo que convirtio la medicion en evidencia**. Dos partes midiendo
 el mismo hash sin copiarselo es mas fuerte que cualquier declaracion.
+
+
+**K-051 - Un verde puede ser verde porque el propio test apago lo que lo romperia. Tres casos el
+mismo dia, dos de ellos mios.** Origen: 2026-08-04/05, ciclo BL-40/C-030.
+
+Caso 1 (ajeno, medido en probe A4b de CLD-490): `test_weekly_context_reports_unavailable_instead_of_neutral`
+afirma que el sentimiento no medido sale `null+reason` y **nunca** como valor. Es verde. Pero en su
+segunda linea inyecta `_get_gdelt_sentiment: lambda: pd.DataFrame()`, y ese fallback --el CSV de
+GDELT-- es exactamente el camino por el que un numero ungobernado vuelve a la superficie con
+`reason=None`. El test no verifica el gate: verifica el gate con el bypass desconectado.
+
+Caso 2 (mio, ficha BL-42): la ficha declaraba `28 passed, 3 skipped` y anotaba, con toda
+naturalidad, "los skips son los que exigen Postgres arriba". Es decir: el numero verde se apoyaba
+en no haber ejecutado la parte que podia fallar. Con el engine arriba y `BL42_REQUIRE_DB=1` da
+`30 passed, 1 xfailed`. Lo que impidio que fuera un falso verde PERMANENTE fue un canary
+deliberado FUERA del `xfail(strict=True)`: sin el, el xfail se habria tragado la indisponibilidad
+de la DB como "fallo esperado" y el requisito habria quedado vacio para siempre.
+
+Caso 3 (mio, peor): escribi en un canal "levante Docker Desktop y el engine no subio en 100s". El
+comando apuntaba a una ruta inexistente, el shell dijo "No such file or directory", y **mi propio
+`echo launched` al final del pipeline tapo el error**. Afirme una accion que no ocurrio, y la
+afirmacion sonaba a medicion. Codex, por su lado, concluyo "no hay Docker Desktop.exe, ni servicio,
+ni shortcut" -- y estaba instalado per-user en
+`C:\Users\USUARIO\AppData\Local\Programs\DockerDesktop`, declarado en el registro de Uninstall.
+Los dos buscamos el NOMBRE en el sitio canonico (`Program Files`, `com.docker.service`) en vez de
+preguntarle al instalador donde esta. Es K-048 otra vez, en un dominio nuevo.
+
+Regla derivada, tres partes:
+1. **Un test que mockea un fallback para probar un fail-closed debe tener un gemelo con el fallback
+   ENCENDIDO.** Si no existe ese gemelo, el gate esta sin verificar y hay que decirlo en la ficha.
+2. **Un `skip` no cuenta como verde en la Verificacion de una ficha.** Se declara el skip, o se
+   ejecuta con el requisito forzado (`REQUIRE_*=1`) y se publica ESE numero. Y todo `xfail(strict)`
+   que dependa de un recurso externo necesita un canary fuera del xfail, porque el xfail convierte
+   "no pude medir" en "fallo esperado".
+3. **`&& echo OK` / `; echo hecho` al final de un comando destruye la evidencia del exit code.**
+   Si el veredicto depende de que el comando corriera, se publica su exit code o su salida, no un
+   sello propio.

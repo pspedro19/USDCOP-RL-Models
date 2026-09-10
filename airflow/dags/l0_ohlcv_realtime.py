@@ -142,6 +142,26 @@ def should_run_today() -> bool:
 # MAIN TASK: Fetch + store for one symbol
 # =============================================================================
 
+def _publish_symbol_rows(conn, *, symbol: str, provider_id: str, rows):
+    """Publica las barras por la frontera Fabric, o `None` si el símbolo no tiene identidad.
+
+    La implementación vive en `src/data_quality/ingest_guard.py` para que este DAG y el
+    de backfill compartan **una** definición de cobertura. Duplicarla habría dejado dos
+    criterios que divergen en silencio — que es el defecto que este ciclo lleva
+    persiguiendo en varias formas.
+    """
+    from src.data_quality.ingest_guard import publish_or_declare_gap
+
+    return publish_or_declare_gap(
+        conn,
+        symbol=symbol,
+        provider_id=provider_id,
+        rows=rows,
+        interval_id='PT5M',
+        source_uri=f'dag://l0_ohlcv_realtime/{symbol}',
+    )
+
+
 def fetch_and_store_symbol(symbol: str, **context):
     """
     Fetch OHLCV for a single symbol and store in DB.
@@ -232,11 +252,53 @@ def fetch_and_store_symbol(symbol: str, **context):
         conn = get_db_connection()
         try:
             cur = conn.cursor()
+
+            # C025/C026 — publicacion Fabric ANTES del UPSERT legado, en la MISMA
+            # transaccion (el commit de abajo cierra ambos caminos). Solo se escriben
+            # las barras `accepted`: una barra en cuarentena no puede aterrizar en la
+            # tabla de mercado, que es la propiedad entera de BL-40.
+            filas_fabric = [
+                {'time': row['time'], 'open': row['open'], 'high': row['high'],
+                 'low': row['low'], 'close': row['close'], 'volume': row['volume']}
+                for _, row in df_filtered.iterrows()
+            ]
+            publicacion = _publish_symbol_rows(
+                conn, symbol=symbol, provider_id='twelvedata_multi', rows=filas_fabric
+            )
+            if publicacion is None:
+                # Simbolo SIN identidad canonica (hoy USD/BRL: no tiene AssetProfile).
+                # No se filtra ni se finge cobertura: se declara el hueco y se registra.
+                # Filtrar aqui apagaria su ingesta; callarlo seria peor, porque la
+                # ausencia de eventos de cuarentena pareceria "todo limpio".
+                logging.warning(
+                    "[%s] fuera de la cobertura Fabric: sin alias canonico en "
+                    "reference.provider_symbol, la barra NO pasa por el gate de calidad",
+                    symbol,
+                )
+                aceptadas = df_filtered
+            else:
+                # Se empareja por `time`, que es la clave de la barra (UPSERT es por
+                # `(time, symbol)`). Emparejar por identidad de objeto habría dependido
+                # de que el publicador devuelva los MISMOS dicts, algo que su contrato
+                # no promete.
+                instantes_ok = {f['time'] for f in publicacion.accepted}
+                aceptadas = df_filtered[df_filtered['time'].isin(instantes_ok)]
+                if publicacion.quarantine_count:
+                    logging.warning(
+                        "[%s] %d barra(s) en cuarentena, NO se escriben en la tabla legada",
+                        symbol, publicacion.quarantine_count,
+                    )
+
             values = [
                 (row['time'], row['symbol'], row['open'], row['high'],
                  row['low'], row['close'], row['volume'], row['source'])
-                for _, row in df_filtered.iterrows()
+                for _, row in aceptadas.iterrows()
             ]
+            if not values:
+                conn.commit()
+                logging.info("[%s] 0 barras aceptadas tras el gate de calidad", symbol)
+                cb.record_success()
+                return {'status': 'all_quarantined', 'symbol': symbol, 'rows': 0}
 
             execute_values(
                 cur,

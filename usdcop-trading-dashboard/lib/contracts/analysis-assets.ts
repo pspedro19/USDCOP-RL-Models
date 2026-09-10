@@ -18,7 +18,15 @@
  *                           USD/COP (root) and BTC/USDT (btcusdt/ subdir).
  *   - 'weekly_inference'  : rule-based causal weekly positioning JSON (Gold).
  */
-export type ForecastMode = 'model_zoo' | 'weekly_inference';
+/**
+ * `none` NO es un tercer modo de render: declara que el activo **no tiene superficie de
+ * forecasting publicada**. Se añadió el 2026-08-05 tras medir que `spx500` estaba declarado
+ * `model_zoo` con CERO artefactos en `public/forecasting/spx500/`, así que el selector lo
+ * ofrecía y su `csvPath` apuntaba a un fichero inexistente. La alternativa —sacarlo de
+ * `ANALYSIS_ASSETS`— no vale: esta lista es SSOT compartida con /analysis (news-feed,
+ * weekly analysis), y ahí spx500 sí participa. El contrato declara la ausencia; no la oculta.
+ */
+export type ForecastMode = 'model_zoo' | 'weekly_inference' | 'none';
 
 export interface AnalysisAsset {
   /** Canonical, path-safe key (lowercase, no slashes). */
@@ -43,8 +51,15 @@ export const ANALYSIS_ASSETS: AnalysisAsset[] = [
   { asset_id: 'usdcop', symbol: 'USD/COP', chart_symbol: 'USDCOP', display_name: 'USD/COP', asset_class: 'fx', forecast_mode: 'model_zoo' },
   { asset_id: 'xauusd', symbol: 'XAU/USD', chart_symbol: 'XAUUSD', display_name: 'Oro (Gold)', asset_class: 'commodity', forecast_mode: 'model_zoo' },
   { asset_id: 'btcusdt', symbol: 'BTC/USDT', chart_symbol: 'BTCUSDT', display_name: 'Bitcoin', asset_class: 'crypto', forecast_mode: 'model_zoo' },
-  { asset_id: 'spx500', symbol: 'SPX500', chart_symbol: 'SPX500', display_name: 'S&P 500', asset_class: 'equity_index', forecast_mode: 'model_zoo' },
+  // spx500: `none` porque public/forecasting/spx500/ está VACÍO (medido 2026-08-05, 0 ficheros
+  // frente a los 459 de xauusd y btcusdt). Sigue en la lista porque /analysis sí lo cubre.
+  { asset_id: 'spx500', symbol: 'SPX500', chart_symbol: 'SPX500', display_name: 'S&P 500', asset_class: 'equity_index', forecast_mode: 'none' },
 ];
+// NOTA deliberada: NO se exporta aquí una lista `FORECASTING_ASSETS` ya filtrada. Se intentó
+// (2026-08-05) y lo rechazó `forecasting-weekly-branch.test.tsx`: ese test sustituye este módulo
+// entero con `vi.mock`, así que CADA export nuevo obliga a actualizar todos los mocks o revienta
+// con "No X export is defined on the mock". La verdad vive en el DATO (`forecast_mode: 'none'`)
+// y cada vista filtra por él; la superficie del módulo se mantiene mínima a propósito.
 
 /** Default asset when none is specified (backward-compatible with legacy COP-only URLs). */
 export const DEFAULT_ANALYSIS_ASSET = 'usdcop';

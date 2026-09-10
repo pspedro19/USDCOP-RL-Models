@@ -337,10 +337,17 @@ def td_series(conn, symbol: str, interval: str, start: date, end: date,
                              retrieved_at))
             elif table == "asset_daily_ohlcv":
                 same_date = existing_dates.get(ts.astimezone(UTC).date(), [])
+                # `old_available IS NULL` = fila heredada, anterior al registro de
+                # disponibilidad. Comparar None con un datetime reventaba el backfill entero
+                # (TypeError) y dejaba SPY y USD/BRL congelados. Se trata como reparable
+                # porque la fila que la sustituye es del MISMO proveedor, con el MISMO sello,
+                # y verificada como barra COMPLETA: es estrictamente mas fiable que una de
+                # procedencia desconocida. No se toca ninguna fila de otro origen.
                 repairable_exact = any(
                     old_time == ts
                     and (old_source or "").startswith("twelvedata")
-                    and old_available < bar_complete_after(old_time, "1day")
+                    and (old_available is None
+                         or old_available < bar_complete_after(old_time, "1day"))
                     for old_time, old_source, old_available in same_date
                 )
                 if same_date and not repairable_exact:

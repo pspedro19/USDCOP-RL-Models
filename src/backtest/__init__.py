@@ -8,6 +8,9 @@ This package provides:
 - UnifiedBacktestEngine: Single Source of Truth for all backtesting
 - BacktestConfig: Immutable configuration for backtest runs
 - Trade, BacktestMetrics, BacktestResult: Data structures for results
+- WalkForwardValidator: Rolling-window validation and walk-forward optimization
+  (absorbido desde el paquete gemelo `src/backtesting/` el 2026-08-24; tenia cero
+  importadores y duplicaba el nombre conceptual de este)
 
 Design Principles:
 - Single Source of Truth: ONE backtest engine used everywhere
@@ -36,6 +39,13 @@ from .engine.unified_backtest_engine import (
     UnifiedBacktestEngine,
     create_backtest_engine,
 )
+from .walk_forward import (
+    WalkForwardMethod,
+    WalkForwardReport,
+    WalkForwardValidator,
+    WalkForwardWindow,
+    quick_walk_forward,
+)
 
 __all__ = [
     "BacktestConfig",
@@ -45,4 +55,9 @@ __all__ = [
     "TradeDirection",
     "UnifiedBacktestEngine",
     "create_backtest_engine",
+    "WalkForwardMethod",
+    "WalkForwardReport",
+    "WalkForwardValidator",
+    "WalkForwardWindow",
+    "quick_walk_forward",
 ]

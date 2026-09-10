@@ -160,6 +160,70 @@ jobs:
           retention-days: 7
 
   # ===========================================================================
+  # Regression Gates
+  # ---------------------------------------------------------------------------
+  # POR QUE EXISTE ESTE JOB. `tests/regression/` tiene 66 ficheros y hasta ahora
+  # CI solo nombraba 13, repartidos entre fabric-contracts.yml y specs-gate.yml.
+  # Los otros 53 no los ejecutaba NADIE: gates escritos, funcionando, y sin
+  # llamador. Uno de ellos —test_macro_clean_fx_scale— llevaba detectando un
+  # empalme de escala real en USDMXN/USDCLP sin que nadie lo viera.
+  #
+  # El directorio entero es el sujeto. Si algun dia hay que excluir algo, se
+  # excluye POR NOMBRE, con motivo, owner y condicion que lo cancela — nunca en
+  # silencio. `tests/unit/test_regression_ci_wiring.py` lo vigila.
+  # ===========================================================================
+  regression-test:
+    name: Regression Gates
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-regression-${{ hashFiles('pyproject.toml') }}
+          restore-keys: ${{ runner.os }}-pip-regression-
+
+      # `data` va AQUI y no es opcional: declara `pyarrow`, y sin el
+      # `pandas.read_parquet` revienta por engine ausente. Seis ficheros de
+      # `tests/regression/` tocan parquet y TRES estan en el step bloqueante
+      # (test_cop_features_pit, test_feature_contracts, test_macro_features_are_live),
+      # asi que sin esta extra el job caeria por el motivo equivocado — y la
+      # cuarentena FX moriria antes de llegar al assert de escala, perdiendo justo
+      # el diagnostico por el que existe.
+      #
+      # NO se anade `ml`: arrastraria torch a cada corrida de CI, y esa es una
+      # decision de coste que no toma este slice.
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev,forecasting,database,data]"
+          pip install pytest pytest-asyncio
+
+      # El step BLOQUEANTE, y desde 2026-08-06 ya no tiene excepciones: corre el
+      # directorio COMPLETO. Hubo dos cuarentenas y las dos se retiraron al cumplirse su
+      # condicion de cancelacion, que es como debian morir:
+      #   * action threshold SSOT  -> `9b67ffa8` volvio lazy los reexports de training,
+      #     el gate pasa 2/2 sin `stable_baselines3`.
+      #   * FX scale splice        -> la macro se cargo reparada, el backup se regenero
+      #     desde la base sana y `MACRO_DAILY_CLEAN` se regenero a su vez; el detector
+      #     pasa con 0 empalmes. El dato no se "perdono": se arreglo.
+      # Si vuelve a hacer falta una, se anade AQUI con motivo, owner y condicion de
+      # cancelacion, y en `CUARENTENA` de tests/unit/test_regression_ci_wiring.py.
+      - name: Run regression gates (blocking)
+        run: |
+          pytest tests/regression/ -q --tb=short
+
+  # ===========================================================================
   # Integration Tests
   # ===========================================================================
   integration-test:

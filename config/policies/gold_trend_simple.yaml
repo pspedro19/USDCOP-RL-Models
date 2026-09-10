@@ -26,7 +26,7 @@ asset: xauusd
 family: trend
 research_cluster: trend
 surface: action
-version: 1.0.0
+version: 1.1.0
 
 engine:
   type: rule_based
@@ -37,6 +37,10 @@ engine:
 
 inputs:
   feature_set_id: xauusd_gold_trend_simple_action_v1
+  # Las cuatro features que esta policy CONSUME pasan a ordenadas del set (antes
+  # figuraban como derivadas sin que nadie las materializara). El hash del contenido
+  # decisorio entra en la identidad: anadir o quitar un input mueve el policy_hash.
+  feature_set_hash: sha256:34ec810c7392914137183bc5af01ea62ede64fc53b5234c91f9ddad5f3dc1ce5
   resample_policy_id: gold_daily_official_v1
   required_features: [close, sma_63, sma_126, sma_252, realized_vol_20]
   optional_features: [regime_risk_mult]     # leído solo si apply_regime_multiplier
@@ -68,8 +72,14 @@ governance:
   frozen_at: '2026-07-28'
   ssot_manifest: config/strategy_manifests/xauusd.yaml
   manifest_code_hash_sha256_16: bc494207ee2916d8
-  feature_set_hash: null
-  policy_hash: sha256:fb3a70749788959fe0a22b5e8994e25d1792a10e12b5349dc37bce4327169d6a
+  policy_hash: sha256:1614ba727d77582e2b7227de1c5a6a411d0ec04b5ebf32e4f8dcb00b3b70c96f
+  policy_hash_v1_0_0: sha256:fb3a70749788959fe0a22b5e8994e25d1792a10e12b5349dc37bce4327169d6a
+  policy_hash_note: >-
+    v1.1.0 declara `inputs.feature_set_hash` y su set gana las CUATRO features que la
+    policy ya consumia (`sma_63/126/252`, `realized_vol_20`), antes listadas como
+    derivadas sin productor. Ambos entran en `canonical_policy_payload`, asi que la
+    identidad se mueve. Se conserva el hash de v1.0.0 para poder auditar. NO cambia
+    el estado: sigue PARITY_PENDING, no habia paridad que heredar.
   trials_charged: 0
   trials_note: >-
     Migración de representación (0 trials). El flag apply_regime_multiplier

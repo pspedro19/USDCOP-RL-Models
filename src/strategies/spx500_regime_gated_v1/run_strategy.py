@@ -5,7 +5,7 @@
 
 AVISO: El veredicto que imprime mide el CABLEADO del pipeline y la SEVERIDAD de los
 gates, no alfa real. Sobre ruido sintético, lo científicamente correcto es que los
-gates RECHACEN a las candidatas (H6). Que el DSR con N=989 tumbe un Sharpe de ~1.0
+gates RECHACEN a las candidatas (H6). Que el DSR con el conteo gobernado de trials
 no es un bug: es exactamente el punto de Bailey-López de Prado. Para evidencia real,
 enchufá SPY total-return + FRED (ver README) y volvé a correr.
 """
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -24,20 +25,29 @@ try:
 except Exception:  # noqa: BLE001
     pass
 
-import datagen
-from benchmarks import BENCHMARKS, build_benchmark, vol_target_weights
-from engine import BacktestConfig, BacktestEngine
-from kernels import cer_gain_bps, gate_g4, gate_g6, validate_report_benchmarks
-from metrics import (
-    compute_metrics,
-    dsr_from_family,
-    pbo_from_family,
-    regime_robustness,
-)
-from policies import POLICIES
-from regime import label_regimes
+ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-N_MAX_STUDY = 989          # SDD-000 §3: presupuesto pre-registrado (input del DSR)
+if __package__:
+    from . import datagen
+    from .benchmarks import BENCHMARKS, build_benchmark, vol_target_weights
+    from .engine import BacktestConfig, BacktestEngine
+    from .kernels import cer_gain_bps, gate_g4, gate_g6, validate_report_benchmarks
+    from .metrics import compute_metrics, dsr_from_family, pbo_from_family, regime_robustness
+    from .policies import POLICIES
+    from .regime import label_regimes
+else:  # soporte del runner standalone documentado
+    import datagen
+    from benchmarks import BENCHMARKS, build_benchmark, vol_target_weights
+    from engine import BacktestConfig, BacktestEngine
+    from kernels import cer_gain_bps, gate_g4, gate_g6, validate_report_benchmarks
+    from metrics import compute_metrics, dsr_from_family, pbo_from_family, regime_robustness
+    from policies import POLICIES
+    from regime import label_regimes
+from src.metrics.trial_count import read_n_trials_total  # noqa: E402
+
+TRIAL_REGISTRY = ROOT / ".claude/specs/assets/spx500/HYPOTHESIS-REGISTRY.md"
 COST_BASE = 2.0
 COST_STRESS = 4.0          # x2, obligatorio en el reporte (SDD-006)
 
@@ -73,6 +83,12 @@ def _config_family(df) -> tuple[pd.DataFrame, np.ndarray]:
             sharpes.append(m.sharpe)
     matrix = pd.DataFrame(streams).dropna()
     return matrix, np.array(sharpes, dtype=float)
+
+
+def _governed_dsr(candidate, family_sharpes: np.ndarray) -> tuple[float, int]:
+    """Compute DSR with the asset registry count and expose the audited N for reporting."""
+    n_trials = read_n_trials_total(TRIAL_REGISTRY)
+    return dsr_from_family(candidate, family_sharpes, n_trials), n_trials
 
 
 def main(seed: int = datagen.__dict__.get("_DEFAULT_SEED", 20260709)) -> dict:
@@ -119,7 +135,7 @@ def main(seed: int = datagen.__dict__.get("_DEFAULT_SEED", 20260709)) -> dict:
     voltgt = net_returns["VOL_TARGET_10"]
 
     matrix, family_sharpes = _config_family(df)
-    dsr = dsr_from_family(base_metrics[cand], family_sharpes, N_MAX_STUDY)
+    dsr, n_trials = _governed_dsr(base_metrics[cand], family_sharpes)
     pbo = pbo_from_family(matrix)
 
     cer_g = cer_gain_bps(net_returns[cand].to_numpy(), voltgt.to_numpy())
@@ -142,7 +158,7 @@ def main(seed: int = datagen.__dict__.get("_DEFAULT_SEED", 20260709)) -> dict:
     print(f"  G3 utilidad económica   CER_gain vs vol-target = {cer_g:>+8.1f} pb   "
           f"-> {'PASA' if g3 else 'FALLA'}")
     print(f"  G4 significancia         DSR = {dsr:6.3f} (>0.95)   PBO = {pbo:5.3f} (<0.50)   "
-          f"-> {'PASA' if g4 else 'FALLA'}  [N={N_MAX_STUDY} trials]")
+          f"-> {'PASA' if g4 else 'FALLA'}  [N={n_trials} trials gobernados]")
     print(f"  G5 robustez de régimen   bate a vol-target en {wins}/4 regímenes   "
           f"-> {'PASA' if g5 else 'FALLA'}")
     for rn, r in reg.items():

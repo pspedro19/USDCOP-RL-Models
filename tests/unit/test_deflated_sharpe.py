@@ -47,6 +47,21 @@ def test_deflated_sharpe_penalizes_multiple_trials():
     assert 0.0 <= d10 <= 1.0
 
 
+def test_dsr_gate_uses_full_precision_not_a_four_decimal_display_value():
+    """A display round must never move the constitutional ``DSR > 0.95`` gate."""
+    result = deflated_sharpe_ratio(
+        sharpe_per_period=0.13100591948807547,
+        n_obs=1000,
+        n_trials=10,
+        trials_sharpe_std=0.05,
+    )
+
+    assert 0.95 < result["dsr"] < 0.95005
+    assert round(result["dsr"], 4) == 0.95
+    assert result["significant"] is True
+    assert result["significant"] == (result["dsr"] > 0.95)
+
+
 def test_trial_aware_moments_shape():
     rng = np.random.default_rng(0)
     r = rng.normal(0.0005, 0.01, size=2000)

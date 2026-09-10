@@ -24,7 +24,7 @@ Version: 1.2.0 (corta-circuitos de drawdown REVIVIDO: unidad resuelta desde prec
 Date: 2026-07-29
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
 import logging
@@ -335,6 +335,115 @@ def compute_metrics(**context) -> Dict[str, Any]:
         conn.close()
 
 
+def _project_root() -> Path:
+    """Raíz del proyecto, resuelta por lo que CONTIENE y no por contar directorios.
+
+    `Path(__file__).resolve().parents[2]` acierta en el repo —donde este fichero está en
+    `<repo>/airflow/dags/`— y **falla en el contenedor**, donde el mismo fichero vive en
+    `/opt/airflow/dags/` y ese cálculo devuelve `/opt`. El síntoma era
+    `FileNotFoundError: /opt/config/metrics/catalog.yaml`, y con él
+    `persist_governed_metric_events` no llegaba a escribir: por eso `control.metric_event`
+    se quedó en 3 filas mientras el DAG reportaba tareas previas en verde.
+
+    El propio fichero ya esquivaba esto 350 líneas más abajo
+    (`cwd="/opt/airflow" if Path("/opt/airflow/scripts").exists() else ...`): el problema
+    se conocía en un sitio y no en el otro. Aquí se resuelve buscando hacia arriba el
+    fichero que se va a leer, así que la respuesta es correcta en cualquier layout, y si
+    no aparece se **falla cerrado** en vez de devolver una ruta que no existe.
+    """
+    # Sólo se sube por los ancestros. Una primera versión añadía `/opt/airflow` como
+    # candidato explícito; el mutante que lo quitaba dejaba los tests en verde y al mirar
+    # por qué resultó ser redundante — en el contenedor `/opt/airflow` YA es uno de los
+    # padres del fichero. Un caso especial que no cambia nada sugiere que la resolución
+    # depende de conocer el layout, y es justo lo contrario.
+    marcador = Path("config") / "metrics" / "catalog.yaml"
+    for base in Path(__file__).resolve().parents:
+        if (base / marcador).is_file():
+            return base
+    raise RuntimeError(
+        f"no encuentro {marcador} desde {Path(__file__).resolve()}. Sin el catálogo no "
+        f"hay métrica gobernada que persistir, y adivinar la raíz es como se llegó a "
+        f"leer /opt/config"
+    )
+
+
+def persist_governed_metric_events(**context) -> dict[str, object]:
+    """Publish H5 paper Sharpe through the BL-18 engine and metric ledger."""
+    import numpy as np
+
+    from src.metrics.engine import MetricCatalog, MetricEngine
+    from src.metrics.persistence import persist_metric_event_dbapi
+
+    conn = get_db_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT signal_date, direction, week_pnl_pct,
+                   entry_price, exit_price, leverage
+            FROM forecast_h5_executions
+            WHERE status = 'closed' AND strategy_id = %s
+            ORDER BY signal_date ASC
+            """,
+            (H5_PRODUCTION_STRATEGY_ID,),
+        )
+        rows = cur.fetchall()
+        if not rows:
+            return {"persisted": False, "reason": "no_closed_executions"}
+
+        as_of = datetime.combine(rows[-1][0], datetime.min.time(), tzinfo=timezone.utc)
+        window_start = as_of - timedelta(weeks=26)
+        window_rows = [row for row in rows if row[0] >= window_start.date()]
+        scale_to_points = resolve_return_scale_to_points(
+            (row[2], row[1], row[3], row[4], row[5]) for row in window_rows
+        )
+        returns = np.asarray(
+            [float(row[2] or 0) * scale_to_points / 100.0 for row in window_rows],
+            dtype=float,
+        )
+
+        root = _project_root()
+        catalog = MetricCatalog.load(root / "config" / "metrics" / "catalog.yaml")
+        engine = MetricEngine.from_asset_registry(
+            catalog, assets_dir=root / "config" / "assets"
+        )
+        event = engine.compute(
+            entity_type="strategy",
+            entity_id=H5_PRODUCTION_STRATEGY_ID,
+            strategy_id=H5_PRODUCTION_STRATEGY_ID,
+            asset_id="usdcop",
+            metric="strategy.sharpe",
+            window="26w",
+            env="paper",
+            as_of=as_of,
+            run_id=f"h5-l6:{as_of.date().isoformat()}",
+            context={
+                "returns": returns,
+                "return_interval": "P1W",
+                "n_trades": len(returns),
+                "window_start": window_start,
+                "window_end": as_of,
+            },
+            lineage={
+                "dag_id": DAG_ID,
+                "source_table": "forecast_h5_executions",
+            },
+        )
+        result = persist_metric_event_dbapi(cur, event)
+        conn.commit()
+        return {
+            "persisted": True,
+            "inserted": result.inserted,
+            "metric_event_id": result.metric_event_id,
+            "status": event.status,
+        }
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 # =============================================================================
 # TASK 3: CHECK DECISION GATES
 # =============================================================================
@@ -630,6 +739,11 @@ with DAG(
         python_callable=persist_evaluation,
     )
 
+    t_metric_event = PythonOperator(
+        task_id='persist_governed_sharpe',
+        python_callable=persist_governed_metric_events,
+    )
+
     t_alert = PythonOperator(
         task_id='alert_summary',
         python_callable=honest_leaf(alert_summary),
@@ -645,7 +759,9 @@ with DAG(
         import sys as _sys
         r = subprocess.run(
             [_sys.executable, "scripts/pipeline/candidates_paper_ledger.py"],
-            cwd="/opt/airflow" if Path("/opt/airflow/scripts").exists() else str(Path(__file__).resolve().parents[2]),
+            # Era el apaño ad-hoc que convivía con el bug: aquí se sabía que el layout
+            # cambia y 400 líneas más arriba no. Unificado con el mismo resolutor.
+            cwd=str(_project_root()),
             capture_output=True, text=True, timeout=3600,
         )
         logger.info(r.stdout[-2000:] if r.stdout else "")
@@ -658,5 +774,46 @@ with DAG(
         execution_timeout=timedelta(minutes=60),
     )
 
-    t_load >> t_metrics >> t_gates >> t_persist >> t_alert
-    t_persist >> t_paper_ledger
+    def _verify_ledger_anchor(**context) -> str:
+        """BL-17: tras escribir la semana, el pasado cerrado debe seguir reproduciendo.
+
+        Corre DESPUÉS de `paper_ledger_2026` a propósito: el momento en que el ledger
+        se toca es exactamente cuando una reescritura de la historia podría colarse. El
+        ancla cubre un prefijo por semana de corte, así que el append normal no la
+        rompe; sólo la rompe editar o borrar lo ya cerrado.
+        """
+        import json as _json
+
+        from src.identity.ledger_replay import assert_anchor_holds, read_ledger
+
+        # Segunda instancia del mismo defecto: aquí también se contaba profundidad y en
+        # el contenedor daba `/opt/data/anchors/...`. El ancla existe en el repo, así que
+        # el gate se declaraba "decorativo" por no encontrar un fichero que sí estaba.
+        raiz = _project_root()
+        ruta = raiz / "data" / "anchors" / "paper_ledger_h5.json"
+        if not ruta.is_file():
+            raise RuntimeError(
+                f"falta el ancla del paper ledger ({ruta}): sin ancla no hay nada que "
+                "verificar y el gate seria decorativo"
+            )
+        ancla = _json.loads(ruta.read_text(encoding="utf-8"))
+
+        conn = get_db_connection()
+        try:
+            digest = assert_anchor_holds(ancla, read_ledger(conn))
+        finally:
+            conn.close()
+        logger.info(
+            "paper ledger reproduce su ancla %s-W%02d: %s",
+            ancla["until_year"], int(ancla["until_week"]), digest,
+        )
+        return digest
+
+    t_verify_anchor = PythonOperator(
+        task_id='verify_ledger_anchor',
+        python_callable=_verify_ledger_anchor,
+        execution_timeout=timedelta(minutes=5),
+    )
+
+    t_load >> t_metrics >> t_gates >> t_persist >> t_metric_event >> t_alert
+    t_metric_event >> t_paper_ledger >> t_verify_anchor

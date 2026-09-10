@@ -13,7 +13,10 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-from costs import CostModel
+if __package__:
+    from .costs import CostModel
+else:  # soporte del runner standalone documentado
+    from costs import CostModel
 
 __all__ = ["BacktestConfig", "BacktestResult", "BacktestEngine"]
 

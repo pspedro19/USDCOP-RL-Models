@@ -1,0 +1,59 @@
+{
+  "strategy_id": "spx500_regime_gated_v1",
+  "strategy_name": "S&P 500 \u00b7 Trend + r\u00e9gimen",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "date_range": {
+    "start": "2026-01-02",
+    "end": "2026-08-11"
+  },
+  "trades": [
+    {
+      "trade_id": 1,
+      "timestamp": "2026-01-02 21:00:00",
+      "exit_timestamp": "2026-03-20 20:00:00",
+      "side": "LONG",
+      "entry_price": 6858.47,
+      "exit_price": 6506.48,
+      "pnl_pct": -3.7682,
+      "pnl_usd": -376.82,
+      "equity_at_entry": 10000.0,
+      "equity_at_exit": 9623.18,
+      "leverage": 0.872,
+      "exit_reason": "exposure_zero"
+    },
+    {
+      "trade_id": 2,
+      "timestamp": "2026-04-09 20:00:00",
+      "exit_timestamp": "2026-06-16 20:00:00",
+      "side": "LONG",
+      "entry_price": 6824.66,
+      "exit_price": 7511.35,
+      "pnl_pct": 3.2752,
+      "pnl_usd": 315.18,
+      "equity_at_entry": 9623.18,
+      "equity_at_exit": 9938.36,
+      "leverage": 0.595,
+      "exit_reason": "exposure_zero"
+    },
+    {
+      "trade_id": 3,
+      "timestamp": "2026-07-13 20:00:00",
+      "exit_timestamp": "2026-08-11 20:00:00",
+      "side": "LONG",
+      "entry_price": 7515.34,
+      "exit_price": 7743.93,
+      "pnl_pct": 2.3212,
+      "pnl_usd": 230.69,
+      "equity_at_entry": 9938.36,
+      "equity_at_exit": 10169.05,
+      "leverage": 0.635,
+      "exit_reason": "year_end_open"
+    }
+  ],
+  "summary": {
+    "n_trades": 3,
+    "total_return_pct": 1.66,
+    "note_n": "N<20 => solo conteo y PnL"
+  }
+}

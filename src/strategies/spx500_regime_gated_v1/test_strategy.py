@@ -5,23 +5,40 @@
 A diferencia de la suite `sp500.*` (roja hasta que exista el paquete), estos tests
 corren HOY porque la capa de estrategia es autocontenida y reusa los kernels reales.
 Verifican las mismas propiedades duras: next-open, costo monótono, régimen PIT,
-y que el DSR con N=989 no aprueba ruido.
+y que el DSR conserva dientes con el conteo gobernado del activo.
 """
 
 from __future__ import annotations
+
+import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
-import datagen
-from benchmarks import build_benchmark
-from costs import CostModel
-from engine import BacktestConfig, BacktestEngine
-from kernels import deflated_sharpe
-from metrics import compute_metrics
-from policies import POLICIES, STRATEGY_IDS
-from regime import label_regimes
+ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+if __package__:
+    from . import datagen
+    from .benchmarks import build_benchmark
+    from .costs import CostModel
+    from .engine import BacktestConfig, BacktestEngine
+    from .kernels import deflated_sharpe
+    from .metrics import compute_metrics
+    from .policies import POLICIES, STRATEGY_IDS
+    from .regime import label_regimes
+else:  # soporte del comando standalone documentado arriba
+    import datagen
+    from benchmarks import build_benchmark
+    from costs import CostModel
+    from engine import BacktestConfig, BacktestEngine
+    from kernels import deflated_sharpe
+    from metrics import compute_metrics
+    from policies import POLICIES, STRATEGY_IDS
+    from regime import label_regimes
 
 
 @pytest.fixture(scope="module")
@@ -95,10 +112,19 @@ def test_gated_is_bounded_by_trend(df):
 
 
 # ---------------------------------------------------------------- DSR tiene dientes (G4)
-def test_dsr_with_989_trials_rejects_a_sharpe_of_1():
-    """R-47: un Sharpe de ~1.0 con 989 trials NO es significativo."""
+def test_dsr_with_governed_trials_rejects_a_sharpe_of_1():
+    """R-47: el test usa el registro gobernado, nunca la cota de gasto N_MAX."""
+    if __package__:
+        from .run_strategy import TRIAL_REGISTRY
+    else:
+        from run_strategy import TRIAL_REGISTRY
+    from src.metrics.trial_count import read_n_trials_total
+
     dsr = deflated_sharpe(
-        sr=1.0, sr_variance=0.25, n_trials=989, t=2520,
+        sr=1.0,
+        sr_variance=0.25,
+        n_trials=read_n_trials_total(TRIAL_REGISTRY),
+        t=2520,
         skew=0.0, kurt=3.0, periods_per_year=252,
     )
     assert dsr < 0.95, f"el DSR debería rechazar (dio {dsr:.3f})"

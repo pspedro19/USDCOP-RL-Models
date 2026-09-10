@@ -59,3 +59,61 @@ sobre su propia fuente. Es la diferencia entre proteger el render y proteger la 
 
 ## Notas constitución
 El frontend presenta hechos; no decide ni recalcula (ley 12 FABRIC).
+
+## Brecha registrada: `PolicyVersionRecord` existe, valida estricto y NO TIENE PRODUCTORES
+
+**Registro documental** (CLAUDE, 2026-08-06, autorizado en CXD-623). No se implementa
+productor ni se toca el `status` de esta ficha: eso requiere propuesta y review propios.
+
+### El hecho, medido
+
+`src/contracts/policy_version.py` declara `PolicyVersionRecord` con **`feature_set_hash: str`
+obligatorio**, y su `__post_init__` le aplica `require_hash` — patrón `^sha256:[0-9a-f]{64}$`,
+así que un `null` **levanta**. Junto a él, `params_hash`, `policy_hash` y `resample_policy_hash`
+reciben el mismo trato.
+
+Búsqueda de constructores en todo el repo (`rg "PolicyVersionRecord"`, excluyendo `.tmp/`):
+
+| Anchor | Qué hace |
+|---|---|
+| `src/contracts/policy_version.py` | define la dataclass y valida |
+| `src/policy_engine/runner.py:39` | la **importa** |
+| `src/policy_engine/runner.py:284` | `write_policy_version_index(records: Iterable[PolicyVersionRecord], …)` — la **tipa** |
+| `src/policy_engine/runner.py:300` | `isinstance(record, PolicyVersionRecord)` — la **valida** |
+| `tests/unit/test_policy_backend_contract.py:33,96` | `from_dict` en tests |
+| **constructores productivos** | **CERO** |
+
+### Por qué importa, y qué NO significa
+
+El índice `control.policy_version` que la API del dashboard lee (`GET /api/strategies`) se
+escribe con `write_policy_version_index`, que exige registros validados. **Nadie construye
+uno**, así que el índice nunca se ha producido por esta vía.
+
+Esto explica un detalle que parecía otra cosa: los cuatro specs traían
+`governance.feature_set_hash: null` y **eso no rompía nada** — no porque el `null` fuera
+aceptable, sino porque **ningún productor lo leía jamás**. Un campo obligatorio que nunca se
+puebla porque nunca se construye el objeto que lo exige.
+
+Es el mismo patrón que ya apareció dos veces en esta serie y conviene nombrarlo como patrón:
+`resolve_feature_snapshot` tenía cero llamadores productivos antes de C-010, y `status_ceiling`
+fue escrita fail-closed y no la consultaba nadie hasta CXD-622. **Mecanismo correcto, sin
+llamador** — no falla, no aparece en ninguna suite roja, y da la impresión de estar cubierto
+porque el código existe y está bien escrito.
+
+**Lo que NO se afirma aquí**: que el contrato esté mal diseñado, ni que haya que construir el
+productor ya. Puede que el índice deba producirse en otro punto del ciclo, o que
+`control.policy_version` llegue con la migración de `fabric-v1`. Decidirlo es alcance de esta
+ficha, no de un registro.
+
+### Qué haría falta para cerrarla (no ejecutado)
+
+1. Decidir **quién** escribe el índice y **cuándo** (¿tras el freeze de una policy?, ¿en el
+   deploy?, ¿en el DAG?).
+2. Poblar los cuatro hashes que el record exige. `policy_hash` ya existe en los specs;
+   `feature_set_hash` existe ahora **sólo en `spx500_daily_ma200_v1`** (piloto `91400773`,
+   deuda declarada para las otras tres); `params_hash` y `resample_policy_hash` **no existen
+   en ningún spec** — hay que decidir de dónde salen antes de prometer el record.
+3. Un candado que falle si el índice se declara producido y no lo está, para que esta brecha
+   no pueda volver en silencio.
+
+**BL-46 sigue `PARTIAL`.** Este registro no mueve su estado ni añade alcance.

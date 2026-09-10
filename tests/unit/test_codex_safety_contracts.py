@@ -28,6 +28,14 @@ def test_canonical_numbers_are_typed_stable_and_line_ending_independent() -> Non
     assert canonical_json_bytes({"x": 1.0}) == b'{"x":1}'
 
 
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_canonical_json_rejects_nonfinite_numbers(value: float) -> None:
+    from src.identity.canonical import CanonicalizationError, canonical_json_bytes
+
+    with pytest.raises(CanonicalizationError, match="NaN and Infinity are forbidden"):
+        canonical_json_bytes({"value": value})
+
+
 def test_schema_quantum_applies_inside_arrays_and_unmatched_paths_fail() -> None:
     from src.identity.canonical import CanonicalizationError, canonical_json_bytes
 
@@ -68,6 +76,7 @@ def test_market_alias_registry_is_bijective_and_quality_is_fail_closed() -> None
         )
     registry = ProviderSymbolRegistry(
         [
+            ProviderSymbol("twelvedata", "USD/MXN", "usdmxn"),
             ProviderSymbol("yahoo", "MXN=X", "usdmxn"),
             ProviderSymbol("internal", "USD_MXN", "usdmxn"),
         ]
@@ -76,7 +85,32 @@ def test_market_alias_registry_is_bijective_and_quality_is_fail_closed() -> None
         "config/quality/market_price_ranges.yaml", identity_registry=registry
     )
     good = {"open": 19, "high": 20, "low": 18, "close": 19.5}
-    assert rules.evaluate_provider_bar("YAHOO", "mxn=x", good).accepted
+    modern_start = datetime(1993, 1, 1, tzinfo=timezone.utc)
+    assert rules.evaluate_provider_bar(
+        "TWELVEDATA", "usd/mxn", good, observed_at=modern_start
+    ).accepted
+    historical = {"open": 2.72, "high": 2.75, "low": 2.7, "close": 2.712}
+    assert rules.evaluate_provider_bar(
+        "twelvedata", "USD/MXN", historical, observed_at=modern_start
+    ).accepted
+    below_declared_range = {"open": 2.49, "high": 2.49, "low": 2.49, "close": 2.49}
+    assert not rules.evaluate_provider_bar(
+        "twelvedata", "USD/MXN", below_declared_range, observed_at=modern_start
+    ).accepted
+    assert not rules.evaluate_provider_bar(
+        "yahoo", "MXN=X", good, observed_at=modern_start
+    ).accepted
+    assert not rules.evaluate_provider_bar("twelvedata", "USD/MXN", good).accepted
+    assert not rules.evaluate_provider_bar(
+        "twelvedata", "USD/MXN", good, observed_at=datetime(1993, 1, 1)
+    ).accepted
+    assert not rules.evaluate_provider_bar(
+        "twelvedata",
+        "USD/MXN",
+        good,
+        observed_at=modern_start - timedelta(microseconds=1),
+    ).accepted
+    assert not rules.evaluate_bar("usdmxn", good).accepted
     assert not rules.evaluate_bar("unknown", good).accepted
     assert not rules.evaluate_bar(
         "usdmxn", {"open": -1, "high": 20, "low": -2, "close": 19}
@@ -85,6 +119,86 @@ def test_market_alias_registry_is_bijective_and_quality_is_fail_closed() -> None
         "usdmxn",
         {"open": "Infinity", "high": "Infinity", "low": 18, "close": 19},
     ).accepted
+
+
+def test_scoped_quality_range_config_is_closed_world(tmp_path: Path) -> None:
+    from src.data_quality.rules import QualityRuleSet
+
+    config = tmp_path / "ranges.yaml"
+    config.write_text(
+        """version: '1'\nprice_ranges:\n  usdmxn:\n    - provider_id: twelvedata\n      valid_from: '1993-01-01T00:00:00Z'\n      bounds: [2.5, 100]\n      invented: true\n""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="unknown fields"):
+        QualityRuleSet.from_yaml(config)
+
+
+def test_scoped_quality_range_uses_latest_effective_regime(tmp_path: Path) -> None:
+    from src.data_quality.rules import QualityRuleSet
+    from src.market.identity import ProviderSymbol, ProviderSymbolRegistry
+
+    registry = ProviderSymbolRegistry(
+        [ProviderSymbol("twelvedata", "USD/MXN", "usdmxn")]
+    )
+    old_regime_only = {"open": 5, "high": 5, "low": 5, "close": 5}
+    regimes = [
+        """    - provider_id: twelvedata
+      valid_from: '1993-01-01T00:00:00Z'
+      bounds: [2.5, 100]
+""",
+        """    - provider_id: twelvedata
+      valid_from: '2010-01-01T00:00:00Z'
+      bounds: [10, 40]
+""",
+    ]
+
+    for order, ordered_regimes in (
+        ("ascending", regimes),
+        ("descending", list(reversed(regimes))),
+    ):
+        config = tmp_path / f"ranges-{order}.yaml"
+        config.write_text(
+            "version: '1'\nprice_ranges:\n  usdmxn:\n" + "".join(ordered_regimes),
+            encoding="utf-8",
+        )
+        rules = QualityRuleSet.from_yaml(config, identity_registry=registry)
+
+        assert rules.evaluate_provider_bar(
+            "twelvedata",
+            "USD/MXN",
+            old_regime_only,
+            observed_at=datetime(2009, 12, 31, tzinfo=timezone.utc),
+        ).accepted, order
+        decision = rules.evaluate_provider_bar(
+            "twelvedata",
+            "USD/MXN",
+            old_regime_only,
+            observed_at=datetime(2010, 1, 1, tzinfo=timezone.utc),
+        )
+        assert not decision.accepted, order
+        assert decision.rule_id == "bar.range.usdmxn", order
+
+
+def test_scoped_quality_range_rejects_duplicate_provider_cutoff(tmp_path: Path) -> None:
+    from src.data_quality.rules import QualityRuleSet
+
+    config = tmp_path / "ranges.yaml"
+    config.write_text(
+        """version: '1'
+price_ranges:
+  usdmxn:
+    - provider_id: twelvedata
+      valid_from: '2010-01-01T00:00:00Z'
+      bounds: [10, 40]
+    - provider_id: TWELVEDATA
+      valid_from: '2010-01-01T00:00:00Z'
+      bounds: [11, 41]
+""",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="duplicate scoped price range"):
+        QualityRuleSet.from_yaml(config)
 
 
 def _target(environment: str = "paper", currency: str = "USD"):
@@ -658,9 +772,9 @@ def test_portfolio_sql_uses_materialized_sleeves_and_aggregate_target_artifact()
 def _metric_engine():
     from src.metrics.engine import MetricCatalog, MetricEngine
 
-    return MetricEngine(
+    return MetricEngine.from_asset_registry(
         MetricCatalog.load("config/metrics/catalog.yaml"),
-        annualization_by_asset={"usdcop": 52},
+        assets_dir="config/assets",
     )
 
 
@@ -668,6 +782,7 @@ def _metric_context(n_trades=20, returns=None):
     end = datetime(2026, 1, 5, tzinfo=timezone.utc)
     return end, {
         "returns": returns or ([0.01, -0.005, 0.003, -0.001] * 5),
+        "return_interval": "P1W",
         "n_trades": n_trades,
         "window_start": end - timedelta(weeks=26),
         "window_end": end,
@@ -740,8 +855,363 @@ def test_fabric_migration_plan_is_explicit_and_review_gated() -> None:
         (79, "fabric_integrity_remediation.sql"),
         (80, "market_physical_profile.sql"),
         (81, "synthetic_demo_isolation.sql"),
+        (84, "quality_correction_context.sql"),
     )]
     assert not module.plan_is_authorized("fabric-v1", None)
     digest = module.get_plan_digest("fabric-v1")
     assert digest == module.PINNED_PLAN_DIGESTS["fabric-v1"]
     assert module.plan_is_authorized("fabric-v1", digest)
+
+
+def test_platform_bootstrap_plan_is_explicit_minimal_and_pinned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_bootstrap", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("platform-bootstrap-v1")]
+    assert names == [
+        "045_newsengine_initial.sql",
+        "046_weekly_analysis_tables.sql",
+        "050_consolidated_h5_ddl.sql",
+        "051_asset_daily_ohlcv.sql",
+        "053_sb_user_approval.sql",
+        "054_h5_subtrades_unique.sql",
+        "055_rbac_monetization.sql",
+    ]
+    assert module.PLAN_PREREQUISITE_TABLES["platform-bootstrap-v1"] == (
+        "public.sb_users",
+        "public.usdcop_m5_ohlcv",
+        "public.macro_indicators_daily",
+    )
+    assert "platform-bootstrap-v1" in module.REVIEW_GATED_PLANS
+    assert not module.plan_is_authorized("platform-bootstrap-v1", None)
+    reviewed_digest = module.get_plan_digest("platform-bootstrap-v1")
+    assert reviewed_digest == module.PINNED_PLAN_DIGESTS["platform-bootstrap-v1"]
+    assert module.plan_is_authorized("platform-bootstrap-v1", reviewed_digest)
+
+    original_files = module.MIGRATION_PLANS["platform-bootstrap-v1"]
+    changed_migration = tmp_path / original_files[0].name
+    original_bytes = original_files[0].read_bytes()
+    changed_migration.write_bytes(original_bytes + b"\n-- unauthorized byte change\n")
+    monkeypatch.setitem(
+        module.MIGRATION_PLANS,
+        "platform-bootstrap-v1",
+        (changed_migration, *original_files[1:]),
+    )
+
+    changed_digest = module.get_plan_digest("platform-bootstrap-v1")
+    assert changed_digest != reviewed_digest
+    assert not module.plan_is_authorized("platform-bootstrap-v1", reviewed_digest)
+    assert not module.plan_is_authorized("platform-bootstrap-v1", changed_digest)
+
+
+def test_platform_bootstrap_excludes_superseded_and_optional_migrations() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_exclusions", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = {item.name for item in module.get_migration_files("platform-bootstrap-v1")}
+    forbidden = {
+        "043_forecast_h5_tables.sql",
+        "044_smart_simple_columns.sql",
+        "047_pgvector_embeddings.sql",
+        "048_reconciliation_tables.sql",
+        "049_regime_gate_columns.sql",
+        "052_crypto_native_data.sql",
+    }
+    assert names.isdisjoint(forbidden)
+
+
+def test_platform_bootstrap_orders_user_role_before_rbac_expansion() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_role_order", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("platform-bootstrap-v1")]
+    assert names.index("053_sb_user_approval.sql") < names.index(
+        "055_rbac_monetization.sql"
+    )
+
+
+def test_identity_admin_plan_is_explicit_review_gated_and_pinned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_identity_admin", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("identity-admin-v1")]
+    assert names == [
+        "056_admin_console_is_test.sql",
+        "056_rbac_dynamic_roles.sql",
+    ]
+    assert module.PLAN_PREREQUISITE_TABLES["identity-admin-v1"] == (
+        "public.sb_users",
+    )
+    assert "identity-admin-v1" in module.REVIEW_GATED_PLANS
+    assert not module.plan_is_authorized("identity-admin-v1", None)
+    reviewed_digest = module.get_plan_digest("identity-admin-v1")
+    assert reviewed_digest == module.PINNED_PLAN_DIGESTS["identity-admin-v1"]
+    assert module.plan_is_authorized("identity-admin-v1", reviewed_digest)
+    assert set(module.REQUIRED_TABLES_BY_PLAN["identity-admin-v1"]) == {
+        "public.rbac_role_permissions",
+        "public.rbac_user_overrides",
+    }
+    assert module.REQUIRED_COLUMNS_BY_PLAN["identity-admin-v1"] == {
+        "public.sb_users": {
+            "is_test": "Admin-console test-user classification",
+        }
+    }
+
+    original_files = module.MIGRATION_PLANS["identity-admin-v1"]
+    changed_migration = tmp_path / original_files[0].name
+    changed_migration.write_bytes(
+        original_files[0].read_bytes() + b"\n-- unauthorized byte change\n"
+    )
+    monkeypatch.setitem(
+        module.MIGRATION_PLANS,
+        "identity-admin-v1",
+        (changed_migration, *original_files[1:]),
+    )
+    changed_digest = module.get_plan_digest("identity-admin-v1")
+    assert changed_digest != reviewed_digest
+    assert not module.plan_is_authorized("identity-admin-v1", reviewed_digest)
+    assert not module.plan_is_authorized("identity-admin-v1", changed_digest)
+
+
+def test_identity_admin_required_column_validation_fails_closed() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_identity_columns", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class Connection:
+        def __init__(self, columns: set[tuple[str, str, str]]) -> None:
+            self.columns = columns
+
+        async def fetchval(
+            self, _query: str, schema: str, table: str, column: str
+        ) -> bool:
+            return (schema, table, column) in self.columns
+
+    missing = Connection(set())
+    assert not asyncio.run(
+        module.validate_required_columns(missing, "identity-admin-v1")
+    )
+
+    complete = Connection({("public", "sb_users", "is_test")})
+    assert asyncio.run(
+        module.validate_required_columns(complete, "identity-admin-v1")
+    )
+
+
+def test_required_column_validation_exposes_missing_objects_for_honest_summary() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_missing_columns", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class Connection:
+        async def fetchval(
+            self, _query: str, schema: str, table: str, column: str
+        ) -> bool:
+            return False
+
+    missing = asyncio.run(
+        module.get_missing_required_columns(Connection(), "identity-admin-v1")
+    )
+    assert missing == ["public.sb_users.is_test"]
+
+
+def test_h5_identity_plan_is_ordered_review_gated_and_pinned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_h5_identity", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("h5-identity-v1")]
+    assert names == [
+        "064_h5_strategy_id.sql",
+        "083_h5_strategy_performance_view.sql",
+    ]
+    assert module.PLAN_PREREQUISITE_TABLES["h5-identity-v1"] == (
+        "public.forecast_h5_signals",
+        "public.forecast_h5_executions",
+        "public.forecast_h5_paper_trading",
+    )
+    assert "h5-identity-v1" in module.REVIEW_GATED_PLANS
+    assert not module.plan_is_authorized("h5-identity-v1", None)
+    reviewed_digest = module.get_plan_digest("h5-identity-v1")
+    assert reviewed_digest == module.PINNED_PLAN_DIGESTS["h5-identity-v1"]
+    assert module.plan_is_authorized("h5-identity-v1", reviewed_digest)
+    assert module.REQUIRED_COLUMNS_BY_PLAN["h5-identity-v1"] == {
+        "public.forecast_h5_signals": {"strategy_id": "H5 signal identity"},
+        "public.forecast_h5_executions": {"strategy_id": "H5 execution identity"},
+        "public.forecast_h5_paper_trading": {
+            "strategy_id": "H5 paper-trading identity"
+        },
+        "public.v_h5_performance_summary": {
+            "strategy_id": "Strategy-safe H5 performance projection"
+        },
+    }
+
+    original_files = module.MIGRATION_PLANS["h5-identity-v1"]
+    changed_migration = tmp_path / original_files[0].name
+    changed_migration.write_bytes(
+        original_files[0].read_bytes() + b"\n-- unauthorized byte change\n"
+    )
+    monkeypatch.setitem(
+        module.MIGRATION_PLANS,
+        "h5-identity-v1",
+        (changed_migration, *original_files[1:]),
+    )
+    changed_digest = module.get_plan_digest("h5-identity-v1")
+    assert changed_digest != reviewed_digest
+    assert not module.plan_is_authorized("h5-identity-v1", reviewed_digest)
+    assert not module.plan_is_authorized("h5-identity-v1", changed_digest)
+
+
+def test_commerce_surface_plan_is_scoped_review_gated_and_pinned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_commerce_surface", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    names = [item.name for item in module.get_migration_files("commerce-surface-v1")]
+    assert names == ["057_catalog_watchlist_cart.sql"]
+    assert "058_billing_webhook_idempotency.sql" not in names
+    assert module.PLAN_PREREQUISITE_TABLES["commerce-surface-v1"] == (
+        "public.sb_users",
+    )
+    assert "commerce-surface-v1" in module.REVIEW_GATED_PLANS
+    reviewed_digest = (
+        "sha256:7c93d0dd3f242f8d9dc578d6fa56485975c49b900833b16e96408f298069e5ef"
+    )
+    assert module.PINNED_PLAN_DIGESTS["commerce-surface-v1"] == reviewed_digest
+    assert module.get_plan_digest("commerce-surface-v1") == reviewed_digest
+    assert not module.plan_is_authorized("commerce-surface-v1", None)
+    assert module.plan_is_authorized("commerce-surface-v1", reviewed_digest)
+
+    original = module.MIGRATION_PLANS["commerce-surface-v1"][0]
+    changed = tmp_path / original.name
+    changed.write_bytes(original.read_bytes() + b"\n-- unauthorized byte change\n")
+    monkeypatch.setitem(module.MIGRATION_PLANS, "commerce-surface-v1", (changed,))
+    changed_digest = module.get_plan_digest("commerce-surface-v1")
+    assert changed_digest != reviewed_digest
+    assert not module.plan_is_authorized("commerce-surface-v1", reviewed_digest)
+    assert not module.plan_is_authorized("commerce-surface-v1", changed_digest)
+    assert set(module.REQUIRED_TABLES_BY_PLAN["commerce-surface-v1"]) == {
+        "public.user_watchlist",
+        "public.user_cart",
+    }
+    expected_columns = {
+        "user_id": "User ownership",
+        "asset_id": "Catalog asset identity",
+        "created_at": "Insertion timestamp",
+    }
+    assert module.REQUIRED_COLUMNS_BY_PLAN["commerce-surface-v1"] == {
+        "public.user_watchlist": expected_columns,
+        "public.user_cart": expected_columns,
+    }
+
+
+def test_migrator_prefers_database_url_and_requires_explicit_fallback_password(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_connection", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    calls: list[dict[str, object]] = []
+
+    async def connect(**kwargs: object) -> object:
+        calls.append(kwargs)
+        return object()
+
+    monkeypatch.setitem(sys.modules, "asyncpg", types.SimpleNamespace(connect=connect))
+    monkeypatch.setenv("DATABASE_URL", "postgresql://configured.example/db")
+    monkeypatch.setenv("POSTGRES_PASSWORD", "ignored-fallback")
+    asyncio.run(module.get_connection())
+    assert calls == [{"dsn": "postgresql://configured.example/db"}]
+
+    calls.clear()
+    monkeypatch.delenv("DATABASE_URL")
+    monkeypatch.delenv("POSTGRES_PASSWORD")
+    with pytest.raises(RuntimeError, match="DATABASE_URL or POSTGRES_PASSWORD"):
+        asyncio.run(module.get_connection())
+    assert calls == []
+
+
+def test_platform_bootstrap_prerequisites_fail_closed() -> None:
+    import importlib.util
+
+    path = Path("scripts/ops/db_migrate.py")
+    spec = importlib.util.spec_from_file_location("db_migrate_prerequisites", path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    class Connection:
+        def __init__(self, existing: set[tuple[str, str]]) -> None:
+            self.existing = existing
+
+        async def fetchval(
+            self, _query: str, schema: str, table: str
+        ) -> bool:
+            return (schema, table) in self.existing
+
+    incomplete = Connection(
+        {("public", "sb_users"), ("public", "usdcop_m5_ohlcv")}
+    )
+    assert not asyncio.run(
+        module.validate_plan_prerequisites(incomplete, "platform-bootstrap-v1")
+    )
+
+    complete = Connection(
+        {
+            ("public", "sb_users"),
+            ("public", "usdcop_m5_ohlcv"),
+            ("public", "macro_indicators_daily"),
+        }
+    )
+    assert asyncio.run(
+        module.validate_plan_prerequisites(complete, "platform-bootstrap-v1")
+    )

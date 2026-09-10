@@ -2,8 +2,8 @@
 # =============================================================================
 # Inference API Entrypoint
 # =============================================================================
-# Runs database migrations before starting the API server.
-# This prevents schema drift issues in production.
+# Validates the schema before starting the API server. PostgreSQL owns the
+# one-shot init scripts; replaying those historical scripts here is unsafe.
 # =============================================================================
 
 set -e
@@ -50,19 +50,6 @@ done
 
 echo "PostgreSQL is ready!"
 
-# Run database migrations
-echo ""
-echo "Running database migrations..."
-if [ -f /app/scripts/ops/db_migrate.py ]; then
-    python /app/scripts/ops/db_migrate.py --plan legacy-init || {
-        echo "ERROR: Database migration failed; refusing to start the API"
-        exit 1
-    }
-else
-    echo "ERROR: Migration script not found; refusing to start the API"
-    exit 1
-fi
-
 # Validate schema
 echo ""
 echo "Validating database schema..."
@@ -71,6 +58,9 @@ if [ -f /app/scripts/ops/db_migrate.py ]; then
         echo "ERROR: Schema validation failed; refusing to start the API"
         exit 1
     }
+else
+    echo "ERROR: Migration script not found; refusing to start the API"
+    exit 1
 fi
 
 # Start the API server

@@ -1,12 +1,17 @@
 ---
 kind: roadmap
 status: PARTIAL
-version: 1.0.0
-last_verified: 2026-07-29
+version: 1.2.0
+last_verified: 2026-08-06
 supersedes: []
 code_anchors:
-  - services/common/metrics.py
-  - config/assets/pipelines.yaml
+  - config/metrics/catalog.yaml
+  - config/metrics/legacy_bypass_allowlist.yaml
+  - src/metrics/engine.py
+  - src/metrics/persistence.py
+  - database/migrations/070_fabric_control_plane.sql
+  - airflow/dags/forecast_h5_l6_weekly_monitor.py
+  - airflow/dags/control_system_health.py
 ---
 
 # BL-18 — Catálogo de métricas + motor único + metric_event
@@ -30,3 +35,34 @@ Grep-CI: ningún sharpe/calmar fuera del motor; misma métrica idéntica en 5 en
 
 ## Notas constitución
 'annualization: from_asset_registry' resuelve mecánicamente la regla de relojes.
+
+## Bloqueo de cableado medido (2026-08-03)
+
+`src/metrics/persistence.py` depende de `control.metric_event`, definido por la migración 070.
+En la base viva el esquema `control` no existe; por eso el módulo tiene tests pero cero llamadores
+productivos. BL-18 no puede cerrar hasta aplicar 070 y demostrar al menos un productor y un
+consumidor reales sobre el evento persistido.
+
+## Estado PostgreSQL posterior a Fabric (2026-08-04)
+
+La migración que crea `control.metric_event` ya fue aplicada. El sink
+`src/metrics/persistence.py` fue ejecutado contra PostgreSQL real: insert, replay idempotente y
+rechazo de colisión por UUID funcionan; las sondas de verificación se hicieron dentro de
+transacciones revertidas. `f7f853e6` normaliza el string ISO contractual a `datetime` UTC-aware en
+la frontera asyncpg y evita falsas colisiones cuando dos offsets representan el mismo instante.
+
+El cableado productivo mínimo existe desde `55cda935`:
+
+- `forecast_h5_l6_weekly_monitor.py::persist_governed_metric_events` calcula mediante
+  `MetricEngine.from_asset_registry`, persiste el evento y está enlazado en el DAG semanal;
+- `control_system_health.py` consume la métrica con `SELECT ... FROM control.metric_event` para el
+  estado de salud del track paper.
+
+El BL permanece **PARTIAL** porque esa costura no generaliza todavía el motor a todos los
+consumidores, la cobertura sigue siendo parcial y el allowlist de cálculos heredados permanece por
+encima de cero. Además, la persistencia ya trata la identidad semántica como una frontera explícita:
+conserva `ON CONFLICT DO NOTHING` para replay idempotente, consulta la fila por UUID o identidad
+semántica y traduce una divergencia de payload a `MetricContractError`. El comportamiento está
+cubierto por `test_dbapi_sink_translates_semantic_identity_collision`; el gate causal de esta ficha
+comprueba que la implementación y ese test sigan presentes. La brecha restante es de cobertura del
+motor y del allowlist heredado, no de una decisión pendiente sobre esta colisión.

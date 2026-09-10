@@ -1,8 +1,8 @@
 ---
 kind: roadmap
-status: PARTIAL
+status: IMPLEMENTED
 version: 1.2.0
-last_verified: 2026-07-28
+last_verified: 2026-08-03
 supersedes: []
 code_anchors:
   - usdcop-trading-dashboard/components/gm/views/ForecastingView.tsx
@@ -108,3 +108,31 @@ un blacklist que alguien borra.
 FABRIC §25 bloque Muralla: 'frontend forecasting sin verbos de orden…'.
 La superficie DIAGNOSTIC no gana capacidades de acción por accidente: el día que
 forecasting pueda aprobar o ejecutar, este test se pone rojo.
+
+
+## Cierre (2026-08-03, cross-review CLD-289 · wiring CODEX `96d4c361`)
+
+**PARTIAL -> IMPLEMENTED.** La brecha que mantenía este BL abierto no era el scanner —que ya
+funcionaba— sino que **ningún workflow lo invocaba**: un candado que CI nunca ejecuta protege
+exactamente nada. CODEX cableó el step en `fabric-contracts.yml` (`96d4c361`) y CLAUDE lo
+verificó adversarialmente.
+
+- **Verde en árbol limpio**: `pytest tests/regression/test_forecasting_caveat_present.py -q`
+  = **31 passed**.
+- **Mutación del BL (widget rogue), ejecutada por CLAUDE**: `lib/telemetry/RogueProbe.tsx` con
+  la evasión completa por concatenación de strings ⇒ **1 failed / 30 passed**, con los **tres
+  hits nominales** que esta ficha predice: `api/production/approve` desde
+  `` fetch(`${P}/appro` + 've') ``, `api/execution` desde `fetch('/api/exec' + 'ution/orders')`,
+  y el verbo `comprar`. El matcher no se deja evadir partiendo el string.
+- **Matiz aprendido al ejecutarlo, que esta ficha no decía y ahora dice**: crear el fichero
+  rogue **no basta** — hay que **montarlo**. El perímetro se deriva por **cierre de imports**,
+  así que un fichero huérfano no se escanea y la mutación da 31 passed (falso "no muerde").
+  **Esto es correcto, no un hueco**: un componente que nadie importa es código muerto y no
+  puede ejecutar una orden. La primera pasada de CLAUDE cayó en esa trampa y estuvo a un paso
+  de reportar un falso negativo.
+- **Mutación del wiring, ejecutada por CLAUDE sobre `96d4c361`** (dos ejes): quitar el step del
+  workflow ⇒ rojo; **dejar el step con su nombre intacto y cambiar sólo el comando** ⇒ rojo
+  igual. El candado exige el **comando exacto**, así que un "gate de teatro" muere. Veredicto
+  en `CLD-289`: **APROBADO**.
+- Restauraciones byte-exactas: `ForecastingView.tsx = 848B220C3A9CA751`,
+  `fabric-contracts.yml = 73B93A2CC1B3E228`; `RogueProbe.tsx` borrado. Vuelta a **31 passed**.

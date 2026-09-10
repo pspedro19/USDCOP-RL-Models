@@ -1,0 +1,45 @@
+{
+  "strategy_id": "spx500_daily_ma200_v1",
+  "strategy_name": "S&P 500 \u00b7 MA200 causal (baseline)",
+  "year": 2026,
+  "initial_capital": 10000.0,
+  "date_range": {
+    "start": "2026-01-02",
+    "end": "2026-08-11"
+  },
+  "trades": [
+    {
+      "trade_id": 1,
+      "timestamp": "2026-01-02 21:00:00",
+      "exit_timestamp": "2026-03-20 20:00:00",
+      "side": "LONG",
+      "entry_price": 6858.47,
+      "exit_price": 6506.48,
+      "pnl_pct": -4.121,
+      "pnl_usd": -412.1,
+      "equity_at_entry": 10000.0,
+      "equity_at_exit": 9587.9,
+      "leverage": 1.0,
+      "exit_reason": "exposure_zero"
+    },
+    {
+      "trade_id": 2,
+      "timestamp": "2026-04-09 20:00:00",
+      "exit_timestamp": "2026-08-11 20:00:00",
+      "side": "LONG",
+      "entry_price": 6824.66,
+      "exit_price": 7743.93,
+      "pnl_pct": 14.4944,
+      "pnl_usd": 1389.71,
+      "equity_at_entry": 9587.9,
+      "equity_at_exit": 10977.61,
+      "leverage": 1.0,
+      "exit_reason": "year_end_open"
+    }
+  ],
+  "summary": {
+    "n_trades": 2,
+    "total_return_pct": 9.74,
+    "note_n": "N<20 => solo conteo y PnL"
+  }
+}

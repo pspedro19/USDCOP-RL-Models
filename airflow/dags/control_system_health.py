@@ -93,6 +93,16 @@ def _is_market_hours() -> bool:
 # RELOJ DE DATOS — cada run (minutos)
 # =============================================================================
 
+#: Roles de linaje EXIGIDOS a la estrategia de produccion. Solo los que el sistema
+#: materializa hoy (medido 2026-08-06: 3 INPUT + 1 SIGNAL). `FEATURE`/`MODEL` existen
+#: en el CHECK de la tabla pero nadie los enlaza todavia: exigirlos seria un rojo
+#: falso, y esos gastan la misma credibilidad que un verde falso.
+LINEAGE_REQUIRED_ROLES = ("INPUT", "SIGNAL")
+
+#: Estados de nodo que degradan el reloj de datos. `VALID` es el unico sano.
+LINEAGE_DEGRADED_STATUSES = ("STALE", "INVALIDATED")
+
+
 def evaluate_data_clock(**context):
     """Probes de freshness. Componentes ACTIVOS (insumos de la estrategia en
     producción) fallan cerrado; superficies diagnósticas degradan elegante."""
@@ -142,6 +152,67 @@ def evaluate_data_clock(**context):
     except Exception as exc:  # noqa: BLE001 — DB caída = probe en error => fail-closed
         logger.error("[SystemHealth] DB probe error: %s", exc)
         probes.append(DataProbe("db_connection", "error", True, {"error": str(exc)}))
+
+    # -- Linaje: nodos enlazados a la estrategia de PRODUCCION (BL-25) ------
+    #
+    # FABRIC §23: el reloj de DATOS no puede dar verde si el linaje de la
+    # estrategia viva esta degradado. Hasta aqui `evaluate_data_clock` medía
+    # frescura de FUENTES (m5, macro, seeds) pero no consultaba `lineage.node` ni
+    # `lineage.strategy_node`, aunque BL-24 ya entrego `status VALID/STALE/
+    # INVALIDATED` y los roles por estrategia. Un dato fresco cuyo nodo esta
+    # INVALIDATED sigue estando mal, y hoy pasaba como "ok".
+    #
+    # Roles exigidos: INPUT y SIGNAL. Son los que el sistema **materializa hoy**
+    # (medido: 3 INPUT + 1 SIGNAL). Exigir FEATURE/MODEL pondria rojo algo que
+    # nadie ha prometido -- un rojo falso gasta la misma credibilidad que un verde
+    # falso, y ya lo evitamos en el gate cross-SSOT con `smart_simple_v11`.
+    try:
+        conn = _get_db_connection()
+        try:
+            cur = conn.cursor()
+            # `strategy_id` parametrizado, NUNCA interpolado: una tabla de linaje
+            # es exactamente donde no quieres construir SQL por concatenacion.
+            cur.execute(
+                "SELECT sn.role, n.status, COUNT(*) "
+                "FROM lineage.strategy_node sn "
+                "JOIN lineage.node n ON n.node_id = sn.node_id "
+                "WHERE sn.strategy_id = %s "
+                "GROUP BY sn.role, n.status",
+                (H5_PRODUCTION_STRATEGY_ID,),
+            )
+            filas = cur.fetchall()
+        finally:
+            conn.close()
+
+        por_rol: dict[str, dict[str, int]] = {}
+        for role, status, n in filas:
+            por_rol.setdefault(str(role), {})[str(status)] = int(n)
+
+        # Anti-vacuidad: si el rol NO esta enlazado, el probe es `missing` ACTIVO.
+        # Sin esto, perder los links daria verde -- el probe no encontraria nada
+        # degradado porque no encontraria nada, que es la forma mas cara de verde.
+        for rol in LINEAGE_REQUIRED_ROLES:
+            estados = por_rol.get(rol)
+            if not estados:
+                probes.append(
+                    DataProbe(f"lineage_{rol.lower()}", "missing", True,
+                              {"strategy_id": H5_PRODUCTION_STRATEGY_ID})
+                )
+                continue
+            degradados = {s: c for s, c in estados.items()
+                          if s in LINEAGE_DEGRADED_STATUSES}
+            probes.append(
+                DataProbe(
+                    f"lineage_{rol.lower()}",
+                    "stale" if degradados else "ok", True,
+                    {"strategy_id": H5_PRODUCTION_STRATEGY_ID,
+                     "by_status": estados,
+                     **({"degraded": degradados} if degradados else {})},
+                )
+            )
+    except Exception as exc:  # noqa: BLE001 — linaje ilegible = fail-closed
+        logger.error("[SystemHealth] lineage probe error: %s", exc)
+        probes.append(DataProbe("lineage_connection", "error", True, {"error": str(exc)}))
 
     # -- Archivos (activos: insumos de training/inferencia H5) --------------
     for name, path, max_age_days in (
@@ -311,10 +382,18 @@ def evaluate_pnl_clock(**context):
                 live = np.array([r[0] for r in rows], dtype=float) / 100.0
                 paper = np.array([r[1] for r in rows], dtype=float) / 100.0
             cur.execute(
-                "SELECT running_sharpe FROM forecast_h5_paper_trading "
-                "WHERE strategy_id = %s "
-                "ORDER BY signal_date DESC LIMIT 1",
-                (H5_PRODUCTION_STRATEGY_ID,),
+                """
+                SELECT metric_value
+                FROM control.metric_event
+                WHERE entity_type = 'strategy' AND entity_id = %s
+                  AND strategy_id = %s AND asset_id = 'usdcop'
+                  AND environment = 'paper'
+                  AND metric_namespace = 'strategy' AND metric_name = 'sharpe'
+                  AND dimensions->>'window' = '26w'
+                  AND status <> 'INSUFFICIENT_SAMPLE'
+                ORDER BY event_time DESC LIMIT 1
+                """,
+                (H5_PRODUCTION_STRATEGY_ID, H5_PRODUCTION_STRATEGY_ID),
             )
             row = cur.fetchone()
             rolling_sharpe = float(row[0]) if row and row[0] is not None else None

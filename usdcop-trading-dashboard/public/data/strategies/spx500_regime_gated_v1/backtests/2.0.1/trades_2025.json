@@ -1,0 +1,73 @@
+{
+  "strategy_id": "spx500_regime_gated_v1",
+  "strategy_name": "S&P 500 \u00b7 Trend + r\u00e9gimen",
+  "year": 2025,
+  "initial_capital": 10000.0,
+  "date_range": {
+    "start": "2025-01-02",
+    "end": "2025-12-31"
+  },
+  "trades": [
+    {
+      "trade_id": 1,
+      "timestamp": "2025-01-02 21:00:00",
+      "exit_timestamp": "2025-01-15 21:00:00",
+      "side": "LONG",
+      "entry_price": 5868.55,
+      "exit_price": 5949.91,
+      "pnl_pct": -0.1185,
+      "pnl_usd": -11.85,
+      "equity_at_entry": 10000.0,
+      "equity_at_exit": 9988.15,
+      "leverage": 0.125,
+      "exit_reason": "exposure_zero"
+    },
+    {
+      "trade_id": 2,
+      "timestamp": "2025-01-27 21:00:00",
+      "exit_timestamp": "2025-03-11 20:00:00",
+      "side": "LONG",
+      "entry_price": 6012.28,
+      "exit_price": 5572.07,
+      "pnl_pct": -4.1892,
+      "pnl_usd": -418.43,
+      "equity_at_entry": 9988.15,
+      "equity_at_exit": 9569.72,
+      "leverage": 0.54,
+      "exit_reason": "exposure_zero"
+    },
+    {
+      "trade_id": 3,
+      "timestamp": "2025-05-14 20:00:00",
+      "exit_timestamp": "2025-05-20 20:00:00",
+      "side": "LONG",
+      "entry_price": 5892.58,
+      "exit_price": 5940.46,
+      "pnl_pct": 0.0793,
+      "pnl_usd": 7.59,
+      "equity_at_entry": 9569.72,
+      "equity_at_exit": 9577.31,
+      "leverage": 0.076,
+      "exit_reason": "exposure_zero"
+    },
+    {
+      "trade_id": 4,
+      "timestamp": "2025-05-23 20:00:00",
+      "exit_timestamp": "2026-01-02 21:00:00",
+      "side": "LONG",
+      "entry_price": 5802.82,
+      "exit_price": 6858.47,
+      "pnl_pct": 12.2761,
+      "pnl_usd": 1175.72,
+      "equity_at_entry": 9577.31,
+      "equity_at_exit": 10753.03,
+      "leverage": 0.897,
+      "exit_reason": "year_end_open"
+    }
+  ],
+  "summary": {
+    "n_trades": 4,
+    "total_return_pct": 7.52,
+    "note_n": "N<20 => solo conteo y PnL"
+  }
+}

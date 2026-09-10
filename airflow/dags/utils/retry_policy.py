@@ -35,13 +35,64 @@ Version: 1.0.0
 
 import logging
 import random
+import sys
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from functools import wraps
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 
 logger = logging.getLogger(__name__)
+
+
+_DAGS_DIR = Path(__file__).resolve().parents[1]
+
+
+def _ensure_dags_services() -> None:
+    """Make ``services.dlq_service`` resolve despite root shadowing.
+
+    Whether the bug bites is DEPLOYMENT-CONDITIONAL, verified against live
+    containers 2026-08-03:
+
+    * ``docker-compose.yml`` (enterprise) mounts ``./services:/opt/airflow/services``
+      for BOTH ``airflow-scheduler`` and ``airflow-webserver``. With
+      ``PYTHONPATH=/opt/airflow:/opt/airflow/dags`` the repo-root ``services``
+      package then WINS the name and ``from services.dlq_service import
+      get_dlq_service`` raises ``ModuleNotFoundError``. That is the stack where the
+      2026-07-27 ``health_check`` failure recorded in
+      ``l0_macro_backfill._ensure_dags_services`` happened.
+    * ``docker-compose.compact.yml`` does NOT mount it, so ``services`` resolves
+      straight to ``dags/services`` and the import already worked. Confirmed live:
+      ``services.__path__ == ['/opt/airflow/dags/services']``.
+
+    When it does bite, :func:`_save_to_dlq` swallows the ``ImportError`` with a
+    warning, so the DLQ row is never written and nothing says so. The task itself
+    still fails (both call sites propagate the original exception), so what is lost
+    is the forensic record and any DLQ-based reprocessing, not the failure signal.
+
+    Same remedy already applied in ``l0_macro_backfill._ensure_dags_services``:
+    extend the winning package's ``__path__`` so both trees resolve. Root
+    submodules keep priority and the two trees have no name collisions.
+    """
+    local_services = str(_DAGS_DIR / 'services')
+    try:
+        import services
+    except ImportError:
+        # No package wins the name yet.  The DAGS dir — not the ``services``
+        # subdir — is what must be importable, or ``dlq_service`` would only be
+        # reachable as a TOP-LEVEL module and ``services.dlq_service`` would keep
+        # failing.  (Reported by CODEX in CXD-302; the first version appended the
+        # subdir and the fallback branch was never exercised.)
+        dags_dir = str(_DAGS_DIR)
+        if dags_dir not in sys.path:
+            sys.path.append(dags_dir)
+        return
+    if local_services not in services.__path__:
+        services.__path__.append(local_services)
+
+
+_ensure_dags_services()
 
 
 # =============================================================================

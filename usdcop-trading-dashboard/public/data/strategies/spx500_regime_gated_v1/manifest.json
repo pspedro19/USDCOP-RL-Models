@@ -3,10 +3,11 @@
   "asset_id": "spx500",
   "symbol": "SPX500",
   "chart_symbol": "SPX500",
-  "display_name": "S&P 500 · Trend + régimen",
+  "display_name": "S&P 500 \u00b7 Trend + r\u00e9gimen",
   "pipeline_type": "forecasting",
   "timeframe": "daily",
   "status": "experimental",
+  "surface": "action",
   "schema_version": "1.0.0",
   "capabilities": {
     "replay": true,
@@ -15,9 +16,9 @@
   },
   "produced_by": {
     "source": "BundlePublisher",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "year": 2026,
-    "generated_at": "2026-07-27T20:37:10.050926+00:00"
+    "generated_at": "2026-08-11T19:26:50.860307+00:00"
   },
   "backtests": [
     {
@@ -99,6 +100,46 @@
         "n_trades": 3,
         "year": 2026
       }
+    },
+    {
+      "model_version": "2.0.1",
+      "year": 2025,
+      "immutable_id": "spx500_regime_gated_v1__2.0.1__2025",
+      "summary": "strategies/spx500_regime_gated_v1/backtests/2.0.1/summary_2025.json",
+      "trades": "strategies/spx500_regime_gated_v1/backtests/2.0.1/trades_2025.json",
+      "signals": "strategies/spx500_regime_gated_v1/backtests/2.0.1/signals_2025.json",
+      "replayable": true,
+      "gates": {
+        "passed": 2,
+        "of": 4,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "total_return_pct": 7.52,
+        "max_dd_pct": 5.52,
+        "n_trades": 4,
+        "year": 2025
+      }
+    },
+    {
+      "model_version": "2.0.1",
+      "year": 2026,
+      "immutable_id": "spx500_regime_gated_v1__2.0.1__2026",
+      "summary": "strategies/spx500_regime_gated_v1/backtests/2.0.1/summary_2026.json",
+      "trades": "strategies/spx500_regime_gated_v1/backtests/2.0.1/trades_2026.json",
+      "signals": "strategies/spx500_regime_gated_v1/backtests/2.0.1/signals_2026.json",
+      "replayable": true,
+      "gates": {
+        "passed": 2,
+        "of": 4,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "total_return_pct": 1.66,
+        "max_dd_pct": 5.42,
+        "n_trades": 3,
+        "year": 2026
+      }
     }
   ],
   "production": null,
@@ -126,6 +167,15 @@
     },
     {
       "version": "2.0.0",
+      "active": false,
+      "trained_at": null,
+      "train_window": null,
+      "feature_hash": null,
+      "norm_stats_hash": null,
+      "artifact_uri": null
+    },
+    {
+      "version": "2.0.1",
       "active": true,
       "trained_at": null,
       "train_window": null,
@@ -133,6 +183,5 @@
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ],
-  "surface": "action"
+  ]
 }

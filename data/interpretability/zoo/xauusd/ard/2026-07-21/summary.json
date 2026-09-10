@@ -1,0 +1,1019 @@
+{
+  "nota": "SHAP explica el modelo, no el mercado; solo test-folds; diagnostico 0 trials",
+  "surface": "zoo",
+  "asset": "xauusd",
+  "model_id": "ard",
+  "model_type": "linear",
+  "method": "linear_shap_closed_form",
+  "attribution_not_shap": false,
+  "version": "2026-07-21",
+  "generated_at": "2026-08-05T16:31:49.930865+00:00",
+  "provenance": {
+    "data_fingerprint": "sha256:895282a7a2e57b364973af6a21645a041eaac6de5e0db9272cffc5093582554e",
+    "code_fingerprint": "sha256:630308ac50e868ee48ab197a6f85103f02a5b7c8c015f0c9056bb945020773cd",
+    "config_fingerprint": "sha256:faa2560940bb178cb90478e383979abdcb16ebd9e1ea6c85757fce07c45bd971",
+    "model_fingerprint": "sha256:d16ad53fe441fd17d7b19a65e2f73535c01336012f8823284d11464ff9c32f18",
+    "model_fingerprint_basis": "fitted_linear_coefficients_per_fold",
+    "nota": "la 'version' (ultimo dia del dataset) NO identifica la evidencia: el artifact_id se deriva de estas cuatro huellas mas todo el contenido, y republicar contenido distinto bajo la misma version es un error, no un overwrite"
+  },
+  "additivity_max_abs_err": 0.0,
+  "fit": {
+    "scheme": "walk-forward EXPANDING ANUAL: fit con filas < 1-ene-Y menos purga de 5d; atribucion SOLO sobre filas del a\u00f1o Y (test-fold)",
+    "origin": "2026-07-21",
+    "n_fits": 5,
+    "n_train_last_fit": 1554,
+    "n_train_distinct_rows": 1554,
+    "n_train_by_fold": [
+      516,
+      776,
+      1035,
+      1295,
+      1554
+    ],
+    "n_train_note": "esquema expanding: los trains son ANIDADOS, la suma por folds contaria las mismas filas varias veces y no es un N \u2014 se publica el N del ultimo fit, las filas distintas y el detalle por fold",
+    "horizon": 5,
+    "purge_days": 5,
+    "scaler": "StandardScaler train-only por fold",
+    "params": {
+      "max_iter": 300,
+      "tol": 0.001,
+      "alpha_1": 1e-06,
+      "alpha_2": 1e-06,
+      "lambda_1": 1e-06,
+      "lambda_2": 1e-06,
+      "fit_intercept": true,
+      "verbose": false
+    }
+  },
+  "folds": [
+    {
+      "year": 2022,
+      "n_train": 516,
+      "n_test": 260,
+      "train_start": "2020-01-03",
+      "train_end": "2021-12-24",
+      "base_value": 0.0017387402586702923,
+      "fold_fingerprint": "sha256:908497bd1018db41ad5484bed9a9f2ff64174d7801dc32f193edbfe1a4e01f91"
+    },
+    {
+      "year": 2023,
+      "n_train": 776,
+      "n_test": 259,
+      "train_start": "2020-01-03",
+      "train_end": "2022-12-23",
+      "base_value": 0.0012219382729395161,
+      "fold_fingerprint": "sha256:d63d533a5757d4a2039ab5c27dee1d24953437969fc5b1c6a579c0e36662aa25"
+    },
+    {
+      "year": 2024,
+      "n_train": 1035,
+      "n_test": 260,
+      "train_start": "2020-01-03",
+      "train_end": "2023-12-22",
+      "base_value": 0.0015934273485168704,
+      "fold_fingerprint": "sha256:16eff657b945f28f4810739407a4359bc39869bd7fe826570f17f54cea9b27e7"
+    },
+    {
+      "year": 2025,
+      "n_train": 1295,
+      "n_test": 259,
+      "train_start": "2020-01-03",
+      "train_end": "2024-12-23",
+      "base_value": 0.002233787480527494,
+      "fold_fingerprint": "sha256:b51a90acaf82cd837559572c23a1ab6c73d3dfde268c2d81c494e63dfd3075d5"
+    },
+    {
+      "year": 2026,
+      "n_train": 1554,
+      "n_test": 144,
+      "train_start": "2020-01-03",
+      "train_end": "2025-12-24",
+      "base_value": 0.0035900833346127737,
+      "fold_fingerprint": "sha256:5880158b8a851d65c8f97f176f9df5acd75f8d7540f109125dc4c05b2134726c"
+    }
+  ],
+  "scope": "phi_j = coef_j*(z_j-mu_j) EXACTO (forma cerrada) sobre filas OOS: ninguna fila fue vista por el fit que la atribuye. Un fit por fold anual; el 'coef' publicado es la MEDIA por fold (el detalle exacto esta comprometido en model_fingerprint). Hiperparametros = defaults CONGELADOS del ModelFactory, sin tuning ni seleccion; ninguna metrica de acierto computada (0 trials) \u2014 diagnostico, no claim de edge.",
+  "base_value": 0.001927553763283297,
+  "n_rows": 1182,
+  "n_features": 19,
+  "n_folds": 5,
+  "top_features": [
+    {
+      "rank": 1,
+      "feature": "close",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 2,
+      "feature": "open",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 3,
+      "feature": "high",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 4,
+      "feature": "low",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 5,
+      "feature": "return_1d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 6,
+      "feature": "return_5d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 7,
+      "feature": "return_10d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 8,
+      "feature": "return_20d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 9,
+      "feature": "volatility_5d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 10,
+      "feature": "volatility_10d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 11,
+      "feature": "volatility_20d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 12,
+      "feature": "rsi_14d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 13,
+      "feature": "ma_ratio_20d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 14,
+      "feature": "ma_ratio_50d",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 15,
+      "feature": "day_of_week",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 16,
+      "feature": "month",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 17,
+      "feature": "is_month_end",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 18,
+      "feature": "dxy_close_lag1",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    },
+    {
+      "rank": 19,
+      "feature": "vix_close_lag1",
+      "coef": 0.0,
+      "mean_abs_shap": 0.0,
+      "mean_shap": 0.0
+    }
+  ],
+  "by_year": {
+    "2022": [
+      {
+        "feature": "close",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "open",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "high",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "low",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_1d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "rsi_14d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_50d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "day_of_week",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "month",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "is_month_end",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "dxy_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "vix_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      }
+    ],
+    "2023": [
+      {
+        "feature": "close",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "open",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "high",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "low",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_1d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "rsi_14d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_50d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "day_of_week",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "month",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "is_month_end",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "dxy_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "vix_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      }
+    ],
+    "2024": [
+      {
+        "feature": "close",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "open",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "high",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "low",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_1d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "rsi_14d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_50d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "day_of_week",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "month",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "is_month_end",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "dxy_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "vix_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      }
+    ],
+    "2025": [
+      {
+        "feature": "close",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "open",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "high",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "low",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_1d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "rsi_14d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_50d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "day_of_week",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "month",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "is_month_end",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "dxy_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "vix_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      }
+    ],
+    "2026": [
+      {
+        "feature": "close",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "open",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "high",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "low",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_1d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "rsi_14d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_50d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "day_of_week",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "month",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "is_month_end",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "dxy_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "vix_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      }
+    ]
+  },
+  "by_regime": {
+    "indeterminate": [
+      {
+        "feature": "close",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "open",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "high",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "low",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_1d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "rsi_14d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_50d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "day_of_week",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "month",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "is_month_end",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "dxy_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "vix_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      }
+    ],
+    "mean_reverting": [
+      {
+        "feature": "close",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "open",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "high",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "low",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_1d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "rsi_14d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_50d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "day_of_week",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "month",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "is_month_end",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "dxy_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "vix_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      }
+    ],
+    "trending": [
+      {
+        "feature": "close",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "open",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "high",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "low",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_1d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "return_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_5d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_10d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "volatility_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "rsi_14d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_20d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "ma_ratio_50d",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "day_of_week",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "month",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "is_month_end",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "dxy_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      },
+      {
+        "feature": "vix_close_lag1",
+        "mean_abs_shap": 0.0,
+        "mean_shap": 0.0
+      }
+    ]
+  },
+  "regime_gate": "gate Hurst congelado de config/execution/smart_simple_v1.yaml evaluado con retornos <= la propia fila (sin look-ahead)",
+  "kill_flags_sign_change_by_year": [],
+  "kill_flags_sign_change_by_regime": [],
+  "artifact_id": "sha256:94ddc481064edf7de37404f5e986481a5b06f643ef15a9fb655b08d4167ec81a"
+}

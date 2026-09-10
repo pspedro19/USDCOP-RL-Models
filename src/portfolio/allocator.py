@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
-from typing import Mapping, Protocol, Sequence
+from pathlib import Path
+from typing import Any, Mapping, Protocol, Sequence
 
 import numpy as np
+import yaml
 
 
 class AllocationError(ValueError):
@@ -49,6 +51,18 @@ class OptimizationRequest:
     target_vol: float
     turnover_budget: float
     lambda_turnover: float
+
+
+@dataclass(frozen=True, slots=True)
+class _ConfiguredControls:
+    target_vol: float
+    turnover_budget: float
+    turnover_relaxation_limit: float
+    novelty_max_correlation: float
+    novelty_delta_information_ratio: float
+    multiplier_bounds: Mapping[str, tuple[float, float]]
+    multiplier_allowed: Mapping[str, frozenset[float]]
+    source: str
 
 
 class BudgetOptimizer(Protocol):
@@ -141,6 +155,25 @@ class AllocatorV1:
         "operations",
         "drawdown",
     )
+    CONFIG_ROOT_KEYS = {
+        "contract", "version", "family_id", "baseline", "shadow",
+        "optimization", "constraints", "fallbacks", "multipliers",
+        "novelty_gate", "prohibited",
+    }
+    EXPECTED_FALLBACKS = (
+        "relax_turnover_within_declared_limit",
+        "shrink_provisional_toward_zero",
+        "inverse_volatility_with_caps",
+        "target_zero_and_critical_incident",
+    )
+    EXPECTED_PROHIBITED = ("normalize_after_clip", "result_selected_thresholds")
+    DEFAULT_MULTIPLIER_BOUNDS = {
+        "forward": (0.0, 1.0),
+        "liquidity": (0.0, 1.0),
+        "diversification": (0.70, 1.10),
+        "drawdown": (0.0, 1.0),
+    }
+    DEFAULT_MULTIPLIER_ALLOWED = {"operations": frozenset({0.0, 1.0})}
 
     def __init__(
         self,
@@ -149,6 +182,7 @@ class AllocatorV1:
         gross_cap: float,
         asset_caps: Mapping[str, float],
         optimizer: BudgetOptimizer | None = None,
+        _configured: _ConfiguredControls | None = None,
     ) -> None:
         if (
             isinstance(gross_cap, bool)
@@ -161,6 +195,190 @@ class AllocatorV1:
         self.sleeve_caps = self._validated_caps("sleeve", sleeve_caps)
         self.asset_caps = self._validated_caps("asset", asset_caps)
         self.optimizer = optimizer
+        self._configured = _configured
+        self.config_source = _configured.source if _configured else None
+        self._multiplier_bounds = dict(
+            _configured.multiplier_bounds
+            if _configured else self.DEFAULT_MULTIPLIER_BOUNDS
+        )
+        self._multiplier_allowed = dict(
+            _configured.multiplier_allowed
+            if _configured else self.DEFAULT_MULTIPLIER_ALLOWED
+        )
+        self._novelty_max_correlation = (
+            _configured.novelty_max_correlation if _configured else 0.60
+        )
+        self._novelty_delta_information_ratio = (
+            _configured.novelty_delta_information_ratio if _configured else 0.15
+        )
+
+    @classmethod
+    def from_config(
+        cls,
+        path: str | Path,
+        *,
+        sleeve_caps: Mapping[str, float],
+        asset_caps: Mapping[str, float],
+    ) -> "AllocatorV1":
+        """Build from the governed SSOT; risk caps remain explicit by design."""
+        source = Path(path).resolve()
+        try:
+            raw = yaml.safe_load(source.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError) as exc:
+            raise AllocationError(f"cannot load allocator config {source}: {exc}") from exc
+        root = cls._config_mapping("root", raw, cls.CONFIG_ROOT_KEYS)
+        if root["contract"] != "CTR-ALLOCATOR-V1":
+            raise AllocationError("contract must be CTR-ALLOCATOR-V1")
+        cls._config_string("version", root["version"])
+        if root["family_id"] != "book_allocation":
+            raise AllocationError("family_id must be book_allocation")
+        if root["baseline"] != "inverse_volatility_with_caps":
+            raise AllocationError("baseline must be inverse_volatility_with_caps")
+
+        shadow = cls._config_mapping(
+            "shadow", root["shadow"], {"method", "minimum_periods", "capital_enabled"}
+        )
+        if shadow["method"] != "HRP":
+            raise AllocationError("shadow.method must be HRP")
+        if type(shadow["minimum_periods"]) is not int or shadow["minimum_periods"] < 26:
+            raise AllocationError("shadow.minimum_periods must be at least 26")
+        if shadow["capital_enabled"] is not False:
+            raise AllocationError("shadow.capital_enabled must be false")
+
+        optimization = cls._config_mapping(
+            "optimization", root["optimization"],
+            {"implementation", "solver", "objective"},
+        )
+        if optimization["implementation"] != "cvxpy":
+            raise AllocationError("optimization.implementation must be cvxpy")
+        solver = cls._config_string("optimization.solver", optimization["solver"])
+        if optimization["objective"] != "squared_distance_plus_l1_turnover":
+            raise AllocationError(
+                "optimization.objective must be squared_distance_plus_l1_turnover"
+            )
+
+        constraints = cls._config_mapping(
+            "constraints", root["constraints"],
+            {"gross_cap", "target_vol_decimal", "turnover_budget_decimal",
+             "turnover_relaxation_limit_decimal"},
+        )
+        gross_cap = cls._config_number("gross_cap", constraints["gross_cap"], positive=True)
+        target = cls._config_number(
+            "target_vol_decimal", constraints["target_vol_decimal"], positive=True
+        )
+        turnover = cls._config_number(
+            "turnover_budget_decimal", constraints["turnover_budget_decimal"]
+        )
+        relaxation = cls._config_number(
+            "turnover_relaxation_limit_decimal",
+            constraints["turnover_relaxation_limit_decimal"],
+        )
+        if relaxation < turnover:
+            raise AllocationError(
+                "turnover_relaxation_limit_decimal cannot be below turnover_budget_decimal"
+            )
+
+        fallbacks = cls._config_sequence("fallbacks", root["fallbacks"])
+        if fallbacks != cls.EXPECTED_FALLBACKS:
+            raise AllocationError(f"fallbacks must equal {cls.EXPECTED_FALLBACKS}")
+        prohibited = cls._config_sequence("prohibited", root["prohibited"])
+        if prohibited != cls.EXPECTED_PROHIBITED:
+            raise AllocationError(f"prohibited must equal {cls.EXPECTED_PROHIBITED}")
+
+        novelty = cls._config_mapping(
+            "novelty_gate", root["novelty_gate"],
+            {"max_correlation_lt", "delta_information_ratio_gt"},
+        )
+        max_correlation = cls._config_number(
+            "max_correlation_lt", novelty["max_correlation_lt"]
+        )
+        if max_correlation > 1.0:
+            raise AllocationError("max_correlation_lt must be at most 1")
+        delta_ir = cls._config_number(
+            "delta_information_ratio_gt", novelty["delta_information_ratio_gt"]
+        )
+        bounds, allowed = cls._config_multiplier_rules(root["multipliers"])
+        configured = _ConfiguredControls(
+            target, turnover, relaxation, max_correlation, delta_ir,
+            bounds, allowed, str(source),
+        )
+        return cls(
+            sleeve_caps=sleeve_caps,
+            gross_cap=gross_cap,
+            asset_caps=asset_caps,
+            optimizer=CvxpyBudgetOptimizer(solver=solver),
+            _configured=configured,
+        )
+
+    @staticmethod
+    def _config_mapping(label: str, raw: Any, keys: set[str]) -> Mapping[str, Any]:
+        if not isinstance(raw, Mapping) or set(raw) != keys:
+            actual = sorted(raw) if isinstance(raw, Mapping) else type(raw).__name__
+            raise AllocationError(f"{label} keys must be {sorted(keys)}; got {actual}")
+        return raw
+
+    @staticmethod
+    def _config_string(label: str, raw: Any) -> str:
+        if not isinstance(raw, str) or not raw.strip():
+            raise AllocationError(f"{label} must be a non-empty string")
+        return raw
+
+    @staticmethod
+    def _config_sequence(label: str, raw: Any) -> tuple[Any, ...]:
+        if not isinstance(raw, list):
+            raise AllocationError(f"{label} must be a list")
+        return tuple(raw)
+
+    @staticmethod
+    def _config_number(label: str, raw: Any, *, positive: bool = False) -> float:
+        if (isinstance(raw, bool) or not isinstance(raw, (int, float))
+                or not math.isfinite(float(raw))):
+            raise AllocationError(f"{label} must be finite numeric")
+        value = float(raw)
+        if value < 0 or (positive and value <= 0):
+            qualifier = "positive" if positive else "non-negative"
+            raise AllocationError(f"{label} must be {qualifier}")
+        return value
+
+    @classmethod
+    def _config_multiplier_rules(
+        cls, raw: Any
+    ) -> tuple[dict[str, tuple[float, float]], dict[str, frozenset[float]]]:
+        rules = cls._config_mapping("multipliers", raw, set(cls.MULTIPLIER_NAMES))
+        expected_keys = {
+            "forward": {"min", "max", "can_increase_risk"},
+            "liquidity": {"min", "max"},
+            "diversification": {"min", "max"},
+            "operations": {"allowed"},
+            "drawdown": {"min", "max", "hysteresis"},
+        }
+        bounds: dict[str, tuple[float, float]] = {}
+        allowed: dict[str, frozenset[float]] = {}
+        for name in cls.MULTIPLIER_NAMES:
+            rule = cls._config_mapping(
+                f"multipliers.{name}", rules[name], expected_keys[name]
+            )
+            if name == "operations":
+                values = rule["allowed"]
+                if not isinstance(values, list) or not values:
+                    raise AllocationError("multipliers.operations.allowed must be non-empty")
+                allowed[name] = frozenset(
+                    cls._config_number("multipliers.operations.allowed", value)
+                    for value in values
+                )
+                continue
+            lower = cls._config_number(f"multipliers.{name}.min", rule["min"])
+            upper = cls._config_number(f"multipliers.{name}.max", rule["max"])
+            if lower > upper:
+                raise AllocationError(f"multipliers.{name}.min cannot exceed max")
+            if name != "diversification" and upper > 1.0:
+                raise AllocationError(f"multipliers.{name} cannot increase risk")
+            bounds[name] = (lower, upper)
+        if rules["forward"]["can_increase_risk"] is not False:
+            raise AllocationError("multipliers.forward.can_increase_risk must be false")
+        if rules["drawdown"]["hysteresis"] != "required":
+            raise AllocationError("multipliers.drawdown.hysteresis must be required")
+        return bounds, allowed
 
     @staticmethod
     def _validated_caps(kind: str, raw: Mapping[str, float]) -> dict[str, float]:
@@ -265,17 +483,19 @@ class AllocatorV1:
                 ):
                     raise AllocationError(f"{sleeve}.{name} must be numeric")
                 value = float(raw_value)
-                lower, upper = (
-                    (0.70, 1.10)
-                    if name == "diversification"
-                    else (0.0, 1.0)
-                )
-                if not math.isfinite(value) or value < lower or value > upper:
-                    raise AllocationError(
-                        f"{sleeve}.{name} must be in [{lower:g},{upper:g}]"
-                    )
-                if name == "operations" and value not in {0.0, 1.0}:
-                    raise AllocationError(f"{sleeve}.operations must be 0 or 1")
+                if name in self._multiplier_allowed:
+                    allowed = self._multiplier_allowed[name]
+                    if not math.isfinite(value) or value not in allowed:
+                        rendered = sorted(allowed)
+                        raise AllocationError(
+                            f"{sleeve}.{name} must be one of {rendered}"
+                        )
+                else:
+                    lower, upper = self._multiplier_bounds[name]
+                    if not math.isfinite(value) or value < lower or value > upper:
+                        raise AllocationError(
+                            f"{sleeve}.{name} must be in [{lower:g},{upper:g}]"
+                        )
                 multiplier *= value
             combined_multiplier[sleeve] = multiplier
             if side[sleeve] == 0:
@@ -353,9 +573,9 @@ class AllocatorV1:
         multipliers: Mapping[str, Mapping[str, float]],
         previous_budgets: Mapping[str, float],
         covariance: Sequence[Sequence[float]],
-        target_vol: float,
-        turnover_budget: float,
-        turnover_relaxation_limit: float,
+        target_vol: float | None = None,
+        turnover_budget: float | None = None,
+        turnover_relaxation_limit: float | None = None,
         lambda_turnover: float = 0.01,
         liquidity_caps: Mapping[str, float] | None = None,
         factor_loadings: Mapping[str, Mapping[str, float]] | None = None,
@@ -380,11 +600,9 @@ class AllocatorV1:
         previous = self._validated_budget_map(
             "previous_budgets", previous_budgets, sleeves
         )
-        target = self._positive_number("target_vol", target_vol)
-        turnover = self._non_negative_number(
-            "turnover_budget", turnover_budget
-        )
-        relaxation_limit = self._non_negative_number(
+        target = self._resolved_control("target_vol", target_vol, positive=True)
+        turnover = self._resolved_control("turnover_budget", turnover_budget)
+        relaxation_limit = self._resolved_control(
             "turnover_relaxation_limit", turnover_relaxation_limit
         )
         if relaxation_limit < turnover:
@@ -543,6 +761,26 @@ class AllocatorV1:
         ):
             raise AllocationError(f"{name} must be finite and non-negative")
         return float(value)
+
+    def _resolved_control(
+        self, name: str, supplied: float | None, *, positive: bool = False
+    ) -> float:
+        configured = getattr(self._configured, name) if self._configured else None
+        if supplied is None:
+            if configured is None:
+                raise AllocationError(f"{name} must be provided for a direct allocator")
+            return configured
+        value = (
+            self._positive_number(name, supplied)
+            if positive else self._non_negative_number(name, supplied)
+        )
+        if configured is not None and not math.isclose(
+            value, configured, rel_tol=0.0, abs_tol=1e-15
+        ):
+            raise AllocationError(
+                f"{name}={value:g} diverges from configured SSOT {configured:g}"
+            )
+        return value
 
     @classmethod
     def _validated_budget_map(
@@ -713,8 +951,12 @@ class AllocatorV1:
             incident_tuple,
         )
 
-    @staticmethod
-    def novelty_gate(max_correlation: float, delta_information_ratio: float) -> bool:
+    def novelty_gate(
+        self, max_correlation: float, delta_information_ratio: float
+    ) -> bool:
         if not math.isfinite(max_correlation) or not math.isfinite(delta_information_ratio):
             raise AllocationError("novelty inputs must be finite")
-        return max_correlation < 0.60 or delta_information_ratio > 0.15
+        return (
+            max_correlation < self._novelty_max_correlation
+            or delta_information_ratio > self._novelty_delta_information_ratio
+        )

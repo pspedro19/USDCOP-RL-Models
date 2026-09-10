@@ -1,0 +1,24 @@
+{
+  "nota": "SHAP explica el modelo, no el mercado; solo test-folds; diagnostico 0 trials",
+  "surface": "zoo",
+  "asset": "btcusdt",
+  "model_id": "hybrid_xgboost",
+  "model_type": "tree",
+  "method": "tree_shap_unavailable",
+  "attribution_not_shap": false,
+  "version": "2026-07-20",
+  "generated_at": "2026-08-05T16:55:20.934740+00:00",
+  "provenance": {
+    "data_fingerprint": "sha256:565669157951cc87199283ed83a4499cf0c256c4b8c8363511d06ef434ec7071",
+    "code_fingerprint": "sha256:a9fb8acaabdc46f0c828bf8ae1ae67995b74442779c3973aae0a7b53127fd94d",
+    "config_fingerprint": "sha256:21e75d6867077766496e391d9170f5fd6ce66ac9cbdb2abdb569a02227a1cc30",
+    "model_fingerprint": "sha256:21e75d6867077766496e391d9170f5fd6ce66ac9cbdb2abdb569a02227a1cc30",
+    "model_fingerprint_basis": "unavailable"
+  },
+  "scope": "sin atribuciones: el backend TreeSHAP no estuvo disponible en esta corrida. NO se emiten valores \u2014 un artefacto inventado es peor que un hueco declarado.",
+  "status": "tree_shap_unavailable",
+  "reason": "shap_computation_failed",
+  "detail": "RuntimeError: hybrid_xgboost: la descomposicion NO reproduce la prediccion del hibrido (additivity_max_abs_err=1.826e-08 > 1.662e-08). No se publica: una atribucion que no suma a la prediccion no explica al modelo.",
+  "artifact_id": "sha256:577ec862e6b7a163a96a6035c1bffba54a1d6711696cde0b20a2980ebfeb06c8",
+  "supersedes": "sha256:079b117be976d399e1355ab5ea0ab704d74e0f1b40bd557c431d0b4c066b46cd"
+}

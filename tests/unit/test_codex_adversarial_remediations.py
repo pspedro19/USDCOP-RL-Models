@@ -81,7 +81,7 @@ def test_makefile_exposes_explicit_review_gated_fabric_invoker() -> None:
     )
 
 
-def test_wired_migration_callers_select_legacy_plan_and_fail_closed() -> None:
+def test_runtime_startup_validates_legacy_schema_without_replaying_init() -> None:
     makefile = Path("Makefile").read_text(encoding="utf-8")
     entrypoint = Path("services/inference_api/entrypoint.sh").read_text(
         encoding="utf-8"
@@ -107,14 +107,17 @@ def test_wired_migration_callers_select_legacy_plan_and_fail_closed() -> None:
     ]
 
     assert len(make_callers) == 4
-    assert len(entrypoint_callers) == 2
+    assert len(entrypoint_callers) == 1
     assert all("--plan legacy-init" in line for line in make_callers)
     assert all("--plan legacy-init" in line for line in entrypoint_callers)
+    assert "--plan legacy-init ||" not in entrypoint
+    assert "--plan legacy-init --validate" in entrypoint
     assert "continuing anyway" not in entrypoint
     assert "Migration script not found, skipping" not in entrypoint
-    migration_section = entrypoint.split("Running database migrations...", 1)[1]
-    migration_section = migration_section.split("# Start API", 1)[0]
-    assert migration_section.count("exit 1") == 3
+    assert "Running database migrations..." not in entrypoint
+    validation_section = entrypoint.split("Validating database schema...", 1)[1]
+    validation_section = validation_section.split("# Start the API", 1)[0]
+    assert validation_section.count("exit 1") == 2
 
     expected_run = "python scripts/ops/db_migrate.py --plan legacy-init"
     expected_validate = (
@@ -249,14 +252,15 @@ def test_metric_environment_is_closed_and_implausible_value_is_not_ok() -> None:
     catalog = MetricCatalog.load("config/metrics/catalog.yaml")
     formulas = dict(FORMULAS)
     formulas["strategy.sharpe"] = lambda _context, _annualization: 100.0
-    engine = MetricEngine(
+    engine = MetricEngine.from_asset_registry(
         catalog,
+        assets_dir="config/assets",
         formulas=formulas,
-        annualization_by_asset={"usdcop": 52},
     )
     end = datetime(2026, 1, 5, tzinfo=timezone.utc)
     context = {
         "returns": [0.01] * 20,
+        "return_interval": "P1W",
         "n_trades": 20,
         "window_start": end - timedelta(weeks=26),
         "window_end": end,

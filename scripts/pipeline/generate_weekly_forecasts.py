@@ -438,8 +438,16 @@ def _validate_row_contract(
     that single row from publication without aborting the run.
 
     NOTES (honest limitations of the zoo generator):
-    - The zoo produces point predictions only (no intervals), so lower == upper
-      == point by design.
+    - The zoo produces point predictions only, so ``lower``/``upper`` are OMITTED
+      (``None``), which is what the contract means by "no interval".
+      It used to emit ``lower == upper == point`` with the note "by design". That
+      is not "no interval": it is an interval of WIDTH ZERO, i.e. a published
+      claim of zero forecast uncertainty, from models whose directional accuracy
+      is ~0.46 (BTC price-only). Nothing reads those bounds TODAY, so nothing is
+      currently misreported — but BL-19 migrates `ForecastingView` to
+      `parseForecastOutput`, and the first consumer to draw a band would render a
+      certainty ribbon around a number that has none. `None` is the honest value;
+      the contract already accepts it (`allow_none=True` on both bounds).
     - Predictions are log-returns (``y = log(future/close)``), hence
       ``prediction_type='log_return'`` (the contract distinguishes it from
       'return'; using 'return' here would be dishonest).
@@ -464,8 +472,10 @@ def _validate_row_contract(
             prediction={
                 "type": prediction_type,
                 "point": pred_return,
-                "lower": pred_return,  # no intervals produced by the zoo (see note)
-                "upper": pred_return,
+                # Sin intervalo declarado. NO `pred_return`: ver la nota de arriba —
+                # anchura cero es una afirmacion, la ausencia es un hecho.
+                "lower": None,
+                "upper": None,
             },
             model_fingerprint=f"refit-weekly:{model_id}:h{horizon}:{as_of_day}",
             data_snapshot_id=f"{asset}_daily_ohlcv:{as_of_day}",

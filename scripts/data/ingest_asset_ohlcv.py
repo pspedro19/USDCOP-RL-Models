@@ -290,14 +290,24 @@ def _investing_daily(instrument_id: int, symbol: str, start: date, end: date,
 
 
 # ------------------------------------------------------------------ session filter + tz align
-def _filter_session(df: pd.DataFrame, profile) -> pd.DataFrame:
-    """Keep only session days (weekday set). Metals ~23h => no intraday window cut, just weekends."""
+def _filter_session(df: pd.DataFrame, profile, weekday_only: bool = False) -> pd.DataFrame:
+    """Keep only session days (weekday set). Metals ~23h => no intraday window cut, just weekends.
+
+    `weekday_only` existe para el camino DIARIO. Una barra diaria no vive "dentro" de una
+    ventana intradia: `_daily_to_nyclose` la sella al cierre de NY (21:00-22:00 UTC), que para
+    USD/COP son las 16:00-17:00 COT, fuera de su sesion 08:00-12:55. Aplicarle la ventana
+    horaria descartaba el 100% de las barras diarias sin error ni excepcion -- la tarea
+    reportaba `success` y aterrizaban CERO filas. Sintoma medido: `dropped 6020 off-session
+    bars` en una corrida que habia bajado historia completa hasta la fecha de hoy, con
+    USD/COP, USD/MXN, USD/BRL y SPY congelados 14 dias mientras BTC (24x7), XAU (metals) y
+    SPX (cierre 16:00, que pasa por el limite inclusivo) avanzaban con normalidad.
+    """
     if df.empty:
         return df
     sess = profile.session
     local = df["time"].dt.tz_convert(ZoneInfo(sess.timezone))
     mask = local.dt.dayofweek.isin(list(sess.days))
-    if sess.mode == "exchange_hours" and sess.open and sess.close:
+    if not weekday_only and sess.mode == "exchange_hours" and sess.open and sess.close:
         oh, om = map(int, sess.open.split(":"))
         ch, cm = map(int, sess.close.split(":"))
         mins = local.dt.hour * 60 + local.dt.minute
@@ -407,7 +417,19 @@ def _to_seed_schema(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
     return out[["time", "symbol", "open", "high", "low", "close", "volume"]]
 
 
-def _write_seed(df: pd.DataFrame, rel_path: str) -> None:
+def _write_seed(df: pd.DataFrame, rel_path: str | None) -> None:
+    """Escribe el seed versionado. Un activo puede NO declarar seed y seguir siendo valido.
+
+    `usdmxn` no declara `daily_seed_file`, y esto reventaba con
+    `TypeError: unsupported operand type(s) for /: 'PosixPath' and 'NoneType'` DESPUES del
+    gate de calidad y ANTES del upsert -- o sea que tiraba datos ya validados por un fichero
+    opcional que el activo nunca prometio. Se salta el seed y se sigue al upsert, pero se
+    dice en voz alta: un seed ausente es una decision de configuracion, no un silencio.
+    """
+    if not rel_path:
+        log.info("  seed OMITIDO: el activo no declara fichero de seed (%d filas van solo a DB)",
+                 len(df))
+        return
     path = REPO / rel_path
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(path, index=False)
@@ -451,6 +473,7 @@ def _db_conn():
 
 def _upsert(conn, table: str, df: pd.DataFrame, symbol: str, source: str,
             *, replace_symbols: list[str] | None = None) -> tuple[int, int]:
+    """Stage the legacy UPSERT; the caller owns commit/rollback with Fabric writes."""
     from psycopg2.extras import execute_values
     if df.empty:
         return 0, 0
@@ -473,14 +496,57 @@ def _upsert(conn, table: str, df: pd.DataFrame, symbol: str, source: str,
                 close=EXCLUDED.close, volume=EXCLUDED.volume,
                 source=EXCLUDED.source, updated_at=NOW()
         """, vals, page_size=1000)
-        conn.commit()
         return len(vals), deleted
     except Exception as e:
-        conn.rollback()
         log.error("  UPSERT %s failed: %s", table, e)
         raise
     finally:
         cur.close()
+
+
+def _publish_fabric_frame(
+    conn,
+    df: pd.DataFrame,
+    *,
+    canonical_symbol: str,
+    provider_id: str,
+    provider_symbol: str,
+    interval_id: str,
+) -> tuple[pd.DataFrame, dict[str, int | str]]:
+    """Screen and stage raw/canonical/quarantine rows in the caller's transaction."""
+    from src.data_quality.ingest_guard import publish_or_declare_gap
+
+    rows = df.to_dict(orient="records")
+    result = publish_or_declare_gap(
+        conn,
+        symbol=canonical_symbol,
+        provider_id=provider_id,
+        interval_id=interval_id,
+        rows=rows,
+        source_uri=(
+            f"script://ingest_asset_ohlcv/{provider_symbol}/{interval_id}"
+        ),
+    )
+    if result is None:
+        log.warning(
+            "Fabric quality coverage UNAVAILABLE for %s via %s; "
+            "legacy ingestion continues without claiming screening",
+            canonical_symbol,
+            provider_id,
+        )
+        return df.copy(), {
+            "raw": 0,
+            "canonical": 0,
+            "quarantined": 0,
+            "coverage": "UNAVAILABLE",
+        }
+    accepted = pd.DataFrame(result.accepted, columns=df.columns)
+    return accepted, {
+        "raw": result.raw_count,
+        "canonical": result.canonical_count,
+        "quarantined": result.quarantine_count,
+        "coverage": "SCOPED",
+    }
 
 
 # ------------------------------------------------------------------ main
@@ -578,7 +644,22 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
         # post-condition: drop any off-session (weekend) daily bars the sources may still carry.
         # The daily path previously skipped session filtering entirely, so a mis-dated bar could
         # slip through unnoticed (see _daily_to_nyclose day-shift). Weekday mask is cheap insurance.
-        dly = _filter_session(dly, profile)
+        # `weekday_only=True` porque eso -y solo eso- es lo que este post-check dice querer: la
+        # ventana intradia no aplica a una barra diaria, y aplicarla vaciaba el ingest entero.
+        dly = _filter_session(dly, profile, weekday_only=True)
+
+        # Una barra diaria cuyo instante de cierre AUN NO HA OCURRIDO no es una barra diaria:
+        # es la sesion en curso, y su close todavia se mueve. El proveedor la devuelve igual.
+        # La capa Fabric ya lo rechaza con `CHECK (available_at >= event_time)` -- para USD/MXN
+        # eso salia como CheckViolation y para USD/COP se tragaba en silencio dejando
+        # `fabric_daily {raw: 0}` mientras la tabla legacy SI aceptaba el dato incompleto.
+        # Se descarta aqui, una vez, para que ambos caminos vean lo mismo.
+        ahora = pd.Timestamp.now(tz="UTC")
+        sin_cerrar = int((dly["time"] > ahora).sum())
+        if sin_cerrar:
+            log.info("  descartadas %d barra(s) diaria(s) SIN CERRAR (cierre > %s)",
+                     sin_cerrar, ahora.isoformat(timespec="seconds"))
+            dly = dly[dly["time"] <= ahora].copy()
         if not dly.empty:
             _gate_seed(dly, profile, "daily", validate)
             _write_seed(_to_seed_schema(dly, symbol), profile.data_source.daily_seed_file)
@@ -599,29 +680,50 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
 
     # ---- persist to DB (idempotent UPSERT) ----
     if use_db:
-        log.info("[3] UPSERT to DB (idempotent)")
+        log.info("[3] Atomic Fabric publication + legacy UPSERT (idempotent)")
+        conn = _db_conn()
         try:
-            conn = _db_conn()
             if not skip_intraday and isinstance(summary.get("m5_frame"), pd.DataFrame) and not summary["m5_frame"].empty:
                 tbl = GRANULARITY_TABLE["5min"]
-                n, _ = _upsert(conn, tbl, summary["m5_frame"], symbol,
+                accepted, fabric = _publish_fabric_frame(
+                    conn,
+                    summary["m5_frame"],
+                    canonical_symbol=symbol,
+                    provider_id=str(profile.data_source.provider).lower(),
+                    provider_symbol=str(profile.data_source.provider_symbol),
+                    interval_id="PT5M",
+                )
+                n, _ = _upsert(conn, tbl, accepted, symbol,
                                "twelvedata_" + profile.safe_name)
                 log.info("  %s: upserted %d rows (symbol=%s)", tbl, n, symbol)
                 summary["db_m5_upserted"] = n
+                summary["fabric_m5"] = fabric
             if not skip_daily and isinstance(summary.get("daily_frame"), pd.DataFrame) and not summary["daily_frame"].empty:
                 tbl = GRANULARITY_TABLE["daily"]
                 replace_symbols = (raw_source.get("replace_db_symbols")
                                    if summary.get("daily_authoritative") else None)
-                n, deleted = _upsert(conn, tbl, summary["daily_frame"], symbol,
+                accepted, fabric = _publish_fabric_frame(
+                    conn,
+                    summary["daily_frame"],
+                    canonical_symbol=symbol,
+                    provider_id=str(daily_provider).lower(),
+                    provider_symbol=str(profile.data_source.provider_symbol),
+                    interval_id="P1D",
+                )
+                n, deleted = _upsert(conn, tbl, accepted, symbol,
                                      summary.get("daily_source", "twelvedata_daily"),
                                      replace_symbols=replace_symbols)
                 log.info("  %s: upserted %d rows (symbol=%s)", tbl, n, symbol)
                 summary["db_daily_upserted"] = n
                 summary["db_daily_replaced"] = deleted
-            conn.close()
+                summary["fabric_daily"] = fabric
+            conn.commit()
         except Exception as e:
-            log.warning("  DB step skipped/failed: %s", e)
-            summary["db_error"] = str(e)
+            conn.rollback()
+            log.error("  Atomic DB publication failed: %s", e)
+            raise
+        finally:
+            conn.close()
 
     # strip frames from returned summary
     summary.pop("m5_frame", None)

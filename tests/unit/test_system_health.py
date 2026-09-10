@@ -366,3 +366,92 @@ class TestSnapshot:
         )
         z = status.metrics.get("tracking_error_zscore")
         assert z is None or math.isfinite(z)
+
+
+# ---------------------------------------------------------------------------
+# BL-18 — el docstring de HealthEvent prometía una inserción imposible
+# (CXD-365/370 · brief DECISION-BL18 §4-5)
+# ---------------------------------------------------------------------------
+
+# Columnas NOT NULL de `control.metric_event` (database/migrations/070_fabric_control_plane.sql)
+# que `HealthEvent` no tiene ni puede derivar. Si alguna llega a existir como campo,
+# este candado cae y obliga a revisar el docstring en vez de dejarlo mentir.
+_METRIC_EVENT_IDENTITY_NOT_NULL = (
+    "catalog_version",
+    "formula_version",
+    "entity_type",
+    "entity_id",
+    "metric_namespace",
+)
+
+
+def _doc_normalizado(cls) -> str:
+    """Docstring con espacios colapsados: las frases del contrato cruzan saltos de línea."""
+    import re as _re
+
+    return _re.sub(r"\s+", " ", (cls.__doc__ or "")).lower()
+
+
+#: Las tres proposiciones POSITIVAS del contrato (brief DECISION-BL18 §5, CXD-365/373).
+#: Se exigen afirmaciones, no se prohíben frases: un candado por frase prohibida se sortea
+#: reescribiendo el texto con el significado invertido — pasó, y dio falso verde.
+_PROPOSICIONES_CONTRATO = (
+    (
+        "restriccion",
+        "declarados y gobernados como métricas en el catálogo",
+        "el docstring debe decir que SOLO los kinds catalogados se normalizan a MetricEvent",
+    ),
+    (
+        "negativa",
+        "no se insertan ahí",
+        "el docstring debe decir que ausencias, incidentes y acciones NO se insertan en metric_event",
+    ),
+    (
+        "no-implicacion",
+        "no convierte a un evento en una observación de catálogo",
+        "el docstring debe decir que portar una medición NO convierte el evento en observación",
+    ),
+)
+
+
+def test_health_event_docstring_states_the_three_contract_propositions() -> None:
+    """El docstring debe AFIRMAR las tres proposiciones, no solo evitar una frase falsa.
+
+    Este candado es un tripwire contra la deriva del texto, no una prueba de semántica:
+    la garantía dura es ``test_health_event_does_not_carry_metric_event_identity``.
+    """
+    from src.monitoring.system_health_contract import HealthEvent
+
+    doc = _doc_normalizado(HealthEvent)
+    assert doc, "HealthEvent debe documentar su naturaleza"
+
+    faltan = [
+        (nombre, motivo)
+        for nombre, frase, motivo in _PROPOSICIONES_CONTRATO
+        if frase not in doc
+    ]
+    assert not faltan, "proposiciones ausentes del docstring: " + "; ".join(
+        f"{nombre} ({motivo})" for nombre, motivo in faltan
+    )
+
+    # La restricción sólo vale si es exclusiva: "sólo ... declarados y gobernados".
+    idx = doc.index("declarados y gobernados como métricas en el catálogo")
+    assert "sólo" in doc[max(0, idx - 120):idx], (
+        "la mención al catálogo debe ser una RESTRICCIÓN ('sólo los kind declarados...'), "
+        "no una permisión ('todos los kind, estén o no declarados...')"
+    )
+
+
+def test_health_event_does_not_carry_metric_event_identity() -> None:
+    """Tripwire: si HealthEvent gana identidad de métrica, hay que revisar el docstring."""
+    from dataclasses import fields
+
+    from src.monitoring.system_health_contract import HealthEvent
+
+    presentes = {f.name for f in fields(HealthEvent)} & set(
+        _METRIC_EVENT_IDENTITY_NOT_NULL
+    )
+    assert not presentes, (
+        f"HealthEvent ganó campos de identidad de métrica ({sorted(presentes)}); "
+        "revisar el docstring y el brief DECISION-BL18 antes de seguir"
+    )

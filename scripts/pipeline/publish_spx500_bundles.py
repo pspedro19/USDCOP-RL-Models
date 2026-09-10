@@ -87,11 +87,19 @@ def _build_arms():
     dumb_cost = np.abs(np.diff(dumb_pos, prepend=0.0)) * unit_cost
     ma200_ret = dumb_pos * asset_ret - dumb_cost
 
+    # C039: el productor YA calcula la descomposicion completa; hasta ahora la descartaba y
+    # serializaba solo `{d, eq}`. `gross` y `cost` se conservan para poder publicar el replay
+    # sin que el consumidor tenga que inferir nada -- inferirlo desde `precio x leverage`
+    # difiere de la equity publicada hasta 6.60 pp por trade, porque el PnL del motor es
+    # open-to-open y los precios publicados son cierres de referencia.
+    gated_cost = np.asarray(sleeve.cost, dtype=float)
     return {
         "index": idx,
         "asset_ret": asset_ret,
-        GATED_ID: {"pos": gated_pos, "ret": gated_ret},
-        MA200_ID: {"pos": dumb_pos, "ret": ma200_ret},
+        GATED_ID: {"pos": gated_pos, "ret": gated_ret,
+                   "gross": gated_pos * asset_ret, "cost": gated_cost},
+        MA200_ID: {"pos": dumb_pos, "ret": ma200_ret,
+                   "gross": dumb_pos * asset_ret, "cost": dumb_cost},
     }
 
 
@@ -155,7 +163,15 @@ def _year_doc(sid: str, name: str, arms: dict, prices: pd.DataFrame,
         trades.append({
             "trade_id": k,
             "timestamp": str(dates[i0])[:19],
-            "exit_timestamp": str(dates[i1])[:19],
+            # C039 invariante 6 / causa raiz de CXD-828: el sello DEBE nombrar la barra de la
+            # que sale su precio. `exit_price` toma `i1 + 1` (la salida se ejecuta en la barra
+            # siguiente al ultimo dia con exposicion), asi que el sello tiene que ser esa misma.
+            # Antes nombraba `i1` y el precio venia de `i1 + 1`: el artefacto publicado se
+            # contradecia a si mismo y un consumidor que compusiera la serie diaria acreditaba
+            # el retorno de D+1 en el dia D -- una fuga de un dia, invisible en el PnL porque
+            # el producto telescopa. La correccion de datos (a62d5d0d) arreglo los bundles ya
+            # publicados; SIN esta linea, la siguiente publicacion los regeneraba rotos.
+            "exit_timestamp": str(dates[min(i1 + 1, len(dates) - 1)])[:19],
             "side": "LONG",
             "entry_price": round(float(open_px[i0]), 2),
             "exit_price": round(float(open_px[min(i1 + 1, len(open_px) - 1)]), 2),
@@ -270,9 +286,35 @@ def _year_doc(sid: str, name: str, arms: dict, prices: pd.DataFrame,
                     "note_n": ("N<20 => solo conteo y PnL" if not stats_ok else None)},
     }
 
-    signals = {"kind": "daily_equity", "initial_capital": INITIAL_CAPITAL,
-               "rows": [{"d": str(d)[:10], "eq": round(float(e), 2)}
-                        for d, e in zip(dates[np.asarray(mask)], eq)]}
+    # ---------------------------------------------------------------- C039: replay completo
+    # Antes: `{kind: "daily_equity", rows: [{d, eq}]}`. El consumidor no podia reconstruir la
+    # serie sin INFERIR la exposicion, y la unica pista disponible -`leverage` en el trade- es
+    # el PROMEDIO del segmento, no la exposicion diaria. `return_convention` es obligatoria y
+    # aqui vale `open_to_open` porque el motor usa `df["open_to_open_return"]`: sin declararlo,
+    # quien compare contra los cierres de `asset_daily_ohlcv` mezcla series y obtiene un numero
+    # plausible y equivocado.
+    gross_y = arms[sid]["gross"][mask]
+    cost_y = arms[sid]["cost"][mask]
+    signals = {
+        "kind": "daily_replay",
+        "strategy_id": sid,
+        "year": year,
+        "initial_capital": INITIAL_CAPITAL,
+        "return_convention": "open_to_open",
+        "rows": [
+            {
+                "d": str(d)[:10],
+                "eq": round(float(e), 2),
+                "exposure_exec": round(float(p), 6),
+                "gross_return_decimal": float(g),
+                # POSITIVO por convencion declarada: se RESTA del bruto.
+                "cost_return_decimal": float(c),
+                "net_return_decimal": float(g) - float(c),
+            }
+            for d, e, p, g, c in zip(dates[np.asarray(mask)], eq,
+                                     pos[np.asarray(mask)], gross_y, cost_y)
+        ],
+    }
 
     gates_meta = {"passed": sum(1 for g in summary["gates"] if g["passed"]),
                   "of": len(summary["gates"]), "recommendation": "REVIEW"}

@@ -378,7 +378,8 @@ export interface MacroChartData {
 export interface NewsContext {
   article_count: number;
   top_categories: Record<string, number>;
-  avg_sentiment: number;
+  avg_sentiment: number | null;
+  sentiment_unavailable_reason?: string | null;
   cross_refs?: number;
   source_breakdown?: Record<string, number>;
   highlights?: Array<{

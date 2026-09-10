@@ -28,7 +28,7 @@ import logging
 import sys
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -304,10 +304,32 @@ def health_check(**context) -> Dict[str, Any]:
 
 def check_market_hours(**context) -> bool:
     """
-    Check if we're within market hours.
+    Check if the RUN's logical window is within market hours.
 
     Returns True to continue, False to skip the rest of the DAG.
     Can be bypassed with force_run parameter.
+
+    POR QUE LA FECHA LOGICA Y NO `datetime.now()` (defecto medido el 2026-08-06)
+    ---------------------------------------------------------------------------
+    Esta funcion decidia con `datetime.now(tz)`: el reloj del MOMENTO EN QUE SE EJECUTA
+    la tarea, no la ventana que la corrida representa. Efecto observado en produccion:
+    la corrida `scheduled__2026-08-06T16:00:00+00:00` -- 11:00 COT, dentro de horario --
+    se ejecuto a las 15:54 COT porque el scheduler acababa de recrearse, y el gate la
+    mando a `skipped` junto con `extract_all_sources`, `upsert_all` y
+    `update_is_complete`. **El DagRun quedo en `success`**, porque `skipped` no es
+    `failed`. Con las tareas de escritura saltadas, `macro_indicators_daily` llevaba 9
+    dias sin una sola fila nueva (umbral de frescura: 7) mientras Airflow mostraba verde.
+    La misma corrida con `force_run=true` escribio 10 filas y dejo las 12 columnas al dia:
+    los extractores y las credenciales estaban bien; este gate los apagaba en silencio.
+
+    Toda corrida que se ejecute tarde --scheduler caido, reintento, catchup, backfill--
+    caia en lo mismo, de forma permanente y sin senal.
+
+    La ventana la fija el `schedule_interval` (`0 13-17 * * 1-5` UTC = 8-12 COT). Que
+    para las corridas programadas este gate sea ahora un no-op es la conclusion correcta,
+    no un descuido: el cron YA garantiza la ventana, y re-comprobarla contra otro reloj
+    solo podia discrepar cuando el segundo reloj estaba equivocado. Para disparos
+    manuales sigue protegiendo, y `force_run` sigue siendo la salida declarada.
     """
     # Check for force_run override
     conf = context.get('dag_run').conf or {}
@@ -322,22 +344,32 @@ def check_market_hours(**context) -> bool:
         return True
 
     tz = pytz.timezone('America/Bogota')
-    now = datetime.now(tz)
+    # `data_interval_end` es el final de la ventana que esta corrida representa. Se cae a
+    # `logical_date` y solo en ultimo termino al reloj, para no romper si el contexto
+    # llega incompleto; el orden importa, porque el reloj es justamente lo que fallaba.
+    referencia = context.get('data_interval_end') or context.get('logical_date')
+    if referencia is None:
+        logger.warning("[HOURS] sin fecha logica en el contexto; caigo al reloj de pared")
+        referencia = datetime.now(tz)
+    momento = referencia.astimezone(tz)
 
     # Market hours: 8:00-13:00 COT, Mon-Fri
-    is_weekday = now.weekday() < 5
-    is_market_hours = MARKET_HOURS_START <= now.hour < MARKET_HOURS_END
+    is_weekday = momento.weekday() < 5
+    is_market_hours = MARKET_HOURS_START <= momento.hour < MARKET_HOURS_END
 
     if not (is_weekday and is_market_hours):
         logger.info(
-            "[HOURS] Outside market hours: %s (hour=%d, weekday=%d). Skipping.",
-            now.strftime("%Y-%m-%d %H:%M"),
-            now.hour,
-            now.weekday()
+            "[HOURS] Ventana logica fuera de horario: %s (hour=%d, weekday=%d). Skipping.",
+            momento.strftime("%Y-%m-%d %H:%M"),
+            momento.hour,
+            momento.weekday()
         )
         return False
 
-    logger.info("[HOURS] Within market hours (%s). Proceeding.", now.strftime("%H:%M COT"))
+    logger.info(
+        "[HOURS] Ventana logica dentro de horario (%s). Proceeding.",
+        momento.strftime("%Y-%m-%d %H:%M COT")
+    )
     return True
 
 
@@ -562,6 +594,7 @@ def upsert_all(**context) -> Dict[str, Any]:
     Contract: CTR-L0-4TABLE-001
     """
     FrequencyRoutedUpsertService = _get_upsert_service_cls()
+    from src.lineage.graph import RevisionType
 
     logger.info("=" * 60)
     logger.info("L0 MACRO UPDATE v2.1 - UPSERT Phase (4-Table Architecture)")
@@ -592,6 +625,28 @@ def upsert_all(**context) -> Dict[str, Any]:
     conn = get_db_connection()
     upsert_service = FrequencyRoutedUpsertService(conn)
 
+    dag_run = context.get('dag_run')
+    conf = (getattr(dag_run, 'conf', None) or {}) if dag_run is not None else {}
+    raw_revision_type = conf.get(
+        'macro_revision_type', RevisionType.PROVIDER_CORRECTION.value
+    )
+    try:
+        revision_type = RevisionType(raw_revision_type)
+    except ValueError as exc:
+        allowed = ', '.join(item.value for item in RevisionType)
+        conn.close()
+        raise ValueError(
+            f"invalid macro_revision_type {raw_revision_type!r}; expected one of {allowed}"
+        ) from exc
+    run_id = str(context.get('run_id') or getattr(dag_run, 'run_id', '') or '')
+    if not run_id:
+        conn.close()
+        raise ValueError("Airflow run_id is required for macro lineage")
+    actor = str(conf.get('macro_revision_actor') or _MACRO_UPDATE_DAG_ID)
+    event_time = context.get('logical_date')
+    if not isinstance(event_time, datetime) or event_time.tzinfo is None:
+        event_time = datetime.now(timezone.utc)
+
     results = {
         'success': 0,
         'failed': 0,
@@ -612,7 +667,11 @@ def upsert_all(**context) -> Dict[str, Any]:
             upsert_result = upsert_service.upsert_variable(
                 variable,
                 df,
-                n=SAFETY_RECORDS
+                n=SAFETY_RECORDS,
+                revision_type=revision_type,
+                actor=actor,
+                run_id=run_id,
+                event_time=event_time,
             )
 
             freq = upsert_result.get('frequency', 'daily')

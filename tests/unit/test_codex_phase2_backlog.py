@@ -77,6 +77,17 @@ def test_applied_migration_is_idempotent_but_drift_is_fatal() -> None:
         asyncio.run(migrator.claim_migration_attempt(drift, "080.sql", "new"))
 
 
+@pytest.mark.parametrize(
+    "plan",
+    ["legacy-init", "platform-bootstrap-v1", "commerce-v1", "fabric-v1"],
+)
+def test_required_tables_are_backed_by_each_plan_ddl(plan: str) -> None:
+    migrator = _load_path("db_migrate_required_ddl", "scripts/ops/db_migrate.py")
+    assert set(migrator.REQUIRED_TABLES_BY_PLAN[plan]) <= (
+        migrator.created_tables_for_plan(plan)
+    )
+
+
 def test_metric_annualization_comes_from_asset_profile_and_return_interval() -> None:
     from src.metrics.annualization import AnnualizationRegistry
     from src.metrics.engine import MetricCatalog, MetricEngine
@@ -214,7 +225,10 @@ def test_physical_and_synthetic_migrations_have_executable_static_smoke() -> Non
     assert "create table if not exists demo.synthetic_model" in synthetic_sql
     assert "constraint synthetic_demo_only check" in synthetic_sql
     assert "execution_eligible = false" in synthetic_sql
-    assert "create or replace function demo.reject_synthetic_performance" in synthetic_sql
+    assert "create or replace function demo.reject_synthetic_fact" in synthetic_sql
+    assert "create trigger trg_no_synthetic_performance" in synthetic_sql
+    assert "create trigger trg_no_synthetic_inference" in synthetic_sql
+    assert "create trigger trg_no_synthetic_trade" in synthetic_sql
     assert "raise exception" in synthetic_sql
 
 
@@ -234,15 +248,28 @@ def test_ci_and_readiness_matrix_are_executable_honest_contracts() -> None:
 
     assert "legacy_bypass_allowlist" in validator
     assert "test_codex_phase2_backlog.py" in workflow
-    for domain in (
-        "Técnica",
-        "Riesgo",
-        "Ejecución",
-        "Seguridad",
+    assert "BL-16 constitutional declaration and canonical JSON gates" in workflow
+    assert "test_governance_matrix_has_exactly_26_legal_state_combinations" in workflow
+    assert "test_illegal_governance_object_cannot_exist" in workflow
+    assert "test_canonical_json_rejects_nonfinite_numbers" in workflow
+    assert (
+        "python -m pytest tests/regression/test_forecasting_caveat_present.py -q"
+        in workflow
+    )
+    control_domains = {
+        columns[2].strip()
+        for line in matrix.splitlines()
+        if len(columns := line.split("|")) > 2
+        and re.fullmatch(r"[A-Z]+-\d+", columns[1].strip())
+    }
+    assert control_domains == {
+        "Technology",
+        "Risk",
+        "Execution",
+        "Security",
         "Compliance",
-        "Operaciones",
-        "Investor",
-    ):
-        assert domain in matrix
+        "Operations",
+        "Investors",
+    }
     assert "timescaledb_information.hypertables" in profiler
     assert "timescaledb_information.continuous_aggregates" in profiler

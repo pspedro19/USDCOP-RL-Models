@@ -13,6 +13,11 @@ Fail-closed validator for config/features/feature_catalog.yaml:
   versioned normalization snapshot artifact (§40.3, Plan Consolidado §1.3).
 - `code_reference` (file + sha256_16) is mandatory except for `identity`
   passthrough features; referenced files must exist.
+- C032: catalog identity is `(asset_id, feature_id)`; every feature set input
+  resolves exactly once for its asset. `series_id` binds physical identity:
+  unit/source/transformation/code hash cannot diverge across consumers, while
+  consumer-relative priors and local `asbuilt_source` may differ. Governed
+  macro series resolve to `macro_variables_ssot.yaml::canonical_name`.
 - STRICT SCHEMA (CXD-041): required string fields must be NON-EMPTY strings
   (not just present), `is_active` must be a real bool, `lookback` must be an
   ISO-8601 day duration `P<n>D` with n >= 0 — negative is unrepresentable and
@@ -56,28 +61,58 @@ if str(ROOT) not in sys.path:
 from src.identity.source_hash import canonical_lf, file_code_hash  # noqa: E402
 
 CATALOG_PATH = ROOT / "config" / "features" / "feature_catalog.yaml"
+FEATURE_SETS_DIR = ROOT / "config" / "features" / "feature_sets"
+MACRO_SSOT_PATH = ROOT / "config" / "macro_variables_ssot.yaml"
 
 CAUSALITY_POLICIES = ("point_in_time", "same_bar", "lagged_1")
 SIGN_PRIORS = ("positive", "negative", "ambiguous")
 PROHIBITED_KEYS = ("normalization_mean", "normalization_std", "zscore_fixed")
 REQUIRED_KEYS = (
-    "feature_id", "unit", "feature_group", "causality_policy",
+    "asset_id", "feature_id", "series_id", "unit", "feature_group", "causality_policy",
     "source_contract", "transformation", "lookback", "compute_location",
     "sign_prior", "is_active",
 )
 # Required keys whose value must be a NON-EMPTY string.
 REQUIRED_STR_KEYS = (
-    "feature_id", "unit", "feature_group", "causality_policy",
+    "asset_id", "feature_id", "series_id", "unit", "feature_group", "causality_policy",
     "source_contract", "transformation", "lookback", "compute_location",
     "sign_prior",
 )
 # code_reference sub-schema (recursive validation, CXD-041).
 CODE_REF_REQUIRED = ("file", "sha256_16")
 CODE_REF_OPTIONAL = ("symbol",)
+# Contratos de INVOCACION del productor (CXD-628, decision A). Se DECLARAN en el
+# catalogo y el resolver bifurca por ellos; NO se infieren por firma. Motivo: el
+# productor canonico de `btcusdt.realized_vol_20` es `build_daily_features(df) -> df`,
+# que calcula ~10 features de golpe, mientras que el de `spx500.ma_200` es
+# `compute_ma_200(close) -> Series`. Adivinar cual toca leyendo la firma haria que
+# renombrar un argumento cambiara como se invoca a un productor congelado.
+PRODUCER_CONTRACTS = (
+    "series_close_v1",   # fn(close: Series) -> Series      (defecto historico)
+    "ohlcv_frame_v1",    # fn(df[time,open,high,low,close]) -> df, se toma output_column
+)
 SHA16_RE = re.compile(r"^[0-9a-f]{16}$")
 LOOKBACK_RE = re.compile(r"^P(\d+)D$")
 # Transformations that legitimately need zero bars of history.
 ZERO_LOOKBACK_TRANSFORMS = ("identity", "calendar_extract")
+PHYSICAL_SERIES_FIELDS = (
+    "unit", "source_contract", "transformation", "code_reference",
+)
+
+
+def _macro_canonical_names() -> set[str]:
+    """Canonical physical macro identities governed by the macro SSOT."""
+    doc = yaml.safe_load(MACRO_SSOT_PATH.read_text(encoding="utf-8"))
+    variables = doc.get("variables") or doc.get("macro_variables") or doc
+    names: set[str] = set()
+    for value in variables.values() if isinstance(variables, dict) else ():
+        if not isinstance(value, dict):
+            continue
+        identity = value.get("identity") or {}
+        canonical = identity.get("canonical_name")
+        if isinstance(canonical, str) and canonical:
+            names.add(canonical)
+    return names
 
 
 # El método de hashing NO se re-implementa aquí: vive en src/identity/source_hash.py,
@@ -130,15 +165,20 @@ def _validate_code_reference(fid: str, ref: object, errors: list[str]) -> None:
 def validate_entries(features: list[dict]) -> list[str]:
     """Validate catalog entries. Returns a list of violations ([] = pass)."""
     errors: list[str] = []
-    seen_ids: set[str] = set()
+    seen_ids: set[tuple[str, str]] = set()
+    series_contracts: dict[str, tuple[object, ...]] = {}
+    series_features: dict[str, object] = {}
+    macro_names = _macro_canonical_names()
     for i, f in enumerate(features):
-        fid = f.get("feature_id") or f"<entry #{i}>"
         if not isinstance(f, dict):
             errors.append(f"<entry #{i}>: entry must be a mapping")
             continue
-        if fid in seen_ids:
-            errors.append(f"{fid}: duplicate feature_id")
-        seen_ids.add(fid)
+        fid = f.get("feature_id") or f"<entry #{i}>"
+        asset_id = f.get("asset_id")
+        identity = (asset_id, fid)
+        if identity in seen_ids:
+            errors.append(f"{asset_id}/{fid}: duplicate composite feature identity")
+        seen_ids.add(identity)
 
         for key in REQUIRED_KEYS:
             if key not in f or f[key] is None:
@@ -157,11 +197,73 @@ def validate_entries(features: list[dict]) -> list[str]:
         if ia is not None and not isinstance(ia, bool):
             errors.append(f"{fid}: is_active must be a bool, got {ia!r}")
 
+        series_id = f.get("series_id")
+        if isinstance(series_id, str) and series_id:
+            previous_feature_id = series_features.get(series_id)
+            if previous_feature_id is not None and previous_feature_id != fid:
+                errors.append(
+                    f"{asset_id}/{fid}: series_id {series_id!r} maps to multiple "
+                    f"feature_id values ({previous_feature_id!r}, {fid!r}); one physical "
+                    "series must identify one observable")
+            else:
+                series_features[series_id] = fid
+            local_series_id = f"{asset_id}.{fid}"
+            if (f.get("source_contract") == "macro.observation"
+                    and series_id != local_series_id
+                    and series_id not in macro_names):
+                errors.append(
+                    f"{asset_id}/{fid}: series_id {series_id!r} does not resolve to an "
+                    "identity.canonical_name in macro_variables_ssot.yaml")
+            physical = tuple(f.get(field) for field in PHYSICAL_SERIES_FIELDS)
+            previous = series_contracts.get(series_id)
+            if previous is not None and previous != physical:
+                changed = [field for field, old, new in zip(
+                    PHYSICAL_SERIES_FIELDS, previous, physical) if old != new]
+                errors.append(
+                    f"{asset_id}/{fid}: series_id {series_id!r} diverges in "
+                    f"{', '.join(changed)}; physical series contracts must agree")
+            else:
+                series_contracts[series_id] = physical
+
+        source_contract = f.get("source_contract")
+        if (isinstance(asset_id, str) and asset_id
+                and isinstance(source_contract, str)
+                and source_contract.startswith("market.canonical_bar")
+                and source_contract != f"market.canonical_bar[asset_id={asset_id}]"):
+            errors.append(
+                f"{asset_id}/{fid}: source_contract must discriminate asset {asset_id!r} "
+                f"as 'market.canonical_bar[asset_id={asset_id}]'")
+
         cp = f.get("causality_policy")
         if isinstance(cp, str) and cp and cp not in CAUSALITY_POLICIES:
             errors.append(
                 f"{fid}: unknown causality_policy {cp!r} "
                 f"(allowed: {CAUSALITY_POLICIES})")
+
+        # --- contrato de invocacion del productor, fail-closed ------------------
+        pc = f.get("producer_contract")
+        oc = f.get("output_column")
+        if pc is not None:
+            if pc not in PRODUCER_CONTRACTS:
+                errors.append(
+                    f"{fid}: producer_contract {pc!r} desconocido "
+                    f"(permitidos: {PRODUCER_CONTRACTS}). Un contrato sin declarar no "
+                    f"se degrada al de por defecto: el resolver no debe adivinar como "
+                    f"invocar un productor congelado")
+            if f.get("code_reference") is None:
+                errors.append(
+                    f"{fid}: declara producer_contract sin `code_reference`; un "
+                    f"passthrough no se invoca, asi que el contrato sobra o falta el "
+                    f"productor")
+            if pc == "ohlcv_frame_v1" and not (isinstance(oc, str) and oc):
+                errors.append(
+                    f"{fid}: producer_contract 'ohlcv_frame_v1' exige `output_column` "
+                    f"(cual de las columnas devueltas ES esta feature). Sin ella el "
+                    f"resolver tendria que adivinar entre ~10 salidas")
+        elif oc is not None:
+            errors.append(
+                f"{fid}: declara `output_column` sin `producer_contract`; una columna "
+                f"de salida sin contrato de invocacion no se puede usar")
 
         sp = f.get("sign_prior")
         if isinstance(sp, str) and sp and sp not in SIGN_PRIORS:
@@ -206,6 +308,26 @@ def validate_entries(features: list[dict]) -> list[str]:
     return errors
 
 
+def validate_feature_sets(features: list[dict], feature_sets: list[dict]) -> list[str]:
+    """Every declared input resolves exactly once for its decision asset."""
+    errors: list[str] = []
+    by_identity: dict[tuple[object, object], list[dict]] = {}
+    for feature in features:
+        by_identity.setdefault(
+            (feature.get("asset_id"), feature.get("feature_id")), []).append(feature)
+    for feature_set in feature_sets:
+        asset_id = feature_set.get("asset_id")
+        set_id = feature_set.get("feature_set_id", "<unknown feature_set>")
+        for ordered in feature_set.get("ordered_features") or []:
+            fid = ordered.get("feature_id") if isinstance(ordered, dict) else None
+            matches = by_identity.get((asset_id, fid), [])
+            if len(matches) != 1:
+                errors.append(
+                    f"{set_id}: {asset_id}/{fid} resolves {len(matches)} contracts; "
+                    "expected exactly one asset-scoped catalog entry")
+    return errors
+
+
 def validate_code_hashes(features: list[dict]) -> list[str]:
     """Verify recorded code hashes against the working tree (drift detection).
 
@@ -239,7 +361,12 @@ def main() -> int:
         return 1
     cat = yaml.safe_load(CATALOG_PATH.read_text(encoding="utf-8"))
     features = cat.get("features") or []
-    errors = validate_entries(features) + validate_code_hashes(features)
+    feature_sets = [
+        yaml.safe_load(path.read_text(encoding="utf-8"))
+        for path in sorted(FEATURE_SETS_DIR.glob("*.yaml"))
+    ]
+    errors = (validate_entries(features) + validate_code_hashes(features)
+              + validate_feature_sets(features, feature_sets))
     if errors:
         print(f"[FAIL] feature catalog: {len(errors)} violation(s)")
         for e in errors:

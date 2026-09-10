@@ -117,39 +117,39 @@ BL-05 ─→ BL-32 (paper ledger visible es el primer ladrillo del Passport)
 |---|---|
 | [BL-01 — Test de regresión del caveat da-caveat](BL-01-test-caveat-forecasting.md) | IMPLEMENTED |
 | [BL-02 — Banner fuerte en Gold weekly-inference](BL-02-banner-gold-weekly-inference.md) | IMPLEMENTED |
-| [BL-03 — Wording probabilístico y neutralización de verde/rojo en predicciones](BL-03-wording-probabilistico-colores.md) | PARTIAL |
+| [BL-03 — Wording probabilístico y neutralización de verde/rojo en predicciones](BL-03-wording-probabilistico-colores.md) | IMPLEMENTED |
 | [BL-04 — Unificar caveat duplicado en legacy ForecastingDashboard](BL-04-unificar-caveat-legacy.md) | IMPLEMENTED |
-| [BL-05 — ProductionView consume el paper ledger (A/B v11/v12/v14)](BL-05-production-paper-ledger-ab.md) | PARTIAL |
-| [BL-06 — CI muralla frontend: forecasting sin aprobar/ejecutar](BL-06-ci-muralla-frontend.md) | PARTIAL |
+| [BL-05 — ProductionView consume el paper ledger (A/B v11/v12/v14)](BL-05-production-paper-ledger-ab.md) | IMPLEMENTED |
+| [BL-06 — CI muralla frontend: forecasting sin aprobar/ejecutar](BL-06-ci-muralla-frontend.md) | IMPLEMENTED |
 | [BL-07 — Etapa 0.5: timing_ratio one-off de las 4 campeonas](BL-07-timing-ratio-etapa05.md) | IMPLEMENTED |
 | [BL-08 — Incidente .env en historial público: rotar+purgar+privatizar](BL-08-incidente-env-historial.md) | PARTIAL |
 | [BL-09 — Ledger doble FT-/AT- global (registries/ledger.jsonl)](BL-09-ledger-doble-ft-at.md) | IMPLEMENTED |
 | [BL-10 — Backfill legacy_estimate de FT históricos (zoos)](BL-10-backfill-legacy-estimate-ft.md) | IMPLEMENTED |
 | [BL-11 — Familias transversales de hipótesis (registries/families/)](BL-11-familias-transversales.md) | IMPLEMENTED |
-| [BL-12 — Provenance FT→AT + enmienda constitución §2 (ADR)](BL-12-provenance-ft-at-adr.md) | PARTIAL |
-| [BL-13 — Campo surface en manifiestos/registry + normalize lo respeta](BL-13-campo-surface-manifiestos.md) | PARTIAL |
-| [BL-14 — Bloque components: receta congelada del predictor de v11](BL-14-components-passport-receta.md) | PARTIAL |
+| [BL-12 — Provenance FT→AT + enmienda constitución §2 (ADR)](BL-12-provenance-ft-at-adr.md) | IMPLEMENTED |
+| [BL-13 — Campo surface en manifiestos/registry + normalize lo respeta](BL-13-campo-surface-manifiestos.md) | IMPLEMENTED |
+| [BL-14 — Bloque components: receta congelada del predictor de v11](BL-14-components-passport-receta.md) | IMPLEMENTED |
 | [BL-15 — Contrato forecast_output (Py+TS) + validación en el zoo](BL-15-contrato-forecast-output.md) | PARTIAL |
-| [BL-16 — CI constitucional Etapa 0 (legalidad + serialización canónica)](BL-16-ci-constitucional-etapa0.md) | PARTIAL |
-| [BL-17 — Identidad: fingerprints + canonical writer + spine](BL-17-fingerprints-canonical-writer.md) | PARTIAL |
+| [BL-16 — CI constitucional Etapa 0 (legalidad + serialización canónica)](BL-16-ci-constitucional-etapa0.md) | IMPLEMENTED |
+| [BL-17 — Identidad: fingerprints + canonical writer + spine](BL-17-fingerprints-canonical-writer.md) | IMPLEMENTED |
 | [BL-18 — Catálogo de métricas + motor único + metric_event](BL-18-catalogo-motor-metricas.md) | PARTIAL |
 | [BL-19 — Esquema DB forecast. + rol forecast_writer](BL-19-schema-forecast-roles-db.md) | PARTIAL |
-| [BL-20 — Vista admin SHAP/interpretabilidad por modelo×versión (ambas superficies)](BL-20-admin-shap-interpretabilidad.md) | PARTIAL |
+| [BL-20 — Vista admin SHAP/interpretabilidad por modelo×versión (ambas superficies)](BL-20-admin-shap-interpretabilidad.md) | IMPLEMENTED |
 | [BL-21 — Event sourcing exec. (4 entornos) + idempotencia](BL-21-event-sourcing-exec.md) | PARTIAL |
 | [BL-22 — fact_position / fact_pnl + identidad contable + timing_ratio persistido](BL-22-fact-position-pnl.md) | PARTIAL |
-| [BL-23 — Backfill anti-supervivencia (campeonas+candidatas+retiradas+baselines)](BL-23-backfill-anti-supervivencia.md) | PLANNED |
+| [BL-23 — Backfill anti-supervivencia (campeonas+candidatas+retiradas+baselines)](BL-23-backfill-anti-supervivencia.md) | PARTIAL |
 | [BL-24 — Linaje nodes/edges + camino dorado + revisiones tipificadas](BL-24-linaje-camino-dorado.md) | PARTIAL |
 | [BL-25 — Monitoreo en tres relojes (control__system_health)](BL-25-monitoreo-tres-relojes.md) | PARTIAL |
 | [BL-26 — portfolio_snapshot: barrera temporal del libro](BL-26-portfolio-snapshot.md) | PARTIAL |
 | [BL-27 — Allocator v1 (inverse-vol+caps) + multiplicadores + gate de novedad](BL-27-allocator-v1-novedad.md) | PARTIAL |
-| [BL-28 — Factories nuevas (data/strategy/forecast) + diff semántico](BL-28-factories-diff-semantico.md) | PLANNED |
+| [BL-28 — Factories nuevas (data/strategy/forecast) + diff semántico](BL-28-factories-diff-semantico.md) | PARTIAL |
 | [BL-29 — CLI qlab + cutoff impuesto por la capa de lectura](BL-29-qlab-cli-cutoff-lectura.md) | PARTIAL |
 | [BL-30 — Servicio de ejecución fuera de Airflow + pre-trade + kill switch independiente](BL-30-execution-service-externo.md) | PARTIAL |
 | [BL-31 — Migración strangler de USD/COP (L7 al final)](BL-31-strangler-cop.md) | PARTIAL |
 | [BL-32 — Passport (vista live + MV) + Control Tower](BL-32-passport-control-tower.md) | PARTIAL |
 | [BL-33 — Institutional Readiness Matrix con evidencias](BL-33-readiness-matrix.md) | PARTIAL |
 | [BL-34 — Ruta /replay (alias de la sección de /dashboard)](BL-34-ruta-replay.md) | IMPLEMENTED |
-| [BL-35 — URIs de datasets + arista prohibida forecast→allocator en parseo](BL-35-dataset-uris-arista-prohibida.md) | PARTIAL |
+| [BL-35 — URIs de datasets + arista prohibida forecast→allocator en parseo](BL-35-dataset-uris-arista-prohibida.md) | IMPLEMENTED |
 | [BL-36 — Racionalización del inventario DB (59 tablas → matriz de verdad aplicada)](BL-36-racionalizacion-inventario-db.md) | PARTIAL |
 | [BL-37 — Identidades canónicas (reference.asset/instrument/provider_symbol/bar_interval)](BL-37-identidades-canonicas.md) | PARTIAL |
 | [BL-38 — Mercado canónico: raw_bar/canonical_bar + caggs 1h/4h/1d + política de resampleo](BL-38-market-canonical-resampleo.md) | PARTIAL |
@@ -157,7 +157,7 @@ BL-05 ─→ BL-32 (paper ledger visible es el primer ladrillo del Passport)
 | [BL-40 — Calidad: cuarentena de anomalías + columnas fantasma](BL-40-calidad-cuarentena.md) | PARTIAL |
 | [BL-41 — Seguridad DB P0: referencias externas, roles y timestamps](BL-41-seguridad-db-p0.md) | PARTIAL |
 | [BL-42 — Unidades decimales + action.strategy_signal normalizada (JSONB de política)](BL-42-unidades-decimales-signal-normalizada.md) | PARTIAL |
-| [BL-43 — Aislar el modelo sintético demo (CI que lo bloquee fuera de demo)](BL-43-demo-sintetica-aislada.md) | PARTIAL |
+| [BL-43 — Aislar el modelo sintético demo (CI que lo bloquee fuera de demo)](BL-43-demo-sintetica-aislada.md) | IMPLEMENTED |
 | [BL-44 — TimescaleDB ops + perfil físico ampliado](BL-44-timescale-ops-perfil-fisico.md) | PARTIAL |
 | [BL-45 — Motor de políticas: contrato + registry + factory (R1-R3)](BL-45-policy-engine-contrato.md) | PARTIAL |
 | [BL-46 — Políticas: backend (policy_version/signal) + frontend schema-driven (R4-R5)](BL-46-policy-backend-frontend.md) | PARTIAL |

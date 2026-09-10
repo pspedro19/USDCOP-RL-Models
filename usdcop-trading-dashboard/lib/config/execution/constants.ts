@@ -51,9 +51,20 @@ export const APP_NAME = 'SignalBridge';
 export const API_BASE_URL = process.env.NEXT_PUBLIC_SIGNALBRIDGE_API_URL || '/api/execution';
 
 /**
- * WebSocket URL
+ * WebSocket URL — el fallback es el puerto que el compose PUBLICA EN EL HOST, no el
+ * interno del contenedor.
+ *
+ * Medido el 2026-08-05: `docker-compose.yml` mapea signalbridge `8085:8000` y **no
+ * declara `NEXT_PUBLIC_SIGNALBRIDGE_WS_URL` para el dashboard**, así que este fallback
+ * era el valor efectivo. Apuntaba a `ws://localhost:8000`, un puerto que nadie publica
+ * en el host — y esta URL la resuelve el NAVEGADOR, donde `localhost` es la máquina del
+ * usuario, no la red de compose. Resultado: `ERR_CONNECTION_REFUSED` garantizado,
+ * observado en la corrida E2E de BL-05.
+ *
+ * 8000 es el puerto INTERNO del contenedor; sólo sería correcto para un cliente que
+ * viva dentro de la red de compose, y este no lo es.
  */
-export const WS_URL = process.env.NEXT_PUBLIC_SIGNALBRIDGE_WS_URL || 'ws://localhost:8000/ws';
+export const WS_URL = process.env.NEXT_PUBLIC_SIGNALBRIDGE_WS_URL || 'ws://localhost:8085/ws';
 
 /**
  * Mock mode flag

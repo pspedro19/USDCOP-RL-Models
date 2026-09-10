@@ -1,0 +1,41 @@
+# AssetProfile — USD/MXN auxiliary market identity
+# Contract: CTR-ASSET-PROFILE-001 + C026. This is not a strategy/execution profile.
+asset_id: usdmxn
+symbol: "USD/MXN"
+chart_symbol: "USDMXN"
+display_name: "USD/MXN"
+asset_class: fx
+quote_ccy: MXN
+base_ccy: USD
+
+# Required broad prior for AssetProfile shape only. Quality enforcement MUST resolve the
+# provider/date-scoped declaration in config/quality/market_price_ranges.yaml; it must not
+# flatten or substitute this pair when publishing provider observations.
+price_range: [2.5, 100.0]
+quality_range_policy: scoped_provider_time
+decimals: 4
+tick_size: 0.0001
+
+session:
+  mode: exchange_hours
+  timezone: "America/Bogota"
+  days: [0, 1, 2, 3, 4]
+  open: "08:00"
+  close: "12:55"
+  bars_per_day: 60
+  bars_per_year: 15660
+  trading_days_per_year: 261
+  weekend_flat: true
+  forced_close: friday
+
+data_source:
+  provider: twelvedata
+  provider_symbol: "USD/MXN"
+  interval: "5min"
+  needs_tz_convert: false
+  seed_file: "seeds/latest/usdmxn_m5_ohlcv.parquet"
+
+strategy_id: null
+base_strategy: null
+pipeline_type: auxiliary_market_data
+timeframe: intraday

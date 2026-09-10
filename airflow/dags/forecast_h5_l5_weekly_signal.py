@@ -60,6 +60,36 @@ COLLAPSE_THRESHOLD = 0.001
 
 
 # =============================================================================
+# TASK 0: GATE CONSTITUCIONAL (BL-16)
+# =============================================================================
+
+def assert_governance_declaration(**context) -> str:
+    """Rechaza antes de producir señal si la estrategia no está declarada.
+
+    Valida la declaración del SSOT contra la matriz 26/96 de
+    `validate_declaration()` — la misma cuya paridad con los `CHECK` vivos de
+    `control.strategy_declaration` se verificó en `1e805c73`.
+
+    **Falla cerrado**: sin bloque `governance:`, con una combinación ilegal, o con
+    un `research_state` no elegible para DAG, este task aborta el DAG **antes** de
+    que genere una sola señal. Una estrategia indeclarada no ejecuta.
+    """
+    from pathlib import Path
+
+    from src.governance.strategy_declaration import assert_strategy_may_run_dag
+
+    ssot = Path(__file__).resolve().parents[2] / "config" / "execution" / "smart_simple_v1.yaml"
+    declaration = assert_strategy_may_run_dag(ssot)
+    logger.info(
+        "[BL-16] Declaración válida: research_state=%s capital_tier=%s operational_state=%s",
+        declaration.research_state.value,
+        declaration.capital_tier.value,
+        declaration.operational_state.value,
+    )
+    return declaration.research_state.value
+
+
+# =============================================================================
 # TASK 1: CHECK MARKET DAY
 # =============================================================================
 
@@ -577,6 +607,11 @@ with DAG(
     tags=DAG_TAGS_LIST,
 ) as dag:
 
+    t_governance = PythonOperator(
+        task_id='assert_governance_declaration',
+        python_callable=assert_governance_declaration,
+    )
+
     t_check = ShortCircuitOperator(
         task_id='check_market_day',
         python_callable=check_market_day,
@@ -623,5 +658,5 @@ with DAG(
         soft_fail=True,  # Don't block if L3 hasn't run (first-time setup)
     )
 
-    t_wait_l3 >> t_check >> t_signal >> t_persist >> t_notify
+    t_wait_l3 >> t_governance >> t_check >> t_signal >> t_persist >> t_notify
     t_persist >> t_kafka

@@ -1,0 +1,91 @@
+"""Regression locks for temporal boundaries in the portfolio analysis harness."""
+
+from datetime import date, timedelta
+
+import numpy as np
+
+from scripts.analysis.portfolio_walkforward import (
+    equal_weight_sleeves,
+    governed_trial_count,
+    sleeve_is_live,
+    strategy_daily_exact,
+)
+
+
+def test_equal_weight_sleeves_averages_returns_and_positions_without_selection() -> None:
+    positions = {
+        ("XAU", "b"): np.array([0.0, 1.0, 0.0]),
+        ("XAU", "a"): np.array([1.0, 0.0, -1.0]),
+        ("BTC", "other"): np.array([9.0, 9.0, 9.0]),
+    }
+    returns = {
+        ("XAU", "b"): np.array([0.0, 0.2, 0.0]),
+        ("XAU", "a"): np.array([0.1, 0.0, -0.1]),
+        ("BTC", "other"): np.array([9.0, 9.0, 9.0]),
+    }
+
+    position, daily_return = equal_weight_sleeves("XAU", positions, returns)
+
+    np.testing.assert_allclose(position, [0.5, 0.5, -0.5])
+    np.testing.assert_allclose(daily_return, [0.05, 0.1, -0.05])
+
+
+def test_equal_weight_sleeves_fails_closed_for_unknown_asset() -> None:
+    with np.testing.assert_raises_regex(ValueError, "sin sleeves unicas"):
+        equal_weight_sleeves("missing", {}, {})
+
+
+def test_sleeve_liveness_uses_only_the_declared_trailing_window() -> None:
+    position = np.zeros(300)
+    cutoff = 250
+    position[cutoff - 64] = 1.0
+
+    assert sleeve_is_live(position, cutoff) is False
+
+    position[cutoff - 63] = 1.0
+    assert sleeve_is_live(position, cutoff) is True
+
+
+def test_sleeve_liveness_does_not_look_at_the_selection_day() -> None:
+    position = np.zeros(100)
+    cutoff = 80
+    position[cutoff] = 1.0
+
+    assert sleeve_is_live(position, cutoff) is False
+
+
+def test_exact_daily_return_does_not_credit_the_pre_entry_gap() -> None:
+    start = date(2026, 1, 1)
+    days = [start + timedelta(days=i) for i in range(3)]
+    closes = np.array([100.0, 120.0, 132.0])
+    trades = [{
+        "timestamp": "2026-01-02",
+        "exit_timestamp": "2026-01-03",
+        "entry_price": 110.0,
+        "exit_price": 132.0,
+        "side": "LONG",
+        "leverage": 1.0,
+    }]
+
+    returns, position = strategy_daily_exact(trades, days, closes)
+
+    np.testing.assert_allclose(returns, [0.0, 120.0 / 110.0 - 1.0, 132.0 / 120.0 - 1.0])
+    np.testing.assert_allclose(position, [0.0, 1.0, 1.0])
+
+
+def test_governed_trial_count_sums_registry_totals_instead_of_published_sleeves(tmp_path) -> None:
+    paths = {}
+    for asset, count in {"a": 111, "b": 34}.items():
+        path = tmp_path / f"{asset}.md"
+        path.write_text(f"---\nn_trials_total: {count}\n---\n# registry\n", encoding="utf-8")
+        paths[asset] = path
+
+    total, by_asset = governed_trial_count({"a", "b"}, paths)
+
+    assert total == 145
+    assert by_asset == {"a": 111, "b": 34}
+
+
+def test_governed_trial_count_fails_closed_without_a_registry(tmp_path) -> None:
+    with np.testing.assert_raises_regex(ValueError, "sin HYPOTHESIS-REGISTRY"):
+        governed_trial_count({"missing"}, {})

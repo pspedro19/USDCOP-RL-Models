@@ -70,11 +70,45 @@ así que el mensaje del fallo no es "un assert falló" sino el conteo exacto de 
 divergentes, la primera posición y los dos valores enfrentados. Un candado de paridad que se
 compare contra un fixture propio es el mismo defecto circular que se encontró en BL-13.
 
-**Aviso de CI declarado (CLD-216) — importante y NO resuelto**: `check_policy_parity.py`
-**no está en ningún workflow**. `fabric-contracts.yml` solo corre `validate_policy_specs.py`,
-que **quedó VERDE con la mutación de Gold dentro**. La red que hoy salva a BL-47 es
-`tests/unit` vía `ci.yml`, por rebote. Mientras el arnés no entre en CI, esta garantía depende
-de que alguien lo ejecute a mano.
+**Aviso de CI (CLD-216) — RESUELTO el 2026-08-03, nota corregida el 2026-08-06.** Decía que
+`check_policy_parity.py` «no está en ningún workflow» y que la garantía dependía de que alguien lo
+ejecutara a mano. **Ya no es cierto**: `fabric-contracts.yml` lo ejecuta con `--ci-eligible` desde
+`041cb287`, y bajo esa bandera un `DataUnavailable` es **`[FAIL]`, no `[SKIP]`** — la red ya no
+depende de nadie.
+
+Lo que el aviso sí acertó y sigue vigente: la mutación de Gold quedaba verde para
+`validate_policy_specs.py`, porque ese validador comprueba la **forma** del spec, no la paridad
+numérica. Son dos gates distintos y el segundo es el que faltaba.
+
+**Estado actual del gate, medido**: hoy devuelve `EXIT=0` con «0 specs elegibles — nada
+verificado», porque las tres policies construibles están en `PARITY_PENDING` tras las demociones de
+identidad. Ese cero es **por gobierno**, y `c97e70f3` lo separó del cero **por rotura** —registro de
+policies o de arneses vacío ⇒ `EXIT=1`— para que una lista vacía no pueda pasar por vacuidad.
+
+## Por qué BL-47 es TIME_GATED y no «pendiente de trabajo»
+
+**Hoy no hay ningún slice de código DESBLOQUEADO**, y ése es el punto — no que no quede
+implementación. R6 y R7 exigen **≥2 semanas de paridad por estrategia** dentro del calendario de
+BL-28/31 antes de apagar el camino viejo, y las tres policies están en `PARITY_PENDING` esperando
+una **re-promoción que es acto exclusivo del operador**. Abrir código antes de eso sería saltarse
+el calendario, que es justo lo que el patrón strangler existe para impedir.
+
+Los slices de SPX, BTC y Gold (2026-08-06) dejaron las policies **listas para** ese paralelo
+—identidad congelada, productores declarados, cadena atravesable de punta a punta—: eso es la
+**precondición**, no el trabajo restante.
+
+**Y sí queda trabajo de código, después.** El orden es: (1) tiempo de observación, (2) decisión del
+operador, y **sólo entonces** (3) se habilitan los slices que hoy están bloqueados —el **corte** de
+los caminos legacy que R6/R7 declaran, y **R8**, que sigue `SPEC_ONLY` y exige migrar USD/COP como
+`engine.type=composite`—.
+
+> **Corrección de la redacción anterior (2026-08-06, R2 tras CXD-644).** Esta sección decía «no
+> falta implementación» y cerraba con «lo que falta es tiempo […], no líneas». Es **falso como
+> absoluto**, y la propia ficha lo desmiente dos secciones más arriba: R8 sigue `SPEC_ONLY` y el
+> apagado del legacy es trabajo real. Lo que quise decir —y lo único que se sostiene— es que **hoy
+> nada de eso está desbloqueado**. Convertir «no hay slice abierto ahora» en «no falta
+> implementación» es exactamente el tipo de salto de una afirmación medida a una absoluta que este
+> repo lleva corrigiendo.
 
 ## Notas constitución
 v11 FROZEN: migrar su cáscara a composite NO toca fórmula ni señal (re-freeze consciente de manifiesto, 0 trials, bit-check obligatorio).

@@ -37,6 +37,9 @@ RUN pip install --no-cache-dir \
 # Copy seeding scripts (both new and legacy for fallback)
 COPY init-scripts/04-seed-from-minio.py /app/seed_from_minio.py
 COPY init-scripts/04-data-seeding.py /app/seed_data_legacy.py
+# Shared fail-closed macro scale contract. Python namespace packages make this leaf
+# importable as src.data_quality.macro_scale without copying broader application code.
+COPY src/data_quality/macro_scale.py /app/src/data_quality/macro_scale.py
 # Feature-data restore (news / analysis / H5 / multi-asset daily) — populates the
 # derived tables from data/backups/features/ into EMPTY tables on cold boot, so a
 # clean-slate `down -v` comes back with REAL data (self-contained; stdlib + the

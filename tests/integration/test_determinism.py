@@ -27,8 +27,16 @@ class TestBacktestDeterminism:
 
     @pytest.fixture
     def backtest_script(self):
-        """Return path to backtest script."""
-        return PROJECT_ROOT / "scripts" / "backtest.py"
+        """Return path to backtest script.
+
+        La reorganizacion de `scripts/` (2026-07) movio este entrypoint a
+        `scripts/pipeline/`, y `tests/regression/test_scripts_layout.py:25` ya lo
+        declara ahi como load-bearing. Esta referencia se quedo en la ruta vieja,
+        asi que la suite entera moria en `FileNotFoundError` -- 0 passed -- y la
+        garantia de determinismo llevaba apagada desde entonces sin que ningun
+        marcador lo dijera.
+        """
+        return PROJECT_ROOT / "scripts" / "pipeline" / "backtest.py"
 
     @pytest.fixture
     def model_path(self):
@@ -254,9 +262,13 @@ class TestNormalizerDeterminism:
         if not norm_path.exists() or not feature_path.exists():
             pytest.skip("Config files not found")
 
+        # La firma real es `ObservationBuilder(config_path, stats_path, base_path)`.
+        # El test llamaba `feature_config_path=`, un nombre que la clase no acepta
+        # -- otra referencia stale que llevaba invisible mientras la suite entera
+        # moria antes de llegar aqui. Se corrige el TEST, no la firma.
         builder = ObservationBuilder(
+            config_path=str(feature_path),
             stats_path=str(norm_path),
-            feature_config_path=str(feature_path)
         )
 
         # Create test feature dict

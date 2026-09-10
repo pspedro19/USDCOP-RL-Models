@@ -45,6 +45,7 @@ Contract: CTR-L0-BACKFILL-003
 
 from datetime import datetime, timedelta, date
 from airflow import DAG
+from airflow.exceptions import AirflowSkipException
 from airflow.operators.python import PythonOperator, BranchPythonOperator
 from airflow.operators.empty import EmptyOperator
 import pandas as pd
@@ -197,15 +198,82 @@ def get_all_trading_days(start_date: date, end_date: date) -> List[date]:
     return trading_days
 
 
+def _validated_scope(raw, origen: str) -> List[str]:
+    """Valida la forma del alcance pedido en el `conf`. Fail-closed (CXD-518).
+
+    Sin esto, `symbols` aceptaba cualquier cosa y cada forma rota fallaba de un modo distinto
+    y silencioso:
+
+    - `"USD/MXN"` (string) es iterable, así que `symbol not in scope` hacía comparación de
+      SUBCADENAS. Con un solo par coincide por accidente; con `"USD/MXN,USD/COP"` el
+      aislamiento se vuelve impredecible en vez de romperse;
+    - `[]` dejaba a `health_check` devolviendo `{'status': 'healthy', 'symbols': []}` —un run
+      que se declara sano y no puede procesar nada— y el fallo aparecía tarde, en cada tarea;
+    - `['FOO']` producía un run donde las tres tareas quedan `skipped` y el export consulta un
+      alcance que no existe. Verde por vacuidad, otra vez;
+    - `['USD/MXN', 'USD/MXN']` exportaba dos veces el mismo símbolo.
+
+    Un alcance mal escrito tiene que romper en `health_check`, que es donde se declara, no
+    dispersarse en síntomas aguas abajo.
+    """
+    if isinstance(raw, str) or not isinstance(raw, (list, tuple)):
+        raise ValueError(
+            f"{origen} debe ser una lista de símbolos, no {type(raw).__name__} ({raw!r}); "
+            f"un string es iterable y convertiría el filtro de alcance en comparación de "
+            f"subcadenas"
+        )
+    scope = list(raw)
+    if not scope:
+        raise ValueError(f"{origen} vacío: un run sin alcance no se declara sano, se rechaza")
+    no_str = [s for s in scope if not isinstance(s, str)]
+    if no_str:
+        raise ValueError(f"{origen} contiene valores no-string: {no_str!r}")
+    duplicados = sorted({s for s in scope if scope.count(s) > 1})
+    if duplicados:
+        raise ValueError(f"{origen} tiene duplicados {duplicados}: el export los escribiría dos veces")
+    desconocidos = [s for s in scope if s not in ALL_SYMBOLS]
+    if desconocidos:
+        raise ValueError(
+            f"{origen} pide símbolos que este DAG no gobierna: {desconocidos} "
+            f"(gobernados: {list(ALL_SYMBOLS)})"
+        )
+    return scope
+
+
 def get_target_symbols(context) -> List[str]:
-    """Get target symbols from dag_run.conf, default ALL 3 pairs."""
+    """Alcance pedido en `dag_run.conf`, validado; sin `conf` son los 3 pares."""
     conf = context.get('dag_run').conf or {}
-    symbols = conf.get('symbols', ALL_SYMBOLS)
-    # Also support single-symbol override via legacy 'symbol' key
-    if 'symbol' in conf and 'symbols' not in conf:
-        symbols = [conf['symbol']]
+    if 'symbols' in conf:
+        symbols = _validated_scope(conf['symbols'], "conf['symbols']")
+    elif 'symbol' in conf:
+        # Override legacy de un solo símbolo: misma validación, envuelto en lista.
+        symbols = _validated_scope([conf['symbol']], "conf['symbol']")
+    else:
+        symbols = list(ALL_SYMBOLS)
     logging.info(f"[BACKFILL] Target symbols: {symbols}")
     return symbols
+
+
+def resolve_scope(context) -> List[str]:
+    """El alcance REAL de este run, leído del XCom que publicó `health_check`.
+
+    Existe porque el `conf` no gobernaba nada: las tres tareas `process_*` se crean al
+    parsear el DAG y cada una leía su propio `params['symbol']`, así que
+    `symbols=['USD/MXN']` disparó igualmente gap detection de COP y BRL (run
+    `codex_bl40_usdmxn_20260805T0015`, CXD-515). `get_target_symbols` calculaba la lista
+    correcta y nadie la consultaba.
+
+    **Fail-closed a propósito**: si el XCom no está, se levanta. Caer a `ALL_SYMBOLS` es
+    exactamente cómo se perdió el aislamiento — un default permisivo convierte "no sé cuál
+    es mi alcance" en "todos", que es la respuesta más peligrosa de las posibles.
+    """
+    scope = context['ti'].xcom_pull(key='target_symbols', task_ids='health_check')
+    if not scope:
+        raise ValueError(
+            "target_symbols ausente en el XCom de health_check: sin alcance declarado no se "
+            "procesa nada (no se asume ALL_SYMBOLS)"
+        )
+    return list(scope)
 
 
 def get_data_date_range(conn, symbol: str) -> Tuple[Optional[date], Optional[date]]:
@@ -401,16 +469,71 @@ def filter_market_hours(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
+def _screen_backfill_frame(conn, df: pd.DataFrame) -> pd.DataFrame:
+    """Filtra el lote dejando solo las barras aceptadas por el gate de calidad.
+
+    Se agrupa **por símbolo** porque el backfill puede traer varios en un lote y la
+    identidad canónica es por par `(proveedor, símbolo)`: publicar el lote entero bajo
+    un solo símbolo le pondría a unas barras la identidad de otras.
+
+    Un símbolo sin alias canónico (hoy `USD/BRL`, que no tiene `AssetProfile`) pasa sin
+    filtrar **con aviso**: filtrarlo apagaría su backfill, y escribirlo callado haría
+    creer que superó un gate que nunca corrió.
+    """
+    from src.data_quality.ingest_guard import BAR_FIELDS, publish_or_declare_gap
+
+    trozos = []
+    for symbol, grupo in df.groupby('symbol', sort=False):
+        filas = [
+            {campo: fila[campo] for campo in BAR_FIELDS if campo in fila}
+            for _, fila in grupo.iterrows()
+        ]
+        publicacion = publish_or_declare_gap(
+            conn,
+            symbol=str(symbol),
+            provider_id='twelvedata_backfill',
+            rows=filas,
+            interval_id='PT5M',
+            source_uri=f'dag://l0_ohlcv_backfill/{symbol}',
+        )
+        if publicacion is None:
+            logging.warning(
+                "[%s] fuera de la cobertura Fabric: sin alias canonico en "
+                "reference.provider_symbol, la barra NO pasa por el gate de calidad",
+                symbol,
+            )
+            trozos.append(grupo)
+            continue
+        if publicacion.quarantine_count:
+            logging.warning(
+                "[%s] %d barra(s) en cuarentena, NO se escriben en la tabla legada",
+                symbol, publicacion.quarantine_count,
+            )
+        instantes_ok = {f['time'] for f in publicacion.accepted}
+        trozos.append(grupo[grupo['time'].isin(instantes_ok)])
+
+    return pd.concat(trozos) if trozos else df.iloc[0:0]
+
+
 def insert_ohlcv_batch(conn, df: pd.DataFrame) -> int:
     """Insert OHLCV batch with UPSERT on (time, symbol)."""
     if df.empty:
         return 0
     cur = conn.cursor()
     try:
+        # C025/C026 — publicacion Fabric ANTES del UPSERT legado y en la MISMA
+        # transaccion (el commit de abajo cierra ambos caminos). Solo entran las barras
+        # `accepted`: una barra en cuarentena que aterriza igual anula la cuarentena.
+        aceptadas = _screen_backfill_frame(conn, df)
+        if aceptadas.empty:
+            conn.commit()
+            logging.info("0 barras aceptadas tras el gate de calidad")
+            return 0
+
         values = [
             (row['time'], row['symbol'], row['open'], row['high'],
              row['low'], row['close'], row['volume'], row['source'])
-            for _, row in df.iterrows()
+            for _, row in aceptadas.iterrows()
         ]
         execute_values(
             cur,
@@ -475,6 +598,17 @@ def process_symbol(**context):
     This task is called once per symbol via op_kwargs.
     """
     symbol = context['params']['symbol']
+
+    # El alcance manda ANTES de tocar la DB: un símbolo fuera de `symbols` no se procesa, y
+    # su estado en Airflow es `skipped`, no `success` con `bars_backfilled: 0`. La diferencia
+    # importa: un SUCCESS vacío se lee como "corrió y no había nada", que es una afirmación
+    # sobre los datos; `skipped` dice la verdad — no se miró.
+    scope = resolve_scope(context)
+    if symbol not in scope:
+        raise AirflowSkipException(
+            f"{symbol} fuera del alcance declarado {scope}: no se ejecuta gap detection"
+        )
+
     force = context['ti'].xcom_pull(key='force_backfill', task_ids='health_check') or False
     cfg = SYMBOL_CONFIG.get(symbol)
     if not cfg:
@@ -553,6 +687,7 @@ def process_symbol(**context):
 
         # --- Backfill gaps via API ---
         total_inserted = 0
+        fetch_errors = []
         for i, gr in enumerate(gap_ranges, 1):
             start_date = gr['start_date'].isoformat()
             end_date = gr['end_date'].isoformat()
@@ -569,10 +704,18 @@ def process_symbol(**context):
                 time.sleep(API_RATE_DELAY_SECONDS)
             except Exception as e:
                 logging.error(f"[{symbol}] Gap #{i} error: {e}")
+                fetch_errors.append(f"gap#{i} {start_date}→{end_date}: {e}")
                 continue
 
         result['bars_backfilled'] = total_inserted
-        logging.info(f"[{symbol}] Backfill complete: {total_inserted} bars inserted across {len(gap_ranges)} gaps")
+        result['fetch_errors'] = len(fetch_errors)
+        result['first_fetch_error'] = fetch_errors[0] if fetch_errors else None
+        # "Backfill complete" con errores dentro es la misma mentira en el log que el SUCCESS
+        # lo era en el estado: el rango que no se pudo examinar sigue sin examinar.
+        veredicto = 'complete' if not fetch_errors else (
+            'partial' if total_inserted else 'failed')
+        logging.info(f"[{symbol}] Backfill {veredicto}: {total_inserted} bars inserted across "
+                     f"{len(gap_ranges)} gaps ({len(fetch_errors)} fetch errors)")
 
     except Exception as e:
         result['status'] = 'error'
@@ -580,6 +723,41 @@ def process_symbol(**context):
         logging.error(f"[{symbol}] Processing failed: {e}")
     finally:
         conn.close()
+
+    # ── Fail-closed FUERA del try: aquí sí escapa y la tarea queda `failed` ──────────
+    #
+    # Estas dos comprobaciones tienen que vivir fuera del bloque anterior: su `except
+    # Exception` captura todo, pone `status: 'error'` en el diccionario y **retorna
+    # normalmente**, asi que Airflow marcaba SUCCESS. Un `raise` dentro del try lo habria
+    # tragado ese mismo `except`.
+    #
+    # Caso 1 — CUALQUIER peticion rechazada deja el backfill incompleto, y un backfill
+    # incompleto no es un exito. Medido en el run `codex_bl40_usdmxn_20260805T0110`: los dos
+    # fetch murieron con `401 Unauthorized` —el proveedor respondio con configuracion no
+    # autenticada— y aun asi la tarea devolvio `{'status': 'ok', 'bars_backfilled': 0}` y
+    # Airflow la marco SUCCESS. Ese SUCCESS afirma "mire y no habia nada que traer" cuando el
+    # hecho es "no me dejaron mirar".
+    #
+    # El umbral es CUALQUIER error, no "todos" (concedido a CXD-530, y su argumento es mejor que
+    # el mio): con un hueco fallido y otro insertado, mi version anterior devolvia SUCCESS y
+    # ningun estado de Airflow declaraba el rango que quedo sin examinar. Como los inserts son
+    # idempotentes, levantar DESPUES de recorrer y persistir todos los rangos es gratis y hace
+    # que el retry recupere lo que falta; callarlo deja un hueco permanente que nadie ve.
+    #
+    # El discriminador sigue siendo el ERROR, no el cero: un hueco que la API sirve vacio SIN
+    # excepcion (festivo, fuera de su historia) es un cero legitimo y sigue verde.
+    if result.get('fetch_errors'):
+        raise RuntimeError(
+            f"{symbol}: {result['fetch_errors']} de {result['gaps_found']} fetch fallaron; "
+            f"{result['bars_backfilled']} barras persistidas (los inserts son idempotentes, el "
+            f"retry recupera el resto). El rango fallido sigue SIN examinar. "
+            f"Primero: {result['first_fetch_error']}"
+        )
+
+    # Caso 2 — un `status: 'error'` que se reporta como SUCCESS es la misma mentira con otra
+    # forma: si el procesamiento se rompio, la tarea esta roja.
+    if result['status'] == 'error':
+        raise RuntimeError(f"{symbol}: procesamiento fallido — {result.get('error')}")
 
     return result
 
@@ -603,12 +781,19 @@ def export_seeds(**context):
     seeds_dir = Path(os.environ.get('AIRFLOW_HOME', '/opt/airflow')) / 'seeds' / 'latest'
     seeds_dir.mkdir(parents=True, exist_ok=True)
 
+    # Mismo alcance que `process_*`. Antes iteraba `ALL_SYMBOLS` y además reescribía el
+    # parquet unificado desde la tabla COMPLETA: un run acotado a USD/MXN sobrescribió los
+    # cuatro parquets trackeados con cero datos nuevos y hubo que restaurarlos a HEAD
+    # (CXD-515). Un export fuera de alcance no es inocuo: los seeds son el backup de restore.
+    scope = resolve_scope(context)
+    logging.info(f"[EXPORT] Alcance declarado: {scope}")
+
     conn = get_db_connection()
     cur = conn.cursor()
     exported = []
 
     try:
-        for symbol in ALL_SYMBOLS:
+        for symbol in scope:
             safe_name = symbol.replace('/', '').lower()
             seed_file = seeds_dir / f'{safe_name}_m5_ohlcv.parquet'
 
@@ -632,13 +817,22 @@ def export_seeds(**context):
             logging.info(f"[{symbol}] Exported {len(df)} rows → {seed_file.name}")
             exported.append({'symbol': symbol, 'rows': len(df), 'file': str(seed_file)})
 
-        # Unified seed (all pairs)
-        cur.execute("""
-            SELECT time, symbol, open, high, low, close, volume
-            FROM usdcop_m5_ohlcv
-            ORDER BY symbol, time
-        """)
-        rows = cur.fetchall()
+        # Unified seed (all pairs) — SOLO si el run cubrió los tres pares. Reescribirlo desde
+        # un run parcial publicaría un "unificado" cuya mitad no se verificó en esta corrida.
+        rows = []
+        if set(scope) != set(ALL_SYMBOLS):
+            logging.info(
+                f"[UNIFIED] Omitido: alcance parcial {scope}; el unificado sólo se reescribe "
+                f"cuando el run cubre {ALL_SYMBOLS}"
+            )
+            exported.append({'symbol': 'ALL', 'rows': 0, 'file': None, 'skipped': 'partial_scope'})
+        else:
+            cur.execute("""
+                SELECT time, symbol, open, high, low, close, volume
+                FROM usdcop_m5_ohlcv
+                ORDER BY symbol, time
+            """)
+            rows = cur.fetchall()
 
         if rows:
             df_all = pd.DataFrame(rows, columns=[
@@ -659,13 +853,19 @@ def export_seeds(**context):
 
 
 def validate_results(**context):
-    """Validate final state of all symbols in DB."""
+    """Valida el estado final de los símbolos DENTRO DEL ALCANCE del run.
+
+    Reportar los tres pares tras un run de uno solo produce un informe que parece cubrir lo
+    que no se tocó. El alcance viaja en el propio reporte (`_scope`) para que la evidencia
+    diga de qué es evidencia.
+    """
+    scope = resolve_scope(context)
     conn = get_db_connection()
     cur = conn.cursor()
-    report = {}
+    report = {'_scope': scope}
 
     try:
-        for symbol in ALL_SYMBOLS:
+        for symbol in scope:
             cur.execute("""
                 SELECT COUNT(*), MIN(time), MAX(time)
                 FROM usdcop_m5_ohlcv WHERE symbol = %s
@@ -683,8 +883,9 @@ def validate_results(**context):
         conn.close()
 
     logging.info("=" * 60)
-    logging.info("BACKFILL VALIDATION COMPLETE")
-    for sym, info in report.items():
+    logging.info(f"BACKFILL VALIDATION COMPLETE — alcance {scope}")
+    for sym in scope:
+        info = report[sym]
         logging.info(f"  {sym}: {info['total_bars']} bars ({info['earliest']} → {info['latest']})")
     logging.info("=" * 60)
 
@@ -721,7 +922,19 @@ with dag:
         python_callable=health_check,
     )
 
-    # One task per symbol — they run sequentially to respect API rate limits
+    # One task per symbol — they run sequentially to respect API rate limits.
+    #
+    # `trigger_rule='none_failed'` es OBLIGATORIO aquí y no un detalle de estilo (CXD-521).
+    # La cadena es secuencial por el pool de API, así que con el `all_success` por defecto un
+    # `skipped` INTENCIONAL aguas arriba hace inalcanzable todo lo que va detrás: el run
+    # `codex_bl40_usdmxn_20260805T0059` con `symbols=['USD/MXN']` termino SUCCESS en 11s
+    # habiendo ejecutado SOLO el skip de COP — MXN, BRL, export y validate quedaron `skipped`
+    # sin lanzarse, y el aislamiento que este DAG acababa de ganar se convirtio en un run que
+    # no hace nada y lo llama exito.
+    #
+    # `none_failed` distingue las dos cosas que `all_success` confunde: continua ante un
+    # upstream `skipped` (decision de alcance, no incidente) y para ante `failed`/
+    # `upstream_failed` (incidente real). Mismo criterio que ya usan export/validate.
     symbol_tasks = []
     for sym in ALL_SYMBOLS:
         safe_id = sym.replace('/', '_').lower()
@@ -730,6 +943,7 @@ with dag:
             python_callable=process_symbol,
             params={'symbol': sym},
             pool='api_requests',
+            trigger_rule='none_failed',
         )
         symbol_tasks.append(task)
 
@@ -745,8 +959,17 @@ with dag:
         trigger_rule='none_failed_min_one_success',
     )
 
-    # Chain: health → symbols (sequential) → export → validate
+    # Chain: health → symbols (secuencial, por el pool de API) → export → validate
+    #
+    # `task_export` cuelga de LOS TRES símbolos, no sólo del último. Con
+    # `none_failed_min_one_success` y un único upstream, un run acotado a USD/MXN deja a BRL
+    # `skipped` — cero éxitos entre los upstream directos — y export/validate se saltarían
+    # aunque MXN hubiera corrido bien. El fan-in es lo que hace que la regla signifique lo que
+    # dice: "al menos un símbolo se proceso de verdad". La secuencia COP→MXN→BRL se conserva
+    # para no golpear la API en paralelo; el fan-in sólo añade dependencias, no concurrencia.
     task_health >> symbol_tasks[0]
     for i in range(len(symbol_tasks) - 1):
         symbol_tasks[i] >> symbol_tasks[i + 1]
-    symbol_tasks[-1] >> task_export >> task_validate
+    for task in symbol_tasks:
+        task >> task_export
+    task_export >> task_validate

@@ -434,6 +434,50 @@ class DeclarativePolicy:
                 f"default_direction must be one of {VALID_DIRECTIONS}"
             )
 
+        # Fallback DECLARADO por feature ausente (invariante 9 de `strategy-engines.md`,
+        # decisión CXD-462). Existe por un caso concreto: la MA de 200 sesiones no está
+        # definida en las primeras 199 barras, y el `coded_policy` vivo convierte ese
+        # hueco en `0.0` silenciosamente — "no hay dato" acaba indistinguible de "la
+        # política dice estar plano". Declararlo aquí conserva esa conducta, pero como
+        # afirmación auditable en vez de accidente aritmético.
+        #
+        # Lo que este mecanismo NO hace, a propósito:
+        #  * no relaja el rechazo global de NaN: sin fallback declarado para ESA feature,
+        #    el `NaN` sigue siendo un error duro;
+        #  * no cubre un valor corrupto. `"abc"` o `True` no son "dato ausente", son un
+        #    contrato roto, y ahí no hay fallback que valga.
+        self.feature_fallbacks: dict[str, dict[str, Any]] = {}
+        for nombre, declarado in (resolution.get("feature_fallbacks") or {}).items():
+            if not isinstance(declarado, Mapping):
+                raise ValueError(
+                    f"feature_fallbacks[{nombre!r}] must be a mapping with "
+                    "direction/target_exposure/reason_code"
+                )
+            direccion = str(declarado.get("direction", "FLAT"))
+            if direccion not in VALID_DIRECTIONS:
+                raise ValueError(
+                    f"feature_fallbacks[{nombre!r}].direction must be one of "
+                    f"{VALID_DIRECTIONS}"
+                )
+            if "target_exposure" not in declarado:
+                raise ValueError(
+                    f"feature_fallbacks[{nombre!r}] requires an explicit "
+                    "target_exposure (no implicit fallback)"
+                )
+            if not declarado.get("reason_code"):
+                raise ValueError(
+                    f"feature_fallbacks[{nombre!r}] requires a reason_code: una decisión "
+                    "tomada por ausencia de dato debe ser legible en la traza"
+                )
+            self.feature_fallbacks[str(nombre)] = {
+                "direction": direccion,
+                "target_exposure": _strict_exposure(
+                    declarado["target_exposure"],
+                    f"feature_fallbacks[{nombre!r}].target_exposure",
+                ),
+                "reason_code": str(declarado["reason_code"]),
+            }
+
         rules = spec.get("rules")
         if not rules:
             raise ValueError("Declarative policy requires at least one rule")
@@ -500,6 +544,66 @@ class DeclarativePolicy:
                 )
         return errors
 
+    def _declared_absence(self, snapshot: Mapping[str, Any]) -> str | None:
+        """Primera feature requerida **ausente** que tenga fallback declarado.
+
+        "Ausente" es sólo dos cosas: no estar en el snapshot, o ser un `NaN`/±Inf. Un
+        `"abc"`, un `True` o un `None` NO son ausencia: son un contrato roto, y siguen
+        muriendo en `validate_inputs`. La distinción es el punto — un fallback que se
+        tragara valores corruptos volvería a fabricar decisiones sobre datos basura.
+        """
+        if not isinstance(snapshot, Mapping) or not self.feature_fallbacks:
+            return None
+        for nombre in self._required:
+            if nombre not in self.feature_fallbacks:
+                continue
+            if nombre not in snapshot:
+                return nombre
+            valor = snapshot[nombre]
+            if isinstance(valor, float) and not math.isfinite(valor):
+                return nombre
+        return None
+
+    def _fallback_decision(
+        self, feature: str, snapshot: Mapping[str, Any], context: PolicyContext
+    ) -> StrategyDecision:
+        """Decisión tomada por ausencia declarada, marcada como tal en la traza."""
+        declarado = self.feature_fallbacks[feature]
+        # La ausencia se registra como `null`, nunca como el `NaN` crudo: los contratos
+        # de export prohíben `NaN`/`Infinity` en JSON, y además `null` **es** el hecho —
+        # el valor no existía. Colar el NaN aquí habría reintroducido por la traza justo
+        # lo que el DSL rechaza por la entrada.
+        entrada = RuleTraceEntry(
+            rule_id=f"fallback.{feature}",
+            label=f"Feature '{feature}' no disponible",
+            observed={feature: None},
+            result=True,
+            reason_code=declarado["reason_code"],
+            threshold={},
+        )
+        return StrategyDecision(
+            sleeve_id=self.sleeve_id,
+            strategy_version=self.version,
+            engine_ref=EngineRef(
+                type="rule_based",
+                policy_version_id=self.policy_version_id,
+                policy_hash=self.policy_hash,
+            ),
+            as_of=context.as_of,
+            direction=declarado["direction"],
+            target_exposure=declarado["target_exposure"],
+            reason_codes=(declarado["reason_code"],),
+            decision_components={feature: None},
+            rule_trace=RuleTrace(
+                rules=(entrada,),
+                winning_rule_id=None,
+                # `fallback_applied=True`: la decisión NO salió de ninguna regla. Quien
+                # lea la traza debe poder distinguir "ninguna regla disparó" de "faltaba
+                # el dato", y el `reason_code` declarado lo dice.
+                fallback_applied=True,
+            ),
+        )
+
     def evaluate(
         self, snapshot: Mapping[str, Any], context: PolicyContext
     ) -> StrategyDecision:
@@ -508,6 +612,10 @@ class DeclarativePolicy:
                 f"context.as_of is required to evaluate {self.sleeve_id} "
                 "(fail-closed: decisions never carry an empty as_of)"
             )
+        ausente = self._declared_absence(snapshot)
+        if ausente is not None:
+            return self._fallback_decision(ausente, snapshot, context)
+
         errors = self.validate_inputs(snapshot)
         if errors:
             raise ValueError(

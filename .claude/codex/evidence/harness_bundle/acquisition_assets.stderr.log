@@ -1,2 +1,0 @@
-C:\Users\pedro\OneDrive\Documents\ALGO TRADING\USDCOP-RL-Models\scripts\analysis\audit_acquisition_assets.py:21: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
-  z = pd.to_datetime(df[c], errors='coerce', utc=True).dropna()

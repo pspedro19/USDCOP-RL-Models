@@ -24,9 +24,6 @@ import math
 import sys
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -34,13 +31,31 @@ if str(ROOT) not in sys.path:
 from src.contracts.policy import PolicyContext  # noqa: E402
 from src.strategies.policies.loader import (  # noqa: E402
     build_policy,
+    load_all_policy_specs,
     load_policy_spec,
     policy_specs_dir,
 )
 
+np = None
+pd = None
+
 
 class DataUnavailable(RuntimeError):
     """El insumo congelado no está en disco. SKIP honesto, jamás un sustituto."""
+
+
+def _ensure_numeric_runtime() -> None:
+    """Import heavy parity dependencies only when a policy is actually eligible."""
+    global np, pd
+    if np is not None and pd is not None:
+        return
+    try:
+        import numpy as numpy_runtime
+        import pandas as pandas_runtime
+    except ImportError as exc:
+        raise DataUnavailable(f"runtime de paridad no disponible: {exc}") from exc
+    np = numpy_runtime
+    pd = pandas_runtime
 
 
 def _policy_exposures(spec: dict, snapshots: list[dict | None],
@@ -81,10 +96,20 @@ def parity_spx500_ma200(spec: dict):
     except Exception as exc:  # noqa: BLE001
         raise DataUnavailable(f"snapshot SPX no disponible: {exc}") from exc
 
+    from src.features.spx500_ma200 import compute_ma_200
+
     close = df["close"].astype(float)
     # Legacy (profitability_adapters.spx500 / publish_spx500_bundles, ANTES del
     # np.roll de ejecución): la exposición decidida en t.
-    ma200 = close.rolling(200, min_periods=200).mean()
+    #
+    # La media YA NO se calcula aquí. Antes esta línea era
+    # `close.rolling(200, min_periods=200).mean()` — idéntica a la del publisher
+    # legacy, pero por casualidad y no por contrato: dos definiciones que coinciden
+    # hoy pueden divergir mañana sin que nada lo note, y `ma_200` no estaba
+    # catalogada ni tenía productor declarado. Ahora el harness CONSUME el productor
+    # único (`spx500.ma_200`, catálogo BL-39) — que es lo que hace de esta paridad
+    # una prueba de la feature publicada y no de una copia local suya.
+    ma200 = compute_ma_200(close)
     legacy = (close > ma200).astype(float).to_numpy()
 
     frame = pd.DataFrame({"close": close.to_numpy(float), "ma_200": ma200.to_numpy(float)})
@@ -110,12 +135,20 @@ def parity_gold_trend_simple(spec: dict):
     legacy = np.roll(legacy_run["position"].to_numpy(float), -1)
     legacy[-1] = np.nan                      # última decisión no observable
 
+    from src.features.xauusd_trend_smas import build_trend_smas
+
     d = legacy_run.reset_index(drop=True)
+    # Las SMA YA NO se recalculan aqui. Antes esta funcion tenia su propia copia de
+    # `close.rolling(w).mean()` para 63/126/252 -- identica a la del voto legacy pero
+    # por casualidad, no por contrato, y ninguna declarada como feature. Ahora consume
+    # el productor UNICO (`xauusd.sma_*`, catalogo BL-39), que es lo que convierte esta
+    # paridad en una prueba de la feature publicada y no de una copia local suya.
+    con_smas = build_trend_smas(d)
     frame = pd.DataFrame({
         "close": d["close"].to_numpy(float),
-        "sma_63": d["close"].rolling(63).mean().to_numpy(float),
-        "sma_126": d["close"].rolling(126).mean().to_numpy(float),
-        "sma_252": d["close"].rolling(252).mean().to_numpy(float),
+        "sma_63": con_smas["sma_63"].to_numpy(float),
+        "sma_126": con_smas["sma_126"].to_numpy(float),
+        "sma_252": con_smas["sma_252"].to_numpy(float),
         "realized_vol_20": d["realized_vol_20"].to_numpy(float),
     })
     stamps = [str(t)[:10] for t in d["time"]]
@@ -162,22 +195,91 @@ CHECKS = {
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--policy", default=None, help="id de una sola política")
+    target = ap.add_mutually_exclusive_group()
+    target.add_argument("--policy", default=None, help="id de una sola política")
+    target.add_argument(
+        "--ci-eligible",
+        action="store_true",
+        help="verifica estrictamente solo PARITY_GREEN/CUTOVER; nunca convierte SKIP en verde",
+    )
+
+    ap.add_argument(
+        "--allow-empty",
+        action="store_true",
+        help=(
+            "acepta 0 specs elegibles como verde. Se exige explícito para que un gate "
+            "sin sujeto sea una DECISIÓN visible en el llamador y no un silencio"
+        ),
+    )
     args = ap.parse_args(argv)
 
-    targets = [args.policy] if args.policy else list(CHECKS)
+    if args.allow_empty and not args.ci_eligible:
+        # El flag sólo tiene sentido frente al conjunto elegible. Aceptarlo suelto
+        # invitaría a colarlo en cualquier invocación como si ablandase el gate entero.
+        ap.error("--allow-empty sólo aplica junto a --ci-eligible")
+
+    if args.ci_eligible:
+        specs = load_all_policy_specs()
+        if not specs:
+            print("[FAIL] registro de policies vacío — directorio/loader roto, no cero gobernado")
+            return 1
+        targets = [
+            str(spec["id"])
+            for spec in specs
+            if (spec.get("migration") or {}).get("status") in {"PARITY_GREEN", "CUTOVER"}
+        ]
+        if not targets:
+            if not CHECKS:
+                print("[FAIL] registro de arneses vacío — paridad no observable")
+                return 1
+            # Cero sujetos NO es verde. El mensaje de abajo era honesto —decía que no
+            # había verificado nada— pero CI lee el EXIT CODE, no el texto: el paso
+            # corría, salía en verde y no comprobaba una sola policy, y así habría
+            # seguido mientras ninguna policy llegase a PARITY_GREEN/CUTOVER.
+            #
+            # No se anota aquí cuántas había inertes: este gate ya las cuenta en cada
+            # corrida, y un número escrito en un comentario sólo puede envejecer mal.
+            #
+            # Ahora el vacío es rojo salvo que el llamador lo DECLARE con `--allow-empty`.
+            # No se trata de tener sujeto a toda costa: promover una policy para darle
+            # trabajo al gate sería la trampa que esto denuncia.
+            if not args.allow_empty:
+                print(
+                    "[FAIL] 0 specs elegibles y --allow-empty no fue declarado. "
+                    "Un gate sin sujeto no prueba nada: o hay una policy en "
+                    "PARITY_GREEN/CUTOVER, o el llamador declara que hoy no la hay"
+                )
+                return 1
+            print(
+                "[OK] 0 specs elegibles — nada verificado, VACÍO DECLARADO por "
+                "--allow-empty (SPEC_ONLY/PARITY_PENDING son inertes)"
+            )
+            return 0
+    else:
+        targets = [args.policy] if args.policy else list(CHECKS)
+
     skipped, failed = 0, 0
     for policy_id in targets:
         if policy_id not in CHECKS:
             print(f"[FAIL] {policy_id}: sin arnés de paridad (¿es SPEC_ONLY?)")
             failed += 1
             continue
+        try:
+            _ensure_numeric_runtime()
+        except DataUnavailable as exc:
+            print(f"[FAIL] {policy_id}: {exc}")
+            failed += 1
+            continue
         spec = load_policy_spec(policy_specs_dir() / f"{policy_id}.yaml")
         try:
             legacy, engine = CHECKS[policy_id](spec)
         except DataUnavailable as exc:
-            print(f"[SKIP] {policy_id}: {exc}")
-            skipped += 1
+            if args.ci_eligible:
+                print(f"[FAIL] {policy_id}: {exc}")
+                failed += 1
+            else:
+                print(f"[SKIP] {policy_id}: {exc}")
+                skipped += 1
             continue
         # La ventana de calentamiento se compara aparte: ahí el camino congelado
         # puede tratar un NaN como voto negativo mientras la política falla

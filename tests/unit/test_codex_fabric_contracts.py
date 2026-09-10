@@ -6,6 +6,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
+import math
 from pathlib import Path
 import sys
 import types
@@ -96,6 +97,21 @@ def test_fabric_factory_config_builds_and_preserves_action_diagnostic_wall() -> 
     )
 
 
+def test_backfill_factory_requires_explicit_as_of() -> None:
+    from src.orchestration.factories import DagSpec, FactoryKind, TaskSpec
+
+    spec = DagSpec(
+        dag_id="backfill__usdcop__missing_cutoff",
+        kind=FactoryKind.BACKFILL,
+        owner_id="usdcop",
+        schedule=None,
+        tasks=(TaskSpec(task_id="load", callable_path="jobs.load"),),
+    )
+
+    with pytest.raises(ValueError, match="backfill requires an explicit as_of"):
+        spec.assert_constitutional()
+
+
 def test_semantic_diff_ignores_only_declared_volatile_fields() -> None:
     from src.orchestration.semantic_diff import compare
 
@@ -105,6 +121,29 @@ def test_semantic_diff_ignores_only_declared_volatile_fields() -> None:
     )
     assert result.equal
     assert result.first_difference is None
+
+
+def test_semantic_diff_preserves_nonvolatile_factory_structure() -> None:
+    from src.orchestration.semantic_diff import compare
+
+    left = {
+        "dag_id": "asset__usdcop__data",
+        "schedule": "0 12 * * 1-5",
+        "tasks": [{"task_id": "extract"}],
+        "generated_at": "old",
+    }
+    right = {
+        "dag_id": "asset__usdcop__data",
+        "schedule": "0 13 * * 1-5",
+        "tasks": [{"task_id": "publish"}],
+        "generated_at": "new",
+    }
+
+    result = compare(left, right)
+
+    assert not result.equal
+    assert result.left_hash != result.right_hash
+    assert result.first_difference == "$.schedule: value differs"
 
 
 def test_snapshot_rejects_signal_not_available_at_cutoff() -> None:
@@ -788,7 +827,7 @@ def test_metric_event_identity_is_deterministic_and_annualization_is_finite() ->
     from src.metrics.engine import MetricCatalog, MetricContractError, MetricEngine
 
     catalog = MetricCatalog.load("config/metrics/catalog.yaml")
-    engine = MetricEngine(catalog, annualization_by_asset={"usdcop": 52})
+    engine = MetricEngine.from_asset_registry(catalog, assets_dir="config/assets")
     as_of = datetime(2026, 1, 5, tzinfo=timezone.utc)
     kwargs = {
         "entity_type": "strategy",
@@ -800,17 +839,26 @@ def test_metric_event_identity_is_deterministic_and_annualization_is_finite() ->
         "asset_id": "usdcop",
         "context": {
             "returns": [0.01, -0.005, 0.003] * 7,
+            "return_interval": "P1W",
             "n_trades": 21,
             "window_start": as_of - timedelta(weeks=26),
             "window_end": as_of,
         },
         "run_id": "run-1",
     }
-    assert engine.compute(**kwargs).metric_event_id == engine.compute(**kwargs).metric_event_id
+    first = engine.compute(**kwargs)
+    second = engine.compute(**kwargs)
+    assert first.metric_event_id == second.metric_event_id
+    assert first.metric_value is not None and math.isfinite(first.metric_value)
+
+    class NonFiniteAnnualizationRegistry:
+        def periods_per_year(self, _asset_id: str, _interval: str) -> float:
+            return float("inf")
+
     bad_engine = MetricEngine(
-        catalog, annualization_by_asset={"usdcop": float("inf")}
+        catalog, annualization_registry=NonFiniteAnnualizationRegistry()  # type: ignore[arg-type]
     )
-    with pytest.raises(MetricContractError, match="annualization"):
+    with pytest.raises(MetricContractError, match="annualization must be a positive number"):
         bad_engine.compute(**kwargs)
 
 
@@ -1091,6 +1139,35 @@ def test_catalog_backfill_inventory_includes_archived_baseline_and_trades(
         "public-data:///strategies/archived_s/backtests/1.0.0/trades_2025.json",
     }
     assert str(tmp_path).replace("\\", "/") not in "\n".join(sources)
+
+
+def test_catalog_backfill_covers_every_published_strategy_year() -> None:
+    """BL-23: current, retired, and baseline owners form one population."""
+    import scripts.data.backfill_catalog_facts as backfill
+
+    registry_path = backfill.PUBLIC / "registry.json"
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    metrics, _trades, missing, population = backfill.inventory(registry_path)
+
+    assert missing == []
+    registry_ids = [str(row["strategy_id"]) for row in registry["strategies"]]
+    assert population == registry_ids
+    assert any(row.get("status") == "archived" for row in registry["strategies"])
+
+    observed = {(fact.strategy_id, fact.year) for fact in metrics}
+    expected = {
+        (str(row["strategy_id"]), int(backtest["year"]))
+        for row in registry["strategies"]
+        for backtest in json.loads(
+            backfill._public_path(
+                row["manifest"], field=f"{row['strategy_id']}.manifest"
+            ).read_text(encoding="utf-8")
+        ).get("backtests", [])
+    }
+    assert observed >= expected, (
+        "every registry strategy must yield metric facts for every published year; "
+        f"missing={sorted(expected - observed)}"
+    )
 
 
 def test_catalog_backfill_inventory_rejects_path_outside_public(

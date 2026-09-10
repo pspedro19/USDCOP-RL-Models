@@ -13,7 +13,6 @@ code_anchors:
   - tests/unit/test_contracts.py
   - tests/integration/test_feature_parity.py
   - scripts/validation/run_e2e_suite.py
-  - results/e2e/report.json
 ---
 # SDD Spec: CI/CD & Testing Infrastructure
 
@@ -431,6 +430,45 @@ Non-CI orchestrators for whole-system acceptance (live `docker compose` stack, n
 **Reporters**: HTML, JSON (`results.json`), JUnit (`results.xml`).
 
 ---
+
+## Observación fechada: la suite ancha vs. lo que CI mira (2026-08-06)
+
+> **Esto NO es un baseline normativo ni un estado verde.** Es **una** medición, con su comando y
+> su fecha, registrada porque el número no vive en ningún otro sitio. No autoriza a tratar los
+> fallos como aceptados ni a re-ejecutar hasta que pasen.
+
+**Comando** (host Windows, deps de RL/Airflow **no** instaladas). Los `--ignore` son los **11**
+módulos cuyo import falla en este host — se listan enteros porque un comando con un placeholder
+no es reproducible, y etiquetarlo «exacto» sería afirmar más de lo que se puede repetir:
+
+```
+python -m pytest tests/unit tests/regression -q --no-header -p no:randomly   --ignore=tests/unit/test_calculators.py   --ignore=tests/unit/test_date_parser.py   --ignore=tests/unit/test_hash_utils.py   --ignore=tests/unit/test_model_registry.py   --ignore=tests/unit/test_no_lookahead.py   --ignore=tests/unit/test_p0_7_ml_workflow.py   --ignore=tests/unit/test_public_snapshot_acquisition.py   --ignore=tests/unit/test_reward_calculator.py   --ignore=tests/unit/test_storage_repositories.py   --ignore=tests/unit/test_trading_flags_redis.py   --ignore=tests/regression/test_action_threshold_ssot.py
+```
+
+**Resultado (2026-08-06)**: `255 failed, 4402 passed, 144 skipped, 2 xfailed, 31 errors`.
+
+Clasificación de los 255, medida sobre el output y no estimada:
+
+| Clase | N | Detalle |
+|---|---|---|
+| `ModuleNotFoundError` | **212** | `stable_baselines3` (141), `airflow.operators` (33), `airflow.dags` (19), `pydantic_settings` (13), `langgraph`, `cloudscraper`, `hmmlearn` |
+| Lógica real | **41** | mayoritariamente drift del contrato RL (`assert 20 == 15` en observation_dim, feature names, `norm_stats` ausentes) |
+| Otros | 2 | + 31 errores de colección, mismos módulos ausentes |
+
+**Lo que esta observación dice, y lo que no.** Dice que **CI corre una selección curada de
+ficheros**, así que este conjunto **nunca se mira**: los workflows corren en runners Linux
+(`ubuntu-latest`) y la mayoría de estos módulos ni se instalan allí. *(Sin conteos de workflows en
+prosa: los cuenta `.claude/generated/inventory.json::workflows`, y un número escrito a mano aquí
+sería una segunda fuente que se desincroniza — AGENTS.md lo prohíbe por eso.)* **No dice** que los 41 sean bugs
+nuevos — son coherentes con que el track RL esté despriorizado (`CLAUDE.md`), y no se han
+diagnosticado uno a uno. Tampoco dice que haya que ponerlos verdes: muchos no pueden correr aquí.
+
+**Por qué se registra.** Un lector de la sección «Coverage Gate» puede concluir que el 70% cubre la
+suite. No la cubre: cubre lo que CI selecciona. Dejarlo sin escribir es la versión macro del patrón
+que el repo lleva corrigiendo — *verde porque sólo se mira lo que pasa*.
+
+**Ninguno de los 255 toca** `policy/` · `features/` · `observations` · catálogo de features
+(filtrado explícito sobre la lista de `FAILED`, no de oído).
 
 ## Code Quality Configuration (`pyproject.toml`)
 

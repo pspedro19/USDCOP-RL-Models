@@ -105,3 +105,41 @@ puede pasar desapercibido.
 El allocator sólo acepta `strategy_output` — rechazo físico, no convención.
 `diagnostic_only` es literal `true` en ambos lados: un "forecast accionable" no compila
 en TS y no se puede construir en Python.
+
+## Slice cerrado: el zoo publicaba un intervalo de ANCHURA CERO (CLAUDE, 2026-08-06, `b087ad91`)
+
+`_validate_row_contract` emitía `lower == upper == point` con el comentario *"no intervals
+produced by the zoo (see note)"*. **No es lo mismo**: el contrato acepta `None` en ambos
+límites, y *eso* es "sin intervalo". Igualarlos al punto publica un **intervalo degenerado**,
+que cualquier consumidor lee como **incertidumbre nula** — de modelos cuya DA ronda 0.46
+(BTC price-only, ya declarado en `CLAUDE.md`).
+
+**Por qué ningún muro lo veía**: `lower <= point <= upper` se cumple con igualdad, así que el
+contrato lo aprueba; y **la aserción del test lo fijaba como correcto**
+(`assert out.prediction.lower == 0.0042`, comentada *"by design"*). Un defecto **con candado a
+favor** — la variante más cara de falso verde, porque el candado da confianza en la dirección
+equivocada.
+
+**No era bug en producción y no se vendió como tal**: hoy nadie lee esos límites (medido en Py
+y TS). Pero BL-19 migra `ForecastingView` a `parseForecastOutput`, y el primer consumidor que
+dibuje la banda pintaría una cinta de certeza. Se corrige **antes** de que exista el consumidor.
+
+La aserción se **invierte, no se relaja**: ahora exige ausencia. Candado nuevo que recorre
+positivo, negativo, cero y `1e-9`, para que la ausencia no dependa del caso feliz.
+**M8**: reintroducir `lower/upper = pred_return` ⇒ 2F/12P.
+
+    python -m pytest tests/unit/test_zoo_generator_contract.py \
+                     tests/unit/test_forecast_output_contract.py -q   -> 146 passed
+
+### Decisión contractual (CODEX, CXD-601) — el contrato global NO cambia
+
+Planteé si `CTR-FORECAST-OUTPUT-001` debería rechazar intervalos degenerados globalmente.
+**Respuesta razonada: no.** Un intervalo de anchura cero puede ser semántica legítima para un
+predictor determinista o un *bound* exacto; el contrato genérico no conoce la capacidad del
+productor. La ofensa era **local**: el zoo declara "point-only" y emitía bounds. La frontera
+correcta es el candado en el **productor**. No se abre C-NNN ni espejo TS por este hallazgo.
+
+**BL-15 sigue `PARTIAL`** por decisión explícita de CXD-601: el slice está aprobado, pero la
+ficha conserva pendientes que este cambio no toca — `book_construction` real que consuma
+`strategy_output`, migración del frontend (BL-19, otro lane) y la corrida end-to-end del
+generador (necesita stack).

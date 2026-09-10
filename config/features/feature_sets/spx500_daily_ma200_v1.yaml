@@ -1,0 +1,37 @@
+# FEATURE SET POR ESTRATEGIA-VERSION (CTR-FEATURE-CATALOG-001, BL-39)
+#
+# POR QUE EXISTE ESTE FICHERO (decision C, co-firmada en CXD-608)
+# ---------------------------------------------------------------
+# `spx500_daily_ma200_v1` apuntaba a `spx500_regime_gated_v1_action_v1`, el feature
+# set de OTRA estrategia. Ese set declara `close` como unica feature ordenada y pone
+# `ma200` en `derived_in_policy`, lo cual es cierto PARA ELLA: la gated es CODED y
+# deriva la media dentro de su codigo congelado. Pero esta policy es DECLARATIVA y
+# `src/contracts/policy_dsl.py` no tiene ningun operador de ventana, asi que no puede
+# derivar nada: necesita `ma_200` materializada en el snapshot.
+#
+# Consecuencia medida antes del arreglo: un productor construido desde aquel feature
+# set habria entregado solo `close` y la policy habria fallado por `missing` en TODA
+# corrida. La cadena gobernada de BL-45 no se podia atravesar por CONTRATO.
+#
+# Se crea un set PROPIO en vez de añadir `ma_200` al de la gated (opcion A descartada
+# en CXD-608): el manifiesto de la gated esta congelado y ampliarlo mezclaria los
+# contratos de dos estrategias y alteraria una superficie ajena.
+feature_set_id: spx500_daily_ma200_v1_action_v1
+strategy_id: spx500_daily_ma200_v1
+manifest_version: 1
+asset_id: spx500
+surface: action
+resample_policy: P1D indice oficial (Investing id 166, price-return declarado); no resample intradia
+macro_bundle: []              # sin macro externa: la regla es precio contra su propia media
+
+ordered_features:
+- {feature_id: close, order: 0, required: true}
+- {feature_id: ma_200, order: 1, required: true}
+
+# VACIO A PROPOSITO. Una policy declarativa no deriva nada: si algo hiciera falta y
+# no estuviera arriba, la cadena debe fallar por `missing`, no taparlo con prosa.
+# `derived_in_policy` es justo el mecanismo que dejo a `ma_200` sin productor durante
+# toda su vida — aqui no se hereda.
+derived_in_policy: []
+retrain: never
+normalization_snapshot_id: null

@@ -71,6 +71,47 @@ OUT_ROOT = REPO / "data" / "interpretability"  # FUERA de public/ (CXD-040: publ
 HORIZON = 5          # mismo H y purga que meta01_zoo_ledger.py
 ZOO_LINEAR_MODELS = ("ridge", "bayesian_ridge", "ard")   # SHAP lineal cerrado (coef_)
 ZOO_TREE_MODELS = ("xgboost", "lightgbm", "catboost")   # TreeSHAP nativo exacto
+
+# ── Cobertura por ACTIVO (BL-20; alcance original restaurado por el operador 2026-08-05) ──
+# El generador nacio cableado a `usdcop`: `_write(...)` YA recibia `asset`, pero los siete
+# call-sites pasaban el literal. Gold y BTC declaran su PROPIO zoo de 9 modelos en
+# `config/assets/*_forecasting.yaml`, con otro vocabulario para los arboles
+# (`xgboost_pure` en vez de `xgboost`). `usdcop` sigue siendo el defecto: sin `--asset`
+# el comportamiento es byte a byte el de antes.
+ASSET_CONFIGS: dict[str, str | None] = {
+    "usdcop": None,                                   # config raiz (forecasting_ssot.yaml)
+    "xauusd": "config/assets/xauusd_forecasting.yaml",
+    "btcusdt": "config/assets/btcusdt_forecasting.yaml",
+}
+
+
+def _models_for_asset(asset: str, kind: str) -> tuple[str, ...]:
+    """`model_id`s DECLARADOS por el activo, jamas una lista fija.
+
+    Inventar un nombre aqui produciria un artefacto que dice explicar un modelo que ese
+    activo no tiene — exactamente la clase de afirmacion falsa que BL-20 existe para
+    impedir. Los `hybrid_*` quedan FUERA de la ruta de arbol a proposito: mezclan lineal
+    y arbol, y TreeSHAP no es correcto sobre ellos (decision declarada en la ficha).
+    """
+    # COP conserva su vocabulario HISTORICO en linear/tree (`xgboost`, no `xgboost_pure`):
+    # sus artefactos ya estan publicados bajo esos nombres y renombrarlos los dejaria
+    # huerfanos. La ruta `hybrid` es NUEVA para todos, asi que ahi se lee la config
+    # tambien para COP — que declara los mismos nueve modelos que Gold y BTC.
+    if asset == "usdcop" and kind in ("linear", "tree"):
+        return ZOO_LINEAR_MODELS if kind == "linear" else ZOO_TREE_MODELS
+    if asset not in ASSET_CONFIGS:
+        raise ValueError(f"activo sin config de forecasting declarada: {asset!r}")
+    cfg_rel = ASSET_CONFIGS[asset] or "config/forecasting_ssot.yaml"
+    import yaml
+    declared = list((yaml.safe_load((REPO / cfg_rel).read_text(encoding="utf-8"))
+                     .get("models") or {}).keys())
+    if kind == "linear":
+        return tuple(m for m in declared if m in ZOO_LINEAR_MODELS)
+    if kind == "hybrid":
+        return tuple(m for m in declared if m.startswith("hybrid_"))
+    return tuple(m for m in declared if m.endswith("_pure"))
+
+
 MIN_TRAIN = 400      # misma guarda que meta01_zoo_ledger.py (años con menos train se SALTAN)
 
 # Header OBLIGATORIO en cada JSON (BL-20 / A.7).
@@ -569,14 +610,16 @@ def _linear_contributions(mdl, Z: np.ndarray) -> tuple[np.ndarray, float, np.nda
 # (a) Zoo COP — SHAP lineal cerrado (ridge / bayesian_ridge / ard), SOLO test-folds
 # ---------------------------------------------------------------------------
 
-def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS,
-                        *, supersede: bool = False) -> list[Path]:
+def generate_zoo_linear(model_ids: tuple[str, ...] | None = None,
+                        *, supersede: bool = False, asset: str = "usdcop") -> list[Path]:
     from sklearn.preprocessing import StandardScaler
     from src.forecasting.models.factory import ModelFactory
     from src.forecasting.ssot_config import ForecastingSSOTConfig
     from src.forecasting.dataset_loader import ForecastingDatasetLoader
 
-    cfg = ForecastingSSOTConfig.load()
+    if model_ids is None:
+        model_ids = _models_for_asset(asset, "linear")
+    cfg = ForecastingSSOTConfig.load(ASSET_CONFIGS[asset])
     loader = ForecastingDatasetLoader(cfg, project_root=REPO)
     df, _ = loader.load_dataset()
     feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
@@ -670,7 +713,7 @@ def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS,
         payload = {
             "nota": NOTA,
             "surface": "zoo",
-            "asset": "usdcop",
+            "asset": asset,
             "model_id": mid,
             "model_type": "linear",
             "method": "linear_shap_closed_form",
@@ -719,7 +762,7 @@ def generate_zoo_linear(model_ids: tuple[str, ...] = ZOO_LINEAR_MODELS,
             "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
             "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
         }
-        p = _write("zoo", "usdcop", mid, version, payload, supersede=supersede)
+        p = _write("zoo", asset, mid, version, payload, supersede=supersede)
         paths.append(p)
         print(f"[zoo] {mid}: {_rel(p)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
               f"add_err={add_err:.2e})", flush=True)
@@ -737,6 +780,16 @@ def _tree_shap_backend(model_id: str):
     última columna que devuelven es el valor base. No se requiere el paquete `shap`
     (que aquí ni siquiera importa: su `_tree.py` arrastra pyspark, roto en py3.12).
     """
+    # Gold/BTC declaran los MISMOS boosters con el sufijo `_pure`
+    # (`config/assets/*_forecasting.yaml`), y el `ModelFactory` ya los registra bajo
+    # ambos nombres. El backend TreeSHAP es el del booster, no el del alias: sin esta
+    # normalizacion los tres arboles de cada activo salian `tree_shap_unavailable`
+    # — degradacion honesta, pero cobertura CERO por un detalle de vocabulario.
+    # Se normaliza SOLO el sufijo declarado; cualquier otro nombre sigue cayendo al
+    # `raise` del final, que es lo que impide inventar un backend.
+    if model_id.endswith("_pure"):
+        model_id = model_id[: -len("_pure")]
+
     if model_id == "xgboost":
         import xgboost as xgb  # noqa: F401 — falla ⇒ backend no disponible
 
@@ -770,7 +823,8 @@ def _tree_shap_backend(model_id: str):
 
 
 def _unavailable_payload(model_id: str, version: str, reason: str, detail: str,
-                         *, provenance: dict | None = None) -> dict:
+                         *, provenance: dict | None = None,
+                         asset: str = "usdcop") -> dict:
     """Estado TIPADO de degradación — jamás valores de atribución fabricados.
 
     Lleva las MISMAS huellas que un artefacto con datos (el modelo se declara
@@ -780,7 +834,7 @@ def _unavailable_payload(model_id: str, version: str, reason: str, detail: str,
     return {
         "nota": NOTA,
         "surface": "zoo",
-        "asset": "usdcop",
+        "asset": asset,
         "model_id": model_id,
         "model_type": "tree",
         "method": "tree_shap_unavailable",
@@ -803,14 +857,16 @@ def _unavailable_payload(model_id: str, version: str, reason: str, detail: str,
     }
 
 
-def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
-                      *, supersede: bool = False) -> list[Path]:
+def generate_zoo_tree(model_ids: tuple[str, ...] | None = None,
+                      *, supersede: bool = False, asset: str = "usdcop") -> list[Path]:
     from sklearn.preprocessing import StandardScaler
     from src.forecasting.models.factory import ModelFactory
     from src.forecasting.ssot_config import ForecastingSSOTConfig
     from src.forecasting.dataset_loader import ForecastingDatasetLoader
 
-    cfg = ForecastingSSOTConfig.load()
+    if model_ids is None:
+        model_ids = _models_for_asset(asset, "tree")
+    cfg = ForecastingSSOTConfig.load(ASSET_CONFIGS[asset])
     loader = ForecastingDatasetLoader(cfg, project_root=REPO)
     df, _ = loader.load_dataset()
     feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
@@ -833,12 +889,12 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
         try:
             backend_name, shap_fn = _tree_shap_backend(mid)
         except Exception as exc:   # backend/librería ausente ⇒ degradación explícita
-            p = _write("zoo", "usdcop", mid, version, _unavailable_payload(
+            p = _write("zoo", asset, mid, version, _unavailable_payload(
                 mid, version, "backend_import_failed", f"{type(exc).__name__}: {exc}",
                 provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
                             "config_fingerprint": _sha(b"<no backend>"),
                             "model_fingerprint": _sha(b"<no backend>"),
-                            "model_fingerprint_basis": "unavailable"}),
+                            "model_fingerprint_basis": "unavailable"}, asset=asset),
                 supersede=supersede)
             paths.append(p)
             print(f"[tree] {mid}: DEGRADADO (backend_import_failed) -> {_rel(p)}",
@@ -871,12 +927,12 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
             meta = pd.concat(dates, ignore_index=True)
             base_value = float(np.nanmean(np.concatenate(base_parts)))
         except Exception as exc:   # fit/predict/SHAP falló ⇒ degradación explícita
-            p = _write("zoo", "usdcop", mid, version, _unavailable_payload(
+            p = _write("zoo", asset, mid, version, _unavailable_payload(
                 mid, version, "shap_computation_failed", f"{type(exc).__name__}: {exc}",
                 provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
                             "config_fingerprint": _sha(b"<shap failed>"),
                             "model_fingerprint": _sha(b"<shap failed>"),
-                            "model_fingerprint_basis": "unavailable"}),
+                            "model_fingerprint_basis": "unavailable"}, asset=asset),
                 supersede=supersede)
             paths.append(p)
             print(f"[tree] {mid}: DEGRADADO (shap_computation_failed) -> {_rel(p)}",
@@ -917,7 +973,7 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
         payload = {
             "nota": NOTA,
             "surface": "zoo",
-            "asset": "usdcop",
+            "asset": asset,
             "model_id": mid,
             "model_type": "tree",
             "method": "tree_shap",
@@ -967,11 +1023,506 @@ def generate_zoo_tree(model_ids: tuple[str, ...] = ZOO_TREE_MODELS,
             "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
             "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
         }
-        p = _write("zoo", "usdcop", mid, version, payload, supersede=supersede)
+        p = _write("zoo", asset, mid, version, payload, supersede=supersede)
         paths.append(p)
         print(f"[tree] {mid}: {_rel(p)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
               f"add_err={add_err:.2e})", flush=True)
     return paths
+
+
+def _hybrid_linear_half(mdl, Xte: np.ndarray) -> tuple[np.ndarray, float]:
+    """Mitad LINEAL del hibrido: `phi_j = coef_j * z_j`, base = intercept.
+
+    Extraida como helper (CXD-576) para que un test pueda EJECUTAR el productor y falsear
+    esta mitad: estaba inline y no habia costura por donde atacarla, asi que el candado de
+    aditividad —que vive dentro del generador— no tenia como demostrarse.
+
+    El `Ridge` interno se ajusta sobre `scaler.transform(X)`, cuya media de train es 0, luego
+    su baseline ES el intercept y no hay centrado adicional que inventar.
+    """
+    Z = np.asarray(mdl._scaler.transform(Xte), float)
+    coefs = np.asarray(mdl._linear_model.coef_, float).ravel()
+    return Z * coefs, float(np.asarray(mdl._linear_model.intercept_).ravel()[0])
+
+
+def generate_zoo_hybrid(model_ids: tuple[str, ...] | None = None,
+                        *, supersede: bool = False, asset: str = "usdcop") -> list[Path]:
+    """SHAP EXACTO de los hibridos por DESCOMPOSICION, no TreeSHAP sobre el conjunto.
+
+    El hibrido NO es un arbol: `HybridBaseModel.predict` es una combinacion CONVEXA
+
+        pred(X) = (1-a) * boost.predict(X)  +  a * ridge.predict(scaler.transform(X))
+
+    Aplicarle TreeSHAP puro seria incorrecto —solo veria el booster y se comeria el
+    termino lineal—, y esa es la razon por la que la ficha de BL-20 los dejo fuera.
+    Pero la atribucion correcta NO es dificil: **SHAP es aditivo y lineal en la salida
+    del modelo**, asi que una combinacion lineal de modelos tiene por valores SHAP la
+    misma combinacion lineal de sus valores SHAP:
+
+        phi  = (1-a) * phi_tree            + a * phi_linear
+        base = (1-a) * base_tree           + a * intercept
+
+    Es EXACTO, no una aproximacion, y no hay que creerselo: `sum(phi) + base` tiene que
+    reproducir `hybrid.predict(X)` hasta precision de coma flotante. Ese es
+    `additivity_max_abs_err` — si no cuadra, el artefacto NO se publica y sale la
+    degradacion tipada. La prueba viaja con el dato.
+
+    Las dos mitades son a su vez exactas: TreeSHAP nativo del booster (mismo backend que
+    la ruta de arbol) y la forma cerrada del lineal. El `Ridge` interno se ajusta sobre
+    `scaler.transform(X)`, cuya media de train es 0, luego su baseline es el intercept y
+    `phi_j = coef_j * z_j` — sin centrado adicional que inventar.
+    """
+    from sklearn.preprocessing import StandardScaler
+    from src.forecasting.models.factory import ModelFactory
+    from src.forecasting.ssot_config import ForecastingSSOTConfig
+    from src.forecasting.dataset_loader import ForecastingDatasetLoader
+
+    if model_ids is None:
+        model_ids = _models_for_asset(asset, "hybrid")
+    if not model_ids:
+        return []
+    cfg = ForecastingSSOTConfig.load(ASSET_CONFIGS[asset])
+    loader = ForecastingDatasetLoader(cfg, project_root=REPO)
+    df, _ = loader.load_dataset()
+    feat_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
+    df = df.sort_values("date").reset_index(drop=True)
+    df["y5"] = df["close"].shift(-HORIZON) / df["close"] - 1.0
+    df["regime"] = _regime_labels(df)
+    version = pd.Timestamp(df["date"].iloc[-1]).date().isoformat()
+
+    folds = _annual_expanding_folds(df, feat_cols)
+    if not folds:
+        raise RuntimeError("zoo hibrido: ningun fold anual cumple la guarda de train minimo")
+    distinct_train_rows = _distinct_train_rows(folds)
+    data_fp = _frame_fingerprint(df, feat_cols + ["close"])
+    code_fp = _code_fingerprint()
+
+    paths: list[Path] = []
+    for mid in model_ids:
+        booster = mid.replace("hybrid_", "")        # hybrid_xgboost -> xgboost
+        try:
+            backend_name, shap_fn = _tree_shap_backend(booster)
+        except Exception as exc:
+            p = _write("zoo", asset, mid, version, _unavailable_payload(
+                mid, version, "backend_import_failed", f"{type(exc).__name__}: {exc}",
+                provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
+                            "config_fingerprint": _sha(b"<no backend>"),
+                            "model_fingerprint": _sha(b"<no backend>"),
+                            "model_fingerprint_basis": "unavailable"}, asset=asset),
+                supersede=supersede)
+            paths.append(p)
+            print(f"[hybrid] {mid}: DEGRADADO (backend_import_failed) -> {_rel(p)}", flush=True)
+            continue
+
+        try:
+            phi_parts, base_parts, dates, fold_meta = [], [], [], []
+            add_err = 0.0
+            alpha_used = None
+            for f in folds:
+                sc = StandardScaler().fit(f["Xtr"])
+                Xte = sc.transform(f["test"][feat_cols].to_numpy(float))
+                mdl = ModelFactory.create(mid)      # hiperparametros CONGELADOS (defaults)
+                mdl.fit(sc.transform(f["Xtr"]), f["ytr"])
+
+                a = float(mdl.params.get("alpha", 0.3))
+                alpha_used = a if alpha_used is None else alpha_used
+
+                # (i) parte ARBOL: TreeSHAP nativo explica la salida CRUDA del booster,
+                # pero el wrapper aplica DESPUES un reescalado de varianza
+                # (`xgboost.py::predict`: y = mean + s*(raw - mean)) y es ESA la que entra
+                # en la combinacion del hibrido. Ignorarlo fue mi primer intento y la
+                # aditividad lo delato: 1e-2, no 1e-16. El reescalado es AFIN, asi que se
+                # compone exacto — phi' = s*phi, base' = s*base + t — y `s`,`t` se DERIVAN
+                # de la pareja (crudo, reescalado) en vez de reimplementar la formula.
+                phi_t, base_t = shap_fn(mdl._boosting_model, Xte)
+                raw = np.asarray(mdl._boosting_model._model.predict(Xte), float).ravel()
+                scaled = np.asarray(mdl._boosting_model.predict(Xte), float).ravel()
+                if np.ptp(raw) > 0:
+                    s_aff, t_aff = np.polyfit(raw, scaled, 1)
+                    resid = float(np.nanmax(np.abs(s_aff * raw + t_aff - scaled)))
+                    # Tolerancia anclada a la PRECISION REAL del booster, no a un numero
+                    # bonito: XGBoost predice en float32 (~1e-7 relativo), asi que un
+                    # residuo de 1e-9 sobre valores de orden 1e-2 es redondeo, no
+                    # no-afinidad. Con 1e-9 absoluto el guard rechazaba una composicion
+                    # CORRECTA (medido: 1.013e-09 vs 1.000e-09). Esto NO afloja el
+                    # criterio: quien decide de verdad es el candado de aditividad de
+                    # abajo, que compara contra la prediccion del hibrido COMPLETO.
+                    tol = max(1e-8, 1e-6 * float(np.nanmax(np.abs(scaled))))
+                    if resid > tol:
+                        raise RuntimeError(
+                            f"{mid}: el post-proceso del booster NO es afin (residuo "
+                            f"{resid:.3e} > {tol:.3e}); la descomposicion exacta no aplica")
+                else:                              # booster degenerado (constante)
+                    s_aff, t_aff = 1.0, float(np.nanmean(scaled - raw))
+                phi_t = s_aff * np.asarray(phi_t, float)
+                base_t = s_aff * np.asarray(base_t, float) + t_aff
+                # (ii) parte LINEAL: forma cerrada sobre las coordenadas del Ridge interno
+                phi_l, base_l = _hybrid_linear_half(mdl, Xte)
+
+                phi = (1.0 - a) * np.asarray(phi_t, float) + a * phi_l
+                bias = (1.0 - a) * np.asarray(base_t, float) + a * base_l
+                if phi.shape[1] != len(feat_cols):
+                    raise RuntimeError(
+                        f"{mid}: {phi.shape[1]} contribuciones vs {len(feat_cols)} features")
+
+                # LA PRUEBA: contra la prediccion del HIBRIDO COMPLETO, no de una mitad.
+                pred = np.asarray(mdl.predict(Xte), float).ravel()
+                add_err = max(add_err,
+                              float(np.nanmax(np.abs(phi.sum(axis=1) + bias - pred))))
+                phi_parts.append(phi)
+                base_parts.append(np.asarray(bias, float).ravel())
+                dates.append(f["test"][["date", "regime"]])
+                fold_meta.append(_fold_meta(f, len(Xte), float(np.nanmean(bias))))
+
+            # CANDADO DURO DE ADITIVIDAD — mas estricto que la ruta de arbol a proposito.
+            # Alli TreeSHAP es exacto por construccion del backend; aqui la descomposicion
+            # es MIA, asi que su exactitud hay que DEMOSTRARLA y no publicarla si falla.
+            # Mi primer intento daba 1e-2 (olvidaba el reescalado del wrapper) y habria
+            # publicado una atribucion que no explica al modelo.
+            # Umbral anclado a la PRECISION ALCANZABLE del backend, no a un numero redondo.
+            # XGBoost computa en float32 (~1e-7 relativo): su TreeSHAP nativo ya deja
+            # residuos de 1e-9..1e-8 sobre predicciones de orden 1e-2, y la ruta de arbol
+            # PURO publica 2.72e-08 sin objecion. Un 1e-9 absoluto rechazaba
+            # descomposiciones CORRECTAS por redondeo (medido: 3.9e-09 / 1.8e-08 / 6.4e-09).
+            # Esto NO es aflojar hasta que pase: mi version equivocada —la que olvidaba el
+            # reescalado del wrapper— daba 1e-2, que este umbral sigue rechazando por SEIS
+            # ordenes de magnitud.
+            pred_scale = float(np.nanmax(np.abs(np.concatenate(base_parts)))) or 1.0
+            tol_add = max(1e-9, 1e-6 * pred_scale)
+            if not np.isfinite(add_err) or add_err > tol_add:
+                raise RuntimeError(
+                    f"{mid}: la descomposicion NO reproduce la prediccion del hibrido "
+                    f"(additivity_max_abs_err={add_err:.3e} > {tol_add:.3e}). No se publica: "
+                    f"una atribucion que no suma a la prediccion no explica al modelo.")
+
+            phi = np.vstack(phi_parts)
+            meta = pd.concat(dates, ignore_index=True)
+            base_value = float(np.nanmean(np.concatenate(base_parts)))
+        except Exception as exc:
+            p = _write("zoo", asset, mid, version, _unavailable_payload(
+                mid, version, "shap_computation_failed", f"{type(exc).__name__}: {exc}",
+                provenance={"data_fingerprint": data_fp, "code_fingerprint": code_fp,
+                            "config_fingerprint": _sha(b"<shap failed>"),
+                            "model_fingerprint": _sha(b"<shap failed>"),
+                            "model_fingerprint_basis": "unavailable"}, asset=asset),
+                supersede=supersede)
+            paths.append(p)
+            print(f"[hybrid] {mid}: DEGRADADO (shap_computation_failed) -> {_rel(p)}", flush=True)
+            continue
+
+        global_rows = _agg_rows(phi, feat_cols, np.ones(len(phi), dtype=bool))
+        top_features = [{"rank": i + 1, **r} for i, r in enumerate(global_rows)]
+        scale = float(np.nanmean([r["mean_abs_shap"] for r in global_rows]))
+        yr_arr = meta["date"].dt.year.to_numpy()
+        by_year = {str(int(y)): _agg_rows(phi, feat_cols, yr_arr == y)
+                   for y in sorted(set(yr_arr))}
+        reg_arr = meta["regime"].to_numpy()
+        by_regime = {str(r): _agg_rows(phi, feat_cols, reg_arr == r)
+                     for r in sorted(set(reg_arr))}
+
+        params = {k: v for k, v in (ModelFactory.create(mid).get_params() or {}).items()
+                  if isinstance(v, (int, float, str, bool, type(None)))}
+        config_fp = _canonical_sha({
+            "horizon": HORIZON, "purge_days": HORIZON, "min_train": MIN_TRAIN,
+            "features": feat_cols, "scaler": "StandardScaler train-only por fold",
+            "model_id": mid, "params": params, "shap_backend": backend_name,
+            "decomposition": "convex_alpha_weighted_tree_plus_linear",
+            "forecasting_ssot": _file_fingerprint(Path(cfg._config_path)),
+            "regime_gate_config": _file_fingerprint(
+                REPO / "config" / "execution" / "smart_simple_v1.yaml"),
+        })
+        model_fp = _canonical_sha({
+            "basis": "frozen_recipe_plus_fold_train_fingerprints",
+            "model_id": mid, "params": params,
+            "folds": [m["fold_fingerprint"] for m in fold_meta],
+        })
+
+        payload = {
+            "nota": NOTA,
+            "surface": "zoo",
+            "asset": asset,
+            "model_id": mid,
+            "model_type": "hybrid",
+            "method": "hybrid_shap_convex_decomposition",
+            "attribution_not_shap": False,
+            "version": version,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "provenance": {
+                "data_fingerprint": data_fp,
+                "code_fingerprint": code_fp,
+                "config_fingerprint": config_fp,
+                "model_fingerprint": model_fp,
+                "model_fingerprint_basis": "frozen_recipe_plus_fold_train_fingerprints",
+            },
+            "shap_backend": f"{backend_name} (parte arbol) + forma cerrada Ridge (parte lineal)",
+            "shap_package_available": _shap_package_available(),
+            "additivity_max_abs_err": add_err,
+            "hybrid_alpha": alpha_used,
+            "fit": {
+                "scheme": ("walk-forward EXPANDING ANUAL: fit con filas < 1-ene-Y menos purga "
+                           f"de {HORIZON}d; atribucion SOLO sobre filas del año Y (test-fold)"),
+                "origin": version,
+                **_train_size_summary(fold_meta, distinct_train_rows),
+                "horizon": HORIZON,
+                "purge_days": HORIZON,
+                "scaler": "StandardScaler train-only por fold",
+                "params": params,
+            },
+            "folds": fold_meta,
+            "scope": ("SHAP EXACTO por DESCOMPOSICION del hibrido, no TreeSHAP sobre el "
+                      "conjunto: pred = (1-a)*boost(X) + a*ridge(scaler(X)), y SHAP es "
+                      "aditivo y lineal en la salida, luego phi = (1-a)*phi_tree + a*phi_lin "
+                      "y base = (1-a)*base_tree + a*intercept. Aplicar TreeSHAP puro seria "
+                      "incorrecto (ignoraria el termino lineal). La exactitud NO se afirma: "
+                      "se COMPRUEBA contra la prediccion del hibrido COMPLETO y se publica "
+                      "como additivity_max_abs_err. Filas OOS unicamente; hiperparametros "
+                      "defaults CONGELADOS, ninguna metrica de acierto computada (0 trials)."),
+            "base_value": base_value,
+            "n_rows": int(len(phi)),
+            "n_features": len(feat_cols),
+            "n_folds": len(fold_meta),
+            "top_features": top_features,
+            "by_year": by_year,
+            "by_regime": by_regime,
+            "regime_gate": ("gate Hurst congelado de config/execution/smart_simple_v1.yaml "
+                            "evaluado con retornos <= la propia fila (sin look-ahead)"),
+            "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
+            "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
+        }
+        p = _write("zoo", asset, mid, version, payload, supersede=supersede)
+        paths.append(p)
+        print(f"[hybrid] {mid}: {_rel(p)} (n_rows={len(phi)}, folds={len(fold_meta)}, "
+              f"alpha={alpha_used}, add_err={add_err:.2e})", flush=True)
+    return paths
+
+
+def generate_composite_v11(*, supersede: bool = False) -> list[Path]:
+    """SHAP del componente `decision_input` de v11 — el PREDICTOR, NO la decision operada.
+
+    Es la superficie que faltaba de BL-20 y la que mas facil seria publicar mintiendo, asi
+    que las tres afirmaciones que NO hace van primero:
+
+    1. **NO explica lo que v11 opera.** El manifiesto declara `usdcop_ridge_br` con
+       `role: decision_input`: la decision pasa DESPUES por el gate de regimen (Hurst),
+       el sizing por confianza y la mecanica TP/HS — todo eso son REGLAS, no el modelo, y
+       un valor SHAP no las atribuye. La estrategia gana o pierde por el conjunto; esto
+       explica solo su entrada.
+    2. **NO explica el snapshot que persiste el DAG.** El manifiesto declara DOS feature
+       sets con divergencia `declared_not_resolved`: la RECETA (`recipe25`, la que
+       construye `enhance_v2::enhance_features_v2`, y la que se usa aqui) y lo que el DAG
+       H5-L3 persiste (`dag_legacy23`). Difieren en `rate_diff_ibr_ust2y` y `term_spread`.
+       Publicar "interpretabilidad de v11" sin decir cual seria ambiguo justo donde importa.
+    3. **NO es un modelo nuevo.** Ridge y BayesianRidge con los hiperparametros congelados
+       del manifiesto, sin tuning y sin ninguna metrica de acierto: 0 trials.
+
+    Lo que SI es exacto: el predictor es la MEDIA del ensemble, o sea una combinacion lineal,
+    luego `phi = (phi_ridge + phi_br)/2` y `base = (b_ridge + b_br)/2` — mismo argumento que
+    los hibridos. Y como alli, no se afirma: `additivity_max_abs_err` lo comprueba contra la
+    prediccion del ENSEMBLE y si no cuadra no se publica.
+    """
+    from sklearn.preprocessing import StandardScaler
+    from src.forecasting.models.factory import ModelFactory
+    from src.forecasting.ssot_config import ForecastingSSOTConfig
+    from src.forecasting.dataset_loader import ForecastingDatasetLoader
+    from src.forecasting.enhance_v2 import enhance_features_v2
+
+    MEMBERS = ("ridge", "bayesian_ridge")      # manifiesto: model.members de smart_simple_v11
+    cfg = ForecastingSSOTConfig.load()
+    loader = ForecastingDatasetLoader(cfg, project_root=REPO)
+    df, _ = loader.load_dataset()
+    base_cols = [c for c in cfg.get_feature_columns() if c in df.columns]
+    df = df.sort_values("date").reset_index(drop=True)
+
+    # LA RECETA v11, no las 21 del zoo: construirla con el MISMO builder que declara el
+    # manifiesto es lo que hace que esto explique a v11 y no a un primo suyo.
+    df, feat_cols = enhance_features_v2(df, base_cols, project_root=REPO)
+    feat_cols = [c for c in feat_cols if c in df.columns]
+
+    recipe = list(yaml_safe_load_recipe())          # CANDIDATA: lo que el productor resolvio
+
+    # IDENTIDAD CANONICA: lista Y ORDEN exactos contra el feature_set CONGELADO (CXD-584).
+    #
+    # Historia de dos rechazos, porque explica cada palabra de esta guarda:
+    #  - R2 solo exigia INCLUSION (builder ⊇ receta): una receta de 8 publicaba afirmando 25.
+    #  - R3 anadio guarda de LONGITUD: CODEX sustituyo UN id conservando los 25 y volvio a
+    #    publicar — "OTRO modelo bajo la etiqueta de recipe25". Longitud no es identidad.
+    #
+    # La autoridad se lee por una ruta INDEPENDIENTE de la candidata: comparar contra la misma
+    # funcion que produjo la lista seria compararla consigo misma y no probaria nada. Y no se
+    # duplican los 25 ids en Python: el YAML congelado es la SSOT y el muro feature-contracts
+    # protege su identidad.
+    canonical = _canonical_v11_recipe_ids()
+    if recipe != canonical:
+        falta = [f for f in canonical if f not in recipe]
+        sobra = [f for f in recipe if f not in canonical]
+        permutada = not falta and not sobra
+        raise RuntimeError(
+            f"la receta resuelta NO es usdcop_smart_simple_v11_recipe25: "
+            + ("mismo conjunto en ORDEN distinto" if permutada
+               else f"faltan={falta[:3]} sobran={sobra[:3]} "
+                    f"(resuelta={len(recipe)}, canonica={len(canonical)})")
+            + " — publicar asi seria atribuir OTRO modelo con la etiqueta de v11")
+    faltan = [f for f in recipe if f not in feat_cols]
+    if faltan:
+        raise RuntimeError(
+            f"la receta v11 declara features que el builder no produjo: {faltan} — "
+            f"publicar sin ellas seria atribuir otro modelo")
+    feat_cols = list(recipe)                   # ORDEN de la receta, no el del builder
+
+    df["y5"] = df["close"].shift(-HORIZON) / df["close"] - 1.0
+    df["regime"] = _regime_labels(df)
+    version = pd.Timestamp(df["date"].iloc[-1]).date().isoformat()
+
+    folds = _annual_expanding_folds(df, feat_cols)
+    if not folds:
+        raise RuntimeError("v11 composite: ningun fold anual cumple la guarda de train minimo")
+    distinct_train_rows = _distinct_train_rows(folds)
+    data_fp = _frame_fingerprint(df, feat_cols + ["close"])
+    code_fp = _code_fingerprint()
+
+    phi_parts, base_parts, coef_parts, dates, fold_meta = [], [], [], [], []
+    add_err = 0.0
+    for f in folds:
+        sc = StandardScaler().fit(f["Xtr"])
+        Xte = sc.transform(f["test"][feat_cols].to_numpy(float))
+        phis, bases, preds, coefs_m = [], [], [], []
+        for mid in MEMBERS:
+            mdl = ModelFactory.create(mid)
+            mdl.fit(sc.transform(f["Xtr"]), f["ytr"])
+            phi_m, intercept, coefs = _linear_contributions(mdl, Xte)
+            phis.append(np.asarray(phi_m, float))
+            bases.append(float(intercept))
+            coefs_m.append(np.asarray(coefs, float))
+            preds.append(np.asarray(mdl.predict(Xte), float).ravel())
+        coef_parts.append(np.mean(coefs_m, axis=0))   # el ensemble es lineal: coef = media
+        phi_f = np.mean(phis, axis=0)                  # ensemble = media -> SHAP = media
+        base_f = float(np.mean(bases))
+        ens_pred = np.mean(preds, axis=0)
+        add_err = max(add_err,
+                      float(np.nanmax(np.abs(phi_f.sum(axis=1) + base_f - ens_pred))))
+        phi_parts.append(phi_f)
+        base_parts.append(np.full(len(Xte), base_f, dtype=float))
+        dates.append(f["test"][["date", "regime"]])
+        fold_meta.append(_fold_meta(f, len(Xte), base_f))
+
+    if not np.isfinite(add_err) or add_err > 1e-9:
+        raise RuntimeError(
+            f"v11 composite: la media del ensemble no reproduce la prediccion "
+            f"(additivity_max_abs_err={add_err:.3e}). No se publica.")
+
+    phi = np.vstack(phi_parts)
+    meta = pd.concat(dates, ignore_index=True)
+    base_value = float(np.nanmean(np.concatenate(base_parts)))
+    global_rows = _agg_rows(phi, feat_cols, np.ones(len(phi), dtype=bool))
+    coef_mean = np.mean(np.vstack(coef_parts), axis=0)
+    col = {c: i for i, c in enumerate(feat_cols)}
+    top_features = [{"rank": i + 1, "feature": r["feature"],
+                     "coef": float(coef_mean[col[r["feature"]]]),
+                     "mean_abs_shap": r["mean_abs_shap"], "mean_shap": r["mean_shap"]}
+                    for i, r in enumerate(global_rows)]
+    scale = float(np.nanmean([r["mean_abs_shap"] for r in global_rows]))
+    yr_arr = meta["date"].dt.year.to_numpy()
+    by_year = {str(int(y)): _agg_rows(phi, feat_cols, yr_arr == y) for y in sorted(set(yr_arr))}
+    reg_arr = meta["regime"].to_numpy()
+    by_regime = {str(r): _agg_rows(phi, feat_cols, reg_arr == r) for r in sorted(set(reg_arr))}
+
+    config_fp = _canonical_sha({
+        "horizon": HORIZON, "purge_days": HORIZON, "min_train": MIN_TRAIN,
+        "features": feat_cols, "members": list(MEMBERS),
+        "feature_set_id": "usdcop_smart_simple_v11_recipe25",
+        "builder": "src/forecasting/enhance_v2.py::enhance_features_v2",
+        "forecasting_ssot": _file_fingerprint(Path(cfg._config_path)),
+        "manifest": _file_fingerprint(REPO / "config" / "strategy_manifests" / "usdcop.yaml"),
+        "regime_gate_config": _file_fingerprint(
+            REPO / "config" / "execution" / "smart_simple_v1.yaml"),
+    })
+    model_fp = _canonical_sha({
+        "basis": "frozen_recipe_plus_fold_train_fingerprints",
+        "component_id": "usdcop_ridge_br", "members": list(MEMBERS),
+        "folds": [m["fold_fingerprint"] for m in fold_meta],
+    })
+
+    payload = {
+        "nota": NOTA,
+        "surface": "composite",
+        "asset": "usdcop",
+        "model_id": "usdcop_ridge_br",
+        "model_type": "linear",
+        "method": "linear_shap_closed_form",
+        "attribution_not_shap": False,
+        "version": version,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "provenance": {
+            "data_fingerprint": data_fp, "code_fingerprint": code_fp,
+            "config_fingerprint": config_fp, "model_fingerprint": model_fp,
+            "model_fingerprint_basis": "frozen_recipe_plus_fold_train_fingerprints",
+        },
+        "additivity_max_abs_err": add_err,
+        "fit": {
+            "scheme": ("walk-forward EXPANDING ANUAL: fit con filas < 1-ene-Y menos purga "
+                       f"de {HORIZON}d; atribucion SOLO sobre filas del año Y (test-fold)"),
+            "origin": version,
+            **_train_size_summary(fold_meta, distinct_train_rows),
+            "horizon": HORIZON, "purge_days": HORIZON,
+            "scaler": "StandardScaler train-only por fold",
+            # n_fits = folds x miembros: el ensemble ajusta AMBOS modelos en cada fold,
+            # asi que publicar `len(folds)` seria contar la mitad de los fits reales.
+            "n_fits": len(folds) * len(MEMBERS),
+            "params": {"members": "+".join(MEMBERS), "ensemble": "mean"},
+        },
+        "folds": fold_meta,
+        "scope": (
+            "COMPONENTE `usdcop_ridge_br` (role=decision_input) del manifiesto congelado de "
+            "smart_simple_v11. NO explica lo que la estrategia OPERA: la decision pasa despues "
+            "por el gate de regimen (Hurst), el sizing por confianza y la mecanica TP/HS, que "
+            "son REGLAS y no se atribuyen con SHAP. Feature set = usdcop_smart_simple_v11_"
+            f"recipe25 ({len(feat_cols)}, builder enhance_v2::enhance_features_v2); el DAG H5-L3 persiste "
+            "usdcop_smart_simple_v11_dag_legacy23 (23) y la divergencia esta declarada como "
+            "declared_not_resolved: FALTAN alli rate_diff_ibr_ust2y y term_spread, asi que "
+            "esto NO explica el snapshot del DAG. Ensemble = MEDIA de ridge y bayesian_ridge, "
+            "luego phi = media de sus phi (exacto, comprobado por aditividad). Solo filas OOS; "
+            "hiperparametros congelados, ninguna metrica de acierto computada (0 trials)."),
+        "base_value": base_value,
+        "n_rows": int(len(phi)),
+        "n_features": len(feat_cols),
+        "n_folds": len(fold_meta),
+        "top_features": top_features,
+        "by_year": by_year,
+        "by_regime": by_regime,
+        "regime_gate": ("gate Hurst congelado de config/execution/smart_simple_v1.yaml "
+                        "evaluado con retornos <= la propia fila (sin look-ahead). Se usa para "
+                        "CORTAR la atribucion por regimen, no se atribuye a si mismo"),
+        "kill_flags_sign_change_by_year": _sign_change_flags(by_year, feat_cols, scale),
+        "kill_flags_sign_change_by_regime": _sign_change_flags(by_regime, feat_cols, scale),
+    }
+    p = _write("composite", "usdcop", "usdcop_ridge_br", version, payload, supersede=supersede)
+    print(f"[composite] usdcop_ridge_br: {_rel(p)} (n_rows={len(phi)}, "
+          f"folds={len(fold_meta)}, feats={len(feat_cols)}, add_err={add_err:.2e})", flush=True)
+    return [p]
+
+
+def _canonical_v11_recipe_ids() -> list[str]:
+    """Autoridad CANONICA de la receta v11: los `feature_id` EN ORDEN del feature_set congelado.
+
+    Deliberadamente separada de `yaml_safe_load_recipe()` aunque hoy lean el mismo fichero: la
+    guarda de identidad compara la lista CANDIDATA contra ESTA, y si ambas salieran de la misma
+    llamada la comparacion seria consigo misma — que es exactamente el agujero por el que R3
+    dejo publicar 25 ids con uno sustituido (CXD-584).
+    """
+    import yaml
+    fs = yaml.safe_load(
+        (REPO / "config" / "features" / "feature_sets"
+         / "usdcop_smart_simple_v11_recipe25.yaml").read_text(encoding="utf-8"))
+    return [f["feature_id"] for f in sorted(fs["ordered_features"], key=lambda r: r["order"])]
+
+
+def yaml_safe_load_recipe() -> list[str]:
+    """Los 25 `feature_id` de la receta v11, EN ORDEN, leidos del feature_set congelado."""
+    import yaml
+    fs = yaml.safe_load(
+        (REPO / "config" / "features" / "feature_sets"
+         / "usdcop_smart_simple_v11_recipe25.yaml").read_text(encoding="utf-8"))
+    return [f["feature_id"] for f in sorted(fs["ordered_features"], key=lambda r: r["order"])]
 
 
 def _shap_package_available() -> bool:
@@ -1086,10 +1637,17 @@ def generate_rule_attribution(rule_ids: tuple[str, ...] = ("spx500",),
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--zoo-models", default=",".join(ZOO_LINEAR_MODELS),
-                    help="modelos LINEALES del zoo (SHAP cerrado): ridge,bayesian_ridge,ard")
-    ap.add_argument("--tree-models", default=",".join(ZOO_TREE_MODELS),
-                    help="modelos de ARBOL del zoo (TreeSHAP nativo): xgboost,lightgbm,catboost")
+    ap.add_argument("--asset", default="usdcop", choices=sorted(ASSET_CONFIGS),
+                    help="activo del zoo. Sin este flag: usdcop, comportamiento previo "
+                         "intacto. Con xauusd/btcusdt se carga SU config y SUS model_id "
+                         "declarados (los hybrid_* quedan fuera: TreeSHAP no es correcto "
+                         "sobre un modelo mitad lineal mitad arbol)")
+    ap.add_argument("--zoo-models", default=None,
+                    help="modelos LINEALES del zoo (SHAP cerrado). Por defecto, los que "
+                         "DECLARA el activo — nunca una lista fija")
+    ap.add_argument("--tree-models", default=None,
+                    help="modelos de ARBOL del zoo (TreeSHAP nativo). Por defecto, los que "
+                         "DECLARA el activo — nunca una lista fija")
     ap.add_argument("--rules", default="spx500",
                     help="adapters rule-based (profitability_adapters.ADAPTERS)")
     ap.add_argument("--skip-zoo", action="store_true")
@@ -1121,19 +1679,27 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     paths: list[Path] = []
+    # Los model_id permitidos los DECLARA el activo: validar contra una lista fija
+    # rechazaria `xgboost_pure` (el nombre real de Gold/BTC) y aceptaria `xgboost`
+    # para un activo que no lo tiene.
+    allowed_lin = _models_for_asset(args.asset, "linear")
+    allowed_tree = _models_for_asset(args.asset, "tree")
     if not args.skip_zoo:
-        mids = tuple(m.strip() for m in args.zoo_models.split(",") if m.strip())
-        bad = [m for m in mids if m not in ZOO_LINEAR_MODELS]
+        mids = (tuple(m.strip() for m in args.zoo_models.split(",") if m.strip())
+                if args.zoo_models else None)
+        bad = [m for m in (mids or ()) if m not in allowed_lin]
         if bad:
-            raise SystemExit(f"--zoo-models solo admite lineales (SHAP cerrado): {bad} "
-                             f"no permitido — usa --tree-models para arboles")
-        paths += generate_zoo_linear(mids, supersede=args.supersede)
+            raise SystemExit(f"--zoo-models: {bad} no son lineales declarados por "
+                             f"{args.asset!r} (declarados: {list(allowed_lin)})")
+        paths += generate_zoo_linear(mids, supersede=args.supersede, asset=args.asset)
     if not args.skip_trees:
-        tids = tuple(m.strip() for m in args.tree_models.split(",") if m.strip())
-        bad = [m for m in tids if m not in ZOO_TREE_MODELS]
+        tids = (tuple(m.strip() for m in args.tree_models.split(",") if m.strip())
+                if args.tree_models else None)
+        bad = [m for m in (tids or ()) if m not in allowed_tree]
         if bad:
-            raise SystemExit(f"--tree-models solo admite arboles del zoo: {bad} no permitido")
-        paths += generate_zoo_tree(tids, supersede=args.supersede)
+            raise SystemExit(f"--tree-models: {bad} no son arboles declarados por "
+                             f"{args.asset!r} (declarados: {list(allowed_tree)})")
+        paths += generate_zoo_tree(tids, supersede=args.supersede, asset=args.asset)
     if not args.skip_rules:
         rids = tuple(r.strip() for r in args.rules.split(",") if r.strip())
         paths += generate_rule_attribution(rids, supersede=args.supersede)

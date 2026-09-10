@@ -991,19 +991,59 @@ async def async_redis_client():
 
 @pytest.fixture
 def feature_builder():
-    """Feature builder instance for testing"""
+    """Feature builder instance for testing.
+
+    La ruta ``src`` se inserta SOLO durante el import y se retira siempre.
+
+    POR QUE IMPORTA. Hay **dos** paquetes llamados ``contracts`` en el repo:
+
+        src/contracts/                (contratos de dominio: policy, strategy_schema...)
+        airflow/dags/contracts/       (dag_registry, l*_contracts)
+
+    y solo uno responde a ``import contracts``: gana el que este antes en ``sys.path``.
+    El bloque de arriba de este mismo fichero declara CRITICO que sea el de
+    ``airflow/dags``. Antes esta fixture hacia ``sys.path.insert(0, src)``
+    **incondicional** y sin deshacerlo: metia una copia de ``src`` en el indice 0 —por
+    delante de ``airflow/dags``— y la dejaba ahi para el RESTO de la sesion.
+
+    LAS DOS PIEZAS DE ABAJO NO VALEN LO MISMO, y conviene no confundirlas:
+
+        la guarda ``if inserted``  -> CARGA EL PESO. Es lo que impide la copia
+                                      duplicada al frente. Medido: con la version
+                                      anterior de esta fixture, el candado de
+                                      ``tests/unit/test_conftest_syspath_hygiene.py``
+                                      se pone ROJO.
+        el ``finally`` que retira  -> defensa INERTE hoy. ``src`` ya viene en el path
+                                      cuando corre la fixture, luego ``inserted`` es
+                                      False y esa rama no se alcanza. Se mantiene por
+                                      si algun dia el path deja de venir preparado.
+
+    Se dice explicito porque una version anterior de este docstring afirmaba que el
+    bloque entero era inerte — falso, y lo escribi yo.
+
+    Ver ``tests/unit/test_conftest_syspath_hygiene.py`` para el candado y para el otro
+    contaminador (``tests/unit/conftest.py``, ya corregido).
+    """
     import sys
     from pathlib import Path
 
-    # Add src to path
-    src_path = Path(__file__).parent.parent / 'src'
-    sys.path.insert(0, str(src_path))
-
+    src_path = str((Path(__file__).parent.parent / 'src').resolve())
+    inserted = src_path not in sys.path
+    if inserted:
+        sys.path.insert(0, src_path)
     try:
         from core.services.feature_builder import FeatureBuilder
-        return FeatureBuilder()
     except ImportError:
         pytest.skip("FeatureBuilder not available")
+    finally:
+        # Se retira SOLO si lo puso esta fixture: si ya estaba, quitarlo seria
+        # romper una configuracion ajena — el reverso del mismo error.
+        if inserted:
+            try:
+                sys.path.remove(src_path)
+            except ValueError:  # alguien mas lo quito entre medias
+                pass
+    return FeatureBuilder()
 
 
 @pytest.fixture

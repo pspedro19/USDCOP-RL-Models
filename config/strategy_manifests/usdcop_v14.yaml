@@ -14,7 +14,7 @@ components:   # predictor compartido con v11
   recipe_note: >-
     cada reentrenamiento produce un model_snapshot semanal bajo el mismo spec; el check
     es 'receta congelada, snapshots registrados', nunca 'pesos inmutables'
-  spec_fingerprint_sha256_16: 86c8e7d978bdb851   # IDENTICO a v11 (predictor compartido):
+  spec_fingerprint_sha256_16: 41c883144421d63d   # IDENTICO a v11 (predictor compartido):
     # sha256 canonico LF (CRLF->LF, == blob git)[:16] sobre spec_fingerprint_inputs
   spec_fingerprint_inputs:
   - scripts/pipeline/train_and_export_smart_simple.py
@@ -61,18 +61,15 @@ generalizacion_diseno: '3/4 años (mejora 2022/2023/2024, cede 2025: perfil anti
 juez: forward desde freeze, mismo protocolo sellado de v12
 manifest_version: 9
 refreeze_note_v9: >-
-  Re-freeze v9 (2026-08-24, auditoria de limpieza): el commit 73f8c9b0 anadio `strategy_id`
-  a la clave de los 7 UPSERT H5 de train_and_export_smart_simple.py. Motivo: la migracion 064
-  hizo las tablas H5 strategy-scoped, y un `ON CONFLICT (signal_date)` sin strategy_id hacia
-  que una corrida de v12 o v14 estampara sus filas como v11 y PISARA produccion. Cambio de
-  PERSISTENCIA, no de estrategia: 0 lineas de generacion de senal, 0 de gates o metricas,
-  backtest NO re-ejecutado, ningun numero observado => **0 trials** (quant-constitution §2,
-  strategy-engines §8). Verificado por fichero contra el blob del freeze (b67b8e4e): SOLO
-  cambio train_and_export_smart_simple.py (1cefa32f466e450b -> 90abca9b5c740824);
-  src/forecasting/enhance_v2.py (b601ae271c8e2b5f) y config/execution/smart_simple_v1.yaml
-  (5184f9c533a3a1d0) quedan IDENTICOS — el constructor de features y la config de la
-  estrategia no se tocaron, que es lo que "la senal es identica" significa en concreto.
-  Hash del manifiesto fdbbc410b5b5b79f -> b1613a2b0be4637d; componente 60663704514cbec2 -> d9cd4e82dca0d72f; spec_fingerprint 758456c8fcc51834 -> 86c8e7d978bdb851. v11 sigue FROZEN, juez = forward 2026.
+  Re-freeze v9 (2026-08-05, autorizado por el operador): misma causa y misma contabilidad
+  que `usdcop.yaml` refreeze_note_v15 — el muro llevaba ROJO desde el 2026-07-29 por
+  `73f8c9b0` (ON CONFLICT (signal_date, strategy_id), confinado a `seed_h5_db_tables()`) y
+  `8f783d89` (bloque `governance:` de BL-16 en smart_simple_v1.yaml, que entra por
+  spec_fingerprint_inputs). Ninguna toca senal, leverage, stops, TP/HS, PnL ni features:
+  **0 trials**, backtest NO re-ejecutado, ninguna cifra observada. Hashes: manifiesto
+  fdbbc410b5b5b79f -> b1613a2b0be4637d; componente 60663704514cbec2 -> d9cd4e82dca0d72f;
+  spec_fingerprint 758456c8fcc51834 -> 41c883144421d63d (sigue IDENTICO al de v11 y v12
+  porque el predictor es compartido — esa igualdad es el invariante, no el valor).
 refreeze_note_v8: >-
   Re-freeze v8 (2026-07-28, cierre de BL-10): `forecast_trial_ids_legacy` deja de ser
   `pending-BL-10` y declara el linaje FT REAL FT-0001..FT-0048 del predictor COMPARTIDO con

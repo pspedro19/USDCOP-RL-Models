@@ -1,19 +1,14 @@
 # BASELINE de monitores (comparar DELTAS, no totales)
-# Última medición completa: 2026-07-28T17:35-05:00 (todo lo de abajo re-ejecutado, no citado de memoria)
+# Última medición completa: 2026-07-28T17:35-05:00; frontmatter re-medido 2026-08-05T15:46-05:00
 # Regla: una aprobación = "sin fallos NUEVOS vs esta lista". Un gate de CI que compare
 # TOTALES nace rojo por deuda ajena y se desactiva el primer día — compara DELTA.
 
 ## Python — pytest
 
-- **test_knowledge_frontmatter: 0 failed pre-existentes** — deuda PAGADA.
-  Historico: 47 fallos (ADR-0021 sin front-matter, BOOK-LEVERAGE, EXP-DIR,
-  `.claude/codex/*` legacy, etc. — anteriores al protocolo); re-medido 2026-07-28
-  seguia en 47. El saneo se hizo en el carril de conocimiento (front matter tipado
-  en todo `.claude/`), pero **la linea base nunca se re-registro**, asi que el gate
-  llevaba desde entonces en rojo falso por DELTA -47 ("la deuda se pago, re-registrala").
-  Re-medido y re-registrado 2026-08-24 (auditoria de limpieza): 0 failed.
-  A partir de aqui, cualquier documento nuevo sin front matter es un fallo NUEVO
-  y bloquea — que es el comportamiento que se queria desde el principio.
+- **test_knowledge_frontmatter: 0 failed pre-existentes.**
+  Re-medido 2026-08-05: baseline saneado a 0 mediante
+  `check_monitor_delta.py --update-baseline` sobre el arbol trackeado.
+  Cualquier fallo futuro es deuda nueva y debe poner rojo el gate.
 
 - **test_backlog_status_is_honest: 17 failed pre-existentes** (candado NUEVO 2026-07-28,
   `tests/regression/test_backlog_status_is_honest.py`, CTR-BACKLOG-HONESTY-001).

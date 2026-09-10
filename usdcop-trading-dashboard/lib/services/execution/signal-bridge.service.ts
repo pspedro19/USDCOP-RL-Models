@@ -42,7 +42,10 @@ import {
 // ============================================================================
 
 const API_BASE = '/signal-bridge';
-const WS_BASE = process.env.NEXT_PUBLIC_SIGNALBRIDGE_WS_URL || 'ws://localhost:8080/ws/executions';
+// Fallback alineado con el puerto que el compose PUBLICA (8085:8000). Declaraba 8080,
+// un TERCER puerto distinto del 8000 de constants.ts y del 8085 real: dos fallbacks
+// del mismo servicio apuntando a dos sitios y ninguno al publicado (medido 2026-08-05).
+const WS_BASE = process.env.NEXT_PUBLIC_SIGNALBRIDGE_WS_URL || 'ws://localhost:8085/ws/executions';
 
 // ============================================================================
 // ERROR HANDLING

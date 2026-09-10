@@ -20,14 +20,20 @@ import pandas as pd
 from datetime import datetime
 import json
 
-# Add airflow dags to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'airflow' / 'dags'))
+# Add airflow dags to path.
+# `parents[2]` es la RAIZ del repo, no `scripts/`. Con `parent.parent` esto resolvia a
+# `scripts/airflow/dags/utils/datetime_handler.py`, que no existe: la ruta quedo obsoleta
+# cuando `scripts/` se reorganizo en subdirectorios por proposito (2026-07) y el fichero
+# dejo de estar en la raiz de `scripts/`. Sintoma en produccion: la tarea `data_verify` de
+# los DAGs de activos moria con FileNotFoundError y quedaba en up_for_retry indefinidamente.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT / 'airflow' / 'dags'))
 
 # Import directly from module to avoid package issues
 import importlib.util
 spec = importlib.util.spec_from_file_location(
     "datetime_handler",
-    Path(__file__).parent.parent / 'airflow' / 'dags' / 'utils' / 'datetime_handler.py'
+    REPO_ROOT / 'airflow' / 'dags' / 'utils' / 'datetime_handler.py'
 )
 datetime_handler = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(datetime_handler)

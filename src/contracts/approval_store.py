@@ -58,7 +58,6 @@ MAX_APPROVAL_BYTES = 2 * 1024 * 1024
 #: ``lib/approvals/store.ts``**: el Voto 2 (Node) y el export (Python) escriben el MISMO
 #: artefacto y solo se excluyen si nombran el mismo lock.
 LOCK_SUFFIX = ".lock"
-_LOCK_STALE_S = 30.0
 _LOCK_WAIT_S = 4.0
 
 #: Raíz del repo: ``src/contracts/approval_store.py`` → ``<repo>``.
@@ -223,22 +222,45 @@ def acquire_approval_lock(path: Path, timeout_s: float = _LOCK_WAIT_S):
         def __enter__(self) -> "_Lock":
             deadline = time.monotonic() + timeout_s
             while True:
-                try:
-                    self._fd = os.open(str(self._lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                    os.write(self._fd, f'{{"pid": {os.getpid()}}}'.encode())
-                    return self
-                except FileExistsError:
-                    # Se libera siempre en ``__exit__``: un lock viejo solo puede venir
-                    # de un proceso muerto.
+                acquired_fd = None
+                for permission_attempt in range(2):
                     try:
-                        if time.time() - self._lock.stat().st_mtime > _LOCK_STALE_S:
-                            self._lock.unlink(missing_ok=True)
-                            continue
-                    except FileNotFoundError:
-                        continue
-                    if time.monotonic() >= deadline:
-                        raise ApprovalLockTimeout(f"approval state busy: {path.name}")
-                    time.sleep(0.015)
+                        acquired_fd = os.open(
+                            str(self._lock), os.O_CREAT | os.O_EXCL | os.O_WRONLY
+                        )
+                    except FileExistsError:
+                        break
+                    except PermissionError:
+                        # Windows puede devolver EACCES mientras otro proceso termina
+                        # de liberar el lock. Si ya desapareció, una única reapertura
+                        # distingue esa carrera de una denegación ACL persistente.
+                        if self._lock.exists():
+                            break
+                        if permission_attempt == 1:
+                            raise
+                    else:
+                        break
+
+                if acquired_fd is not None:
+                    self._fd = acquired_fd
+                    try:
+                        os.write(self._fd, f'{{"pid": {os.getpid()}}}'.encode())
+                    except BaseException:
+                        os.close(self._fd)
+                        self._fd = None
+                        self._lock.unlink(missing_ok=True)
+                        raise
+                    return self
+
+                # C036: la edad NO demuestra que el titular murió. En POSIX se puede
+                # borrar un fichero abierto; reclamarlo por mtime permitiría que un
+                # segundo escritor entrase mientras el primero sigue vivo.
+                if time.monotonic() >= deadline:
+                    raise ApprovalLockTimeout(
+                        f"approval state busy: {path.name}; lock is not auto-reclaimed — "
+                        "verify no approval writer is running before manual cleanup"
+                    )
+                time.sleep(0.015)
 
         def __exit__(self, *exc: Any) -> None:
             if self._fd is not None:

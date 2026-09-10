@@ -110,17 +110,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: python -m pip install pytest pyyaml numpy scipy
       - name: Python frontmatter delta gate
         run: python scripts/validation/check_monitor_delta.py --monitor pytest_knowledge_frontmatter
-      - run: python -m pytest tests/regression/test_strategy_manifests.py tests/regression/test_scripts_layout.py -q
+      - run: python -m pytest tests/regression/test_strategy_manifests.py tests/regression/test_feature_contracts.py tests/regression/test_bl08_env_history_control.py tests/regression/test_scripts_layout.py -q
+      - name: Enforce diagnostic-only forecasting surfaces
+        run: python -m pytest tests/regression/test_forecasting_caveat_present.py -q
       - run: python -m pytest tests/regression/test_approval_mutual_exclusion.py tests/unit/test_codex_phase2_backlog.py -q
+      - name: BL-16 constitutional declaration and canonical JSON gates
+        run: >-
+          python -m pytest
+          tests/unit/test_codex_fabric_contracts.py::test_governance_matrix_has_exactly_26_legal_state_combinations
+          tests/unit/test_codex_safety_contracts.py::test_illegal_governance_object_cannot_exist
+          tests/unit/test_codex_safety_contracts.py::test_canonical_json_rejects_nonfinite_numbers
+          -q
       - run: python scripts/validation/check_trial_ledger.py
       - run: python scripts/validation/report_ledger_dsr.py
       - run: python scripts/validation/validate_policy_specs.py
+      # `--allow-empty` es una DECLARACION, no un ablandamiento. El gate solo verifica
+      # policies en PARITY_GREEN/CUTOVER y hoy no hay ninguna elegible. Sin el flag sale
+      # ROJO a proposito, porque un paso que corre sin sujeto y devuelve 0 se lee como
+      # "verificado" cuando no verifico nada — que es lo que este step hacia en silencio
+      # hasta 2026-08-06. El conteo exacto de policies inertes NO se anota aqui: el gate
+      # lo mide en cada corrida y un numero en un comentario solo envejece mal.
+      #   owner: workstream de migracion de policies (BL-47)
+      #   cancelacion: se BORRA `--allow-empty` en cuanto una policy llegue a
+      #          PARITY_GREEN o CUTOVER. Nadie debe promover una policy solo para darle
+      #          sujeto al gate: eso seria la trampa que este cambio denuncia.
+      - name: Require exact parity for executable policy migrations
+        run: python scripts/validation/check_policy_parity.py --ci-eligible --allow-empty
+      - name: Reject new governed-metric bypasses
+        run: python scripts/validation/validate_fabric_contracts.py
       - name: Publish baseline contract
         run: test -f .claude/coordination/BASELINE.md
 

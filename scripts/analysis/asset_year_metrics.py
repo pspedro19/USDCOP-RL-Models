@@ -1,0 +1,526 @@
+"""Metricas por ACTIVO x ANIO con la disciplina completa de `quant-constitution.md`.
+
+QUE RESPONDE
+------------
+"Si esta estrategia hubiera estado operando en 2025 (y en 2026 hasta donde hay datos),
+que habria pasado, y es distinguible de no haber hecho nada?"
+
+POR QUE NO BASTA EL RETORNO
+---------------------------
+El retorno solo no separa timing de beta. Una estrategia que esta invertida el 30% del
+tiempo en un activo que subio 40% "gana" sin haber decidido nada util. Por eso cada celda
+lleva, ademas del retorno:
+
+  B1   buy&hold 1x del activo en el MISMO periodo
+  B1'  **exposicion emparejada**: exposicion CONSTANTE igual a la exposicion media realizada
+       de la estrategia. Es la prueba dura (constitucion §3.2) y es costless por
+       construccion, o sea que el liston queda a proposito mas alto
+  x1/x2/x3  el MISMO recorrido de posiciones re-preciado con costes al doble y al triple.
+       Si muere al doble, no hay edge (§3.4)
+
+RECONSTRUCCION DIARIA, NO POR TRADE
+-----------------------------------
+Los trades publicados se convierten en una serie DIARIA de posicion (leverage mientras el
+trade esta abierto, 0 fuera). Eso permite marcar a mercado dia a dia y alimentar el SSOT
+constitucional `services/common/metrics.py`, que es el que la constitucion nombra como gate
+de release. No se reimplementa ni un estadistico.
+
+DECISIONES DECLARADAS (para que nadie tenga que adivinarlas)
+------------------------------------------------------------
+1. Un trade pertenece al anio de su **salida**: es cuando el PnL se realiza.
+2. Retorno de estrategia = producto de (1 + pnl_pct/100) de los trades de ese anio, y por
+   separado el compuesto de la serie diaria; se publican AMBOS y su discrepancia, porque
+   diferir significa que la reconstruccion diaria no reproduce el bundle y eso hay que verlo.
+3. Costes: los DECLARADOS en `config/strategy_manifests/<asset>.yaml`, no inventados.
+4. Anualizacion: la de `reference.asset.annualization` (BTC 365, COP 261, Gold/SPX 250).
+   Nunca se comparan activos entre si en una misma tabla de ranking (strategy-contract §5).
+5. **Con N < 20 trades NO se emiten Sharpe, Sortino, p-value ni DSR** (constitucion §6).
+   Se emite conteo, PnL, exposicion y los baselines, que son descriptivos y validos a
+   cualquier N. Esta es la razon por la que la mayoria de celdas de este informe no llevan
+   Sharpe: no es que falte, es que reportarlo seria falso.
+6. Este script NO decide nada ni elige estrategia: LEE bundles ya publicados. No gasta
+   trials (§1) porque no busca sobre el resultado.
+
+Uso:
+    python scripts/analysis/asset_year_metrics.py --years 2025 2026
+    python scripts/analysis/asset_year_metrics.py --json out.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from datetime import date, datetime, timezone
+from pathlib import Path
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+BUNDLES = ROOT / "usdcop-trading-dashboard" / "public" / "data" / "strategies"
+
+# Prefijo de strategy_id -> (simbolo en asset_daily_ohlcv, manifiesto de costes, anualizacion)
+ASSET_MAP = [
+    ("btc_",          "BTC/USDT", "btcusdt", 365),
+    ("gold_",         "XAU/USD",  "xauusd",  250),
+    ("xau",           "XAU/USD",  "xauusd",  250),
+    ("spx500_",       "SPX/500",  "spx500",  250),
+    ("smart_simple_", "USD/COP",  "usdcop",  261),
+    ("usdcop",        "USD/COP",  "usdcop",  261),
+]
+
+ASSET_BY_ID = {
+    "btcusdt": ("BTC/USDT", "btcusdt", 365),
+    "xauusd": ("XAU/USD", "xauusd", 250),
+    "spx500": ("SPX/500", "spx500", 250),
+    "usdcop": ("USD/COP", "usdcop", 261),
+}
+
+# Coste por unidad de turnover, en bps, LEIDO de los manifiestos (ver docstring §3).
+COST_BPS = {"btcusdt": 13.0, "xauusd": 2.0, "spx500": 3.0, "usdcop": 1.0}
+SWAP_ANNUAL_PCT = {"xauusd": 2.5}
+
+
+def resolve_asset(strategy_id: str, strategy_dir: Path | None = None):
+    """Resolve an asset from exact manifest identity, with a legacy-only prefix fallback."""
+    candidate = strategy_dir or (BUNDLES / strategy_id)
+    manifest_path = candidate / "manifest.json"
+    if manifest_path.exists():
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"WARNING: manifest invalido para {strategy_id}: {exc}")
+            return None, None, None
+        declared_id = manifest.get("strategy_id")
+        asset_id = manifest.get("asset_id")
+        if declared_id != strategy_id:
+            print(
+                f"WARNING: identidad divergente: directorio={strategy_id}, "
+                f"manifest.strategy_id={declared_id!r}"
+            )
+            return None, None, None
+        if asset_id not in ASSET_BY_ID:
+            print(f"WARNING: asset_id desconocido para {strategy_id}: {asset_id!r}")
+            return None, None, None
+        return ASSET_BY_ID[asset_id]
+
+    # Compatibilidad acotada: artefactos legacy sin manifest conservan la convención de
+    # nombre. En cuanto existe un manifest, su identidad exacta manda y cualquier defecto
+    # falla cerrado arriba; un prefijo jamás puede sobreescribirlo.
+    for prefix, symbol, manifest, ann in ASSET_MAP:
+        if strategy_id.startswith(prefix):
+            return symbol, manifest, ann
+    return None, None, None
+
+
+def production_backtest_dir(strategy_dir: Path) -> Path | None:
+    """El bundle que el manifest declara PRODUCTION, no el de numero mas alto.
+
+    DEFECTO CORREGIDO, y era grave y a mi favor: ordenaba los directorios por numero y
+    tomaba el ultimo. Para `smart_simple_v11` eso da `3.0.0-B`, que el propio manifest
+    marca `active: false`, mientras `production.model_version` dice **2.0.0**. Las
+    consecuencias iban las dos en mi direccion:
+
+      * 3.0.0-A/B se publicaron SIN fichero de 2026 -> COP aportaba CERO al anio en curso
+        (era el sintoma que me hizo cazar el bug del peso infinito, pero no su causa);
+      * y en 2025 la version que yo evaluaba declara +26.58% mientras la de PRODUCCION
+        declara **+7.35% con gates 4/6 = REVIEW** y p=0.2277.
+
+    O sea que estaba midiendo el backtest mas favorable en lugar del que esta operando.
+    Un informe sobre "que habria pasado si esto hubiera estado operativo" tiene que leer
+    lo que ESTA operativo. Localizado gracias al arreglo simetrico de Claude en el loader
+    (`f315032d`), que topo con lo mismo en su lado.
+    """
+    bt = strategy_dir / "backtests"
+    manifest = strategy_dir / "manifest.json"
+    if manifest.exists():
+        try:
+            data = json.loads(manifest.read_text(encoding="utf-8"))
+            ver = (data.get("production") or {}).get("model_version")
+            if ver and (bt / str(ver)).is_dir():
+                return bt / str(ver)
+            if ver:
+                print(
+                    f"WARNING: {strategy_dir.name} declara production.model_version={ver} "
+                    "pero ese bundle no existe; se usara el fallback disponible"
+                )
+            activas = [m.get("version") for m in data.get("model_versions", []) if m.get("active")]
+            for v in activas:
+                if v and (bt / str(v)).is_dir():
+                    return bt / str(v)
+        except Exception:  # noqa: BLE001
+            pass
+    if not bt.is_dir():
+        return None
+    versions = [d for d in bt.iterdir() if d.is_dir()]
+    if not versions:
+        return None
+
+    def key(d: Path):
+        return [int(x) for x in re.findall(r"\d+", d.name)] or [0]
+
+    return sorted(versions, key=key)[-1]
+
+
+PROD_TRADES = BUNDLES.parent / "production" / "trades"
+
+
+def load_trades(strategy_dir: Path) -> list[dict]:
+    """Trades de la estrategia, PREFIRIENDO los artefactos de PRODUCCION al bundle.
+
+    Veredicto CLD-701, verificado commit a commit por Claude y reproducido por mi: el
+    bundle del registry quedo CONGELADO en los valores de abril. Dos arreglos de julio
+    —`cf392508` cerro una fuga de purga (look-ahead) y `03eaa994` dejo de rellenar hard
+    stops a precios por los que el mercado hizo gap— regeneraron
+    `public/data/production/trades/...` pero NO el bundle. Medido en los ficheros:
+
+        production/trades/smart_simple_v11_2025.json   n=32   +7.35%   <- post-arreglo
+        strategies/.../backtests/2.0.0/trades_2025.json n=34  +25.63%   <- pre-fuga
+
+    Leer el bundle era consumir el numero de ANTES de corregir el look-ahead. Un informe
+    de "que habria pasado operando" tiene que leer el artefacto que la produccion mantiene
+    al dia, no el que quedo fosilizado.
+
+    Los `trades_YYYY.json` del bundle solo se usan para los activos que no publican
+    artefacto de produccion; su sufijo es la fecha de PUBLICACION, no el periodo (CLD-692),
+    asi que se unen, se deduplican y el corte por anio lo hace el llamador con la fecha de
+    salida real.
+    """
+    trades: list[dict] = []
+    seen: set = set()
+    try:
+        manifest = json.loads((strategy_dir / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        manifest = {}
+    has_production_pointer = bool((manifest.get("production") or {}).get("model_version"))
+
+    def _absorber(path: Path, dentro_de: tuple | None = None) -> dict | None:
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            return None
+        items = raw.get("trades", raw) if isinstance(raw, dict) else raw
+        if not isinstance(items, list):
+            return raw if isinstance(raw, dict) else None
+        for t in items:
+            # Clave por sello de ENTRADA, no por (entrada, salida, precio): el mismo trade
+            # economico aparece en ambas fuentes con precios DISTINTOS, justo porque los
+            # arreglos de fuga los cambiaron. Con la clave compuesta se colaban los dos y
+            # se contaba el trade dos veces.
+            k = t.get("timestamp")
+            if k in seen:
+                continue
+            if dentro_de:
+                fecha = _as_date(k)
+                if fecha and fecha.year in dentro_de:
+                    continue      # anio cubierto por la fuente autoritativa: su ausencia es informacion
+            seen.add(k)
+            trades.append(t)
+        # Devuelve el documento SIEMPRE, tambien en el camino normal: el llamador lee de aqui
+        # la cobertura declarada (`date_range`/`year`). En la primera version solo se devolvia
+        # en la rama de salida temprana y el caso normal caia al final devolviendo None, con lo
+        # que la autoridad declarada nunca se leia y el arreglo no hacia nada. Lo delato la
+        # prueba del gatillo, no la lectura del codigo.
+        return raw if isinstance(raw, dict) else None
+
+    prod = sorted(PROD_TRADES.glob(f"{strategy_dir.name}*.json")) if PROD_TRADES.is_dir() else []
+    prod += sorted((strategy_dir / "production").glob("trades*.json"))
+    # PRIMERO produccion (gana en los solapes), DESPUES el bundle para el resto de la
+    # historia. Sustituir en bloque era otro defecto mio: los artefactos de produccion son
+    # PARCIALES -- `btc_hodl_b1` son 2 trades de una quincena, `gold_dynamic_exit` 7 de
+    # 2026 -- asi que preferirlos enteros MUTILABA la historia de casi todas las sleeves y
+    # movia los resultados de forma erratica. Se fusiona, no se sustituye.
+    authoritative_years: set[int] = set()
+    for path in prod:
+        raw = _absorber(path)
+
+        # ---------------------------------------------------------------------------
+        # (1) AUTORIDAD DECLARADA POR EL PROPIO ARTEFACTO — CLD-706 §2, cierre del
+        #     gatillo de promocion. Tomado bajo lease CLAUDE 2026-08-11 con el operador
+        #     autorizando en modo degradado; ADITIVO sobre la regla de Codex, que queda
+        #     intacta como respaldo en (2).
+        #
+        # El criterio `_YYYY` + `production.model_version` funciona HOY, pero solo porque
+        # oro y BTC NO tienen puntero de produccion en su manifest. Simulado darselo -que
+        # es exactamente lo que ocurre cuando el operador PROMUEVE oro-, la rama `elif`
+        # deriva la autoridad anual de los sellos de entrada, un trade huerfano del
+        # 2025-12-30 reclama TODO 2025, y la cartera vuelve de 19.48/3.22 a 14.79/0.89
+        # re-destruyendo 8 trades de `gold_dynamic_exit` y 3 de `gold_trend_simple`.
+        # Sin error y sin aviso.
+        #
+        # El artefacto ya publica su cobertura: `gold_dynamic_exit.json` declara
+        # `date_range 2026-01-01..2026-07-21` y `smart_simple_v11_2025.json` declara
+        # `2025-01-01..2026-01-02`. Leer el campo que el fichero escribe es invariante al
+        # puntero del manifest Y al nombre del fichero, y cierra ademas el gatillo de
+        # calendario: en enero de 2027 el generico `smart_simple_v11.json` traera un trade
+        # entrado en dic-2026 y con la regla de sellos reclamaria 2026 entero.
+        # ---------------------------------------------------------------------------
+        declarado: set[int] = set()
+        if isinstance(raw, dict):
+            dr = raw.get("date_range") or {}
+            ini, fin = _as_date(dr.get("start")), _as_date(dr.get("end"))
+            if ini and fin and fin >= ini:
+                declarado = set(range(ini.year, fin.year + 1))
+            elif raw.get("year"):
+                try:
+                    declarado = {int(raw["year"])}
+                except (TypeError, ValueError):
+                    declarado = set()
+        if declarado:
+            authoritative_years |= declarado
+            continue
+
+        # ---------------------------------------------------------------------------
+        # (2) RESPALDO — regla de Codex (`be9f4f95`), intacta, para artefactos que NO
+        #     declaran cobertura. Authority is a property of the artifact contract, never
+        #     of how many trades it happens to contain. ``*_YYYY.json`` explicitly owns
+        #     that year. A generic file owns its observed years only when the manifest
+        #     points at a production version; otherwise it is a partial operational
+        #     extract (the BTC/Gold case) and may be completed from the published bundle.
+        # ---------------------------------------------------------------------------
+        named_year = re.search(r"_(20\d{2})(?:\D|$)", path.stem)
+        if named_year:
+            authoritative_years.add(int(named_year.group(1)))
+        elif has_production_pointer:
+            authoritative_years.update(
+                d.year for d in (_as_date(t.get("timestamp")) for t in trades) if d
+            )
+
+    # REGLA DE CLAUDE (CLD-703), concedida integra: el relleno desde el bundle solo es
+    # legitimo FUERA del rango temporal que cubre la fuente autoritativa. DENTRO de su
+    # rango, que un trade no exista en produccion es INFORMACION —significa que con la
+    # metodologia corregida ese trade no existe— y no un hueco que tapar.
+    #
+    # Mi version anterior fusionaba por sello de entrada sin mirar rangos, y para COP 2025
+    # —donde produccion cubre de febrero a diciembre— inyectaba 8 trades de la corrida CON
+    # FUGA dentro de la serie sin fuga. El resultado no era +7.35% ni +25.63%: era +19.65%,
+    # una quimera de dos metodologias que no coexistieron en ningun backtest, y ningun gate
+    # la detecta porque el numero es plausible. Vale para BTC/Gold, donde produccion si es
+    # parcial (`btc_hodl_b1` son 2 trades de una quincena); no valia para COP.
+    # La cobertura declarada se mide POR ANIO, no como min-max de fechas: un artefacto
+    # ``*_2025`` es autoritativo sobre TODO 2025. Mi primera version usaba el rango exacto
+    # (2025-02-03..) y los trades de ENERO del bundle se colaban por el borde -- tres de
+    # ellos-- dejando COP en +17.55% en vez de +7.35%. A la inversa, un extracto generico
+    # sin puntero de produccion no reclama el anio entero por contener un trade huerfano.
+    cubierto = authoritative_years
+
+    d = production_backtest_dir(strategy_dir)
+    if d is None:
+        return trades
+    for path in sorted(d.glob("trades_*.json")):
+        _absorber(path, dentro_de=cubierto)
+    return trades
+
+
+def _as_date(value) -> date | None:
+    """Fecha del sello, NORMALIZADA A UTC antes de truncar.
+
+    Defecto que corrijo tras la objecion de Claude (CLD-695): antes devolvia la fecha en la
+    zona en que venia escrito el sello (`-05:00` para COP) mientras el indice de precios se
+    construye con `to_datetime(..., utc=True).dt.date`. Eran DOS convenciones distintas a
+    los dos lados de la misma comparacion. Hoy no muerde porque la sesion COP es matinal y
+    un trade de las 09:00 COT cae en el mismo dia UTC -- pero uno de las 20:00 COT no, y en
+    un activo 24/7 como BTC eso desplaza la barra un dia entero.
+
+    Se normaliza a UTC en vez de a Bogota porque el indice de barras ya esta en UTC: la
+    regla no es "que zona es la correcta" sino que AMBOS lados usen la misma.
+    """
+    if not value:
+        return None
+    try:
+        ts = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return None
+    if ts.tzinfo is not None:
+        ts = ts.astimezone(timezone.utc)
+    return ts.date()
+
+
+def daily_prices(symbol: str) -> dict[date, float]:
+    """Cierres diarios del activo.
+
+    Fuente PRIMARIA el parquet versionado `data/backups/features/asset_daily_ohlcv.parquet`,
+    no la DB: (a) es reproducible por cualquiera que clone el repo, sin stack levantado; y
+    (b) consultar el hypertable tumbaba la corrida con `out of shared memory` en cuanto otra
+    sesion trabajaba en paralelo -- un informe que depende de que nadie mas use la base no
+    es un informe. La DB queda como respaldo si el parquet falta.
+    """
+    parquet = ROOT / "data" / "backups" / "features" / "asset_daily_ohlcv.parquet"
+    if parquet.exists():
+        import pandas as pd
+
+        df = pd.read_parquet(parquet, columns=["time", "symbol", "close"])
+        df = df[(df["symbol"] == symbol) & (df["close"] > 0)]
+        if not df.empty:
+            fechas = pd.to_datetime(df["time"], utc=True).dt.date
+            return dict(zip(fechas, df["close"].astype(float)))
+
+    import psycopg2
+
+    conn = psycopg2.connect(
+        host=os.environ.get("POSTGRES_HOST", "localhost"),
+        port=int(os.environ.get("POSTGRES_PORT", "5432")),
+        dbname=os.environ.get("POSTGRES_DB", "usdcop_trading"),
+        user=os.environ.get("POSTGRES_USER", "admin"),
+        password=os.environ.get("POSTGRES_PASSWORD", ""),
+        connect_timeout=5,
+    )
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT time::date, close FROM asset_daily_ohlcv "
+                "WHERE symbol = %s AND close > 0 ORDER BY 1;", (symbol,))
+            return {r[0]: float(r[1]) for r in cur.fetchall()}
+    finally:
+        conn.close()
+
+
+def build_series(trades, prices: dict[date, float], year: int):
+    """Serie DIARIA (fecha, retorno del activo, posicion, turnover) para el anio."""
+    days = sorted(d for d in prices if d.year == year)
+    if len(days) < 2:
+        return None
+    px = np.array([prices[d] for d in days], dtype=float)
+    asset_ret = np.zeros(len(days))
+    asset_ret[1:] = px[1:] / px[:-1] - 1.0
+
+    pos = np.zeros(len(days))
+    idx = {d: i for i, d in enumerate(days)}
+    for t in trades:
+        entry, exit_ = _as_date(t.get("timestamp")), _as_date(t.get("exit_timestamp"))
+        if entry is None or exit_ is None:
+            continue
+        lev = abs(float(t.get("leverage") or 1.0))
+        sign = -1.0 if str(t.get("side", "LONG")).upper() == "SHORT" else 1.0
+        for d in days:
+            if entry <= d <= exit_:
+                pos[idx[d]] += sign * lev
+
+    turnover = np.abs(np.diff(pos, prepend=0.0))
+    return days, asset_ret, pos, turnover
+
+
+def compute(strategy_id: str, trades, prices, year: int) -> dict | None:
+    from services.common.metrics import (
+        _ann_return_dd_calmar, calculate_sharpe_ratio, calculate_sortino_ratio,
+        cost_stress, paired_exposure_baseline,
+    )
+
+    symbol, manifest, ann = resolve_asset(strategy_id)
+    built = build_series(trades, prices, year)
+    if built is None:
+        return None
+    days, asset_ret, pos, turnover = built
+
+    # DOS conteos, porque uno solo engana: una posicion abierta todo 2025 que cierra en 2026
+    # da N=0 cerrados y sin embargo tuvo exposicion y PnL el anio entero. Se publican ambos.
+    year_trades = [t for t in trades if (_as_date(t.get("exit_timestamp")) or date(1900, 1, 1)).year == year]
+    n = len(year_trades)
+    n_activos = sum(
+        1 for t in trades
+        if (e := _as_date(t.get("timestamp"))) and (x := _as_date(t.get("exit_timestamp")))
+        and e <= days[-1] and x >= days[0]
+    )
+    ret_bundle = float(np.prod([1 + float(t.get("pnl_pct", 0.0)) / 100.0 for t in year_trades]) - 1) * 100 if n else 0.0
+
+    bps = COST_BPS.get(manifest, 0.0) / 10000.0
+    cost = turnover * bps
+    swap = np.full(len(days), SWAP_ANNUAL_PCT.get(manifest, 0.0) / 100.0 / ann) * (np.abs(pos) > 0)
+
+    strat_ret = pos * asset_ret - cost - swap
+    ret_daily = float(np.prod(1 + strat_ret) - 1) * 100
+
+    out = {
+        "strategy_id": strategy_id, "asset": symbol, "year": year,
+        "n_trades": n,
+        "periodo": f"{days[0]}..{days[-1]}",
+        "dias_de_mercado": len(days),
+        "exposicion_media": round(float(np.mean(np.abs(pos))), 4),
+        "dias_en_mercado_pct": round(float(np.mean(np.abs(pos) > 0)) * 100, 1),
+        "ret_bundle_pct": round(ret_bundle, 2),
+        "ret_diario_pct": round(ret_daily, 2),
+        "discrepancia_pp": round(ret_daily - ret_bundle, 2),
+        "estrategia": _ann_return_dd_calmar(strat_ret, ann),
+        "B1_buy_hold": _ann_return_dd_calmar(asset_ret, ann),
+        "B1p_exposicion_emparejada": paired_exposure_baseline(pos, asset_ret, ann),
+        "coste_bps_declarado": COST_BPS.get(manifest, 0.0),
+        "stress_costos": cost_stress(pos, asset_ret, cost, swap, ann),
+    }
+
+    if n >= 20:
+        sharpe = calculate_sharpe_ratio(strat_ret, periods_per_year=ann)
+        out["inferencia"] = {
+            "sharpe": sharpe,
+            "sortino": calculate_sortino_ratio(strat_ret, periods_per_year=ann),
+            "nota": "N>=20 trades: la constitucion permite estadistica inferencial",
+        }
+    else:
+        out["inferencia"] = {
+            "sharpe": None, "sortino": None,
+            "nota": f"N={n} < 20 trades: constitucion §6 PROHIBE Sharpe/p-value/DSR aqui. "
+                    f"No es que falte el dato, es que reportarlo seria falso.",
+        }
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--years", type=int, nargs="+", default=[2025, 2026])
+    ap.add_argument("--json", type=str, default=None)
+    args = ap.parse_args()
+
+    if not BUNDLES.is_dir():
+        print(f"sin bundles en {BUNDLES}", file=sys.stderr)
+        return 1
+
+    price_cache: dict[str, dict] = {}
+    results = []
+    for sd in sorted(BUNDLES.iterdir()):
+        if not sd.is_dir():
+            continue
+        symbol, manifest, ann = resolve_asset(sd.name, sd)
+        if symbol is None:
+            print(f"  SIN MAPEO DE ACTIVO: {sd.name} (se omite, declarado)", file=sys.stderr)
+            continue
+        trades = load_trades(sd)
+        if not trades:
+            continue
+        if symbol not in price_cache:
+            price_cache[symbol] = daily_prices(symbol)
+        if not price_cache[symbol]:
+            print(f"  SIN PRECIOS para {symbol}: {sd.name} omitido", file=sys.stderr)
+            continue
+        for year in args.years:
+            row = compute(sd.name, trades, price_cache[symbol], year)
+            if row:
+                results.append(row)
+
+    for asset in sorted({r["asset"] for r in results}):
+        print(f"\n{'='*104}\n{asset}\n{'='*104}")
+        print(f"{'estrategia':<26}{'anio':<6}{'N':>4}{'expos':>8}{'ret%':>9}"
+              f"{'B1%':>9}{'B1p%':>9}{'maxDD%':>9}{'Calmar':>8}{'x2 vive':>9}{'Sharpe':>9}")
+        for r in sorted([x for x in results if x["asset"] == asset],
+                        key=lambda x: (x["strategy_id"], x["year"])):
+            sh = r["inferencia"]["sharpe"]
+            print(f"{r['strategy_id']:<26}{r['year']:<6}{r['n_trades']:>4}"
+                  f"{r['exposicion_media']:>8.2f}"
+                  f"{r['estrategia']['ann_return_pct']:>9.2f}"
+                  f"{r['B1_buy_hold']['ann_return_pct']:>9.2f}"
+                  f"{r['B1p_exposicion_emparejada']['ann_return_pct']:>9.2f}"
+                  f"{r['estrategia']['max_dd_pct']:>9.2f}"
+                  f"{r['estrategia']['calmar']:>8.2f}"
+                  f"{('SI' if r['stress_costos']['survives_2x'] else 'NO'):>9}"
+                  f"{(f'{sh:.2f}' if sh is not None else 'N<20'):>9}")
+
+    if args.json:
+        Path(args.json).write_text(json.dumps(results, indent=2, default=str), encoding="utf-8")
+        print(f"\nJSON -> {args.json}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

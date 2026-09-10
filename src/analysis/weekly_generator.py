@@ -55,6 +55,12 @@ from src.contracts.analysis_schema import (
     WeeklyViewExport,
     _sanitize_for_json,
 )
+from src.data_quality.feature_availability import (
+    FEATURE_AVAILABILITY_REGISTRY,
+    load_feature_max_age,
+    load_feature_publish_lag,
+    news_feature_cutoff,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -121,9 +127,23 @@ class WeeklyAnalysisGenerator:
         self._calendar_cache: list | None = None
         self._charts_generated = 0
         self._llm_sentiment_scores: dict | None = None  # title_hash -> score
+        self._feature_cutoff: datetime | None = None
+
+    @staticmethod
+    def _sentiment_value(row) -> float | None:
+        for field in ("sentiment", "tone", "sentiment_score", "gdelt_tone"):
+            value = row.get(field)
+            if value is not None and not pd.isna(value):
+                return float(value)
+        return None
+
+    def _ensure_feature_cutoff(self, end: date) -> None:
+        if self._feature_cutoff is None:
+            self._feature_cutoff = news_feature_cutoff(end)
 
     def generate_for_date(self, target_date: date) -> DailyAnalysisRecord:
         """Generate daily analysis for a specific date."""
+        self._ensure_feature_cutoff(target_date)
         iso_cal = target_date.isocalendar()
         logger.info(f"Generating daily analysis for {target_date}")
 
@@ -149,11 +169,16 @@ class WeeklyAnalysisGenerator:
 
         # 6. Build LLM prompt
         signal_section = build_signal_section(h1_signal=h1_signal, h5_signal=h5_signal)
+        measured_sentiments = [
+            value
+            for value in (self._sentiment_value(item) for item in news_highlights)
+            if value is not None
+        ]
         news_context = {
             "article_count": len(news_highlights),
-            "avg_sentiment": (
-                np.mean([h.get("sentiment", h.get("tone", 0)) for h in news_highlights])
-                if news_highlights else 0
+            "avg_sentiment": float(np.mean(measured_sentiments)) if measured_sentiments else None,
+            "sentiment_unavailable_reason": (
+                None if measured_sentiments else "feature.not_measured"
             ),
         }
         news_section = build_news_section(news_context, highlights=news_highlights) if news_highlights else "- Sin noticias relevantes para hoy"
@@ -263,6 +288,7 @@ class WeeklyAnalysisGenerator:
         """
         start = date.fromisocalendar(iso_year, iso_week, 1)
         end = date.fromisocalendar(iso_year, iso_week, 5)  # Friday
+        self._feature_cutoff = news_feature_cutoff(end)
         logger.info(f"Generating weekly analysis: {iso_year}-W{iso_week:02d} ({start} to {end})")
 
         start_time = time.time()
@@ -1192,7 +1218,7 @@ class WeeklyAnalysisGenerator:
                     "source": str(row.get("source", row.get("news_source", ""))),
                     "url": str(row.get("url", "")),
                     "date": str(row.get("date", ""))[:10],
-                    "tone": float(row.get("tone", 0) or 0),
+                    "tone": self._sentiment_value(row),
                     "language": str(row.get("language", "es")),
                 }
                 for _, row in week_articles.iterrows()
@@ -1219,7 +1245,8 @@ class WeeklyAnalysisGenerator:
         """
         result = {
             "article_count": 0,
-            "avg_sentiment": 0,
+            "avg_sentiment": None,
+            "sentiment_unavailable_reason": "feature.not_measured",
             "top_categories": {},
             "highlights": [],
             "source_breakdown": {},
@@ -1239,24 +1266,18 @@ class WeeklyAnalysisGenerator:
 
                 # Compute avg_sentiment from article tones (hybrid FX rules)
                 if "tone" in week_articles.columns:
-                    non_zero_tones = week_articles["tone"][week_articles["tone"] != 0]
-                    if len(non_zero_tones) > 0:
-                        result["avg_sentiment"] = round(float(non_zero_tones.mean()), 3)
+                    measured_tones = pd.to_numeric(week_articles["tone"], errors="coerce").dropna()
+                    if len(measured_tones) > 0:
+                        result["avg_sentiment"] = round(float(measured_tones.mean()), 3)
+                        result["sentiment_unavailable_reason"] = None
                         logger.info(
-                            f"News sentiment: {len(non_zero_tones)}/{len(week_articles)} "
+                            f"News sentiment: {len(measured_tones)}/{len(week_articles)} "
                             f"articles with non-zero tone, avg={result['avg_sentiment']}"
                         )
-
-                # Fallback to GDELT sentiment CSV if article tones are all zero
-                if result["avg_sentiment"] == 0:
-                    sentiment_df = self._get_gdelt_sentiment()
-                    if not sentiment_df.empty:
-                        smask = (sentiment_df.index >= pd.Timestamp(start)) & (
-                            sentiment_df.index <= pd.Timestamp(end)
-                        )
-                        week_sent = sentiment_df[smask]
-                        if not week_sent.empty:
-                            result["avg_sentiment"] = round(float(week_sent["tone_avg"].mean()), 3)
+                    elif "sentiment_unavailable_reason" in week_articles.columns:
+                        reasons = week_articles["sentiment_unavailable_reason"].dropna()
+                        if not reasons.empty:
+                            result["sentiment_unavailable_reason"] = str(reasons.iloc[0])
 
                 # Source breakdown for context
                 result["source_breakdown"] = (
@@ -1278,7 +1299,11 @@ class WeeklyAnalysisGenerator:
                             "date": str(row.get("date", ""))[:10],
                             "news_source": ns,
                             "url": str(row.get("url", "")),
-                            "sentiment": round(float(row.get("tone", row.get("sentiment_score", 0)) or 0), 2),
+                            "sentiment": (
+                                round(value, 2)
+                                if (value := self._sentiment_value(row)) is not None
+                                else None
+                            ),
                         }
                         source_groups.setdefault(ns, []).append(entry)
 
@@ -1450,7 +1475,11 @@ class WeeklyAnalysisGenerator:
                 highlights.append({
                     "title": str(row.get("title", ""))[:200],
                     "source": str(row.get("source", row.get("news_source", "N/A"))),
-                    "sentiment": round(float(row.get("tone", row.get("sentiment_score", row.get("gdelt_tone", 0))) or 0), 2),
+                    "sentiment": (
+                        round(value, 2)
+                        if (value := self._sentiment_value(row)) is not None
+                        else None
+                    ),
                     "url": str(row.get("url", "")),
                     "news_source": ns,
                 })
@@ -1546,7 +1575,7 @@ class WeeklyAnalysisGenerator:
             sentiment_cfg = self.config.get("sentiment", {})
             analyzer = get_analyzer(sentiment_cfg)
 
-            # Load all articles (populates cache with tone=0 for CSV sources)
+            # Load all articles; unmeasured sentiment remains null.
             articles_df = self._get_all_articles()
             if articles_df.empty:
                 return
@@ -1595,7 +1624,7 @@ class WeeklyAnalysisGenerator:
                 key = _title_hash(title)
                 llm_score = self._llm_sentiment_scores.get(key) if self._llm_sentiment_scores else None
                 existing_tone = self._all_articles_cache.at[idx, "tone"]
-                gdelt_tone = existing_tone if existing_tone != 0 else None
+                gdelt_tone = float(existing_tone) if not pd.isna(existing_tone) else None
 
                 result = analyzer.analyze_single(
                     title=title,
@@ -1618,22 +1647,6 @@ class WeeklyAnalysisGenerator:
     # ------------------------------------------------------------------
     # Cached data accessors (lazy-loaded)
     # ------------------------------------------------------------------
-
-    def _get_gdelt_sentiment(self) -> pd.DataFrame:
-        """Load and cache GDELT daily sentiment CSV."""
-        if self._gdelt_sentiment_cache is None:
-            path = PROJECT_ROOT / "data/news/gdelt_daily_sentiment.csv"
-            if path.exists():
-                try:
-                    df = pd.read_csv(path, parse_dates=["date"])
-                    df = df.set_index("date").sort_index()
-                    self._gdelt_sentiment_cache = df
-                except Exception as e:
-                    logger.warning(f"Failed to load GDELT sentiment: {e}")
-                    self._gdelt_sentiment_cache = pd.DataFrame()
-            else:
-                self._gdelt_sentiment_cache = pd.DataFrame()
-        return self._gdelt_sentiment_cache
 
     def _get_all_articles(self) -> pd.DataFrame:
         """Load and cache articles from ALL news sources (GDELT + Google News + Investing.com + Colombia news).
@@ -1724,6 +1737,10 @@ class WeeklyAnalysisGenerator:
                 logger.warning(f"Failed to load Colombia news: {e}")
 
         # 5. Live news_articles DB table (NewsEngine pipeline — enriched articles)
+        if self._feature_cutoff is None:
+            raise RuntimeError("news feature cutoff must be set by the analysis entrypoint")
+        feature_max_age = load_feature_max_age(FEATURE_AVAILABILITY_REGISTRY)
+        feature_publish_lag = load_feature_publish_lag(FEATURE_AVAILABILITY_REGISTRY)
         try:
             import os
 
@@ -1737,12 +1754,49 @@ class WeeklyAnalysisGenerator:
                 password=os.environ.get("POSTGRES_PASSWORD", ""),
             )
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    """SELECT DISTINCT ON (feature_id)
+                              feature_id, status, reason_code, observed_at, created_at
+                       FROM quality.feature_status
+                       WHERE feature_id IN (
+                           'news_articles.sentiment_score',
+                           'news_articles.sentiment_label',
+                           'news_articles.gdelt_tone'
+                         ) AND observed_at <= %s
+                         AND created_at IS NOT NULL
+                         AND created_at <= observed_at + %s
+                       ORDER BY feature_id, observed_at DESC""",
+                    (self._feature_cutoff, feature_publish_lag),
+                )
+                feature_statuses = {}
+                for row in cur.fetchall():
+                    observed_at = row.get("observed_at")
+                    created_at = row.get("created_at")
+                    if not isinstance(observed_at, datetime) or observed_at.tzinfo is None:
+                        row = dict(row)
+                        row["status"] = "UNAVAILABLE"
+                        row["reason_code"] = "feature.status_timestamp_invalid"
+                    elif (
+                        not isinstance(created_at, datetime)
+                        or created_at.tzinfo is None
+                        or observed_at > created_at
+                        or created_at - observed_at > feature_publish_lag
+                    ):
+                        row = dict(row)
+                        row["status"] = "UNAVAILABLE"
+                        row["reason_code"] = "feature.status_provenance_invalid"
+                    elif self._feature_cutoff - observed_at > feature_max_age:
+                        row = dict(row)
+                        row["status"] = "UNAVAILABLE"
+                        row["reason_code"] = "feature.status_stale"
+                    feature_statuses[row["feature_id"]] = row
                 cur.execute("""
                     SELECT published_at AS date, title, source_id AS source,
-                           url, language, sentiment_score, sentiment_label, category
+                           url, language, sentiment_score, sentiment_label, gdelt_tone, category
                     FROM news_articles
+                    WHERE published_at < %s
                     ORDER BY published_at DESC
-                """)
+                """, (self._feature_cutoff,))
                 rows = cur.fetchall()
             conn.close()
             if rows:
@@ -1753,11 +1807,21 @@ class WeeklyAnalysisGenerator:
                 if "url" not in df.columns:
                     df["url"] = ""
                 # Preserve sentiment_score as "tone" for downstream compatibility
-                if "sentiment_score" in df.columns:
-                    df["tone"] = df["sentiment_score"].fillna(0.0)
+                score_status = feature_statuses.get("news_articles.sentiment_score")
+                tone_status = feature_statuses.get("news_articles.gdelt_tone")
+                if score_status and score_status["status"] == "AVAILABLE":
+                    df["tone"] = df["sentiment_score"]
+                    df["sentiment_unavailable_reason"] = None
+                elif tone_status and tone_status["status"] == "AVAILABLE":
+                    df["tone"] = df["gdelt_tone"]
+                    df["sentiment_unavailable_reason"] = None
                 else:
-                    df["tone"] = 0.0
-                cols = ["date", "title", "source", "language", "news_source", "url", "tone"]
+                    df["tone"] = None
+                    status = score_status or tone_status
+                    df["sentiment_unavailable_reason"] = (
+                        status["reason_code"] if status else "feature.status_missing"
+                    )
+                cols = ["date", "title", "source", "language", "news_source", "url", "tone", "sentiment_unavailable_reason"]
                 frames.append(df[[c for c in cols if c in df.columns]])
                 logger.info(f"DB news_articles: loaded {len(df)} articles (with sentiment)")
         except Exception as e:
@@ -1781,8 +1845,15 @@ class WeeklyAnalysisGenerator:
                         df["language"] = "es"
                     if "url" not in df.columns:
                         df["url"] = ""
-                    df["tone"] = df["sentiment_score"].fillna(0.0) if "sentiment_score" in df.columns else 0.0
-                    cols = ["date", "title", "source", "language", "news_source", "url", "tone"]
+                    # The tracked backup preserves headlines, not a current availability
+                    # measurement. Numeric sentiment remains fail-closed until a governed
+                    # feature_status exists at the analysis cutoff.
+                    df["tone"] = None
+                    df["sentiment_unavailable_reason"] = "feature.backup_without_status"
+                    cols = [
+                        "date", "title", "source", "language", "news_source", "url",
+                        "tone", "sentiment_unavailable_reason",
+                    ]
                     frames.append(df[[c for c in cols if c in df.columns]])
                     logger.info(f"News backup parquet: loaded {len(df)} articles (bootstrap fallback)")
                 except Exception as e:
@@ -1796,9 +1867,7 @@ class WeeklyAnalysisGenerator:
         combined = pd.concat(frames, ignore_index=True)
         # Ensure tone column always exists (CSV sources don't have it)
         if "tone" not in combined.columns:
-            combined["tone"] = 0.0
-        else:
-            combined["tone"] = combined["tone"].fillna(0.0)
+            combined["tone"] = None
         combined = combined.dropna(subset=["date", "title"])
 
         # Deduplicate by normalized title (case-insensitive, keep first)
