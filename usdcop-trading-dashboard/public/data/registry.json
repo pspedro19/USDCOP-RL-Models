@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-28T03:35:32.739965+00:00",
+  "generated_at": "2026-08-24T19:36:19.735451+00:00",
   "assets": [
     {
       "asset_id": "btcusdt",
@@ -46,10 +46,10 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.2.1",
-      "return_pct": 124.36,
-      "sharpe": 0.618,
-      "p_value": 0.0566
+      "active_version": "1.0.0",
+      "return_pct": 143.42,
+      "sharpe": 0.664,
+      "p_value": 0.0558
     },
     {
       "strategy_id": "btc_hodl_b1",
@@ -66,9 +66,9 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.2.1",
-      "return_pct": 276.16,
-      "sharpe": 0.793,
+      "active_version": "1.0.0",
+      "return_pct": 333.91,
+      "sharpe": 0.856,
       "p_value": 0.0242
     },
     {
@@ -86,9 +86,9 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.2.1",
-      "return_pct": 351.16,
-      "sharpe": 1.396,
+      "active_version": "1.0.0",
+      "return_pct": 352.38,
+      "sharpe": 1.39,
       "p_value": 0.0
     },
     {
@@ -106,10 +106,10 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.2.1",
-      "return_pct": 256.92,
-      "sharpe": 1.329,
-      "p_value": 0.0002
+      "active_version": "1.0.0",
+      "return_pct": 257.83,
+      "sharpe": 1.323,
+      "p_value": 0.0
     },
     {
       "strategy_id": "btc_trend_volbrk_s5",
@@ -126,9 +126,9 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.2.1",
-      "return_pct": 351.14,
-      "sharpe": 1.427,
+      "active_version": "1.0.0",
+      "return_pct": 352.36,
+      "sharpe": 1.42,
       "p_value": 0.0
     },
     {
@@ -146,10 +146,10 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.3.0",
-      "return_pct": 204.36,
-      "sharpe": 0.535,
-      "p_value": 0.0068
+      "active_version": "1.0.0",
+      "return_pct": 221.97,
+      "sharpe": 0.557,
+      "p_value": 0.0072
     },
     {
       "strategy_id": "gold_dxy_tilt_s05",
@@ -166,10 +166,10 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.3.0",
-      "return_pct": 209.31,
-      "sharpe": 0.544,
-      "p_value": 0.0064
+      "active_version": "1.0.0",
+      "return_pct": 227.21,
+      "sharpe": 0.566,
+      "p_value": 0.0068
     },
     {
       "strategy_id": "gold_dxy_tilt_s07",
@@ -186,10 +186,10 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.3.0",
-      "return_pct": 199.43,
-      "sharpe": 0.527,
-      "p_value": 0.0078
+      "active_version": "1.0.0",
+      "return_pct": 216.77,
+      "sharpe": 0.549,
+      "p_value": 0.0084
     },
     {
       "strategy_id": "gold_dynamic_exit",
@@ -226,10 +226,10 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.3.0",
-      "return_pct": 184.75,
-      "sharpe": 0.499,
-      "p_value": 0.012
+      "active_version": "1.0.0",
+      "return_pct": 201.24,
+      "sharpe": 0.521,
+      "p_value": 0.0114
     },
     {
       "strategy_id": "gold_regime_gated_v1",
@@ -246,10 +246,10 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.3.0",
-      "return_pct": 120.29,
-      "sharpe": 0.464,
-      "p_value": 0.0146
+      "active_version": "1.0.0",
+      "return_pct": 118.86,
+      "sharpe": 0.459,
+      "p_value": 0.014
     },
     {
       "strategy_id": "gold_trend_b2",
@@ -266,10 +266,10 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.3.0",
-      "return_pct": 56.22,
-      "sharpe": 0.366,
-      "p_value": 0.0388
+      "active_version": "1.0.0",
+      "return_pct": 54.63,
+      "sharpe": 0.357,
+      "p_value": 0.0428
     },
     {
       "strategy_id": "gold_trend_ens",
@@ -286,10 +286,10 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.3.0",
-      "return_pct": 162.99,
-      "sharpe": 0.591,
-      "p_value": 0.0042
+      "active_version": "1.0.0",
+      "return_pct": 164.82,
+      "sharpe": 0.593,
+      "p_value": 0.004
     },
     {
       "strategy_id": "gold_trend_simple",
@@ -306,9 +306,9 @@
       ],
       "has_production": false,
       "has_replay": true,
-      "active_version": "1.3.0",
-      "return_pct": 192.62,
-      "sharpe": 0.619,
+      "active_version": "1.0.0",
+      "return_pct": 225.26,
+      "sharpe": 0.634,
       "p_value": 0.0024
     },
     {

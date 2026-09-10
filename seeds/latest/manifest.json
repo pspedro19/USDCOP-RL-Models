@@ -1,31 +1,71 @@
 {
-  "version": "2026.01.23",
-  "created_at": "2026-01-23T00:51:57.978657+00:00",
-  "created_by": "complete_backup_script",
-  "description": "Complete database backup with corrected WTI data from Investing.com",
+  "version": "2026.08.24-db-sync",
+  "created_at": "2026-08-24T19:49:23.019938+00:00",
+  "created_by": "fix_tz_wall_cot_seed.py + re-export desde usdcop_m5_ohlcv (BD)",
+  "description": "Timezone CTR-DQ-TZ-001 reparada Y seeds re-sincronizadas con la BD. La reparacion +5h del parquet converge byte a byte con la BD (delta 0.000000 en OHLC sobre los 97.259 timestamps comunes), lo que valida de forma independiente ambas migraciones. Se adopta el superset de la BD: +41 sesiones (9 de dic-2019, 26 de jul/ago-2026), 1.723 sesiones totales 2019-12-18 -> 2026-08-24. Guard: test_seed_ohlcv_integrity.py",
   "wti_source": "investing.com (pair_id=8849)",
   "tables": {
     "macro_indicators_daily": {
       "file": "macro_indicators_daily.parquet",
-      "rows": 10759,
+      "rows": 10866,
       "date_range": [
         "1954-07-31",
-        "2026-01-22"
+        "2026-06-12"
       ],
-      "columns": 41,
-      "wti_records": 6691,
-      "size_bytes": 276644,
-      "sha256": "2de8aedb231525bf63d00cba25a124a76a5e31f1f3ced63446c882ce3dede649"
+      "size_bytes": 339455,
+      "sha256": "38b866541bfc677b6b5c472245229cd49fa2f611cae48f067d85a32c5a2a1091"
     },
     "usdcop_m5_ohlcv": {
       "file": "usdcop_m5_ohlcv.parquet",
-      "rows": 91157,
+      "rows": 99714,
       "date_range": [
-        "2020-01-02",
-        "2026-01-15"
+        "2019-12-18",
+        "2026-08-24"
       ],
-      "size_bytes": 2725690,
-      "sha256": "a3a4f1b5684f21258c1411bbee0ee1e298d1b32470a4b7c1e5dd3f413e324287"
+      "size_bytes": 3183793,
+      "sha256": "dc05e649a625906d52dbe430a0aa458b9c5b1f1a0673048abc64bf88c71b23a0"
+    },
+    "fx_multi_m5_ohlcv": {
+      "file": "fx_multi_m5_ohlcv.parquet",
+      "rows": 143548,
+      "date_range": [
+        "2019-12-18",
+        "2026-08-24"
+      ],
+      "size_bytes": 4601744,
+      "sha256": "d40c5f90ceb7f7c1b13a5153d7e44be45a4b692b35766f4ae115247c4a123d07"
+    },
+    "usdcop_daily_ohlcv": {
+      "file": "usdcop_daily_ohlcv.parquet",
+      "rows": 1723,
+      "date_range": [
+        "2019-12-18",
+        "2026-08-24"
+      ],
+      "size_bytes": 64317,
+      "sha256": "608ee85181021f78b8d355efebbf7251ceb9d9fee3795632b1eb2b657663e125"
     }
+  },
+  "tz_repair": {
+    "contract": "CTR-DQ-TZ-001",
+    "applied_at": "2026-08-24T19:39:09.081068+00:00",
+    "shifted_rows": {
+      "usdcop_m5_ohlcv.parquet": 10489,
+      "fx_multi_m5_ohlcv.parquet": 15109
+    },
+    "collisions_dropped": 815,
+    "off_session_dropped": 86,
+    "backup_dir": "data/backups/seeds/",
+    "exempt": [
+      "XAU/USD",
+      "BTC/USDT"
+    ]
+  },
+  "db_sync": {
+    "source_table": "usdcop_m5_ohlcv",
+    "symbol": "USD/COP",
+    "cross_validation": "97.259 timestamps comunes con delta OHLC 0.000000",
+    "sessions_gained": 41,
+    "synced_at": "2026-08-24T19:49:23.019938+00:00"
   }
 }

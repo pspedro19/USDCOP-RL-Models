@@ -8,11 +8,11 @@
     "v13": "EXCLUIDA hasta freeze (abrir 2026 = +1 trial, decisi\u00f3n del operador)"
   },
   "judge_note": "el juez sellado de v12/v14 consume SOLO judge_window (post-freeze); la serie completa es monitoreo, no evidencia confirmatoria",
-  "generated_at": "2026-07-27",
+  "generated_at": "2026-08-28",
   "strategies": {
     "smart_simple_v11": {
-      "ret_2026_ytd_pct": 3.36,
-      "n_trades": 11,
+      "ret_2026_ytd_pct": 0.66,
+      "n_trades": 12,
       "note_n": "N<20 => solo conteo y PnL",
       "judge_window": null,
       "trades": [
@@ -97,23 +97,31 @@
           "equity": 10290.52
         },
         {
-          "timestamp": "2026-07-13T09:00:00-05:00",
+          "timestamp": "2026-07-27T09:00:00-05:00",
           "side": "LONG",
-          "pnl_pct": 0.4402,
-          "exit_reason": "week_end",
+          "pnl_pct": -2.1129,
+          "exit_reason": "hard_stop",
           "leverage": 0.705,
-          "equity": 10335.82
+          "equity": 10073.09
+        },
+        {
+          "timestamp": "2026-08-10T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -0.0679,
+          "exit_reason": "week_end",
+          "leverage": 0.617,
+          "equity": 10066.26
         }
       ]
     },
     "smart_simple_v12": {
-      "ret_2026_ytd_pct": 3.12,
-      "n_trades": 11,
+      "ret_2026_ytd_pct": 0.43,
+      "n_trades": 12,
       "note_n": "N<20 => solo conteo y PnL",
       "judge_window": {
         "starts_after": "2026-07-21",
-        "n_trades": 0,
-        "pnl_pct_compound": 0.0,
+        "n_trades": 2,
+        "pnl_pct_compound": -2.1794,
         "note": "N<20 => solo conteo y PnL"
       },
       "trades": [
@@ -198,23 +206,31 @@
           "equity": 10266.98
         },
         {
-          "timestamp": "2026-07-13T09:00:00-05:00",
+          "timestamp": "2026-07-27T09:00:00-05:00",
           "side": "LONG",
-          "pnl_pct": 0.4402,
-          "exit_reason": "week_end",
+          "pnl_pct": -2.1129,
+          "exit_reason": "hard_stop",
           "leverage": 0.705,
-          "equity": 10312.17
+          "equity": 10050.05
+        },
+        {
+          "timestamp": "2026-08-10T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -0.0679,
+          "exit_reason": "week_end",
+          "leverage": 0.617,
+          "equity": 10043.22
         }
       ]
     },
     "smart_simple_v14": {
-      "ret_2026_ytd_pct": 3.09,
-      "n_trades": 11,
+      "ret_2026_ytd_pct": 0.4,
+      "n_trades": 12,
       "note_n": "N<20 => solo conteo y PnL",
       "judge_window": {
         "starts_after": "2026-07-21",
-        "n_trades": 0,
-        "pnl_pct_compound": 0.0,
+        "n_trades": 2,
+        "pnl_pct_compound": -2.1794,
         "note": "N<20 => solo conteo y PnL"
       },
       "trades": [
@@ -299,12 +315,20 @@
           "equity": 10263.54
         },
         {
-          "timestamp": "2026-07-13T09:00:00-05:00",
+          "timestamp": "2026-07-27T09:00:00-05:00",
           "side": "LONG",
-          "pnl_pct": 0.4402,
-          "exit_reason": "week_end",
+          "pnl_pct": -2.1129,
+          "exit_reason": "hard_stop",
           "leverage": 0.705,
-          "equity": 10308.72
+          "equity": 10046.68
+        },
+        {
+          "timestamp": "2026-08-10T09:00:00-05:00",
+          "side": "LONG",
+          "pnl_pct": -0.0679,
+          "exit_reason": "week_end",
+          "leverage": 0.617,
+          "equity": 10039.86
         }
       ]
     }
@@ -399,8 +423,16 @@
         "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
       },
       {
-        "iso_week": "2026-W29",
-        "cop_component_pct": 0.4402,
+        "iso_week": "2026-W31",
+        "cop_component_pct": -2.1129,
+        "xau_component_pct": null,
+        "btc_component_pct": null,
+        "book_ret_pct": null,
+        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
+      },
+      {
+        "iso_week": "2026-W33",
+        "cop_component_pct": -0.0679,
         "xau_component_pct": null,
         "btc_component_pct": null,
         "book_ret_pct": null,

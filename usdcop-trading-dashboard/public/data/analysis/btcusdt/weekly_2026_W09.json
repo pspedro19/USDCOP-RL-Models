@@ -9,7 +9,7 @@
   "week_end": "2026-03-01",
   "weekly_summary": {
     "headline": "Bitcoin · Semana 09 de 2026",
-    "markdown": "### Bitcoin — Semana 09 (2026-02-23 → 2026-03-01)\n\nEl cierre semanal de BTC/USDT fue **65776.47 USD**, un cambio de **-2.76%** en la semana (rango 62510.28–69988.83). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 65776.47. RSI(14)=39 (neutral). Soporte 62510.28, resistencia 70983.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: CNBC, Yahoo Finance, J.P. Morgan Private Bank.",
+    "markdown": "### Bitcoin — Semana 09 (2026-02-23 → 2026-03-01)\n\nEl cierre semanal de BTC/USDT fue **65776.47 USD**, un cambio de **-2.76%** en la semana (rango 62510.28–69988.83). El sentimiento fue **bearish**.\n\n### Técnico\nLa tendencia es **bajista** con precio en 65776.47. RSI(14)=39 (neutral). Soporte 62510.28, resistencia 70983.00.\n\n### Estrategia\nLa estrategia **Bitcoin · Trend-follower (B2)** estuvo **en efectivo (sin exposición)** esta semana.\n\n### Noticias\nSe recopilaron **40 artículos** reales (GDELT) sobre Bitcoin esta semana, principales fuentes: Fortune, CNBC, Yahoo Finance.",
     "sentiment": "bearish",
     "ohlcv": {
       "open": 67643.39,
@@ -40,7 +40,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-02-24",
@@ -58,7 +58,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-02-25",
@@ -76,7 +76,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-02-26",
@@ -94,7 +94,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-02-27",
@@ -112,7 +112,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-02-28",
@@ -130,7 +130,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-03-01",
@@ -148,7 +148,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     }
   ],
   "macro_snapshots": {
@@ -290,18 +290,18 @@
       "sma_5": 71.268,
       "sma_10": 70.352,
       "sma_20": 69.236,
-      "sma_50": 63.435,
+      "sma_50": 65.838,
       "bollinger_upper_20": 72.720195,
       "bollinger_lower_20": 65.751805,
       "bollinger_width_20": 0.100647,
-      "rsi_14": 68.323903,
-      "macd_line": 2.598137,
-      "macd_signal": 2.953622,
-      "macd_histogram": -0.355485,
+      "rsi_14": 64.941138,
+      "macd_line": 1.508515,
+      "macd_signal": 1.383809,
+      "macd_histogram": 0.124706,
       "roc_5": 1.654979,
       "roc_20": 2.532183,
       "z_score_20": 1.8621,
-      "z_score_60": 0.8522,
+      "z_score_60": 1.9654,
       "z_score_252": null,
       "trend": "above_sma20",
       "signal": "neutral",
@@ -2719,8 +2719,8 @@
           "date": "2025-12-08",
           "value": 4217.7,
           "sma20": 4160.93,
-          "bb_upper": 4318.65849,
-          "bb_lower": 4003.20151,
+          "bb_upper": 4318.658489,
+          "bb_lower": 4003.201511,
           "rsi": 58.275015
         },
         {
@@ -5252,627 +5252,627 @@
         },
         {
           "date": "2025-09-25",
-          "value": 23.5,
-          "sma20": 65.148,
-          "bb_upper": 84.365913,
-          "bb_lower": 45.930087,
-          "rsi": 12.071516
+          "value": 70.48,
+          "sma20": 67.497,
+          "bb_upper": 69.952981,
+          "bb_lower": 65.041019,
+          "rsi": 61.377685
         },
         {
           "date": "2025-09-26",
-          "value": 23.0,
-          "sma20": 62.867,
-          "bb_upper": 89.350885,
-          "bb_lower": 36.383115,
-          "rsi": 11.960367
+          "value": 71.15,
+          "sma20": 67.6235,
+          "bb_upper": 70.519099,
+          "bb_lower": 64.727901,
+          "rsi": 63.364873
         },
         {
           "date": "2025-09-29",
-          "value": 23.44,
-          "sma20": 60.633,
-          "bb_upper": 92.046564,
-          "bb_lower": 29.219436,
-          "rsi": 12.721948
+          "value": 69.0,
+          "sma20": 67.6675,
+          "bb_upper": 70.61816,
+          "bb_lower": 64.71684,
+          "rsi": 53.799025
         },
         {
           "date": "2025-09-30",
-          "value": 23.36,
-          "sma20": 58.344,
-          "bb_upper": 93.404454,
-          "bb_lower": 23.283546,
-          "rsi": 12.700436
+          "value": 68.52,
+          "sma20": 67.6365,
+          "bb_upper": 70.537233,
+          "bb_lower": 64.735767,
+          "rsi": 51.914713
         },
         {
           "date": "2025-10-01",
-          "value": 22.89,
-          "sma20": 56.1085,
-          "bb_upper": 94.102027,
-          "bb_lower": 18.114973,
-          "rsi": 12.566001
+          "value": 66.67,
+          "sma20": 67.59,
+          "bb_upper": 70.521239,
+          "bb_lower": 64.658761,
+          "rsi": 45.325465
         },
         {
           "date": "2025-10-02",
-          "value": 23.4,
-          "sma20": 53.929,
-          "bb_upper": 94.113512,
-          "bb_lower": 13.744488,
-          "rsi": 13.634303
+          "value": 65.44,
+          "sma20": 67.5125,
+          "bb_upper": 70.581805,
+          "bb_lower": 64.443195,
+          "rsi": 41.54949
         },
         {
           "date": "2025-10-03",
-          "value": 23.47,
-          "sma20": 51.8275,
-          "bb_upper": 93.730988,
-          "bb_lower": 9.924012,
-          "rsi": 13.790001
+          "value": 66.13,
+          "sma20": 67.544,
+          "bb_upper": 70.542149,
+          "bb_lower": 64.545851,
+          "rsi": 44.350267
         },
         {
           "date": "2025-10-06",
-          "value": 24.33,
-          "sma20": 49.743,
-          "bb_upper": 92.748335,
-          "bb_lower": 6.737665,
-          "rsi": 15.798391
+          "value": 67.09,
+          "sma20": 67.5975,
+          "bb_upper": 70.522249,
+          "bb_lower": 64.672751,
+          "rsi": 48.078031
         },
         {
           "date": "2025-10-07",
-          "value": 24.05,
-          "sma20": 47.626,
-          "bb_upper": 91.308189,
-          "bb_lower": 3.943811,
-          "rsi": 15.67039
+          "value": 67.1,
+          "sma20": 67.633,
+          "bb_upper": 70.515187,
+          "bb_lower": 64.750813,
+          "rsi": 48.117018
         },
         {
           "date": "2025-10-08",
-          "value": 24.38,
-          "sma20": 45.4705,
-          "bb_upper": 89.273565,
-          "bb_lower": 1.667435,
-          "rsi": 16.528769
+          "value": 67.42,
+          "sma20": 67.6295,
+          "bb_upper": 70.512543,
+          "bb_lower": 64.746457,
+          "rsi": 49.425708
         },
         {
           "date": "2025-10-09",
-          "value": 23.41,
-          "sma20": 43.3225,
-          "bb_upper": 87.028657,
-          "bb_lower": -0.383657,
-          "rsi": 16.012817
+          "value": 67.23,
+          "sma20": 67.6725,
+          "bb_upper": 70.504318,
+          "bb_lower": 64.840682,
+          "rsi": 48.641187
         },
         {
           "date": "2025-10-10",
-          "value": 21.68,
-          "sma20": 41.057,
-          "bb_upper": 84.316076,
-          "bb_lower": -2.202076,
-          "rsi": 15.107068
+          "value": 64.41,
+          "sma20": 67.5435,
+          "bb_upper": 70.703919,
+          "bb_lower": 64.383081,
+          "rsi": 38.797903
         },
         {
           "date": "2025-10-14",
-          "value": 21.93,
-          "sma20": 38.7815,
-          "bb_upper": 81.025931,
-          "bb_lower": -3.462931,
-          "rsi": 15.847839
+          "value": 63.0,
+          "sma20": 67.3215,
+          "bb_upper": 71.052137,
+          "bb_lower": 63.590863,
+          "rsi": 34.98566
         },
         {
           "date": "2025-10-15",
-          "value": 22.0,
-          "sma20": 36.458,
-          "bb_upper": 76.992426,
-          "bb_lower": -4.076426,
-          "rsi": 16.06868
+          "value": 62.33,
+          "sma20": 67.0145,
+          "bb_upper": 71.287656,
+          "bb_lower": 62.741344,
+          "rsi": 33.310729
         },
         {
           "date": "2025-10-16",
-          "value": 21.5,
-          "sma20": 34.1355,
-          "bb_upper": 72.448198,
-          "bb_lower": -4.177198,
-          "rsi": 15.750721
+          "value": 61.08,
+          "sma20": 66.671,
+          "bb_upper": 71.636533,
+          "bb_lower": 61.705467,
+          "rsi": 30.387753
         },
         {
           "date": "2025-10-17",
-          "value": 21.68,
-          "sma20": 31.8475,
-          "bb_upper": 67.289184,
-          "bb_lower": -3.594184,
-          "rsi": 16.392116
+          "value": 61.23,
+          "sma20": 66.3605,
+          "bb_upper": 71.844431,
+          "bb_lower": 60.876569,
+          "rsi": 31.168294
         },
         {
           "date": "2025-10-20",
-          "value": 22.21,
-          "sma20": 29.624,
-          "bb_upper": 61.439921,
-          "bb_lower": -2.191921,
-          "rsi": 18.362881
+          "value": 60.71,
+          "sma20": 66.062,
+          "bb_upper": 72.068855,
+          "bb_lower": 60.055145,
+          "rsi": 29.915989
         },
         {
           "date": "2025-10-21",
-          "value": 21.99,
-          "sma20": 27.425,
-          "bb_upper": 54.634552,
-          "bb_lower": 0.215448,
-          "rsi": 18.171408
+          "value": 61.0,
+          "sma20": 65.8135,
+          "bb_upper": 72.213373,
+          "bb_lower": 59.413627,
+          "rsi": 31.567342
         },
         {
           "date": "2025-10-22",
-          "value": 21.81,
-          "sma20": 25.167,
-          "bb_upper": 45.501938,
-          "bb_lower": 4.832062,
-          "rsi": 18.005976
+          "value": 62.28,
+          "sma20": 65.579,
+          "bb_upper": 72.134001,
+          "bb_lower": 59.023999,
+          "rsi": 38.459832
         },
         {
           "date": "2025-10-23",
-          "value": 22.17,
-          "sma20": 22.81,
-          "bb_upper": 24.643957,
-          "bb_lower": 20.976043,
-          "rsi": 19.582835
+          "value": 66.32,
+          "sma20": 65.4295,
+          "bb_upper": 71.770192,
+          "bb_lower": 59.088808,
+          "rsi": 54.154862
         },
         {
           "date": "2025-10-24",
-          "value": 22.14,
-          "sma20": 22.742,
-          "bb_upper": 24.56942,
-          "bb_lower": 20.91458,
-          "rsi": 19.549096
+          "value": 65.8,
+          "sma20": 65.1955,
+          "bb_upper": 71.104078,
+          "bb_lower": 59.286922,
+          "rsi": 52.305765
         },
         {
           "date": "2025-10-27",
-          "value": 22.38,
-          "sma20": 22.711,
-          "bb_upper": 24.540895,
-          "bb_lower": 20.881105,
-          "rsi": 20.725812
+          "value": 65.52,
+          "sma20": 64.914,
+          "bb_upper": 70.160349,
+          "bb_lower": 59.667651,
+          "rsi": 51.290227
         },
         {
           "date": "2025-10-28",
-          "value": 22.23,
-          "sma20": 22.6505,
-          "bb_upper": 24.459881,
-          "bb_lower": 20.841119,
-          "rsi": 20.52376
+          "value": 64.03,
+          "sma20": 64.6655,
+          "bb_upper": 69.574103,
+          "bb_lower": 59.756897,
+          "rsi": 46.154801
         },
         {
           "date": "2025-10-29",
-          "value": 22.49,
-          "sma20": 22.607,
-          "bb_upper": 24.387664,
-          "bb_lower": 20.826336,
-          "rsi": 21.9442
+          "value": 65.01,
+          "sma20": 64.49,
+          "bb_upper": 69.075137,
+          "bb_lower": 59.904863,
+          "rsi": 49.720596
         },
         {
           "date": "2025-10-30",
-          "value": 22.34,
-          "sma20": 22.5795,
-          "bb_upper": 24.35882,
-          "bb_lower": 20.80018,
-          "rsi": 21.703203
+          "value": 65.11,
+          "sma20": 64.412,
+          "bb_upper": 68.89815,
+          "bb_lower": 59.92585,
+          "rsi": 50.083849
         },
         {
           "date": "2025-10-31",
-          "value": 22.16,
-          "sma20": 22.5175,
-          "bb_upper": 24.264256,
-          "bb_lower": 20.770744,
-          "rsi": 21.399491
+          "value": 65.44,
+          "sma20": 64.412,
+          "bb_upper": 68.89815,
+          "bb_lower": 59.92585,
+          "rsi": 51.333385
         },
         {
           "date": "2025-11-03",
-          "value": 22.6,
-          "sma20": 22.474,
-          "bb_upper": 24.166187,
-          "bb_lower": 20.781813,
-          "rsi": 24.192143
+          "value": 65.79,
+          "sma20": 64.395,
+          "bb_upper": 68.857495,
+          "bb_lower": 59.932505,
+          "rsi": 52.686188
         },
         {
           "date": "2025-11-04",
-          "value": 21.55,
-          "sma20": 22.335,
-          "bb_upper": 23.840995,
-          "bb_lower": 20.829005,
-          "rsi": 22.168008
+          "value": 65.04,
+          "sma20": 64.2925,
+          "bb_upper": 68.593946,
+          "bb_lower": 59.991054,
+          "rsi": 49.510221
         },
         {
           "date": "2025-11-05",
-          "value": 20.97,
-          "sma20": 22.181,
-          "bb_upper": 23.580127,
-          "bb_lower": 20.781873,
-          "rsi": 21.116966
+          "value": 63.54,
+          "sma20": 64.1145,
+          "bb_upper": 68.226986,
+          "bb_lower": 60.002014,
+          "rsi": 43.820728
         },
         {
           "date": "2025-11-06",
-          "value": 21.09,
-          "sma20": 22.0165,
-          "bb_upper": 23.074919,
-          "bb_lower": 20.958081,
-          "rsi": 21.941581
+          "value": 63.41,
+          "sma20": 63.914,
+          "bb_upper": 67.743587,
+          "bb_lower": 60.084413,
+          "rsi": 43.355718
         },
         {
           "date": "2025-11-07",
-          "value": 21.08,
-          "sma20": 21.9,
-          "bb_upper": 22.82358,
-          "bb_lower": 20.97642,
-          "rsi": 21.921016
+          "value": 63.72,
+          "sma20": 63.7385,
+          "bb_upper": 67.252883,
+          "bb_lower": 60.224117,
+          "rsi": 44.858392
         },
         {
           "date": "2025-11-10",
-          "value": 21.14,
-          "sma20": 21.873,
-          "bb_upper": 22.850714,
-          "bb_lower": 20.895286,
-          "rsi": 22.391031
+          "value": 63.01,
+          "sma20": 63.6685,
+          "bb_upper": 67.182366,
+          "bb_lower": 60.154634,
+          "rsi": 42.103479
         },
         {
           "date": "2025-11-12",
-          "value": 21.34,
-          "sma20": 21.8435,
-          "bb_upper": 22.847796,
-          "bb_lower": 20.839204,
-          "rsi": 24.032632
+          "value": 61.88,
+          "sma20": 63.6125,
+          "bb_upper": 67.202079,
+          "bb_lower": 60.022921,
+          "rsi": 38.093685
         },
         {
           "date": "2025-11-13",
-          "value": 20.88,
-          "sma20": 21.7875,
-          "bb_upper": 22.87232,
-          "bb_lower": 20.70268,
-          "rsi": 22.836189
+          "value": 62.14,
+          "sma20": 63.603,
+          "bb_upper": 67.207082,
+          "bb_lower": 59.998918,
+          "rsi": 39.520898
         },
         {
           "date": "2025-11-14",
-          "value": 20.56,
-          "sma20": 21.7405,
-          "bb_upper": 22.945829,
-          "bb_lower": 20.535171,
-          "rsi": 22.015104
+          "value": 63.45,
+          "sma20": 63.7215,
+          "bb_upper": 67.136879,
+          "bb_lower": 60.306121,
+          "rsi": 46.245292
         },
         {
           "date": "2025-11-17",
-          "value": 20.52,
-          "sma20": 21.6825,
-          "bb_upper": 23.000284,
-          "bb_lower": 20.364716,
-          "rsi": 21.909061
+          "value": 63.16,
+          "sma20": 63.818,
+          "bb_upper": 67.050507,
+          "bb_lower": 60.585493,
+          "rsi": 45.051126
         },
         {
           "date": "2025-11-18",
-          "value": 20.79,
-          "sma20": 21.6115,
-          "bb_upper": 22.960593,
-          "bb_lower": 20.262407,
-          "rsi": 24.550891
+          "value": 64.86,
+          "sma20": 64.0255,
+          "bb_upper": 66.951606,
+          "bb_lower": 61.099394,
+          "rsi": 52.753164
         },
         {
           "date": "2025-11-19",
-          "value": 21.0,
-          "sma20": 21.562,
-          "bb_upper": 22.924492,
-          "bb_lower": 20.199508,
-          "rsi": 26.629934
+          "value": 63.78,
+          "sma20": 64.1645,
+          "bb_upper": 66.746387,
+          "bb_lower": 61.582613,
+          "rsi": 48.13696
         },
         {
           "date": "2025-11-20",
-          "value": 20.38,
-          "sma20": 21.4905,
-          "bb_upper": 22.940693,
-          "bb_lower": 20.040307,
-          "rsi": 24.484761
+          "value": 63.64,
+          "sma20": 64.2325,
+          "bb_upper": 66.680437,
+          "bb_lower": 61.784563,
+          "rsi": 47.55602
         },
         {
           "date": "2025-11-21",
-          "value": 20.44,
-          "sma20": 21.404,
-          "bb_upper": 22.887744,
-          "bb_lower": 19.920256,
-          "rsi": 25.113456
+          "value": 62.78,
+          "sma20": 64.0555,
+          "bb_upper": 66.383052,
+          "bb_lower": 61.727948,
+          "rsi": 44.039974
         },
         {
           "date": "2025-11-24",
-          "value": 21.0,
-          "sma20": 21.347,
-          "bb_upper": 22.800549,
-          "bb_lower": 19.893451,
-          "rsi": 30.896139
+          "value": 64.83,
+          "sma20": 64.007,
+          "bb_upper": 66.224973,
+          "bb_lower": 61.789027,
+          "rsi": 52.966741
         },
         {
           "date": "2025-11-25",
-          "value": 21.75,
-          "sma20": 21.3155,
-          "bb_upper": 22.703988,
-          "bb_lower": 19.927012,
-          "rsi": 37.821232
+          "value": 63.99,
+          "sma20": 63.9305,
+          "bb_upper": 66.037208,
+          "bb_lower": 61.823792,
+          "rsi": 49.483475
         },
         {
           "date": "2025-11-26",
-          "value": 21.92,
-          "sma20": 21.3,
-          "bb_upper": 22.653795,
-          "bb_lower": 19.946205,
-          "rsi": 39.305943
+          "value": 64.81,
+          "sma20": 63.9695,
+          "bb_upper": 66.110728,
+          "bb_lower": 61.828272,
+          "rsi": 52.75013
         },
         {
           "date": "2025-11-28",
-          "value": 22.1,
-          "sma20": 21.2805,
-          "bb_upper": 22.575112,
-          "bb_lower": 19.985888,
-          "rsi": 40.914689
+          "value": 64.07,
+          "sma20": 63.9225,
+          "bb_upper": 66.010924,
+          "bb_lower": 61.834076,
+          "rsi": 49.631055
         },
         {
           "date": "2025-12-01",
-          "value": 22.3,
-          "sma20": 21.2785,
-          "bb_upper": 22.566666,
-          "bb_lower": 19.990334,
-          "rsi": 42.731052
+          "value": 64.22,
+          "sma20": 63.878,
+          "bb_upper": 65.900193,
+          "bb_lower": 61.855807,
+          "rsi": 50.272914
         },
         {
           "date": "2025-12-02",
-          "value": 22.02,
-          "sma20": 21.2715,
-          "bb_upper": 22.541827,
-          "bb_lower": 20.001173,
-          "rsi": 40.838259
+          "value": 63.37,
+          "sma20": 63.7745,
+          "bb_upper": 65.674516,
+          "bb_lower": 61.874484,
+          "rsi": 46.645487
         },
         {
           "date": "2025-12-03",
-          "value": 21.63,
-          "sma20": 21.223,
-          "bb_upper": 22.353064,
-          "bb_lower": 20.092936,
-          "rsi": 38.293889
+          "value": 63.75,
+          "sma20": 63.6725,
+          "bb_upper": 65.332655,
+          "bb_lower": 62.012345,
+          "rsi": 48.43673
         },
         {
           "date": "2025-12-04",
-          "value": 21.07,
-          "sma20": 21.199,
-          "bb_upper": 22.320622,
-          "bb_lower": 20.077378,
-          "rsi": 34.928742
+          "value": 64.15,
+          "sma20": 63.628,
+          "bb_upper": 65.183565,
+          "bb_lower": 62.072435,
+          "rsi": 50.327171
         },
         {
           "date": "2025-12-05",
-          "value": 21.77,
-          "sma20": 21.239,
-          "bb_upper": 22.381959,
-          "bb_lower": 20.096041,
-          "rsi": 41.812123
+          "value": 64.42,
+          "sma20": 63.672,
+          "bb_upper": 65.264465,
+          "bb_lower": 62.079535,
+          "rsi": 51.616629
         },
         {
           "date": "2025-12-08",
-          "value": 21.41,
-          "sma20": 21.255,
-          "bb_upper": 22.398127,
-          "bb_lower": 20.111873,
-          "rsi": 39.498048
+          "value": 63.3,
+          "sma20": 63.6665,
+          "bb_upper": 65.2633,
+          "bb_lower": 62.0697,
+          "rsi": 46.252906
         },
         {
           "date": "2025-12-09",
-          "value": 21.29,
-          "sma20": 21.2655,
-          "bb_upper": 22.405859,
-          "bb_lower": 20.125141,
-          "rsi": 38.728615
+          "value": 62.62,
+          "sma20": 63.6115,
+          "bb_upper": 65.27166,
+          "bb_lower": 61.95134,
+          "rsi": 43.310228
         },
         {
           "date": "2025-12-10",
-          "value": 20.96,
-          "sma20": 21.2565,
-          "bb_upper": 22.403501,
-          "bb_lower": 20.109499,
-          "rsi": 36.616171
+          "value": 63.12,
+          "sma20": 63.617,
+          "bb_upper": 65.269865,
+          "bb_lower": 61.964135,
+          "rsi": 46.029221
         },
         {
           "date": "2025-12-11",
-          "value": 20.26,
-          "sma20": 21.2025,
-          "bb_upper": 22.427716,
-          "bb_lower": 19.977284,
-          "rsi": 32.559251
+          "value": 61.87,
+          "sma20": 63.6165,
+          "bb_upper": 65.271472,
+          "bb_lower": 61.961528,
+          "rsi": 40.765199
         },
         {
           "date": "2025-12-12",
-          "value": 19.96,
-          "sma20": 21.1565,
-          "bb_upper": 22.49091,
-          "bb_lower": 19.82209,
-          "rsi": 30.975282
+          "value": 62.11,
+          "sma20": 63.615,
+          "bb_upper": 65.275367,
+          "bb_lower": 61.954633,
+          "rsi": 42.133548
         },
         {
           "date": "2025-12-15",
-          "value": 20.03,
-          "sma20": 21.13,
-          "bb_upper": 22.530171,
-          "bb_lower": 19.729829,
-          "rsi": 31.808889
+          "value": 61.55,
+          "sma20": 63.52,
+          "bb_upper": 65.408947,
+          "bb_lower": 61.631053,
+          "rsi": 39.821992
         },
         {
           "date": "2025-12-16",
-          "value": 20.2,
-          "sma20": 21.114,
-          "bb_upper": 22.548579,
-          "bb_lower": 19.679421,
-          "rsi": 33.896814
+          "value": 59.93,
+          "sma20": 63.3585,
+          "bb_upper": 65.81115,
+          "bb_lower": 60.90585,
+          "rsi": 34.009204
         },
         {
           "date": "2025-12-17",
-          "value": 20.31,
-          "sma20": 21.09,
-          "bb_upper": 22.561054,
-          "bb_lower": 19.618946,
-          "rsi": 35.277736
+          "value": 60.61,
+          "sma20": 63.146,
+          "bb_upper": 65.771798,
+          "bb_lower": 60.520202,
+          "rsi": 38.094022
         },
         {
           "date": "2025-12-18",
-          "value": 21.37,
-          "sma20": 21.1085,
-          "bb_upper": 22.583861,
-          "bb_lower": 19.633139,
-          "rsi": 46.80913
+          "value": 60.69,
+          "sma20": 62.9915,
+          "bb_upper": 65.806696,
+          "bb_lower": 60.176304,
+          "rsi": 38.575742
         },
         {
           "date": "2025-12-19",
-          "value": 20.82,
-          "sma20": 21.1305,
-          "bb_upper": 22.574543,
-          "bb_lower": 19.686457,
-          "rsi": 42.570918
+          "value": 61.35,
+          "sma20": 62.877,
+          "bb_upper": 65.762773,
+          "bb_lower": 59.991227,
+          "rsi": 42.547733
         },
         {
           "date": "2025-12-22",
           "value": 61.58,
-          "sma20": 23.1875,
-          "bb_upper": 40.859436,
-          "bb_lower": 5.515564,
-          "rsi": 93.018735
+          "sma20": 62.817,
+          "bb_upper": 65.757722,
+          "bb_lower": 59.876278,
+          "rsi": 43.908959
         },
         {
           "date": "2025-12-23",
           "value": 61.87,
-          "sma20": 25.231,
-          "bb_upper": 49.601143,
-          "bb_lower": 0.860857,
-          "rsi": 93.065409
+          "sma20": 62.669,
+          "bb_upper": 65.484876,
+          "bb_lower": 59.853124,
+          "rsi": 45.657273
         },
         {
           "date": "2025-12-24",
           "value": 61.8,
-          "sma20": 27.2335,
-          "bb_upper": 56.266218,
-          "bb_lower": -1.799218,
-          "rsi": 92.903949
+          "sma20": 62.5595,
+          "bb_upper": 65.331362,
+          "bb_lower": 59.787638,
+          "rsi": 45.290315
         },
         {
           "date": "2025-12-26",
           "value": 60.64,
-          "sma20": 29.1695,
-          "bb_upper": 61.503051,
-          "bb_lower": -3.164051,
-          "rsi": 90.113895
+          "sma20": 62.351,
+          "bb_upper": 65.040475,
+          "bb_lower": 59.661525,
+          "rsi": 39.609049
         },
         {
           "date": "2025-12-29",
           "value": 61.94,
-          "sma20": 31.1615,
-          "bb_upper": 66.295128,
-          "bb_lower": -3.972128,
-          "rsi": 90.459684
+          "sma20": 62.2445,
+          "bb_upper": 64.819514,
+          "bb_lower": 59.669486,
+          "rsi": 47.549727
         },
         {
           "date": "2025-12-30",
           "value": 61.92,
-          "sma20": 33.1425,
-          "bb_upper": 70.454512,
-          "bb_lower": -4.169512,
-          "rsi": 90.407292
+          "sma20": 62.1295,
+          "bb_upper": 64.541623,
+          "bb_lower": 59.717377,
+          "rsi": 47.446366
         },
         {
           "date": "2025-12-31",
           "value": 60.85,
-          "sma20": 35.084,
-          "bb_upper": 73.890026,
-          "bb_lower": -3.722026,
-          "rsi": 87.487901
+          "sma20": 62.0035,
+          "bb_upper": 64.406517,
+          "bb_lower": 59.600483,
+          "rsi": 42.165472
         },
         {
           "date": "2026-01-02",
           "value": 60.75,
-          "sma20": 37.04,
-          "bb_upper": 76.866506,
-          "bb_lower": -2.786506,
-          "rsi": 87.204482
+          "sma20": 61.8535,
+          "bb_upper": 64.174855,
+          "bb_lower": 59.532145,
+          "rsi": 41.698357
         },
         {
           "date": "2026-01-05",
           "value": 61.76,
-          "sma20": 39.0745,
-          "bb_upper": 79.581306,
-          "bb_lower": -1.432306,
-          "rsi": 87.639999
+          "sma20": 61.734,
+          "bb_upper": 63.802462,
+          "bb_lower": 59.665538,
+          "rsi": 47.968014
         },
         {
           "date": "2026-01-06",
           "value": 60.7,
-          "sma20": 41.021,
-          "bb_upper": 81.755374,
-          "bb_lower": 0.286626,
-          "rsi": 84.393427
+          "sma20": 61.548,
+          "bb_upper": 63.254184,
+          "bb_lower": 59.841816,
+          "rsi": 42.769637
         },
         {
           "date": "2026-01-07",
           "value": 59.96,
-          "sma20": 42.9485,
-          "bb_upper": 83.436116,
-          "bb_lower": 2.460884,
-          "rsi": 82.106713
+          "sma20": 61.381,
+          "bb_upper": 63.021109,
+          "bb_lower": 59.740891,
+          "rsi": 39.547489
         },
         {
           "date": "2026-01-08",
           "value": 61.99,
-          "sma20": 44.9835,
-          "bb_upper": 85.000743,
-          "bb_lower": 4.966257,
-          "rsi": 83.432883
+          "sma20": 61.3495,
+          "bb_upper": 62.91575,
+          "bb_lower": 59.78325,
+          "rsi": 50.552765
         },
         {
           "date": "2026-01-09",
           "value": 63.34,
-          "sma20": 47.1025,
-          "bb_upper": 86.286497,
-          "bb_lower": 7.918503,
-          "rsi": 84.267942
+          "sma20": 61.3605,
+          "bb_upper": 62.978566,
+          "bb_lower": 59.742434,
+          "rsi": 56.256072
         },
         {
           "date": "2026-01-12",
           "value": 63.87,
-          "sma20": 49.283,
-          "bb_upper": 87.078412,
-          "bb_lower": 11.487588,
-          "rsi": 84.596207
+          "sma20": 61.4605,
+          "bb_upper": 63.406198,
+          "bb_lower": 59.514802,
+          "rsi": 58.290072
         },
         {
           "date": "2026-01-13",
           "value": 65.47,
-          "sma20": 51.5585,
-          "bb_upper": 87.45025,
-          "bb_lower": 15.66675,
-          "rsi": 85.574774
+          "sma20": 61.6285,
+          "bb_upper": 64.236889,
+          "bb_lower": 59.020111,
+          "rsi": 63.76732
         },
         {
           "date": "2026-01-14",
           "value": 66.52,
-          "sma20": 53.883,
-          "bb_upper": 87.238127,
-          "bb_lower": 20.527873,
-          "rsi": 86.194594
+          "sma20": 61.877,
+          "bb_upper": 65.244611,
+          "bb_lower": 58.509389,
+          "rsi": 66.844368
         },
         {
           "date": "2026-01-15",
           "value": 63.76,
-          "sma20": 56.061,
-          "bb_upper": 85.829976,
-          "bb_lower": 26.292024,
-          "rsi": 76.847483
+          "sma20": 62.0685,
+          "bb_upper": 65.406926,
+          "bb_lower": 58.730074,
+          "rsi": 53.889272
         },
         {
           "date": "2026-01-16",
           "value": 64.13,
-          "sma20": 58.252,
-          "bb_upper": 83.239696,
-          "bb_lower": 33.264304,
-          "rsi": 77.204366
+          "sma20": 62.2445,
+          "bb_upper": 65.627649,
+          "bb_lower": 58.861351,
+          "rsi": 55.144349
         },
         {
           "date": "2026-01-19",
           "value": 63.94,
-          "sma20": 60.3805,
-          "bb_upper": 78.837942,
-          "bb_lower": 41.923058,
-          "rsi": 76.551806
+          "sma20": 62.407,
+          "bb_upper": 65.788083,
+          "bb_lower": 59.025917,
+          "rsi": 54.326605
         },
         {
           "date": "2026-01-20",
@@ -5880,7 +5880,7 @@
           "sma20": 62.5855,
           "bb_upper": 66.098883,
           "bb_lower": 59.072117,
-          "rsi": 77.60333
+          "rsi": 57.802453
         },
         {
           "date": "2026-01-21",
@@ -5888,7 +5888,7 @@
           "sma20": 62.7685,
           "bb_upper": 66.431418,
           "bb_lower": 59.105582,
-          "rsi": 77.951031
+          "rsi": 58.902279
         },
         {
           "date": "2026-01-22",
@@ -5896,7 +5896,7 @@
           "sma20": 62.8915,
           "bb_upper": 66.590507,
           "bb_lower": 59.192493,
-          "rsi": 74.413107
+          "rsi": 54.548229
         },
         {
           "date": "2026-01-23",
@@ -5904,7 +5904,7 @@
           "sma20": 63.0955,
           "bb_upper": 66.976755,
           "bb_lower": 59.214245,
-          "rsi": 76.379585
+          "rsi": 59.975288
         },
         {
           "date": "2026-01-27",
@@ -5912,7 +5912,7 @@
           "sma20": 63.442,
           "bb_upper": 67.611199,
           "bb_lower": 59.272801,
-          "rsi": 78.334716
+          "rsi": 64.896815
         },
         {
           "date": "2026-01-28",
@@ -5920,7 +5920,7 @@
           "sma20": 63.765,
           "bb_upper": 68.394261,
           "bb_lower": 59.135739,
-          "rsi": 79.243415
+          "rsi": 67.040349
         },
         {
           "date": "2026-01-29",
@@ -5928,7 +5928,7 @@
           "sma20": 64.2045,
           "bb_upper": 69.647222,
           "bb_lower": 58.761778,
-          "rsi": 81.56136
+          "rsi": 72.139435
         },
         {
           "date": "2026-01-30",
@@ -5936,7 +5936,7 @@
           "sma20": 64.6965,
           "bb_upper": 70.597074,
           "bb_lower": 58.795926,
-          "rsi": 81.476524
+          "rsi": 72.035524
         },
         {
           "date": "2026-02-02",
@@ -5944,7 +5944,7 @@
           "sma20": 64.974,
           "bb_upper": 70.622718,
           "bb_lower": 59.325282,
-          "rsi": 65.396945
+          "rsi": 53.738164
         },
         {
           "date": "2026-02-03",
@@ -5952,7 +5952,7 @@
           "sma20": 65.2525,
           "bb_upper": 70.788018,
           "bb_lower": 59.716982,
-          "rsi": 67.040485
+          "rsi": 56.528181
         },
         {
           "date": "2026-02-04",
@@ -5960,7 +5960,7 @@
           "sma20": 65.6905,
           "bb_upper": 71.100688,
           "bb_lower": 60.280312,
-          "rsi": 70.193355
+          "rsi": 61.675569
         },
         {
           "date": "2026-02-05",
@@ -5968,7 +5968,7 @@
           "sma20": 66.07,
           "bb_upper": 70.846806,
           "bb_lower": 61.293194,
-          "rsi": 64.257447
+          "rsi": 55.346921
         },
         {
           "date": "2026-02-06",
@@ -5976,7 +5976,7 @@
           "sma20": 66.373,
           "bb_upper": 70.834552,
           "bb_lower": 61.911448,
-          "rsi": 65.08972
+          "rsi": 56.60233
         },
         {
           "date": "2026-02-09",
@@ -5984,7 +5984,7 @@
           "sma20": 66.658,
           "bb_upper": 71.035591,
           "bb_lower": 62.280409,
-          "rsi": 66.741067
+          "rsi": 59.056843
         },
         {
           "date": "2026-02-10",
@@ -5992,7 +5992,7 @@
           "sma20": 66.9045,
           "bb_upper": 71.180397,
           "bb_lower": 62.628603,
-          "rsi": 65.926909
+          "rsi": 58.197505
         },
         {
           "date": "2026-02-11",
@@ -6000,7 +6000,7 @@
           "sma20": 67.101,
           "bb_upper": 71.455629,
           "bb_lower": 62.746371,
-          "rsi": 67.010381
+          "rsi": 59.773416
         },
         {
           "date": "2026-02-12",
@@ -6008,7 +6008,7 @@
           "sma20": 67.151,
           "bb_upper": 71.500758,
           "bb_lower": 62.801242,
-          "rsi": 60.51695
+          "rsi": 53.027763
         },
         {
           "date": "2026-02-13",
@@ -6016,7 +6016,7 @@
           "sma20": 67.3505,
           "bb_upper": 71.416601,
           "bb_lower": 63.284399,
-          "rsi": 61.014673
+          "rsi": 53.715943
         },
         {
           "date": "2026-02-16",
@@ -6024,7 +6024,7 @@
           "sma20": 67.5425,
           "bb_upper": 71.335672,
           "bb_lower": 63.749328,
-          "rsi": 61.514426
+          "rsi": 54.404067
         },
         {
           "date": "2026-02-17",
@@ -6032,7 +6032,7 @@
           "sma20": 67.689,
           "bb_upper": 71.123699,
           "bb_lower": 64.254301,
-          "rsi": 57.542535
+          "rsi": 50.37156
         },
         {
           "date": "2026-02-18",
@@ -6040,7 +6040,7 @@
           "sma20": 67.9315,
           "bb_upper": 71.232193,
           "bb_lower": 64.630807,
-          "rsi": 64.120054
+          "rsi": 58.999758
         },
         {
           "date": "2026-02-19",
@@ -6048,7 +6048,7 @@
           "sma20": 68.233,
           "bb_upper": 71.596219,
           "bb_lower": 64.869781,
-          "rsi": 66.97035
+          "rsi": 62.619766
         },
         {
           "date": "2026-02-20",
@@ -6056,7 +6056,7 @@
           "sma20": 68.5815,
           "bb_upper": 71.689562,
           "bb_lower": 65.473438,
-          "rsi": 67.026767
+          "rsi": 62.690716
         },
         {
           "date": "2026-02-23",
@@ -6064,7 +6064,7 @@
           "sma20": 68.862,
           "bb_upper": 71.956767,
           "bb_lower": 65.767233,
-          "rsi": 67.406483
+          "rsi": 63.167543
         },
         {
           "date": "2026-02-24",
@@ -6072,7 +6072,7 @@
           "sma20": 69.022,
           "bb_upper": 72.163564,
           "bb_lower": 65.880436,
-          "rsi": 64.380842
+          "rsi": 60.036271
         },
         {
           "date": "2026-02-25",
@@ -6080,7 +6080,7 @@
           "sma20": 69.1445,
           "bb_upper": 72.369456,
           "bb_lower": 65.919544,
-          "rsi": 64.571132
+          "rsi": 60.271921
         },
         {
           "date": "2026-02-26",
@@ -6088,7 +6088,7 @@
           "sma20": 69.1465,
           "bb_upper": 72.375384,
           "bb_lower": 65.917616,
-          "rsi": 64.110077
+          "rsi": 59.797267
         },
         {
           "date": "2026-02-27",
@@ -6096,7 +6096,7 @@
           "sma20": 69.236,
           "bb_upper": 72.720195,
           "bb_lower": 65.751805,
-          "rsi": 68.323903
+          "rsi": 64.941138
         }
       ]
     }
@@ -6156,21 +6156,20 @@
     "article_count": 40,
     "avg_sentiment": 0.0,
     "source_breakdown": {
+      "Fortune": 2,
       "CNBC": 1,
-      "Yahoo Finance": 10,
-      "J.P. Morgan Private Bank": 1,
-      "Crypto News": 2,
-      "The New York Times": 1,
-      "FOREX.com": 2,
-      "CoinDesk": 12,
-      "TradingView": 4,
+      "Yahoo Finance": 9,
+      "CoinDesk": 13,
+      "Crypto News": 1,
+      "TradingView": 5,
       "Yahoo Finance UK": 1,
-      "Finance Magnates": 1,
       "International Consortium of Investigative Journalists - ICIJ": 1,
-      "Haaretz": 1,
+      "Finance Magnates": 1,
       "Investing News Network": 1,
-      "Morningstar": 1,
-      "Bloomberg": 1
+      "Mitrade": 1,
+      "Bloomberg.com": 2,
+      "Fast Company": 1,
+      "Barron's": 1
     }
   },
   "news_intelligence": {
@@ -6186,35 +6185,33 @@
       {
         "cluster_id": 0,
         "label": "General",
-        "article_count": 35,
+        "article_count": 34,
         "avg_sentiment": 0.0,
         "dominant_category": "general",
         "bias_distribution": {},
         "representative_titles": [
-          "Cathie Wood: Tesla Stock Forecast, bitcoin Bull Case, AI Outlook - Morningstar",
+          "Bitcoin fans latch on to ‘ridiculous’ Jane Street conspiracy to explain price slump - Fortune",
           "Bitcoin extends decline, falling below $63,000 before paring some losses - CNBC",
-          "Bitcoin Is Headed to $500,000. This Wall Street Analyst Explains Why. - Yahoo Finance",
-          "Bitcoin’s role in investing: What you need to know - J.P. Morgan Private Bank",
-          "Bitcoin price rallies from Fibonacci support with increasing volume, bottom in? - Crypto News"
+          "Strategy becomes the most shorted stock as Bitcoin price soars near $70,000 - Yahoo Finance",
+          "Bitcoin price news: BTC zooms above $65,000 as bullish 'double-bottom' hopes build - CoinDesk",
+          "Bitcoin price risks correction to $62,000 as bullish volume weakens - Crypto News"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Cathie Wood: Tesla Stock Forecast, bitcoin Bull Case, AI Outlook - Morningstar",
-            "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQZU1NZ1E3eHpEMjhtMWxsSERYUDRoRElGZTRBNEVFSnhUbUR0QnlySC1HWkFYSE9aRGwwb3BqZ3lkNzBib2hNVnNnY2pkUEtuXzVEWTd3bHhqNjlXZG40UWlZc3pKdmt0U0dOVmlrTlhMRjlOTGVoc1NRQ2xKVDc1YzUzbENfb0Nlbkx4SWkwRVZ3VE1JYWc?oc=5",
-            "source": "Morningstar",
+            "title": "Bitcoin fans latch on to ‘ridiculous’ Jane Street conspiracy to explain price slump - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxPYTBnZmlRcThpWXhOSWxjWVRFbzlWR0lhZHVTSFJ1MV85elJ6WGZnT3pwbE1tX3U4bEY2VnhZVUhuREx1a2V2dldiem5SeC1OeDBBOVloTzQyLUZnMUxwOE9sdVVEMnd0VjdxWmYyRVBNYUl5NUd1NXB2NENhOWxEdA?oc=5",
+            "source": "Fortune",
             "date": "Thu, 26 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
-            "relevance": 0.5,
+            "relevance": 0.2,
             "keywords": [
-              "TES",
-              "Cathie",
-              "Wood",
-              "Tesla",
-              "Stock",
-              "Forecast"
+              "Bitcoin",
+              "Jane",
+              "Street",
+              "Fortune"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6235,76 +6232,19 @@
             "factuality": "high"
           },
           {
-            "title": "Bitcoin Is Headed to $500,000. This Wall Street Analyst Explains Why. - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE92cXVLb01YRVBpMm51Q3pfZjVPWjFvT3BGTHhJdzZiUktKNXZNbERlcElPeTVWLUpvZG5ZWlFBU2t2emJkaXd2ckZsM01MQnNXaUR5UVVfSGVybXc5QWFlTmlpMXhUdVVCVV9ldjJlUDZfS3VOSGRDSGd3Tmd4UQ?oc=5",
+            "title": "Strategy becomes the most shorted stock as Bitcoin price soars near $70,000 - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxPY19RVTZ5M0JVa0xRRk00X05fRHJnVEpTcHZCSEJFeFFHZnFoSUFTaUZiVTBmR3BMVURPaHdRdUlqV1ZDRk5PaTZQemF3U2szbmNMUTFTOGtuc2U3UE5xLVR0eVdsQ1BwajZ5WWdNU0hfWFZLYTRBM3M4a19XTHo5dzBtZmpYRnBN?oc=5",
             "source": "Yahoo Finance",
-            "date": "Sat, 28 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Headed",
-              "This",
-              "Wall",
-              "Street"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin’s role in investing: What you need to know - J.P. Morgan Private Bank",
-            "url": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxQeFlnOHJzbkFQb3JNTXFLRHRzOHJNc2RBSHU3OHUtM3BmaTZ2Y3l6U0tyNTQtUVI4UzB5d0VFVW94YXdGVjlKeFhKTmVsVnVaV1RWeV81ZkRfT3ZKa3N2Y05GamNma01wUWFuV0pGX2E0czBvTlMxREVHWW1CRXhFQ0szZkloVDFRaWFteHJQMlA1dk8wTklfMlZYSlNKYjhYZ0hBcTROQkc4MzFOWmNpWldlSGh4M2l4bnRVMWVJNHV2WjdSY3dCUGlEcjJWWXA2azlBU1FR?oc=5",
-            "source": "J.P. Morgan Private Bank",
-            "date": "Mon, 23 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "What",
-              "Morgan",
-              "Private",
-              "Bank"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin price rallies from Fibonacci support with increasing volume, bottom in? - Crypto News",
-            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxQeGlISTFJYlZ2UHM1dlZMN0xBXzNSMUNHOURCNm04SUlTTTAyV0xNYmJ0ZVpYeWtSdjg0djFrUGRJWmd0OC1NY0lfVXY3UmRVRDROTnI2VUhVME9Cbm1raUtNbV9MNnBadXdJamw3S1pVSy1nUDdQekpHVi1pTHlkczA3SQ?oc=5",
-            "source": "Crypto News",
             "date": "Wed, 25 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
+              "Strategy",
               "Bitcoin",
-              "Fibonacci",
-              "Crypto",
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Opinion | Crypto Is Pointless. Not Even the White House Can Fix That. - The New York Times",
-            "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQa0V5NDlpSjZyZVk5amlaZHFSbEl2YWMwSVRMbmpwWkJ2OW9xMWxQeUR0bC1Ecm1QNnZ0WEFJNWpOM2tKTUZvX0xvSlkzWGNSZEk5N2pfMlFPbXBUN3lNOHdkM0ZnaC0yeDNSOFJlTEI1bi1HQm9PaVB3ZFI5N1lHSk5tekZmX1RjUUhv?oc=5",
-            "source": "The New York Times",
-            "date": "Thu, 26 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Opinion",
-              "Crypto",
-              "Pointless",
-              "Even",
-              "White"
+              "Yahoo",
+              "Finance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6325,6 +6265,23 @@
             "factuality": "unknown"
           },
           {
+            "title": "Bitcoin price risks correction to $62,000 as bullish volume weakens - Crypto News",
+            "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxPV2dWYy1rWjdTZ1VUcTF1ZlFrekZaV0RPU0tyWUZBclFFQVJSVFpyN2FoOEZfQ1pOV0dSYnh5dnRmbE5IRXM4QVo4OVU4S2k0UEVseDI3ajVfSkdCSUNOMVVnRlV0VFFHTW94SXFXVWVVR29EVklGVlAyWXE2bVVQaFp5cHU?oc=5",
+            "source": "Crypto News",
+            "date": "Thu, 26 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Crypto",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Bitcoin traders 'excess loss-realization' may push BTC price below $44K - TradingView",
             "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOenloNnBreUVhQkEwd3c5NVBvTWg5c2x1TXFTMUNyLWVXSzVNc3k3QWdfZnZUYllsaU9FXzl4UlZtVFdXa0tiUU9PVGhHTFlDSUhOUFZlcFBzNS00UFpvOUlXcGZRR25sVzE1N3ZCQ1AyUWRkck16WWFnV3FkbW40V2YtX04ySGRhS0syS1FhZGpYYm5JT08yM2FNOV9rUVJZRlNsVm01QzI5ajU0RkEtcXpQUDA0Q0x0TU1xZDVtRUJvcGRUbGRKNlNNVVI?oc=5",
             "source": "TradingView",
@@ -6340,49 +6297,17 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price news: BTC slips toward $65,000 amid U.S. stock rout - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiywFBVV95cUxQZDNobE9xUU4ybGRJdnVoVS1EdFIyX0l4ajlLUmMtX1VIemJkTDJyeDAtNU55SmpiX2FzNkk3bGVjOW9nZkk5Mm04cnJORWJxeE92NDVHLURVbzVINi1lc0wtRU9KWWs2ZlFPa0psdXBoVTdEVUNYaVdING9uLWZDSjVGUlZvdHlzLVFhYVM5VWIxT0tvU3c5cWFfaHZJR0Q1RUc3OXhjeDFrcjFsak1QZ2pXSU92Vk1wcFo1Rk9RaktRQzhVQnhCMGc3bw?oc=5",
-            "source": "CoinDesk",
-            "date": "Mon, 23 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin price rejects from range high as bearish structure threatens drop below $60,000 - Crypto News",
-            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxQWHZZT3cwNFFDbWk3cUVUNjVXR2s2dVdmV19scnlmR3FUd29aNFlncmZLYktpNHZ3TDc0X1VkU3pWRnFhXzFKTkxvcHk3azJmb0EycnkwV3FNNjRucWNHTFJ0Tm9EV0FhbmhnN24yYTdIeHUwMm9NRTI5Y29mYnhVNHY3WQ?oc=5",
-            "source": "Crypto News",
-            "date": "Fri, 27 Fe",
+            "title": "Bitcoin price rebounds after Nvidia earnings and ETF inflows - Yahoo Finance UK",
+            "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxQY0x0aEJrSnhHVkEzZU92cmdnZlRlbDhUdkVrZE9DSWRWaGJDNFJ1bFpyMzN2YWJSaTRSOGgyX19wbmJjQVJUdjdTQmlRcGdRNFRpMlVzNjlxalFpV3E0bm44VnRBNHdkZmpPQTVFWnAzTVhLQWU4ZHZwRFZIT0hHNFc3Nzg0bFUzckZCUmUtWVVXM0VW?oc=5",
+            "source": "Yahoo Finance UK",
+            "date": "Thu, 26 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Crypto",
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Strategy becomes the most shorted stock as Bitcoin price soars near $70,000 - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxPY19RVTZ5M0JVa0xRRk00X05fRHJnVEpTcHZCSEJFeFFHZnFoSUFTaUZiVTBmR3BMVURPaHdRdUlqV1ZDRk5PaTZQemF3U2szbmNMUTFTOGtuc2U3UE5xLVR0eVdsQ1BwajZ5WWdNU0hfWFZLYTRBM3M4a19XTHo5dzBtZmpYRnBN?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Wed, 25 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Strategy",
-              "Bitcoin",
+              "Nvidia",
               "Yahoo",
               "Finance"
             ],
@@ -6440,25 +6365,6 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price hits $66,000 after Trump hails economy in record State of the Union address - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMie0FVX3lxTFAxOUlCVFlheXQtNFRZcXBSU04tN0dsaGRBQ1hiN3hmcGhGQjktQkJKLU9XWE1Vck50SEozU0Y3ekdyeGFEa0V1c0huWmJUZ0c3Qy02Nk8wSHhBblEzRjRZR2VhX2pWdXpqdklZNndFUHM4dWRCOWFLVE9mYw?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Wed, 25 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Trump",
-              "State",
-              "Union",
-              "Yahoo"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
             "title": "Bitcoin price analysis: BTC close to a bottom in price, but bulls will have to be patient - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMirgFBVV95cUxOd0lXS09Ucm11ekZZamFGTkI0ai1pU1c3X3hVTmh1Y0FhUWJTMmI5Tmk0VkFsU0VFdzhhZ1pubGtaMW1FWk1MejVvbzJEN0FNd0NpRGJZTlJ6dlp2OFhHWURybjJTdlNFSzJmSFFvVzZZc2xZZG1lTXJybWVoOUktaWlKVVI3RE5NUEkzUEFCTFdFUzIzaUdIYm54cWFhVkRiUkI0UG9ObnlTRTBBNkE?oc=5",
             "source": "CoinDesk",
@@ -6474,125 +6380,71 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin price rebounds after Nvidia earnings and ETF inflows - Yahoo Finance UK",
-            "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxQY0x0aEJrSnhHVkEzZU92cmdnZlRlbDhUdkVrZE9DSWRWaGJDNFJ1bFpyMzN2YWJSaTRSOGgyX19wbmJjQVJUdjdTQmlRcGdRNFRpMlVzNjlxalFpV3E0bm44VnRBNHdkZmpPQTVFWnAzTVhLQWU4ZHZwRFZIT0hHNFc3Nzg0bFUzckZCUmUtWVVXM0VW?oc=5",
-            "source": "Yahoo Finance UK",
-            "date": "Thu, 26 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Nvidia",
-              "Yahoo",
-              "Finance"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Pre-market trading stabilizes as bitcoin reclaims $66,000, Saylor eyes 100th BTC purchase - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMizwFBVV95cUxQbEpic2VzOUhWSkJlRWNRX0loSGRhb3UtLWlpLWlLN2txM0pHSTdUSldUU0JMajZyOHA3SzlDMllkTjFWOEhDcG90YWttdjQ4amFvSksxVkg5MjVZbjFhdEtBZXJMaXFidllvekFiRTZSa2ZseVZmaXVna182aXQ3bmVFUDI5VEo4Nkk1ZjZzRjRtdXVsdEprMDBTS0hzRU4zbWpEejJiR2drakVqUndyRHk0M0NPS1F6djkwTXFOSVltd1hNTTI0NVhnM3MzdW8?oc=5",
-            "source": "CoinDesk",
-            "date": "Mon, 23 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Saylor"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin (BTC) dips under $63,000 and history says more pain ahead before bottom forms - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxOYnBfQ2o1TGVEREd2dTVULWRYZzVBdkRKc2kxMWZiaURQZHB5V2xITXBGeXQ4cUs4RkotU1QyYVd3Vnh3blNTd3ZlWXp6bzRaaGcwRmE2SVJzdEduVDFNdEhSUTY3dl8xbS1JVU9Zd3NnSWJVSVRwMm1OMkJBZEZaclByb29BUEc5ZlBKTzVJdWVZUUVicDRROUJQUkpROHRkRHh6dy1aSGlqcVhZTEU3MS1aNzB3ZHFURzNsVlZpLUswbGM?oc=5",
-            "source": "CoinDesk",
-            "date": "Mon, 23 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "No 10 AM BTC Dump? Bitcoin Price Rallies as Jane Street Trading Draws Attention - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMicEFVX3lxTE1WT0Y4YTk3OFFILWFIRHhXaTU2SVVnX1NzSGl4ZjNjbnpUdm1Ta3o3NmsybFBvYmJIbFRzRl80UnlpdVlXNmFvZWo4N3M1eDhhanpaSlpDSTRQemJyZzNWaWhXamcwclhMUkJjRUtiQmw?oc=5",
+            "title": "Bitcoin Price Falls Below $65K as Trump Tariff Concerns Spark Risk-Off Move - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxNelVUMkVRR2tTMTJQQWM1ajZ0YS15bW9XWmUzYWlDZ0JTblpHdGJNajRzUzluRGdueGlrUTBZMjlPb1I1cmJaZFI1V19DRG53TGpyekg1YXBNNmgwTVlURW9vQkY1bWhNaW1CRDMzeXgwZGpObDdzbVNsSFRuRlBVaw?oc=5",
             "source": "Yahoo Finance",
-            "date": "Wed, 25 Fe",
+            "date": "Mon, 23 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Dump",
               "Bitcoin",
               "Price",
-              "Rallies",
-              "Jane"
+              "Falls",
+              "Below",
+              "Trump"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Whales Sold $60 Billion Worth of Bitcoin: Could This Trigger a Crash to $60,000? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE4tM1FxR2UwbFMzU2dKZy12TDVRQnFuYzJ5N3gwUVVCQjlCTi00a251ZjVvekhFR3pnY0lfaVpsekJWdUNscXFnUmpndjQzWDNGNGVWeXROYmdLMjBWcEIzcV91YXh0akpKdXpndnVwN3Y5S003WUdWTk5yei1ubWc?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Mon, 23 Fe",
+            "title": "Bitcoin price news: BTC back below $65,500, MSTR, COIN, CRCL fall amid macro risks - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixAFBVV95cUxOc1RSSUtLYTNxbzl3dDM3cmFfV3ZCQ2t6QndqZkkzbWdvU0RFaGtYR2JkZW5RbWZQbjZPZ1BQVEJpMDNzTlNRTGRDQjJKSFJ6OG1OejByaGkzcHR2a0FQd1lXWkRxRTlleVJ3S0ZjX0IxNHdiTE54eEpDNk5XRTl0TFV0MlBZVjRJWnh6c3B6ajYyUUcyU2VGUVNwaWFnUnFvS0Q1MkhvY3ZId09kWDdHUEVUUFBYbWlWclNZVDdwWWp6emJD?oc=5",
+            "source": "CoinDesk",
+            "date": "Fri, 27 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Whales",
-              "Sold",
-              "Billion",
-              "Worth",
               "Bitcoin"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin’s 'Oldest' 2009 Whale Reportedly Sells $1.24B BTC as Price Falls Below $65,000 — Is It Accurate? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPN1dzNUM4ZjBYU1A4SGVvS2hvNkZFcXpoUGtlWDFKeGRfQnVFV3EzWVlHY2Y4eWVNQmpfNVhEdXNvdmlLR0U1a3BxX3htLXFCdFh0cjdRZXVRMjlRYng2ay04cThzMnA3WXM0ZEdMeE1OTHZLMW9wV2FQdVVtdmtZTHlldw?oc=5",
+            "title": "Bitcoin at $150,000 by 2026? Prediction Markets Are Skeptical -- Long-Term Investors Should Pay Attention to the Odds. - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxOVHZ1RE1nREp6OENiNm9uVDhoLS1Ic2tJODJndklNeGdJd0FiamFwZkt3ZldjYTUyalJ3ek4zdHpQdHZETnQ4VDZVVEhKcmFEbmlEQzkzLVpKRlh0WnAxeUQ0RjNJbU41MmEtSVFacElILXZDQmpkVnMxODNiellyLWUyQQ?oc=5",
             "source": "Yahoo Finance",
-            "date": "Tue, 24 Fe",
+            "date": "Sun, 01 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Oldest",
-              "Whale",
-              "Reportedly",
-              "Sells"
+              "Prediction",
+              "Markets",
+              "Skeptical",
+              "Long"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Massachusetts sues Bitcoin Depot, alleging the crypto ATM operator knowingly facilitated crypto scams - International Consortium of Investigative Journalists - ICIJ",
-            "url": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxNVHJDcm1BTjFtcDR6b05vbm4waV9ITUhpenh0VFMxdDZ4bXIxVjJsOUMzdE1WUDZqRzRKdHZGZnNnX1VQT0thOXowVzNYNzJJTklMX01SeWpyNjloY00xbm1VcDkwRWp4OHVtTDJEdVVhYkpWUTJuNTNSRUZqd2Y1UFlFRFBJVjZGZFNWaFdoc09TcktLbWdlLXJqc0ZhT2dfbV9GRldyclpMRVZuQk0zMDFxRWtsNTdVa1dvQUNZYWFfbDFRbkNBanhsR1hESzJHQzlvUzEyYXBXMDY0RkdBN1J3VEY?oc=5",
-            "source": "International Consortium of Investigative Journalists - ICIJ",
-            "date": "Thu, 26 Fe",
+            "title": "BTC price falls with ETH, SOL while decred, AI-linked tokens advance: Crypto Markets Today - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQYUc1VzRKTFR5eG5YQ1haeTdjTFNmVXVkeFVlZVVVZ3R3SWxfWmtibFhiamozbElueEdmZUV4bzFpa1UwaGRNRjFvQi1OQU84elFMQUhzWHZHdkxfS0puVGhHSThrcDQ0QTI0NmppNmNNX1M3VXQ5RFF0VnVObVphcTl4YTNUMjJQS2JOOG40QlRXYU9FOHFLS3pKVzJ3eWhmck8yb2JxVU5wcjN3aGpia01OUQ?oc=5",
+            "source": "CoinDesk",
+            "date": "Fri, 27 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Massachusetts",
-              "Bitcoin",
-              "Depot",
-              "International",
-              "Consortium"
+              "Crypto",
+              "Markets",
+              "Today"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6617,6 +6469,94 @@
             "factuality": "unknown"
           },
           {
+            "title": "Bitcoin (BTC) dips under $63,000 and history says more pain ahead before bottom forms - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxOYnBfQ2o1TGVEREd2dTVULWRYZzVBdkRKc2kxMWZiaURQZHB5V2xITXBGeXQ4cUs4RkotU1QyYVd3Vnh3blNTd3ZlWXp6bzRaaGcwRmE2SVJzdEduVDFNdEhSUTY3dl8xbS1JVU9Zd3NnSWJVSVRwMm1OMkJBZEZaclByb29BUEc5ZlBKTzVJdWVZUUVicDRROUJQUkpROHRkRHh6dy1aSGlqcVhZTEU3MS1aNzB3ZHFURzNsVlZpLUswbGM?oc=5",
+            "source": "CoinDesk",
+            "date": "Mon, 23 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Trapped Below $70K, Market Awaits Breakout Catalyst - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMivgFBVV95cUxNbGFEdlpZVHpQWHlDTjF1Mk0wU2w4OVBTdWRGczY2dGdxQm5NWFU2QWJrMk1MeTVMUmRyUUpHaVBDT0E3YmQ1Umw5LUc5Y3VlN0tCQ2tLSFJCRGZScUZXTkNMeFZhV0ctUWFYckZqMHNFS2tPZmNiUThncXEzaDhJWkRzZ0F4ZktxS1pFczUwaGNLbHE3dk5udTJYMVFpMmNSNzRJSTVsTnJ1ZjI1Nk1hbkVaN3JLaE9zY1JFMEl3?oc=5",
+            "source": "TradingView",
+            "date": "Sun, 01 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Trapped",
+              "Below",
+              "Market"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Massachusetts sues Bitcoin Depot, alleging the crypto ATM operator knowingly facilitated crypto scams - International Consortium of Investigative Journalists - ICIJ",
+            "url": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxNVHJDcm1BTjFtcDR6b05vbm4waV9ITUhpenh0VFMxdDZ4bXIxVjJsOUMzdE1WUDZqRzRKdHZGZnNnX1VQT0thOXowVzNYNzJJTklMX01SeWpyNjloY00xbm1VcDkwRWp4OHVtTDJEdVVhYkpWUTJuNTNSRUZqd2Y1UFlFRFBJVjZGZFNWaFdoc09TcktLbWdlLXJqc0ZhT2dfbV9GRldyclpMRVZuQk0zMDFxRWtsNTdVa1dvQUNZYWFfbDFRbkNBanhsR1hESzJHQzlvUzEyYXBXMDY0RkdBN1J3VEY?oc=5",
+            "source": "International Consortium of Investigative Journalists - ICIJ",
+            "date": "Thu, 26 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Massachusetts",
+              "Bitcoin",
+              "Depot",
+              "International",
+              "Consortium"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin news: Single BTC trader loses $61 million on HTX as price dives 4% - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxNVXhVY0ZWV01pQW1VQzZ5SnNELWRQVTM1TVN5RkZwVmVWckpwSGx5TWh1aXc4WnVqWjhkZEFrX1FTVERlYTRKbF9HQXBzbXotV29xMm5nMkNwUUo0N0d4MWtrSU5ORkZNSDdzTG84UER6Ym9EQjc4MG53ZWYxZFZaZi1jTWlzMzgtN3V5cWZkRVBQQmU3VWI2UnRqNS13eklidl9PTTJ2eXpxQ3JNWnFrZnFTamI3T0FfUTFWZ3ZpQ2w?oc=5",
+            "source": "CoinDesk",
+            "date": "Mon, 23 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Single"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Eyes $80K as Whales Go Quiet Before March 1 - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMitwFBVV95cUxPOEtuak9qMVd1V3RCM0doSmZqZmNiem9fbS02d19pLU9mV3hybkdDb1BkNHdDVnljdTRGVVlZT0NRYnRQbVRtQTh0X2tmZ29lNnF0V3hJbUdKc0VDSU9YcC1CLXJpdXd1VHhQT0hWTzN0cmpOVkxnZUZUUFNMUEptZGNmanZyN2t1ZlJxaVVZbU55TWRJYVBSOXY1MEhqMWFjU0x3bERfSGlKYmJfdUQwTmhCb0w1ZFk?oc=5",
+            "source": "TradingView",
+            "date": "Fri, 27 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Eyes",
+              "Whales",
+              "Quiet"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Bitcoin price news: BTC slides to $65,000, Solana, XRP, dogecoin down 6% - CoinDesk",
             "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxOVHJWSmV0c0FHR09aM0hrRTFibnpsdFdNRUMteGpJck9vbUlEN2xmZTN1MHVsVXAzaUtnX0wxRHRTUHVMc1liOXFlZTdJNWkxaDBpMldfYWpiYzNTUzlPcWptTGxZZVZxeGxSbjdTUXM1ZnhSdUhQUklhSDkzMHI1eEwxYk9kMjVYd29pYkRKLUFyMU53ak5ER29OMHZ0RDlSWnNmYWZyTU5TMmpSMzNjQzNIRE1zZHR3N3ZmRTNpaFY?oc=5",
             "source": "CoinDesk",
@@ -6633,20 +6573,17 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price Explodes Higher, $70K Level Faces Fresh Bullish Assault - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxNN25GVXQtVE0zOERDSmhKSnVONGpUSmhnTEdaUGNlUXJyTEMweXdTTGFHa3dnWUdsRzNVR3ZVcWFROGxkT3Z1YUxrd2VEQnBZMHFORXhXd01mSFVVazFMblcwbnc5OUxRZlpEaWZQa0NONUFJdUlzT21NNUd1aGkwcUV6RDFVZ3hzenVZSDhJR1VBSUlyVkMxSkotM0xtX3pDcXBUekR1OGt6b0xJQ3FWZWF0dU8xMFg2Rkg0Z0preHR1ZG8?oc=5",
-            "source": "TradingView",
-            "date": "Thu, 26 Fe",
+            "title": "Bitcoin stabilizes after tariff whiplash briefly sends price below $65,000 - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMifEFVX3lxTE1yMUpTbEZLTUJzM3VnVndoOWRGY1BBcXB6bVpXcndGQWlEby1PbGV1M2J2VWJUSHdJNU1udlkydHZWVE5GQUZVR2NJNEZrUmtycW5xV3dIbHB6OEpkXzE2YW9CSnRIXzZza1ppNFJSRWRnT3NuQnJraDhFcUo?oc=5",
+            "source": "Fortune",
+            "date": "Mon, 23 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Price",
-              "Explodes",
-              "Higher",
-              "Level"
+              "Fortune"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6668,53 +6605,20 @@
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Mining Capitulation Nears End: Is a BTC USD Price Bottom Forming? - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxPOTVtbFgxTjdtUVNNN0lYYmpPMS1XdjZQemxTZXNiVnZMMy1RZEdZWElQd21oendZWThzSWgzS2VSM25wV01tWUYtR0FIcmJzeFh6MnRmUlNGVVh5UW9pcjZNRzZyQndsVHMwR1hfV0pCNGdFbDZrOFp2UlVSYkwxM0FwNnAxN2lDVTJZ?oc=5",
+            "title": "Bitcoin’s 'Oldest' 2009 Whale Reportedly Sells $1.24B BTC as Price Falls Below $65,000 — Is It Accurate? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPN1dzNUM4ZjBYU1A4SGVvS2hvNkZFcXpoUGtlWDFKeGRfQnVFV3EzWVlHY2Y4eWVNQmpfNVhEdXNvdmlLR0U1a3BxX3htLXFCdFh0cjdRZXVRMjlRYng2ay04cThzMnA3WXM0ZEdMeE1OTHZLMW9wV2FQdVVtdmtZTHlldw?oc=5",
             "source": "Yahoo Finance",
-            "date": "Thu, 26 Fe",
+            "date": "Tue, 24 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Mining",
-              "Capitulation",
-              "Nears",
-              "Price"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Market analysts spar as bitcoin heads for worst five-month losing streak since 2018 - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxNeWtyVjRVanB6YUMwbUNnTThrWTg2Y1lBdEQ5Wk51V1VKb25UQTJJU055QUYtRXJtd0REZFZoOEJlS2lBS2E2aF91dkdwV1pDams1c3lzN3hadlhEZ3RySS1DS3k5Vk1WNktIM00wUDdfQ1JsUWJIVnBVMmo1MmcxUlZKSERPQnowa3NIeWNycmI3c1F0M05fSk5XaTJLU1FHLTZCNWZXUGREcTlTT2FTaFdfbTh3NGxBNnBZbHhkcHVUZEUwcUdv?oc=5",
-            "source": "CoinDesk",
-            "date": "Sat, 28 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Market"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Will U.S.-Israeli airstrikes target Iran's bitcoin mining farms? - Haaretz",
-            "url": "https://news.google.com/rss/articles/CBMihgJBVV95cUxPMFNLdlFvUEZQcVpNNzZPcGd5amVUVDdpdzdQeDlLZ2hfVVp6Q1REU1dPV3pwU2d4Z1hZYS1FemdOLUhzLVpadHRNMjVGcFZfMFZhLVRBQmN0SEtpQWdFZTRGbTRoeFBXQldUUjNSTG9OSDlxV0VtYmJpcFZtUXc1WlJ1a2w3cTNpNVo5MGNJM2FCRUN0NHhpcVFtQkNscUNvZWpFa2J3cW9ucDVnUkl2c2k4MktIUTF6Y1ZuZ2JQUDZ5cjVMV25xV1pJOUhJR3ZmbHVDbk0wQTFad014NU1XaVhrOElKbHlST0d5V3BhWjlPQ3Z6Z2ZFMlI0OWhqMF9kYm5MTkN3?oc=5",
-            "source": "Haaretz",
-            "date": "Sun, 01 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Will",
-              "Israeli",
-              "Iran",
-              "Haaretz"
+              "Oldest",
+              "Whale",
+              "Reportedly",
+              "Sells"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6739,26 +6643,43 @@
             "factuality": "unknown"
           },
           {
-            "title": "BTC price falls with ETH, SOL while decred, AI-linked tokens advance: Crypto Markets Today - CoinDesk",
-            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQYUc1VzRKTFR5eG5YQ1haeTdjTFNmVXVkeFVlZVVVZ3R3SWxfWmtibFhiamozbElueEdmZUV4bzFpa1UwaGRNRjFvQi1OQU84elFMQUhzWHZHdkxfS0puVGhHSThrcDQ0QTI0NmppNmNNX1M3VXQ5RFF0VnVObVphcTl4YTNUMjJQS2JOOG40QlRXYU9FOHFLS3pKVzJ3eWhmck8yb2JxVU5wcjN3aGpia01OUQ?oc=5",
+            "title": "Market analysts spar as bitcoin heads for worst five-month losing streak since 2018 - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixwFBVV95cUxNeWtyVjRVanB6YUMwbUNnTThrWTg2Y1lBdEQ5Wk51V1VKb25UQTJJU055QUYtRXJtd0REZFZoOEJlS2lBS2E2aF91dkdwV1pDams1c3lzN3hadlhEZ3RySS1DS3k5Vk1WNktIM00wUDdfQ1JsUWJIVnBVMmo1MmcxUlZKSERPQnowa3NIeWNycmI3c1F0M05fSk5XaTJLU1FHLTZCNWZXUGREcTlTT2FTaFdfbTh3NGxBNnBZbHhkcHVUZEUwcUdv?oc=5",
             "source": "CoinDesk",
-            "date": "Fri, 27 Fe",
+            "date": "Sat, 28 Fe",
             "language": "en",
             "tone": 0.0,
             "category": "general",
             "relevance": 0.2,
             "keywords": [
-              "Crypto",
-              "Markets",
-              "Today"
+              "Market"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin 5TH Wave Is Not Over Yet, And Price Could Still Crash To $52,000; Analyst Warns - TradingView",
-            "url": "https://news.google.com/rss/articles/CBMi2gFBVV95cUxPa3llc1IxMjhfRDAzY0RaQ3RjZEVPblJCZXJ5V3JkbExpVmRRWEllS1Z2bHdkX0UyeEFuWG1UME9QWDYxRGt4N1dad28tRFBRM29FWlBZWDFybW8zQnZDYTNKZFBfUXJqNDZRRVRrdGNfWm1zdHFuZktYMWMydkU4anYzdEIyVEJBbGJvcW5Lb0k2TGpGTExaSHJQMVJ6NWYtQ2xaVmJRcm5UTEJMWGFyM1NCZ3Q5MlItYS10bGU3OFdwUnpDY0FXU3hEeTcxeE9tRDRJSVdLQm1jdw?oc=5",
-            "source": "TradingView",
+            "title": "Jane Street’s Alleged Bitcoin Manipulation Algorithm Faces Legal Scrutiny - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxObHNCZDhFOHNQTy1pTGFsOWFBUFRVUFg4LS02ZUNjOXcxOFZoR1BBczcwTFMyMlo3dExJVHJzdURBcWFfUEM4eDVUb1NUc25rMk0wQmFDalJpNEhNWllyMGd6Y3FiZURSdHRtam9heGhvLUdHcEFQVGJfRWRib0E3RW5tWTY5ZEx2T3RJUERQOA?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Wed, 25 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Jane",
+              "Street",
+              "Alleged",
+              "Bitcoin",
+              "Manipulation"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Mining Capitulation Nears End: Is a BTC USD Price Bottom Forming? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxPOTVtbFgxTjdtUVNNN0lYYmpPMS1XdjZQemxTZXNiVnZMMy1RZEdZWElQd21oendZWThzSWgzS2VSM25wV01tWUYtR0FIcmJzeFh6MnRmUlNGVVh5UW9pcjZNRzZyQndsVHMwR1hfV0pCNGdFbDZrOFp2UlVSYkwxM0FwNnAxN2lDVTJZ?oc=5",
+            "source": "Yahoo Finance",
             "date": "Thu, 26 Fe",
             "language": "en",
             "tone": 0.0,
@@ -6766,32 +6687,13 @@
             "relevance": 0.2,
             "keywords": [
               "Bitcoin",
-              "Wave",
-              "Over",
-              "Price",
-              "Could"
+              "Mining",
+              "Capitulation",
+              "Nears",
+              "Price"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
-          },
-          {
-            "title": "Bitcoin Slides Below $64,000 After Explosions Reported in Tehran - Bloomberg",
-            "url": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxOYlY3QWYwMEk1M1JnSVk5bFptU2JnRWt1ZDBiU2dMZnRZLWx5NzJBY0JKbnRhRF9FX3h3dEVJQ2FUS1d0cmJucGNUa014NUtSSUZHdnM5YlhNeVk4NjBZMjlFbzZ6NzlyaDAyOVJVNkFmYTlvLTZVZVVLVWFlRWtMNGdXTjNqSERuNzVybFJqbTVGMWg3aG9oZ1h3NVFOcU9XMW1XSzNPZFJld0wxUmNuMDhPM09MQklXRW82cFlocVc?oc=5",
-            "source": "Bloomberg",
-            "date": "Sat, 28 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "general",
-            "relevance": 0.2,
-            "keywords": [
-              "Bitcoin",
-              "Slides",
-              "Below",
-              "After",
-              "Explosions"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
           },
           {
             "title": "What early Bitcoin architect Adam Back thinks of this cycle - CoinDesk",
@@ -6810,77 +6712,193 @@
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
+          },
+          {
+            "title": "Top 3 Price Prediction: Bitcoin, Ethereum, Ripple – BTC, ETH and XRP consolidate with short-term cautious bullish bias - Mitrade",
+            "url": "https://news.google.com/rss/articles/CBMijgFBVV95cUxOeU9lMTJoV29yMlNrVUZGcEJ1RWtnU3N2ekhsanRFdUMyUldEMU52dHR6NlpFLUw5dzBmUllfOWFVLXlSMnRhTkJjWVFqOURZaU1CZHY3TElwRFlSejA2MzdidUZfM21rWnRMRS1YT0ozZGprSVJXRnVFZU5UOUl6dmFfNEtnOEw1LWVpX193?oc=5",
+            "source": "Mitrade",
+            "date": "Thu, 26 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Price",
+              "Prediction",
+              "Bitcoin",
+              "Ethereum",
+              "Ripple"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Break-Even Trap Is Killing Every Rally as Buyers Strike - Bloomberg.com",
+            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxOa2plb2NXbUozcnd2YTNyLUd0Y3BLYWd1QjN2am9YazZiM09PUUdNSXpvNDlHTEdBRlVXZVhhb2lHTW9JTjVOb2JSWXVZQlZaUHhfcmhlUGpaWnFUU3hDWk56LXl3eWk2MWQweEpHTS1mSWhUZ0UzemFDa1R6NC0zRVRfMkFvbHdiclNFeEZ6Q3U5VlpSbENjSUZXcGpMQ0lJUEN3by12SDVhSWF3NFFLcGFHcko?oc=5",
+            "source": "Bloomberg.com",
+            "date": "Tue, 24 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Break",
+              "Even",
+              "Trap",
+              "Killing"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Bitcoin is crashing for 3 reasons today. They have more to do with the state of the world than the crypto market - Fast Company",
+            "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxNVHZNVEtWTl84SXdaZWF1cFpfTm9LNmtadHU2WF9rQ09WT21LSnh4Z2dYY3RNaTlta203Mzl3Q1p0dE5zUXhJell0WklkX1RnUGxaN3d3SzdsNU9ZVjlMVW5EMDE1aWVyX3JQc0NkV3FVRGtRWFBydi1pUnJTcUhua1ZsTzNRbTVKTlM0X1NJTmR5UHRYMWc?oc=5",
+            "source": "Fast Company",
+            "date": "Tue, 24 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "They",
+              "Fast",
+              "Company"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Resumes Slide After Quick Pullback in Risk Appetite - Bloomberg.com",
+            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxQRGFMQ0lnb1VMWUlzQnlKSGNZZ0oxbEFRQS1ldkFrcE14a3BvMl9kbHRYV1dOT3R3WlhvQ2Y2cWVzVlNiellZYW1ueTFBcHNNb0RmQ2J0ZWlsbFZGZ2k3VGZZZFFjdFZ1WnM4X1BUT2Y5dURGYmV0ZlhRNTlqR1pfS0pLMkloTmFDSnYtZlFzYXZXakRqUUF6RThFMGs1YWc5dlluM1UzWFh4aTgxTWEw?oc=5",
+            "source": "Bloomberg.com",
+            "date": "Thu, 26 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "general",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Resumes",
+              "Slide",
+              "After",
+              "Quick"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
           }
         ]
       },
       {
         "cluster_id": 1,
-        "label": "Fx Market",
+        "label": "Commodities",
         "article_count": 3,
         "avg_sentiment": 0.0,
-        "dominant_category": "fx_market",
+        "dominant_category": "commodities",
         "bias_distribution": {},
         "representative_titles": [
-          "Bitcoin Price Forecast: BTC/USD Bulls Wake After 52% Crash- 70K the Key Test - FOREX.com",
-          "Bitcoin Price Outlook: Dip Buying Near $60K in Focus - FOREX.com",
-          "Better Cryptocurrency to Buy Right Now With $2,000 and Hold for 5 Years: XRP vs. Bitcoin - Yahoo Finance"
+          "BTC price analysis: Bitcoin market bottom may be nearing, at least if measured against gold - CoinDesk",
+          "Bitcoin price slump versus gold’s gains highlights evolving crypto market - TradingView",
+          "Bitcoin Price Fell Below $65,000. Why Trump Tariff Turmoil Is Crushing Cryptos. - Barron's"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Bitcoin Price Forecast: BTC/USD Bulls Wake After 52% Crash- 70K the Key Test - FOREX.com",
-            "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQaFQ4V3hQeXNWeks0cUNCd1gybk5ycDM4X0JWMGJ5LWxva2RHRF8zbElITU9OelVSaExNaWlGNC1YbkgxbVRSeFg5RDhtUGtKT2xrQzBrRnY5cEE3M0FoYV9CaDd2ZFR2RFlrS2RYY2tBYmhFejNaSnlsaFItMDk4S0JrY3g5QWs0eFFIdXBjdGJ5TnRRdk9tQTRQT3lzamtOZGc1RE9JM0duR2Qxb1Zfbm0xVktURVpMaHkwa29KaTRSSlB5QVEzRUhR0gHWAUFVX3lxTE9FY25pLVdIVE9STXlCWWJITV81cDV2WmVmQUpBOVZHTVQxT1JMV3A5c0Q5LXNhRUkxWkJyRVYteU9LOEhWbUlQcV9SWm1iUUpFZ3RZajZDZl9WVElTdHByMGQxVTAwNHU1MnJ4cDVlN0o2N1pRa2V3MmdCaVczRW9DSTNEdy1sV1RrLVNVYXZvUWVUZ3YzUWpOejh4LWhsVnRNcWQxbllZdzNfbnhfbzU3OWFIQy1nUWZEd2l3UmZ3VV8xdHBqczRLWHhfYXgzcVBISndEeVE?oc=5",
-            "source": "FOREX.com",
-            "date": "Wed, 25 Fe",
+            "title": "BTC price analysis: Bitcoin market bottom may be nearing, at least if measured against gold - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMixgFBVV95cUxNWWZaSk82SnM4b2w2LVZqR3oyQzhYZWVIUE11bjBNTVhPYktwZG5GX0lfX2Y4d3ZJdklxXzJIOEJ6ajdaaGloM24xb3ZfR3dBMXAtR3NLZThhR3JHaDdDU1pYdjRUaW42X183Z2EtNGJ0QWdnajNqT01XdF9mQlJuLU1ZNFJGTk1UazZaaFZPN2xHTUlyLUpYbTVRVllYZnUyZzZDM3dKTnJmWkdJaHd6d0hSUndHZjRTcll3T2lPaVY1NlJvT2c?oc=5",
+            "source": "CoinDesk",
+            "date": "Sun, 01 Ma",
             "language": "en",
             "tone": 0.0,
-            "category": "fx_market",
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin price slump versus gold’s gains highlights evolving crypto market - TradingView",
+            "url": "https://news.google.com/rss/articles/CBMi0wFBVV95cUxQR3ExUHI3OFZtU1Zpd2loRXpwOVQ3T3F5MmpmR05La0c4akEyeEpnblVuNS1DbmIwMmxHTFF3blQydTlBVkp2Mzc0T1JmY3MxTWVBVEtTQXYwR1NxNG5SQVJ4c1dDYU5kY0JvOFBIRUdGdHk0REJGemNERFRrUF9pTW9wYTFIb250Rk94QmNrVDVyMnF2MG9vX2cydnQtSVEzWUtUMmh0bVp2SXYyN1ZheGRmTGkxRmo4R0NkQ2d3cWRFZ3ZDU1VzcVJvbWlWX1ZzZGhB?oc=5",
+            "source": "TradingView",
+            "date": "Fri, 27 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Bitcoin Price Fell Below $65,000. Why Trump Tariff Turmoil Is Crushing Cryptos. - Barron's",
+            "url": "https://news.google.com/rss/articles/CBMihwFBVV95cUxNQ0U5OE5SQTBJWWJ2SVlKVGtRV0lEczdNancxVGt0VFgtNjAycHRTamsxS1FELWJ0WnNHbUU5ZnpQOFNiX2hOWXJlN3Njc09zNFZ4YVFnZ3pxNDdZSDZQQnJSMGxxd25oNlhOWjRYOTFfMV9nWk03ZWJKZldFQUtKRHVDdEZoNU0?oc=5",
+            "source": "Barron's",
+            "date": "Mon, 23 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Bitcoin",
+              "Price",
+              "Fell",
+              "Below",
+              "Trump"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          }
+        ]
+      },
+      {
+        "cluster_id": 2,
+        "label": "Risk Premium",
+        "article_count": 2,
+        "avg_sentiment": 0.0,
+        "dominant_category": "risk_premium",
+        "bias_distribution": {},
+        "representative_titles": [
+          "Why Bitcoin Is Falling? BTC Price Drops for 4 Days Below $63K - Finance Magnates",
+          "BTC tries to reclaim $64,000 as funding rates hit three month low - CoinDesk"
+        ],
+        "narrative_summary": "",
+        "articles": [
+          {
+            "title": "Why Bitcoin Is Falling? BTC Price Drops for 4 Days Below $63K - Finance Magnates",
+            "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxPcENtNmM1b19LRXBqYy1URm1EZktEOERtcnZWaGJ5RzJVazJvSmpGenpkSWczajlIN2w4Z0twbEwyNVllMmxyUF9EbFV5a3FuTzR3OElFalRHX0JXMzFJQnFVVkJ0Slo0OFVWczQwOUhra1QxajVnTEVDZi1iN0Jzd09FQ1lCQ2x2cTNYNTJIYzh6UVVMOFY5YzM3WW5KZzJtdnYw?oc=5",
+            "source": "Finance Magnates",
+            "date": "Tue, 24 Fe",
+            "language": "en",
+            "tone": 0.0,
+            "category": "risk_premium",
             "relevance": 0.5,
             "keywords": [
               "TES",
               "Bitcoin",
+              "Falling",
               "Price",
-              "Forecast",
-              "Bulls",
-              "Wake"
+              "Drops",
+              "Days"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
           },
           {
-            "title": "Bitcoin Price Outlook: Dip Buying Near $60K in Focus - FOREX.com",
-            "url": "https://news.google.com/rss/articles/CBMingFBVV95cUxQdXpjZzZzOGZpX1BvRm40dVM3NWJJcTZQWkF4T3VDbno3MVJ4SThhOWx3S1g2MXhKSW1DRXpkVE01MEZsWXNobzNBVGNieDVhS2ZxdmYtMmhZd3lTYUNnTVBNY0VMNjZ6T21aZTVpU3lWTkJhNWlDY05LM2dFWXAtVTliajZrMjJPdGpGa1ZOdlJDY192QVRGYmR5MGZVd9IBqgFBVV95cUxQSXZHcmluakRYSjJJZ1lIcTB1S3VLSlVFOUZ5RnNIRzA5WTIya0I5QmNSVnlwcG1CWTR4SC1mX3BVVm5VRGpuYTl0cU96X0lWdjVDYUlHamJOY0ZMdEJvRW1TWHJWWnhZckNONEdEVDM4emIzdUFYQThNUDFDZEZIUGFPQk4yOGlDMHlLSE55SnFPYzdPM3BGMS1tQ0JITFp4TWZ5WkNmb0V4QQ?oc=5",
-            "source": "FOREX.com",
-            "date": "Wed, 25 Fe",
+            "title": "BTC tries to reclaim $64,000 as funding rates hit three month low - CoinDesk",
+            "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPSzYzOHNBOUU1QnY3U3JxWU0xVm94eHZUX0xQVkhRck9QaW1yNGFDVnJzeHh0S0xIV05MM0s0TjFzYjN1R2tjQzFTbnFrbk4tNnFtU0FIVk1aSWtuQ0ZDbDNsYzhtODh5Y29mbFJpVGg3STgwU3l5Smw0Y3pFeGZrNUJtcXNJaF9xX05qMmltSnZZa3BJMXI4c3RMXzlKU2pjTnFaZlM3ZG9QZUU?oc=5",
+            "source": "CoinDesk",
+            "date": "Sat, 28 Fe",
             "language": "en",
             "tone": 0.0,
-            "category": "fx_market",
-            "relevance": 0.2,
+            "category": "risk_premium",
+            "relevance": 0.5,
             "keywords": [
-              "Bitcoin",
-              "Price",
-              "Outlook",
-              "Buying",
-              "Near"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Better Cryptocurrency to Buy Right Now With $2,000 and Hold for 5 Years: XRP vs. Bitcoin - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxObnZGYmhkR0dfNm8zN3pleDdqaFdKX0oxMDBYbm1GVXFsMEIzTklLdDl4cFU1MG9PalRtNlI0NHVYNlNCNW5zbDVSbDNLZzRwM3lFZUN4bUc3Q0lYRGRQSGo5V2RVMEtKQkRTb0pCUTVXU1FGYWNpM3ZqZDBVZHpZakZESQ?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Mon, 23 Fe",
-            "language": "en",
-            "tone": 0.0,
-            "category": "fx_market",
-            "relevance": 0.2,
-            "keywords": [
-              "Better",
-              "Cryptocurrency",
-              "Right",
-              "With",
-              "Hold"
+              "TES"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6889,26 +6907,6 @@
       }
     ],
     "top_stories": [
-      {
-        "title": "Bitcoin Price Forecast: BTC/USD Bulls Wake After 52% Crash- 70K the Key Test - FOREX.com",
-        "url": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQaFQ4V3hQeXNWeks0cUNCd1gybk5ycDM4X0JWMGJ5LWxva2RHRF8zbElITU9OelVSaExNaWlGNC1YbkgxbVRSeFg5RDhtUGtKT2xrQzBrRnY5cEE3M0FoYV9CaDd2ZFR2RFlrS2RYY2tBYmhFejNaSnlsaFItMDk4S0JrY3g5QWs0eFFIdXBjdGJ5TnRRdk9tQTRQT3lzamtOZGc1RE9JM0duR2Qxb1Zfbm0xVktURVpMaHkwa29KaTRSSlB5QVEzRUhR0gHWAUFVX3lxTE9FY25pLVdIVE9STXlCWWJITV81cDV2WmVmQUpBOVZHTVQxT1JMV3A5c0Q5LXNhRUkxWkJyRVYteU9LOEhWbUlQcV9SWm1iUUpFZ3RZajZDZl9WVElTdHByMGQxVTAwNHU1MnJ4cDVlN0o2N1pRa2V3MmdCaVczRW9DSTNEdy1sV1RrLVNVYXZvUWVUZ3YzUWpOejh4LWhsVnRNcWQxbllZdzNfbnhfbzU3OWFIQy1nUWZEd2l3UmZ3VV8xdHBqczRLWHhfYXgzcVBISndEeVE?oc=5",
-        "source": "FOREX.com",
-        "date": "Wed, 25 Fe",
-        "language": "en",
-        "tone": 0.0,
-        "category": "fx_market",
-        "relevance": 0.5,
-        "keywords": [
-          "TES",
-          "Bitcoin",
-          "Price",
-          "Forecast",
-          "Bulls",
-          "Wake"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
       {
         "title": "Why Bitcoin Is Falling? BTC Price Drops for 4 Days Below $63K - Finance Magnates",
         "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxPcENtNmM1b19LRXBqYy1URm1EZktEOERtcnZWaGJ5RzJVazJvSmpGenpkSWczajlIN2w4Z0twbEwyNVllMmxyUF9EbFV5a3FuTzR3OElFalRHX0JXMzFJQnFVVkJ0Slo0OFVWczQwOUhra1QxajVnTEVDZi1iN0Jzd09FQ1lCQ2x2cTNYNTJIYzh6UVVMOFY5YzM3WW5KZzJtdnYw?oc=5",
@@ -6930,21 +6928,34 @@
         "factuality": "unknown"
       },
       {
-        "title": "Cathie Wood: Tesla Stock Forecast, bitcoin Bull Case, AI Outlook - Morningstar",
-        "url": "https://news.google.com/rss/articles/CBMilgFBVV95cUxQZU1NZ1E3eHpEMjhtMWxsSERYUDRoRElGZTRBNEVFSnhUbUR0QnlySC1HWkFYSE9aRGwwb3BqZ3lkNzBib2hNVnNnY2pkUEtuXzVEWTd3bHhqNjlXZG40UWlZc3pKdmt0U0dOVmlrTlhMRjlOTGVoc1NRQ2xKVDc1YzUzbENfb0Nlbkx4SWkwRVZ3VE1JYWc?oc=5",
-        "source": "Morningstar",
+        "title": "BTC tries to reclaim $64,000 as funding rates hit three month low - CoinDesk",
+        "url": "https://news.google.com/rss/articles/CBMiqwFBVV95cUxPSzYzOHNBOUU1QnY3U3JxWU0xVm94eHZUX0xQVkhRck9QaW1yNGFDVnJzeHh0S0xIV05MM0s0TjFzYjN1R2tjQzFTbnFrbk4tNnFtU0FIVk1aSWtuQ0ZDbDNsYzhtODh5Y29mbFJpVGg3STgwU3l5Smw0Y3pFeGZrNUJtcXNJaF9xX05qMmltSnZZa3BJMXI4c3RMXzlKU2pjTnFaZlM3ZG9QZUU?oc=5",
+        "source": "CoinDesk",
+        "date": "Sat, 28 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "risk_premium",
+        "relevance": 0.5,
+        "keywords": [
+          "TES"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Bitcoin fans latch on to ‘ridiculous’ Jane Street conspiracy to explain price slump - Fortune",
+        "url": "https://news.google.com/rss/articles/CBMigAFBVV95cUxPYTBnZmlRcThpWXhOSWxjWVRFbzlWR0lhZHVTSFJ1MV85elJ6WGZnT3pwbE1tX3U4bEY2VnhZVUhuREx1a2V2dldiem5SeC1OeDBBOVloTzQyLUZnMUxwOE9sdVVEMnd0VjdxWmYyRVBNYUl5NUd1NXB2NENhOWxEdA?oc=5",
+        "source": "Fortune",
         "date": "Thu, 26 Fe",
         "language": "en",
         "tone": 0.0,
         "category": "general",
-        "relevance": 0.5,
+        "relevance": 0.2,
         "keywords": [
-          "TES",
-          "Cathie",
-          "Wood",
-          "Tesla",
-          "Stock",
-          "Forecast"
+          "Bitcoin",
+          "Jane",
+          "Street",
+          "Fortune"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -6965,76 +6976,19 @@
         "factuality": "high"
       },
       {
-        "title": "Bitcoin Is Headed to $500,000. This Wall Street Analyst Explains Why. - Yahoo Finance",
-        "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE92cXVLb01YRVBpMm51Q3pfZjVPWjFvT3BGTHhJdzZiUktKNXZNbERlcElPeTVWLUpvZG5ZWlFBU2t2emJkaXd2ckZsM01MQnNXaUR5UVVfSGVybXc5QWFlTmlpMXhUdVVCVV9ldjJlUDZfS3VOSGRDSGd3Tmd4UQ?oc=5",
+        "title": "Strategy becomes the most shorted stock as Bitcoin price soars near $70,000 - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMiiAFBVV95cUxPY19RVTZ5M0JVa0xRRk00X05fRHJnVEpTcHZCSEJFeFFHZnFoSUFTaUZiVTBmR3BMVURPaHdRdUlqV1ZDRk5PaTZQemF3U2szbmNMUTFTOGtuc2U3UE5xLVR0eVdsQ1BwajZ5WWdNU0hfWFZLYTRBM3M4a19XTHo5dzBtZmpYRnBN?oc=5",
         "source": "Yahoo Finance",
-        "date": "Sat, 28 Fe",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Bitcoin",
-          "Headed",
-          "This",
-          "Wall",
-          "Street"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Bitcoin’s role in investing: What you need to know - J.P. Morgan Private Bank",
-        "url": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxQeFlnOHJzbkFQb3JNTXFLRHRzOHJNc2RBSHU3OHUtM3BmaTZ2Y3l6U0tyNTQtUVI4UzB5d0VFVW94YXdGVjlKeFhKTmVsVnVaV1RWeV81ZkRfT3ZKa3N2Y05GamNma01wUWFuV0pGX2E0czBvTlMxREVHWW1CRXhFQ0szZkloVDFRaWFteHJQMlA1dk8wTklfMlZYSlNKYjhYZ0hBcTROQkc4MzFOWmNpWldlSGh4M2l4bnRVMWVJNHV2WjdSY3dCUGlEcjJWWXA2azlBU1FR?oc=5",
-        "source": "J.P. Morgan Private Bank",
-        "date": "Mon, 23 Fe",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Bitcoin",
-          "What",
-          "Morgan",
-          "Private",
-          "Bank"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Bitcoin price rallies from Fibonacci support with increasing volume, bottom in? - Crypto News",
-        "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxQeGlISTFJYlZ2UHM1dlZMN0xBXzNSMUNHOURCNm04SUlTTTAyV0xNYmJ0ZVpYeWtSdjg0djFrUGRJWmd0OC1NY0lfVXY3UmRVRDROTnI2VUhVME9Cbm1raUtNbV9MNnBadXdJamw3S1pVSy1nUDdQekpHVi1pTHlkczA3SQ?oc=5",
-        "source": "Crypto News",
         "date": "Wed, 25 Fe",
         "language": "en",
         "tone": 0.0,
         "category": "general",
         "relevance": 0.2,
         "keywords": [
+          "Strategy",
           "Bitcoin",
-          "Fibonacci",
-          "Crypto",
-          "News"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
-        "title": "Opinion | Crypto Is Pointless. Not Even the White House Can Fix That. - The New York Times",
-        "url": "https://news.google.com/rss/articles/CBMiiwFBVV95cUxQa0V5NDlpSjZyZVk5amlaZHFSbEl2YWMwSVRMbmpwWkJ2OW9xMWxQeUR0bC1Ecm1QNnZ0WEFJNWpOM2tKTUZvX0xvSlkzWGNSZEk5N2pfMlFPbXBUN3lNOHdkM0ZnaC0yeDNSOFJlTEI1bi1HQm9PaVB3ZFI5N1lHSk5tekZmX1RjUUhv?oc=5",
-        "source": "The New York Times",
-        "date": "Thu, 26 Fe",
-        "language": "en",
-        "tone": 0.0,
-        "category": "general",
-        "relevance": 0.2,
-        "keywords": [
-          "Opinion",
-          "Crypto",
-          "Pointless",
-          "Even",
-          "White"
+          "Yahoo",
+          "Finance"
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
@@ -7055,6 +7009,23 @@
         "factuality": "unknown"
       },
       {
+        "title": "Bitcoin price risks correction to $62,000 as bullish volume weakens - Crypto News",
+        "url": "https://news.google.com/rss/articles/CBMihAFBVV95cUxPV2dWYy1rWjdTZ1VUcTF1ZlFrekZaV0RPU0tyWUZBclFFQVJSVFpyN2FoOEZfQ1pOV0dSYnh5dnRmbE5IRXM4QVo4OVU4S2k0UEVseDI3ajVfSkdCSUNOMVVnRlV0VFFHTW94SXFXVWVVR29EVklGVlAyWXE2bVVQaFp5cHU?oc=5",
+        "source": "Crypto News",
+        "date": "Thu, 26 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Bitcoin",
+          "Crypto",
+          "News"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
         "title": "Bitcoin traders 'excess loss-realization' may push BTC price below $44K - TradingView",
         "url": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOenloNnBreUVhQkEwd3c5NVBvTWg5c2x1TXFTMUNyLWVXSzVNc3k3QWdfZnZUYllsaU9FXzl4UlZtVFdXa0tiUU9PVGhHTFlDSUhOUFZlcFBzNS00UFpvOUlXcGZRR25sVzE1N3ZCQ1AyUWRkck16WWFnV3FkbW40V2YtX04ySGRhS0syS1FhZGpYYm5JT08yM2FNOV9rUVJZRlNsVm01QzI5ajU0RkEtcXpQUDA0Q0x0TU1xZDVtRUJvcGRUbGRKNlNNVVI?oc=5",
         "source": "TradingView",
@@ -7068,24 +7039,57 @@
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
+      },
+      {
+        "title": "Bitcoin price rebounds after Nvidia earnings and ETF inflows - Yahoo Finance UK",
+        "url": "https://news.google.com/rss/articles/CBMilAFBVV95cUxQY0x0aEJrSnhHVkEzZU92cmdnZlRlbDhUdkVrZE9DSWRWaGJDNFJ1bFpyMzN2YWJSaTRSOGgyX19wbmJjQVJUdjdTQmlRcGdRNFRpMlVzNjlxalFpV3E0bm44VnRBNHdkZmpPQTVFWnAzTVhLQWU4ZHZwRFZIT0hHNFc3Nzg0bFUzckZCUmUtWVVXM0VW?oc=5",
+        "source": "Yahoo Finance UK",
+        "date": "Thu, 26 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Bitcoin",
+          "Nvidia",
+          "Yahoo",
+          "Finance"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
+      },
+      {
+        "title": "Bitcoin (BTC) price hit by swift Asia-hours selloff, stages partial recovery - CoinDesk",
+        "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxOV1M0N3VSTjNNRG1ZRkg5UmlET2ZveHlkQncxdDZfYlhPTkxWclBnLWNXSWdyc0c1U3BEalNMQ1c1MXF2M0xKbnA4Zmp6dUdxYjBhNmoxVnpLendoUm1XQjcwQkRxTnRFb00wUElFamVGdWMtNG5COUVESGx1T2ZEcnljRHFNWVhwTTd2MDRBcnFBWGFjLUJrZ3BpS3k1STl5MF9oNTIzZw?oc=5",
+        "source": "CoinDesk",
+        "date": "Mon, 23 Fe",
+        "language": "en",
+        "tone": 0.0,
+        "category": "general",
+        "relevance": 0.2,
+        "keywords": [
+          "Bitcoin",
+          "Asia"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
       }
     ],
     "source_diversity": {
-      "FOREX.com": 2,
       "Finance Magnates": 1,
-      "Morningstar": 1,
+      "CoinDesk": 13,
+      "Fortune": 2,
       "CNBC": 1,
-      "Yahoo Finance": 10,
-      "J.P. Morgan Private Bank": 1,
-      "Crypto News": 2,
-      "The New York Times": 1,
-      "CoinDesk": 12,
-      "TradingView": 4,
+      "Yahoo Finance": 9,
+      "Crypto News": 1,
+      "TradingView": 5,
       "Yahoo Finance UK": 1,
       "International Consortium of Investigative Journalists - ICIJ": 1,
-      "Haaretz": 1,
       "Investing News Network": 1,
-      "Bloomberg": 1
+      "Mitrade": 1,
+      "Bloomberg.com": 2,
+      "Fast Company": 1,
+      "Barron's": 1
     }
   },
   "political_bias_analysis": {
@@ -7093,19 +7097,19 @@
       "left": 0,
       "center-left": 0,
       "center": 0,
-      "center-right": 2,
+      "center-right": 3,
       "right": 0,
-      "unknown": 38
+      "unknown": 37
     },
     "bias_diversity_score": 0.0,
     "factuality_distribution": {
-      "high": 2,
+      "high": 3,
       "mixed": 0,
       "low": 0,
-      "unknown": 38
+      "unknown": 37
     },
     "cluster_bias_assessments": [],
-    "flagged_articles": 2,
+    "flagged_articles": 3,
     "bias_narrative": "",
     "total_analyzed": 40
   },
@@ -7119,5 +7123,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-29T13:00:11.510212+00:00"
+  "generated_at": "2026-08-28T18:00:16.317515+00:00"
 }

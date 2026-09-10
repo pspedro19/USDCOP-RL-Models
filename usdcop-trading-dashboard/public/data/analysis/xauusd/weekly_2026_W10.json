@@ -40,7 +40,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-03-03",
@@ -58,7 +58,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-03-04",
@@ -76,7 +76,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-03-05",
@@ -94,7 +94,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     },
     {
       "analysis_date": "2026-03-06",
@@ -112,7 +112,7 @@
         "direction": "HOLD",
         "note": "Estrategia en efectivo (sin posición)"
       },
-      "generated_at": "2026-07-29T13:00:11.510212+00:00"
+      "generated_at": "2026-08-28T18:00:16.317515+00:00"
     }
   ],
   "macro_snapshots": {
@@ -258,14 +258,14 @@
       "bollinger_upper_20": 86.683242,
       "bollinger_lower_20": 59.783758,
       "bollinger_width_20": 0.367311,
-      "rsi_14": 88.499139,
-      "macd_line": 5.562967,
-      "macd_signal": 3.931597,
-      "macd_histogram": 1.63137,
+      "rsi_14": 87.959297,
+      "macd_line": 4.817446,
+      "macd_signal": 2.849637,
+      "macd_histogram": 1.967809,
       "roc_5": 27.883554,
       "roc_20": 36.20867,
       "z_score_20": 2.8932,
-      "z_score_60": 1.8145,
+      "z_score_60": 4.031,
       "z_score_252": null,
       "trend": "above_sma20",
       "signal": "overbought",
@@ -713,8 +713,8 @@
           "date": "2025-12-08",
           "value": 4217.7,
           "sma20": 4160.93,
-          "bb_upper": 4318.65849,
-          "bb_lower": 4003.20151,
+          "bb_upper": 4318.658489,
+          "bb_lower": 4003.201511,
           "rsi": 58.275015
         },
         {
@@ -5176,627 +5176,627 @@
         },
         {
           "date": "2025-09-25",
-          "value": 23.5,
-          "sma20": 65.148,
-          "bb_upper": 84.365913,
-          "bb_lower": 45.930087,
-          "rsi": 12.071516
+          "value": 70.48,
+          "sma20": 67.497,
+          "bb_upper": 69.952981,
+          "bb_lower": 65.041019,
+          "rsi": 61.377685
         },
         {
           "date": "2025-09-26",
-          "value": 23.0,
-          "sma20": 62.867,
-          "bb_upper": 89.350885,
-          "bb_lower": 36.383115,
-          "rsi": 11.960367
+          "value": 71.15,
+          "sma20": 67.6235,
+          "bb_upper": 70.519099,
+          "bb_lower": 64.727901,
+          "rsi": 63.364873
         },
         {
           "date": "2025-09-29",
-          "value": 23.44,
-          "sma20": 60.633,
-          "bb_upper": 92.046564,
-          "bb_lower": 29.219436,
-          "rsi": 12.721948
+          "value": 69.0,
+          "sma20": 67.6675,
+          "bb_upper": 70.61816,
+          "bb_lower": 64.71684,
+          "rsi": 53.799025
         },
         {
           "date": "2025-09-30",
-          "value": 23.36,
-          "sma20": 58.344,
-          "bb_upper": 93.404454,
-          "bb_lower": 23.283546,
-          "rsi": 12.700436
+          "value": 68.52,
+          "sma20": 67.6365,
+          "bb_upper": 70.537233,
+          "bb_lower": 64.735767,
+          "rsi": 51.914713
         },
         {
           "date": "2025-10-01",
-          "value": 22.89,
-          "sma20": 56.1085,
-          "bb_upper": 94.102027,
-          "bb_lower": 18.114973,
-          "rsi": 12.566001
+          "value": 66.67,
+          "sma20": 67.59,
+          "bb_upper": 70.521239,
+          "bb_lower": 64.658761,
+          "rsi": 45.325465
         },
         {
           "date": "2025-10-02",
-          "value": 23.4,
-          "sma20": 53.929,
-          "bb_upper": 94.113512,
-          "bb_lower": 13.744488,
-          "rsi": 13.634303
+          "value": 65.44,
+          "sma20": 67.5125,
+          "bb_upper": 70.581805,
+          "bb_lower": 64.443195,
+          "rsi": 41.54949
         },
         {
           "date": "2025-10-03",
-          "value": 23.47,
-          "sma20": 51.8275,
-          "bb_upper": 93.730988,
-          "bb_lower": 9.924012,
-          "rsi": 13.790001
+          "value": 66.13,
+          "sma20": 67.544,
+          "bb_upper": 70.542149,
+          "bb_lower": 64.545851,
+          "rsi": 44.350267
         },
         {
           "date": "2025-10-06",
-          "value": 24.33,
-          "sma20": 49.743,
-          "bb_upper": 92.748335,
-          "bb_lower": 6.737665,
-          "rsi": 15.798391
+          "value": 67.09,
+          "sma20": 67.5975,
+          "bb_upper": 70.522249,
+          "bb_lower": 64.672751,
+          "rsi": 48.078031
         },
         {
           "date": "2025-10-07",
-          "value": 24.05,
-          "sma20": 47.626,
-          "bb_upper": 91.308189,
-          "bb_lower": 3.943811,
-          "rsi": 15.67039
+          "value": 67.1,
+          "sma20": 67.633,
+          "bb_upper": 70.515187,
+          "bb_lower": 64.750813,
+          "rsi": 48.117018
         },
         {
           "date": "2025-10-08",
-          "value": 24.38,
-          "sma20": 45.4705,
-          "bb_upper": 89.273565,
-          "bb_lower": 1.667435,
-          "rsi": 16.528769
+          "value": 67.42,
+          "sma20": 67.6295,
+          "bb_upper": 70.512543,
+          "bb_lower": 64.746457,
+          "rsi": 49.425708
         },
         {
           "date": "2025-10-09",
-          "value": 23.41,
-          "sma20": 43.3225,
-          "bb_upper": 87.028657,
-          "bb_lower": -0.383657,
-          "rsi": 16.012817
+          "value": 67.23,
+          "sma20": 67.6725,
+          "bb_upper": 70.504318,
+          "bb_lower": 64.840682,
+          "rsi": 48.641187
         },
         {
           "date": "2025-10-10",
-          "value": 21.68,
-          "sma20": 41.057,
-          "bb_upper": 84.316076,
-          "bb_lower": -2.202076,
-          "rsi": 15.107068
+          "value": 64.41,
+          "sma20": 67.5435,
+          "bb_upper": 70.703919,
+          "bb_lower": 64.383081,
+          "rsi": 38.797903
         },
         {
           "date": "2025-10-14",
-          "value": 21.93,
-          "sma20": 38.7815,
-          "bb_upper": 81.025931,
-          "bb_lower": -3.462931,
-          "rsi": 15.847839
+          "value": 63.0,
+          "sma20": 67.3215,
+          "bb_upper": 71.052137,
+          "bb_lower": 63.590863,
+          "rsi": 34.98566
         },
         {
           "date": "2025-10-15",
-          "value": 22.0,
-          "sma20": 36.458,
-          "bb_upper": 76.992426,
-          "bb_lower": -4.076426,
-          "rsi": 16.06868
+          "value": 62.33,
+          "sma20": 67.0145,
+          "bb_upper": 71.287656,
+          "bb_lower": 62.741344,
+          "rsi": 33.310729
         },
         {
           "date": "2025-10-16",
-          "value": 21.5,
-          "sma20": 34.1355,
-          "bb_upper": 72.448198,
-          "bb_lower": -4.177198,
-          "rsi": 15.750721
+          "value": 61.08,
+          "sma20": 66.671,
+          "bb_upper": 71.636533,
+          "bb_lower": 61.705467,
+          "rsi": 30.387753
         },
         {
           "date": "2025-10-17",
-          "value": 21.68,
-          "sma20": 31.8475,
-          "bb_upper": 67.289184,
-          "bb_lower": -3.594184,
-          "rsi": 16.392116
+          "value": 61.23,
+          "sma20": 66.3605,
+          "bb_upper": 71.844431,
+          "bb_lower": 60.876569,
+          "rsi": 31.168294
         },
         {
           "date": "2025-10-20",
-          "value": 22.21,
-          "sma20": 29.624,
-          "bb_upper": 61.439921,
-          "bb_lower": -2.191921,
-          "rsi": 18.362881
+          "value": 60.71,
+          "sma20": 66.062,
+          "bb_upper": 72.068855,
+          "bb_lower": 60.055145,
+          "rsi": 29.915989
         },
         {
           "date": "2025-10-21",
-          "value": 21.99,
-          "sma20": 27.425,
-          "bb_upper": 54.634552,
-          "bb_lower": 0.215448,
-          "rsi": 18.171408
+          "value": 61.0,
+          "sma20": 65.8135,
+          "bb_upper": 72.213373,
+          "bb_lower": 59.413627,
+          "rsi": 31.567342
         },
         {
           "date": "2025-10-22",
-          "value": 21.81,
-          "sma20": 25.167,
-          "bb_upper": 45.501938,
-          "bb_lower": 4.832062,
-          "rsi": 18.005976
+          "value": 62.28,
+          "sma20": 65.579,
+          "bb_upper": 72.134001,
+          "bb_lower": 59.023999,
+          "rsi": 38.459832
         },
         {
           "date": "2025-10-23",
-          "value": 22.17,
-          "sma20": 22.81,
-          "bb_upper": 24.643957,
-          "bb_lower": 20.976043,
-          "rsi": 19.582835
+          "value": 66.32,
+          "sma20": 65.4295,
+          "bb_upper": 71.770192,
+          "bb_lower": 59.088808,
+          "rsi": 54.154862
         },
         {
           "date": "2025-10-24",
-          "value": 22.14,
-          "sma20": 22.742,
-          "bb_upper": 24.56942,
-          "bb_lower": 20.91458,
-          "rsi": 19.549096
+          "value": 65.8,
+          "sma20": 65.1955,
+          "bb_upper": 71.104078,
+          "bb_lower": 59.286922,
+          "rsi": 52.305765
         },
         {
           "date": "2025-10-27",
-          "value": 22.38,
-          "sma20": 22.711,
-          "bb_upper": 24.540895,
-          "bb_lower": 20.881105,
-          "rsi": 20.725812
+          "value": 65.52,
+          "sma20": 64.914,
+          "bb_upper": 70.160349,
+          "bb_lower": 59.667651,
+          "rsi": 51.290227
         },
         {
           "date": "2025-10-28",
-          "value": 22.23,
-          "sma20": 22.6505,
-          "bb_upper": 24.459881,
-          "bb_lower": 20.841119,
-          "rsi": 20.52376
+          "value": 64.03,
+          "sma20": 64.6655,
+          "bb_upper": 69.574103,
+          "bb_lower": 59.756897,
+          "rsi": 46.154801
         },
         {
           "date": "2025-10-29",
-          "value": 22.49,
-          "sma20": 22.607,
-          "bb_upper": 24.387664,
-          "bb_lower": 20.826336,
-          "rsi": 21.9442
+          "value": 65.01,
+          "sma20": 64.49,
+          "bb_upper": 69.075137,
+          "bb_lower": 59.904863,
+          "rsi": 49.720596
         },
         {
           "date": "2025-10-30",
-          "value": 22.34,
-          "sma20": 22.5795,
-          "bb_upper": 24.35882,
-          "bb_lower": 20.80018,
-          "rsi": 21.703203
+          "value": 65.11,
+          "sma20": 64.412,
+          "bb_upper": 68.89815,
+          "bb_lower": 59.92585,
+          "rsi": 50.083849
         },
         {
           "date": "2025-10-31",
-          "value": 22.16,
-          "sma20": 22.5175,
-          "bb_upper": 24.264256,
-          "bb_lower": 20.770744,
-          "rsi": 21.399491
+          "value": 65.44,
+          "sma20": 64.412,
+          "bb_upper": 68.89815,
+          "bb_lower": 59.92585,
+          "rsi": 51.333385
         },
         {
           "date": "2025-11-03",
-          "value": 22.6,
-          "sma20": 22.474,
-          "bb_upper": 24.166187,
-          "bb_lower": 20.781813,
-          "rsi": 24.192143
+          "value": 65.79,
+          "sma20": 64.395,
+          "bb_upper": 68.857495,
+          "bb_lower": 59.932505,
+          "rsi": 52.686188
         },
         {
           "date": "2025-11-04",
-          "value": 21.55,
-          "sma20": 22.335,
-          "bb_upper": 23.840995,
-          "bb_lower": 20.829005,
-          "rsi": 22.168008
+          "value": 65.04,
+          "sma20": 64.2925,
+          "bb_upper": 68.593946,
+          "bb_lower": 59.991054,
+          "rsi": 49.510221
         },
         {
           "date": "2025-11-05",
-          "value": 20.97,
-          "sma20": 22.181,
-          "bb_upper": 23.580127,
-          "bb_lower": 20.781873,
-          "rsi": 21.116966
+          "value": 63.54,
+          "sma20": 64.1145,
+          "bb_upper": 68.226986,
+          "bb_lower": 60.002014,
+          "rsi": 43.820728
         },
         {
           "date": "2025-11-06",
-          "value": 21.09,
-          "sma20": 22.0165,
-          "bb_upper": 23.074919,
-          "bb_lower": 20.958081,
-          "rsi": 21.941581
+          "value": 63.41,
+          "sma20": 63.914,
+          "bb_upper": 67.743587,
+          "bb_lower": 60.084413,
+          "rsi": 43.355718
         },
         {
           "date": "2025-11-07",
-          "value": 21.08,
-          "sma20": 21.9,
-          "bb_upper": 22.82358,
-          "bb_lower": 20.97642,
-          "rsi": 21.921016
+          "value": 63.72,
+          "sma20": 63.7385,
+          "bb_upper": 67.252883,
+          "bb_lower": 60.224117,
+          "rsi": 44.858392
         },
         {
           "date": "2025-11-10",
-          "value": 21.14,
-          "sma20": 21.873,
-          "bb_upper": 22.850714,
-          "bb_lower": 20.895286,
-          "rsi": 22.391031
+          "value": 63.01,
+          "sma20": 63.6685,
+          "bb_upper": 67.182366,
+          "bb_lower": 60.154634,
+          "rsi": 42.103479
         },
         {
           "date": "2025-11-12",
-          "value": 21.34,
-          "sma20": 21.8435,
-          "bb_upper": 22.847796,
-          "bb_lower": 20.839204,
-          "rsi": 24.032632
+          "value": 61.88,
+          "sma20": 63.6125,
+          "bb_upper": 67.202079,
+          "bb_lower": 60.022921,
+          "rsi": 38.093685
         },
         {
           "date": "2025-11-13",
-          "value": 20.88,
-          "sma20": 21.7875,
-          "bb_upper": 22.87232,
-          "bb_lower": 20.70268,
-          "rsi": 22.836189
+          "value": 62.14,
+          "sma20": 63.603,
+          "bb_upper": 67.207082,
+          "bb_lower": 59.998918,
+          "rsi": 39.520898
         },
         {
           "date": "2025-11-14",
-          "value": 20.56,
-          "sma20": 21.7405,
-          "bb_upper": 22.945829,
-          "bb_lower": 20.535171,
-          "rsi": 22.015104
+          "value": 63.45,
+          "sma20": 63.7215,
+          "bb_upper": 67.136879,
+          "bb_lower": 60.306121,
+          "rsi": 46.245292
         },
         {
           "date": "2025-11-17",
-          "value": 20.52,
-          "sma20": 21.6825,
-          "bb_upper": 23.000284,
-          "bb_lower": 20.364716,
-          "rsi": 21.909061
+          "value": 63.16,
+          "sma20": 63.818,
+          "bb_upper": 67.050507,
+          "bb_lower": 60.585493,
+          "rsi": 45.051126
         },
         {
           "date": "2025-11-18",
-          "value": 20.79,
-          "sma20": 21.6115,
-          "bb_upper": 22.960593,
-          "bb_lower": 20.262407,
-          "rsi": 24.550891
+          "value": 64.86,
+          "sma20": 64.0255,
+          "bb_upper": 66.951606,
+          "bb_lower": 61.099394,
+          "rsi": 52.753164
         },
         {
           "date": "2025-11-19",
-          "value": 21.0,
-          "sma20": 21.562,
-          "bb_upper": 22.924492,
-          "bb_lower": 20.199508,
-          "rsi": 26.629934
+          "value": 63.78,
+          "sma20": 64.1645,
+          "bb_upper": 66.746387,
+          "bb_lower": 61.582613,
+          "rsi": 48.13696
         },
         {
           "date": "2025-11-20",
-          "value": 20.38,
-          "sma20": 21.4905,
-          "bb_upper": 22.940693,
-          "bb_lower": 20.040307,
-          "rsi": 24.484761
+          "value": 63.64,
+          "sma20": 64.2325,
+          "bb_upper": 66.680437,
+          "bb_lower": 61.784563,
+          "rsi": 47.55602
         },
         {
           "date": "2025-11-21",
-          "value": 20.44,
-          "sma20": 21.404,
-          "bb_upper": 22.887744,
-          "bb_lower": 19.920256,
-          "rsi": 25.113456
+          "value": 62.78,
+          "sma20": 64.0555,
+          "bb_upper": 66.383052,
+          "bb_lower": 61.727948,
+          "rsi": 44.039974
         },
         {
           "date": "2025-11-24",
-          "value": 21.0,
-          "sma20": 21.347,
-          "bb_upper": 22.800549,
-          "bb_lower": 19.893451,
-          "rsi": 30.896139
+          "value": 64.83,
+          "sma20": 64.007,
+          "bb_upper": 66.224973,
+          "bb_lower": 61.789027,
+          "rsi": 52.966741
         },
         {
           "date": "2025-11-25",
-          "value": 21.75,
-          "sma20": 21.3155,
-          "bb_upper": 22.703988,
-          "bb_lower": 19.927012,
-          "rsi": 37.821232
+          "value": 63.99,
+          "sma20": 63.9305,
+          "bb_upper": 66.037208,
+          "bb_lower": 61.823792,
+          "rsi": 49.483475
         },
         {
           "date": "2025-11-26",
-          "value": 21.92,
-          "sma20": 21.3,
-          "bb_upper": 22.653795,
-          "bb_lower": 19.946205,
-          "rsi": 39.305943
+          "value": 64.81,
+          "sma20": 63.9695,
+          "bb_upper": 66.110728,
+          "bb_lower": 61.828272,
+          "rsi": 52.75013
         },
         {
           "date": "2025-11-28",
-          "value": 22.1,
-          "sma20": 21.2805,
-          "bb_upper": 22.575112,
-          "bb_lower": 19.985888,
-          "rsi": 40.914689
+          "value": 64.07,
+          "sma20": 63.9225,
+          "bb_upper": 66.010924,
+          "bb_lower": 61.834076,
+          "rsi": 49.631055
         },
         {
           "date": "2025-12-01",
-          "value": 22.3,
-          "sma20": 21.2785,
-          "bb_upper": 22.566666,
-          "bb_lower": 19.990334,
-          "rsi": 42.731052
+          "value": 64.22,
+          "sma20": 63.878,
+          "bb_upper": 65.900193,
+          "bb_lower": 61.855807,
+          "rsi": 50.272914
         },
         {
           "date": "2025-12-02",
-          "value": 22.02,
-          "sma20": 21.2715,
-          "bb_upper": 22.541827,
-          "bb_lower": 20.001173,
-          "rsi": 40.838259
+          "value": 63.37,
+          "sma20": 63.7745,
+          "bb_upper": 65.674516,
+          "bb_lower": 61.874484,
+          "rsi": 46.645487
         },
         {
           "date": "2025-12-03",
-          "value": 21.63,
-          "sma20": 21.223,
-          "bb_upper": 22.353064,
-          "bb_lower": 20.092936,
-          "rsi": 38.293889
+          "value": 63.75,
+          "sma20": 63.6725,
+          "bb_upper": 65.332655,
+          "bb_lower": 62.012345,
+          "rsi": 48.43673
         },
         {
           "date": "2025-12-04",
-          "value": 21.07,
-          "sma20": 21.199,
-          "bb_upper": 22.320622,
-          "bb_lower": 20.077378,
-          "rsi": 34.928742
+          "value": 64.15,
+          "sma20": 63.628,
+          "bb_upper": 65.183565,
+          "bb_lower": 62.072435,
+          "rsi": 50.327171
         },
         {
           "date": "2025-12-05",
-          "value": 21.77,
-          "sma20": 21.239,
-          "bb_upper": 22.381959,
-          "bb_lower": 20.096041,
-          "rsi": 41.812123
+          "value": 64.42,
+          "sma20": 63.672,
+          "bb_upper": 65.264465,
+          "bb_lower": 62.079535,
+          "rsi": 51.616629
         },
         {
           "date": "2025-12-08",
-          "value": 21.41,
-          "sma20": 21.255,
-          "bb_upper": 22.398127,
-          "bb_lower": 20.111873,
-          "rsi": 39.498048
+          "value": 63.3,
+          "sma20": 63.6665,
+          "bb_upper": 65.2633,
+          "bb_lower": 62.0697,
+          "rsi": 46.252906
         },
         {
           "date": "2025-12-09",
-          "value": 21.29,
-          "sma20": 21.2655,
-          "bb_upper": 22.405859,
-          "bb_lower": 20.125141,
-          "rsi": 38.728615
+          "value": 62.62,
+          "sma20": 63.6115,
+          "bb_upper": 65.27166,
+          "bb_lower": 61.95134,
+          "rsi": 43.310228
         },
         {
           "date": "2025-12-10",
-          "value": 20.96,
-          "sma20": 21.2565,
-          "bb_upper": 22.403501,
-          "bb_lower": 20.109499,
-          "rsi": 36.616171
+          "value": 63.12,
+          "sma20": 63.617,
+          "bb_upper": 65.269865,
+          "bb_lower": 61.964135,
+          "rsi": 46.029221
         },
         {
           "date": "2025-12-11",
-          "value": 20.26,
-          "sma20": 21.2025,
-          "bb_upper": 22.427716,
-          "bb_lower": 19.977284,
-          "rsi": 32.559251
+          "value": 61.87,
+          "sma20": 63.6165,
+          "bb_upper": 65.271472,
+          "bb_lower": 61.961528,
+          "rsi": 40.765199
         },
         {
           "date": "2025-12-12",
-          "value": 19.96,
-          "sma20": 21.1565,
-          "bb_upper": 22.49091,
-          "bb_lower": 19.82209,
-          "rsi": 30.975282
+          "value": 62.11,
+          "sma20": 63.615,
+          "bb_upper": 65.275367,
+          "bb_lower": 61.954633,
+          "rsi": 42.133548
         },
         {
           "date": "2025-12-15",
-          "value": 20.03,
-          "sma20": 21.13,
-          "bb_upper": 22.530171,
-          "bb_lower": 19.729829,
-          "rsi": 31.808889
+          "value": 61.55,
+          "sma20": 63.52,
+          "bb_upper": 65.408947,
+          "bb_lower": 61.631053,
+          "rsi": 39.821992
         },
         {
           "date": "2025-12-16",
-          "value": 20.2,
-          "sma20": 21.114,
-          "bb_upper": 22.548579,
-          "bb_lower": 19.679421,
-          "rsi": 33.896814
+          "value": 59.93,
+          "sma20": 63.3585,
+          "bb_upper": 65.81115,
+          "bb_lower": 60.90585,
+          "rsi": 34.009204
         },
         {
           "date": "2025-12-17",
-          "value": 20.31,
-          "sma20": 21.09,
-          "bb_upper": 22.561054,
-          "bb_lower": 19.618946,
-          "rsi": 35.277736
+          "value": 60.61,
+          "sma20": 63.146,
+          "bb_upper": 65.771798,
+          "bb_lower": 60.520202,
+          "rsi": 38.094022
         },
         {
           "date": "2025-12-18",
-          "value": 21.37,
-          "sma20": 21.1085,
-          "bb_upper": 22.583861,
-          "bb_lower": 19.633139,
-          "rsi": 46.80913
+          "value": 60.69,
+          "sma20": 62.9915,
+          "bb_upper": 65.806696,
+          "bb_lower": 60.176304,
+          "rsi": 38.575742
         },
         {
           "date": "2025-12-19",
-          "value": 20.82,
-          "sma20": 21.1305,
-          "bb_upper": 22.574543,
-          "bb_lower": 19.686457,
-          "rsi": 42.570918
+          "value": 61.35,
+          "sma20": 62.877,
+          "bb_upper": 65.762773,
+          "bb_lower": 59.991227,
+          "rsi": 42.547733
         },
         {
           "date": "2025-12-22",
           "value": 61.58,
-          "sma20": 23.1875,
-          "bb_upper": 40.859436,
-          "bb_lower": 5.515564,
-          "rsi": 93.018735
+          "sma20": 62.817,
+          "bb_upper": 65.757722,
+          "bb_lower": 59.876278,
+          "rsi": 43.908959
         },
         {
           "date": "2025-12-23",
           "value": 61.87,
-          "sma20": 25.231,
-          "bb_upper": 49.601143,
-          "bb_lower": 0.860857,
-          "rsi": 93.065409
+          "sma20": 62.669,
+          "bb_upper": 65.484876,
+          "bb_lower": 59.853124,
+          "rsi": 45.657273
         },
         {
           "date": "2025-12-24",
           "value": 61.8,
-          "sma20": 27.2335,
-          "bb_upper": 56.266218,
-          "bb_lower": -1.799218,
-          "rsi": 92.903949
+          "sma20": 62.5595,
+          "bb_upper": 65.331362,
+          "bb_lower": 59.787638,
+          "rsi": 45.290315
         },
         {
           "date": "2025-12-26",
           "value": 60.64,
-          "sma20": 29.1695,
-          "bb_upper": 61.503051,
-          "bb_lower": -3.164051,
-          "rsi": 90.113895
+          "sma20": 62.351,
+          "bb_upper": 65.040475,
+          "bb_lower": 59.661525,
+          "rsi": 39.609049
         },
         {
           "date": "2025-12-29",
           "value": 61.94,
-          "sma20": 31.1615,
-          "bb_upper": 66.295128,
-          "bb_lower": -3.972128,
-          "rsi": 90.459684
+          "sma20": 62.2445,
+          "bb_upper": 64.819514,
+          "bb_lower": 59.669486,
+          "rsi": 47.549727
         },
         {
           "date": "2025-12-30",
           "value": 61.92,
-          "sma20": 33.1425,
-          "bb_upper": 70.454512,
-          "bb_lower": -4.169512,
-          "rsi": 90.407292
+          "sma20": 62.1295,
+          "bb_upper": 64.541623,
+          "bb_lower": 59.717377,
+          "rsi": 47.446366
         },
         {
           "date": "2025-12-31",
           "value": 60.85,
-          "sma20": 35.084,
-          "bb_upper": 73.890026,
-          "bb_lower": -3.722026,
-          "rsi": 87.487901
+          "sma20": 62.0035,
+          "bb_upper": 64.406517,
+          "bb_lower": 59.600483,
+          "rsi": 42.165472
         },
         {
           "date": "2026-01-02",
           "value": 60.75,
-          "sma20": 37.04,
-          "bb_upper": 76.866506,
-          "bb_lower": -2.786506,
-          "rsi": 87.204482
+          "sma20": 61.8535,
+          "bb_upper": 64.174855,
+          "bb_lower": 59.532145,
+          "rsi": 41.698357
         },
         {
           "date": "2026-01-05",
           "value": 61.76,
-          "sma20": 39.0745,
-          "bb_upper": 79.581306,
-          "bb_lower": -1.432306,
-          "rsi": 87.639999
+          "sma20": 61.734,
+          "bb_upper": 63.802462,
+          "bb_lower": 59.665538,
+          "rsi": 47.968014
         },
         {
           "date": "2026-01-06",
           "value": 60.7,
-          "sma20": 41.021,
-          "bb_upper": 81.755374,
-          "bb_lower": 0.286626,
-          "rsi": 84.393427
+          "sma20": 61.548,
+          "bb_upper": 63.254184,
+          "bb_lower": 59.841816,
+          "rsi": 42.769637
         },
         {
           "date": "2026-01-07",
           "value": 59.96,
-          "sma20": 42.9485,
-          "bb_upper": 83.436116,
-          "bb_lower": 2.460884,
-          "rsi": 82.106713
+          "sma20": 61.381,
+          "bb_upper": 63.021109,
+          "bb_lower": 59.740891,
+          "rsi": 39.547489
         },
         {
           "date": "2026-01-08",
           "value": 61.99,
-          "sma20": 44.9835,
-          "bb_upper": 85.000743,
-          "bb_lower": 4.966257,
-          "rsi": 83.432883
+          "sma20": 61.3495,
+          "bb_upper": 62.91575,
+          "bb_lower": 59.78325,
+          "rsi": 50.552765
         },
         {
           "date": "2026-01-09",
           "value": 63.34,
-          "sma20": 47.1025,
-          "bb_upper": 86.286497,
-          "bb_lower": 7.918503,
-          "rsi": 84.267942
+          "sma20": 61.3605,
+          "bb_upper": 62.978566,
+          "bb_lower": 59.742434,
+          "rsi": 56.256072
         },
         {
           "date": "2026-01-12",
           "value": 63.87,
-          "sma20": 49.283,
-          "bb_upper": 87.078412,
-          "bb_lower": 11.487588,
-          "rsi": 84.596207
+          "sma20": 61.4605,
+          "bb_upper": 63.406198,
+          "bb_lower": 59.514802,
+          "rsi": 58.290072
         },
         {
           "date": "2026-01-13",
           "value": 65.47,
-          "sma20": 51.5585,
-          "bb_upper": 87.45025,
-          "bb_lower": 15.66675,
-          "rsi": 85.574774
+          "sma20": 61.6285,
+          "bb_upper": 64.236889,
+          "bb_lower": 59.020111,
+          "rsi": 63.76732
         },
         {
           "date": "2026-01-14",
           "value": 66.52,
-          "sma20": 53.883,
-          "bb_upper": 87.238127,
-          "bb_lower": 20.527873,
-          "rsi": 86.194594
+          "sma20": 61.877,
+          "bb_upper": 65.244611,
+          "bb_lower": 58.509389,
+          "rsi": 66.844368
         },
         {
           "date": "2026-01-15",
           "value": 63.76,
-          "sma20": 56.061,
-          "bb_upper": 85.829976,
-          "bb_lower": 26.292024,
-          "rsi": 76.847483
+          "sma20": 62.0685,
+          "bb_upper": 65.406926,
+          "bb_lower": 58.730074,
+          "rsi": 53.889272
         },
         {
           "date": "2026-01-16",
           "value": 64.13,
-          "sma20": 58.252,
-          "bb_upper": 83.239696,
-          "bb_lower": 33.264304,
-          "rsi": 77.204366
+          "sma20": 62.2445,
+          "bb_upper": 65.627649,
+          "bb_lower": 58.861351,
+          "rsi": 55.144349
         },
         {
           "date": "2026-01-19",
           "value": 63.94,
-          "sma20": 60.3805,
-          "bb_upper": 78.837942,
-          "bb_lower": 41.923058,
-          "rsi": 76.551806
+          "sma20": 62.407,
+          "bb_upper": 65.788083,
+          "bb_lower": 59.025917,
+          "rsi": 54.326605
         },
         {
           "date": "2026-01-20",
@@ -5804,7 +5804,7 @@
           "sma20": 62.5855,
           "bb_upper": 66.098883,
           "bb_lower": 59.072117,
-          "rsi": 77.60333
+          "rsi": 57.802453
         },
         {
           "date": "2026-01-21",
@@ -5812,7 +5812,7 @@
           "sma20": 62.7685,
           "bb_upper": 66.431418,
           "bb_lower": 59.105582,
-          "rsi": 77.951031
+          "rsi": 58.902279
         },
         {
           "date": "2026-01-22",
@@ -5820,7 +5820,7 @@
           "sma20": 62.8915,
           "bb_upper": 66.590507,
           "bb_lower": 59.192493,
-          "rsi": 74.413107
+          "rsi": 54.548229
         },
         {
           "date": "2026-01-23",
@@ -5828,7 +5828,7 @@
           "sma20": 63.0955,
           "bb_upper": 66.976755,
           "bb_lower": 59.214245,
-          "rsi": 76.379585
+          "rsi": 59.975288
         },
         {
           "date": "2026-01-27",
@@ -5836,7 +5836,7 @@
           "sma20": 63.442,
           "bb_upper": 67.611199,
           "bb_lower": 59.272801,
-          "rsi": 78.334716
+          "rsi": 64.896815
         },
         {
           "date": "2026-01-28",
@@ -5844,7 +5844,7 @@
           "sma20": 63.765,
           "bb_upper": 68.394261,
           "bb_lower": 59.135739,
-          "rsi": 79.243415
+          "rsi": 67.040349
         },
         {
           "date": "2026-01-29",
@@ -5852,7 +5852,7 @@
           "sma20": 64.2045,
           "bb_upper": 69.647222,
           "bb_lower": 58.761778,
-          "rsi": 81.56136
+          "rsi": 72.139435
         },
         {
           "date": "2026-01-30",
@@ -5860,7 +5860,7 @@
           "sma20": 64.6965,
           "bb_upper": 70.597074,
           "bb_lower": 58.795926,
-          "rsi": 81.476524
+          "rsi": 72.035524
         },
         {
           "date": "2026-02-02",
@@ -5868,7 +5868,7 @@
           "sma20": 64.974,
           "bb_upper": 70.622718,
           "bb_lower": 59.325282,
-          "rsi": 65.396945
+          "rsi": 53.738164
         },
         {
           "date": "2026-02-03",
@@ -5876,7 +5876,7 @@
           "sma20": 65.2525,
           "bb_upper": 70.788018,
           "bb_lower": 59.716982,
-          "rsi": 67.040485
+          "rsi": 56.528181
         },
         {
           "date": "2026-02-04",
@@ -5884,7 +5884,7 @@
           "sma20": 65.6905,
           "bb_upper": 71.100688,
           "bb_lower": 60.280312,
-          "rsi": 70.193355
+          "rsi": 61.675569
         },
         {
           "date": "2026-02-05",
@@ -5892,7 +5892,7 @@
           "sma20": 66.07,
           "bb_upper": 70.846806,
           "bb_lower": 61.293194,
-          "rsi": 64.257447
+          "rsi": 55.346921
         },
         {
           "date": "2026-02-06",
@@ -5900,7 +5900,7 @@
           "sma20": 66.373,
           "bb_upper": 70.834552,
           "bb_lower": 61.911448,
-          "rsi": 65.08972
+          "rsi": 56.60233
         },
         {
           "date": "2026-02-09",
@@ -5908,7 +5908,7 @@
           "sma20": 66.658,
           "bb_upper": 71.035591,
           "bb_lower": 62.280409,
-          "rsi": 66.741067
+          "rsi": 59.056843
         },
         {
           "date": "2026-02-10",
@@ -5916,7 +5916,7 @@
           "sma20": 66.9045,
           "bb_upper": 71.180397,
           "bb_lower": 62.628603,
-          "rsi": 65.926909
+          "rsi": 58.197505
         },
         {
           "date": "2026-02-11",
@@ -5924,7 +5924,7 @@
           "sma20": 67.101,
           "bb_upper": 71.455629,
           "bb_lower": 62.746371,
-          "rsi": 67.010381
+          "rsi": 59.773416
         },
         {
           "date": "2026-02-12",
@@ -5932,7 +5932,7 @@
           "sma20": 67.151,
           "bb_upper": 71.500758,
           "bb_lower": 62.801242,
-          "rsi": 60.51695
+          "rsi": 53.027763
         },
         {
           "date": "2026-02-13",
@@ -5940,7 +5940,7 @@
           "sma20": 67.3505,
           "bb_upper": 71.416601,
           "bb_lower": 63.284399,
-          "rsi": 61.014673
+          "rsi": 53.715943
         },
         {
           "date": "2026-02-16",
@@ -5948,7 +5948,7 @@
           "sma20": 67.5425,
           "bb_upper": 71.335672,
           "bb_lower": 63.749328,
-          "rsi": 61.514426
+          "rsi": 54.404067
         },
         {
           "date": "2026-02-17",
@@ -5956,7 +5956,7 @@
           "sma20": 67.689,
           "bb_upper": 71.123699,
           "bb_lower": 64.254301,
-          "rsi": 57.542535
+          "rsi": 50.37156
         },
         {
           "date": "2026-02-18",
@@ -5964,7 +5964,7 @@
           "sma20": 67.9315,
           "bb_upper": 71.232193,
           "bb_lower": 64.630807,
-          "rsi": 64.120054
+          "rsi": 58.999758
         },
         {
           "date": "2026-02-19",
@@ -5972,7 +5972,7 @@
           "sma20": 68.233,
           "bb_upper": 71.596219,
           "bb_lower": 64.869781,
-          "rsi": 66.97035
+          "rsi": 62.619766
         },
         {
           "date": "2026-02-20",
@@ -5980,7 +5980,7 @@
           "sma20": 68.5815,
           "bb_upper": 71.689562,
           "bb_lower": 65.473438,
-          "rsi": 67.026767
+          "rsi": 62.690716
         },
         {
           "date": "2026-02-23",
@@ -5988,7 +5988,7 @@
           "sma20": 68.862,
           "bb_upper": 71.956767,
           "bb_lower": 65.767233,
-          "rsi": 67.406483
+          "rsi": 63.167543
         },
         {
           "date": "2026-02-24",
@@ -5996,7 +5996,7 @@
           "sma20": 69.022,
           "bb_upper": 72.163564,
           "bb_lower": 65.880436,
-          "rsi": 64.380842
+          "rsi": 60.036271
         },
         {
           "date": "2026-02-25",
@@ -6004,7 +6004,7 @@
           "sma20": 69.1445,
           "bb_upper": 72.369456,
           "bb_lower": 65.919544,
-          "rsi": 64.571132
+          "rsi": 60.271921
         },
         {
           "date": "2026-02-26",
@@ -6012,7 +6012,7 @@
           "sma20": 69.1465,
           "bb_upper": 72.375384,
           "bb_lower": 65.917616,
-          "rsi": 64.110077
+          "rsi": 59.797267
         },
         {
           "date": "2026-02-27",
@@ -6020,7 +6020,7 @@
           "sma20": 69.236,
           "bb_upper": 72.720195,
           "bb_lower": 65.751805,
-          "rsi": 68.323903
+          "rsi": 64.941138
         },
         {
           "date": "2026-03-02",
@@ -6028,7 +6028,7 @@
           "sma20": 69.808,
           "bb_upper": 74.662942,
           "bb_lower": 64.953058,
-          "rsi": 77.119917
+          "rsi": 75.292334
         },
         {
           "date": "2026-03-03",
@@ -6036,7 +6036,7 @@
           "sma20": 70.5115,
           "bb_upper": 77.384462,
           "bb_lower": 63.638538,
-          "rsi": 81.060818
+          "rsi": 79.768455
         },
         {
           "date": "2026-03-04",
@@ -6044,7 +6044,7 @@
           "sma20": 71.1085,
           "bb_upper": 79.433326,
           "bb_lower": 62.783674,
-          "rsi": 81.060818
+          "rsi": 79.768455
         },
         {
           "date": "2026-03-05",
@@ -6052,7 +6052,7 @@
           "sma20": 72.0015,
           "bb_upper": 82.223385,
           "bb_lower": 61.779615,
-          "rsi": 84.461588
+          "rsi": 83.554245
         },
         {
           "date": "2026-03-06",
@@ -6060,7 +6060,7 @@
           "sma20": 73.2335,
           "bb_upper": 86.683242,
           "bb_lower": 59.783758,
-          "rsi": 88.499139
+          "rsi": 87.959297
         }
       ]
     }
@@ -6124,19 +6124,20 @@
       "CNBC": 2,
       "FOREX.com": 2,
       "BullionVault": 5,
-      "ETF Trends": 1,
       "CBS News": 6,
       "Yahoo Finance": 5,
-      "Investopedia": 2,
-      "Reuters": 6,
+      "ETF Trends": 1,
+      "Investopedia": 1,
+      "Reuters": 5,
       "GoldSilver": 1,
       "Gold Price": 1,
-      "Bloomberg": 1,
+      "Bloomberg.com": 1,
+      "FXEmpire": 3,
       "Barron's": 2,
       "Fortune": 1,
-      "FXEmpire": 2,
-      "marketpulse.com": 1,
-      "Crux Investor": 1
+      "Finance Magnates": 1,
+      "Crux Investor": 1,
+      "World Gold Council": 1
     }
   },
   "news_intelligence": {
@@ -6157,19 +6158,19 @@
         "dominant_category": "commodities",
         "bias_distribution": {},
         "representative_titles": [
-          "Gold (XAUUSD) & Silver Price Forecast: Khamenei Killing Ignites $5,393 Gold Gap – Will Silver Hit $100 Today? - FXEmpire",
+          "Gold rises as Middle East conflict escalates, dollar rally pauses - Reuters",
           "Which states have no sales tax on silver and gold? - CBS News",
           "Gold Surges Past $5,300 as Middle East Fighting Escalates - Barron's",
-          "Gold rises as Middle East conflict escalates, dollar rally pauses - Reuters",
+          "Why Gold Is Falling? XAU/USD Price Tests $5,000 After Strongest Drop in a Month - Finance Magnates",
           "What’s driving the gold price? … and other important questions - invesco.com"
         ],
         "narrative_summary": "",
         "articles": [
           {
-            "title": "Gold (XAUUSD) & Silver Price Forecast: Khamenei Killing Ignites $5,393 Gold Gap – Will Silver Hit $100 Today? - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMi4wFBVV95cUxNZURZcW5fZ2VMa3BKLXBQSXJtZ0FUQWdtUk5Sbmd6LVEwZ2dYODh2cHNlS2hFUVgxSzNBS3drWUp1UENwX2YteHFEaGJsUmF0cVZrS3FqUnNRclhIaUtqY19XeWd6UkF6a2d5clRnLW1NMFZnRzZ4R0xCbG9RSF8zTTkxZTdpVmlnWEVDUDROajlrX0VacDRieFFRaXBjVVB0dFc3OWRLVVVGWkRWa2tRUU5ZNk50RFZWcktqYlVEXzY1WlRJSmNPM3RWR0ZiRHZjblRFd0ZtU3dhdWoyTzk2bUotdw?oc=5",
-            "source": "FXEmpire",
-            "date": "Mon, 02 Ma",
+            "title": "Gold rises as Middle East conflict escalates, dollar rally pauses - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOekQ3SUt0NWtReUlxVUxXdkhON1MwR3ZMMGZwRUtGTGtuNDNUZFRDWTZSZHVGVl9GMXVJUDV4Tzk2b0xVcWtvR1J6Mmhid1BRMzVteFpuNXJENVYyRHpYOFBOUkw2TlNNbTE3dnd4SDlINE5LNFBGaEJiRk5vNExKblFHTXFldjZoRlNiY1RDaXFaM0VRSFRGRWw1ZFJUdjlENVp1WEtPSW4tbldURm5WUTB3?oc=5",
+            "source": "Reuters",
+            "date": "Wed, 04 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "commodities",
@@ -6177,13 +6178,12 @@
             "keywords": [
               "TES",
               "Gold",
-              "Silver",
-              "Price",
-              "Forecast",
-              "Khamenei"
+              "Middle",
+              "East",
+              "Reuters"
             ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
+            "bias_label": "center",
+            "factuality": "high"
           },
           {
             "title": "Which states have no sales tax on silver and gold? - CBS News",
@@ -6223,9 +6223,9 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold rises as Middle East conflict escalates, dollar rally pauses - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOekQ3SUt0NWtReUlxVUxXdkhON1MwR3ZMMGZwRUtGTGtuNDNUZFRDWTZSZHVGVl9GMXVJUDV4Tzk2b0xVcWtvR1J6Mmhid1BRMzVteFpuNXJENVYyRHpYOFBOUkw2TlNNbTE3dnd4SDlINE5LNFBGaEJiRk5vNExKblFHTXFldjZoRlNiY1RDaXFaM0VRSFRGRWw1ZFJUdjlENVp1WEtPSW4tbldURm5WUTB3?oc=5",
-            "source": "Reuters",
+            "title": "Why Gold Is Falling? XAU/USD Price Tests $5,000 After Strongest Drop in a Month - Finance Magnates",
+            "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxPTWo3WW9ESUhhcXRWeVBMT0VvYU5va1lJQmNfUlpZWEJhMVgzU0tpSno0aGp3NmtiVFBGN3R3LWJ2Y0ZaZTIwcVZQbkJKMnpyVGJ3Y0E1TURZODd3WTZKLXZ6ZzYydENJWU9RNXVyR2hHUkZFTGhfNUhQZ2lQekMtbXZlZXY2WXRHTGtnRm5ReHlLUlJhTjFEeG8tSXVkM2FKX2FkVDRXY3Z2NGQ3T0RrSnFtM2dmcE1Y?oc=5",
+            "source": "Finance Magnates",
             "date": "Wed, 04 Ma",
             "language": "en",
             "tone": 0.0,
@@ -6234,12 +6234,13 @@
             "keywords": [
               "TES",
               "Gold",
-              "Middle",
-              "East",
-              "Reuters"
+              "Falling",
+              "Price",
+              "Tests",
+              "After"
             ],
-            "bias_label": "center",
-            "factuality": "high"
+            "bias_label": "unknown",
+            "factuality": "unknown"
           },
           {
             "title": "What’s driving the gold price? … and other important questions - invesco.com",
@@ -6294,25 +6295,6 @@
             "factuality": "unknown"
           },
           {
-            "title": "3 Factors Impacting the 2026 Gold Price Outlook - ETF Trends",
-            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxORnBkY1UyQW1GNEdPc1A4dy05VzVxT19kT1VoN3VhclZiemI2bzhSMV90TzA4UW5wRVdoOXppOUkyZEdLTHo1Y1ZwczhlQXpZanhqTmxEQk9qbndmRXhrWDI3WjUtWmFiZEVhNU11cHZrT2NUY3hidlNoS1VVRjFCQjAzV29DTmt0RHM1SFRETWQ2ZHNZa1puZHpB0gGfAUFVX3lxTE5uZk1qRnl3VV9sSXJBUnVlWWVsSnh1VjdhNjhidHctVE10dWVzVUtkb3gxSGVLc1NGZUU2S19GVzduUzFZMWdoXzF5ZG0yTURXTzFVUDdaNlVqWlA5T3ZrMEN4SU13X1FZSENBVFgyWkhmUDlGYkdMcFVpMFp3NV9fWURHUlpnaHpvd0RlMklQTlItMFB1dnRJWl9lQnNLRQ?oc=5",
-            "source": "ETF Trends",
-            "date": "Tue, 03 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Factors",
-              "Impacting",
-              "Gold",
-              "Price",
-              "Outlook"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
             "title": "What is the price of gold today: March 2, 2026? - CBS News",
             "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTE0xeHM5eER2a25mWjhRUHZ0SWw2bFpmN29Hc0d1Y2htS2tCT3BCcE9ubW5ra09SNHppeGhzR3BtRXVMeEJISExmcWZZOGZyUmlwVWNPYUNfRE1NT0ZBQU91c3ZsRVY3dU5nZTVmNlhRRQ?oc=5",
             "source": "CBS News",
@@ -6349,6 +6331,25 @@
             "factuality": "unknown"
           },
           {
+            "title": "3 Factors Impacting the 2026 Gold Price Outlook - ETF Trends",
+            "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxORnBkY1UyQW1GNEdPc1A4dy05VzVxT19kT1VoN3VhclZiemI2bzhSMV90TzA4UW5wRVdoOXppOUkyZEdLTHo1Y1ZwczhlQXpZanhqTmxEQk9qbndmRXhrWDI3WjUtWmFiZEVhNU11cHZrT2NUY3hidlNoS1VVRjFCQjAzV29DTmt0RHM1SFRETWQ2ZHNZa1puZHpB0gGfAUFVX3lxTE5uZk1qRnl3VV9sSXJBUnVlWWVsSnh1VjdhNjhidHctVE10dWVzVUtkb3gxSGVLc1NGZUU2S19GVzduUzFZMWdoXzF5ZG0yTURXTzFVUDdaNlVqWlA5T3ZrMEN4SU13X1FZSENBVFgyWkhmUDlGYkdMcFVpMFp3NV9fWURHUlpnaHpvd0RlMklQTlItMFB1dnRJWl9lQnNLRQ?oc=5",
+            "source": "ETF Trends",
+            "date": "Tue, 03 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Factors",
+              "Impacting",
+              "Gold",
+              "Price",
+              "Outlook"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold Prices Aren't Doing What You'd Expect. Here's Why Experts Say That's Happening. - Investopedia",
             "url": "https://news.google.com/rss/articles/CBMivAFBVV95cUxOcjMxRXhpU3dKcHVadm0xWGhqb2E4RkktQ2U3RVVjSDFwTDI1YS1OQkg1WHNmR3ZicXJMZnhmU3RqWkotbjlMcDhqR1czZjNSOEhNZHFXSlA0ZVB2QTdiTkl3dlhkdGw4b1NPY2FyQjZWOWY1NXZ5MDZSbU4tN2pYRTNhUm5qbHoyRGNhVnRkbU9zMnlKMU1MeWg2RmNWUDNGakFHVHJXelhwU0J2T0I2UEp4b3o2aGpWS0lGLQ?oc=5",
             "source": "Investopedia",
@@ -6368,36 +6369,22 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold bulls say broader rally is intact despite investors' dash for cash - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPNXlBYkN1WkFXZ244Uk9mbUVzMHJ6RWdLV1Q0emhRZ3BwRk1BdC1TWXdCWnl2eFpqZjFRUTgxUG1MSXRnZHdDZHEyV2RtY3RrSnFsZlhSaGVsUEdFSEpHLVVkMmFyblJaWmZKZ2JIVWxLd21wYnA0WnB1MDRRTTBCU1k4UGNQa2pMMGpYRlc4UzNzUEcyenNGZzU5aWs2TzM5d1Vfbk8yWWE1eVUxeFoyNjNoMGU?oc=5",
+            "title": "COMMENTARY: Gold flubs its lines amid Middle East mayhem - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxNbXFocGFqWkNyaDBHVmxSSXhFZXNJN3kxOGRFOGFueDZCbm13R0RYT1hrX2tYUF8wMHBxcWdmcmJnaEVOWGRabWJwd3o1eWlFY2oxenRhSHZiYmFfZjdXSWdWVExiWFFvQWpEdTRFRkF6OHNreHZVQmxvMGtvT0dnd0lFUHdJRHZxZmFBdEw2UkluRld2ZW44?oc=5",
             "source": "Reuters",
-            "date": "Tue, 03 Ma",
+            "date": "Wed, 04 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "Gold",
+              "Middle",
+              "East",
               "Reuters"
             ],
             "bias_label": "center",
             "factuality": "high"
-          },
-          {
-            "title": "What does 1 gram of 24K gold cost in today's market? - CBS News",
-            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPLU90TWFCdkJ6eTAtUVR4bWFZakNfRmV0dUxqd0U2d2drazN4ZWJZZ0dqVWc1R3NVU2lPNEV6VVo5NzhMX0VXUnBVTXdsZ2VnU2pCWkRIZ1BqWXo1cGYzcWFEWVRNNW1pQjRSYndxdS0xUUZQdTU2a01hT3ZoQ1k5YXhHOA?oc=5",
-            "source": "CBS News",
-            "date": "Mon, 02 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "What",
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
           },
           {
             "title": "Gold and Silver Rally from Heavy ETF Outflows Across First Week of Middle East War | Gold News - BullionVault",
@@ -6419,6 +6406,38 @@
             "factuality": "unknown"
           },
           {
+            "title": "What does 1 gram of 24K gold cost in today's market? - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxPLU90TWFCdkJ6eTAtUVR4bWFZakNfRmV0dUxqd0U2d2drazN4ZWJZZ0dqVWc1R3NVU2lPNEV6VVo5NzhMX0VXUnBVTXdsZ2VnU2pCWkRIZ1BqWXo1cGYzcWFEWVRNNW1pQjRSYndxdS0xUUZQdTU2a01hT3ZoQ1k5YXhHOA?oc=5",
+            "source": "CBS News",
+            "date": "Mon, 02 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "What",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold bulls say broader rally is intact despite investors' dash for cash - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPNXlBYkN1WkFXZ244Uk9mbUVzMHJ6RWdLV1Q0emhRZ3BwRk1BdC1TWXdCWnl2eFpqZjFRUTgxUG1MSXRnZHdDZHEyV2RtY3RrSnFsZlhSaGVsUEdFSEpHLVVkMmFyblJaWmZKZ2JIVWxLd21wYnA0WnB1MDRRTTBCU1k4UGNQa2pMMGpYRlc4UzNzUEcyenNGZzU5aWs2TzM5d1Vfbk8yWWE1eVUxeFoyNjNoMGU?oc=5",
+            "source": "Reuters",
+            "date": "Tue, 03 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
             "title": "Gold Price Outlook: What Could Push Gold to $6,300 - GoldSilver",
             "url": "https://news.google.com/rss/articles/CBMiowFBVV95cUxNZzRiRVNjdnhzLXZHMUVWNUthUzIyaG9lTXRuYTVrbGtVZnA2aS1SYUptZ2IyRUpFaHdpZ01VZDJscktPUkVTUDB5V1VmNjd1cFprcnNYaDZRdHl0cUhnb01mZ2Z5VzF4X1FDOTdwTUx2SG1yYi13TTk4c3JEQ0s0TFVuSXVsZDUwdXNMVjRfN2FnUTBrZnhmYlRKS21wdmRNbFBj?oc=5",
             "source": "GoldSilver",
@@ -6438,40 +6457,20 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold touches $5,400 as demand for safe-haven asset jumps amid Iran conflict - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPWHQzSXNIY241TDNGQXhfTmNsLTR3VTAwQmh3RnptdHZ0aHZ3MGhhTDFJYndSc3pOWDRwRlJZS3c1VWZqa080SHoyUUhjeU5vVXo4ZS1qUVVXM0RGMWJpeDlHSkRzX0VvVTlpSV84c1FNMXh5aXdncEZzYnU0MVRFX2MyZU55eFNFMjEyVDhWQ2R4UTB4blZZUTQtOEUxSjBqUk9QUlJGR2owVmdHTEZCM213WnhJa3NQdnU4?oc=5",
+            "title": "How much gold would $1 million buy at different points in history? - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxOMXc2NE5SMm9sNVo3aWRMOUVZcU9weERGYlpvUjVHWGNyc2xGQmtzQTNtdHl4NFhsWmxaVlUyUWc5eWR0dDVVM0JMdGFScDNady12UlViSGV2S0pUdG83WldGRnJmOWxoRFBkb1lHUEp2cnc0b2duZWYyY01VeDcxREJsUThHX3c0N3RSME9KZmhUVkJubXFzWW15Zmlrd3d2RzZSWGxGT2RVcUpSbTZpYUoxQXdlZTFEcWxsWDdkQ2tON0dneVBDSkdydTRCLU9FMzdfWl9FRQ?oc=5",
             "source": "Yahoo Finance",
-            "date": "Mon, 02 Ma",
+            "date": "Tue, 03 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Gold",
-              "Iran",
               "Yahoo",
               "Finance"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
-          },
-          {
-            "title": "Gold flubs its lines amid Middle East mayhem - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMilwFBVV95cUxNbXFocGFqWkNyaDBHVmxSSXhFZXNJN3kxOGRFOGFueDZCbm13R0RYT1hrX2tYUF8wMHBxcWdmcmJnaEVOWGRabWJwd3o1eWlFY2oxenRhSHZiYmFfZjdXSWdWVExiWFFvQWpEdTRFRkF6OHNreHZVQmxvMGtvT0dnd0lFUHdJRHZxZmFBdEw2UkluRld2ZW44?oc=5",
-            "source": "Reuters",
-            "date": "Wed, 04 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Middle",
-              "East",
-              "Reuters"
-            ],
-            "bias_label": "center",
-            "factuality": "high"
           },
           {
             "title": "Dollar Jumps, Gold and Silver Crash as Iran War Hits Stocks, Bonds, Base - BullionVault",
@@ -6512,6 +6511,25 @@
             "factuality": "unknown"
           },
           {
+            "title": "Gold Steadies as Stocks Rally from Iran War Chaos, But Central-Bank Buying Sinks - BullionVault",
+            "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxQNXRadlBQOXNSdXFVTlpBUFVRbS0wUjE2SDgxM01DR1pQYkNoZ0RzLVpDQ3BXZnRjalRVNHlwODBvbUF1S0lCdUhhSWVHeVRIWmdYMVlMYks1LV9qTWM1eEo5UjN6UXNCLWFTUmNQb3JqZmUyVFg3WFd3VVJwbzE2Vk1xcDZGYjBKZ1h1bEJpZw?oc=5",
+            "source": "BullionVault",
+            "date": "Wed, 04 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Steadies",
+              "Stocks",
+              "Rally",
+              "Iran"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "What will happen to gold and silver prices this March? Here's what experts expect. - CBS News",
             "url": "https://news.google.com/rss/articles/CBMipgFBVV95cUxQSExsMUdVeHpMTktkMHp2d0dsRXFHcEN0T05nRXZ5XzBUdTBiRWFuYWNEYzZ5UVl4dmZ5RXRKcXBNYThSY0JsWU9oRmpmYUsySW9sZGNBeDZBbW85LW82eUVpS3dlU1IyNXN0bGlZa0xlancxY1lMTm41RFRKd0JwdEU4UjNtei1MR3pMUXZLcWtRTDlMdHl1UWRXa1hqOHFqeGFnZ0Z3?oc=5",
             "source": "CBS News",
@@ -6547,44 +6565,9 @@
             "factuality": "unknown"
           },
           {
-            "title": "Which gold coins are best to buy right now? - CBS News",
-            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE1FNVdJcHVnbzZLN1JMd2dmczB4ZXJubkc2YnVpRGdpbUluLTdiM0wyR2piOXNaQ2Qzb2t2SldhcDBPQkxoa1JqdkVpWndtVk96YWdxVXYxYUJjcm4wSHNfQnVVNW9sejFGb2pPVXdXT1UzOVZMbjFVM2dsdHR0dw?oc=5",
-            "source": "CBS News",
-            "date": "Mon, 02 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Which",
-              "News"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold Steadies as Stocks Rally from Iran War Chaos, But Central-Bank Buying Sinks - BullionVault",
-            "url": "https://news.google.com/rss/articles/CBMijwFBVV95cUxQNXRadlBQOXNSdXFVTlpBUFVRbS0wUjE2SDgxM01DR1pQYkNoZ0RzLVpDQ3BXZnRjalRVNHlwODBvbUF1S0lCdUhhSWVHeVRIWmdYMVlMYks1LV9qTWM1eEo5UjN6UXNCLWFTUmNQb3JqZmUyVFg3WFd3VVJwbzE2Vk1xcDZGYjBKZ1h1bEJpZw?oc=5",
-            "source": "BullionVault",
-            "date": "Wed, 04 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Steadies",
-              "Stocks",
-              "Rally",
-              "Iran"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Billionaire Sitting On 16,000 Kilos of Gold Says Price Will Rise - Bloomberg",
+            "title": "Billionaire Sitting On 16,000 Kilos of Gold Says Price Will Rise - Bloomberg.com",
             "url": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxPLURHYktXYmNzSXM2SWZyT3dBejJydlp2OVFOb2c2NG1sSThVUWU3VkpvT3dobVVqVC1DbGx1YWxhaWFZUVlPTkZ5bEZXMF9tUXh5RzByZ3c3NWlCUXZvb3hDM3lfMHUwU1RBQWlNdTJ4VlFxTHlVdVNNc3JRYVI1RXd2R3phQnVBemhJbV9sSlA0M1FmYkJkeV9wWXJoUVlQazliUUpuZnEzU0JHd29ZQ2ZfbXptNlpYMWZId3NaOGZYWWFuOENIZQ?oc=5",
-            "source": "Bloomberg",
+            "source": "Bloomberg.com",
             "date": "Thu, 05 Ma",
             "language": "en",
             "tone": 0.0,
@@ -6601,34 +6584,20 @@
             "factuality": "high"
           },
           {
-            "title": "Gold rises after U.S. payrolls report, but heads for first weekly fall in five - CNBC",
-            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPZG04S2p2VUxTN0VuaF9lUXJuVTJaWWl3dFBqYXdHWllzem9RRmdyNC1aSnpEMUIwS3NYeFowQUw1WmxUMGdwdWpJeWdRSlNkNk5zT3FsVThMU1A1dHRBOUdPTE9MOG1ScU1CRV9Ob2RUbW1HT3hqVkFCSllDbHFYOTg5OE9iX016VXZ2MXF0dFEzY0VnN3pEa1IxOUdSZnpzdF9aY29WZ9IBrAFBVV95cUxOUVg3WkhrTk44M1lfTmNMVzUwbnRYQ0U2cTZ4enRRV09oOXhUaUl0ekxRbVVhSXg3b2JQd0d6Y2ZIOVhUUHVhTnBZTDdEOVJHSjZveFozcERPeWtiTU85bGktUHpIY19UVkhMd0xqdVZpcDVZM0hTS2lDU0diczd4Y29ZOXBqcmZpakZPR2RKN0VHTVc3bHM4U3dtRU5BQndNcVZrbFRmOHdsc2lV?oc=5",
-            "source": "CNBC",
+            "title": "Gold (XAUUSD) & Silver Price Forecast: NFP Shock Ahead – Will a 59K Print Save Gold from a 5% Drop? - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMi2AFBVV95cUxNWWM1b2pmSldfVDg4MDh5VWplTTJUaW5UX0pPRVJsVUxScHlQdlU3SWxtcm55SzlyaHRackVqMjRpUVU5T1JHN0ljWW9QZFd3THBSWWJhQjdDQzB2UXNrcXQyeVJ3Nlp3RkpzdnlmSHo3UU9EQjhQZDNXQW5neG1FcHJ5R0h5Wk5Dd2VtSzEtcWNxR2pZcnF5VldiNTZ3eDhJc3JHWFBmX2hwZGp2UXJWRGE5S1NHRjlra2hxZ2JNRFZ4T1RoS29SbHQ3SEFBTWxULVBhazdMTzY?oc=5",
+            "source": "FXEmpire",
             "date": "Fri, 06 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "Gold"
-            ],
-            "bias_label": "center-right",
-            "factuality": "high"
-          },
-          {
-            "title": "Gold prices soar as Iran conflict increases safe-haven demand - Yahoo Finance",
-            "url": "https://news.google.com/rss/articles/CBMigwFBVV95cUxQbDdGQlQwTFNyUkpFMkdYRk5fNkpzSjlzaDBIUjljX25ZNmxKV0s5MUtaNmthazRSQ05fZ3RuV2VqX1NDVWxfaHN1UDQ3Um9LWklPTWxId3RwWnFzOWVLaVBMbnhNSVE2a1VLeHZoc2gxdzRSakpYQV91a2QwcThVbTJoWQ?oc=5",
-            "source": "Yahoo Finance",
-            "date": "Mon, 02 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
               "Gold",
-              "Iran",
-              "Yahoo",
-              "Finance"
+              "Silver",
+              "Price",
+              "Forecast",
+              "Shock"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6653,6 +6622,87 @@
             "factuality": "unknown"
           },
           {
+            "title": "Gold touches $5,400 as demand for safe-haven asset jumps amid Iran conflict - Yahoo Finance",
+            "url": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPWHQzSXNIY241TDNGQXhfTmNsLTR3VTAwQmh3RnptdHZ0aHZ3MGhhTDFJYndSc3pOWDRwRlJZS3c1VWZqa080SHoyUUhjeU5vVXo4ZS1qUVVXM0RGMWJpeDlHSkRzX0VvVTlpSV84c1FNMXh5aXdncEZzYnU0MVRFX2MyZU55eFNFMjEyVDhWQ2R4UTB4blZZUTQtOEUxSjBqUk9QUlJGR2owVmdHTEZCM213WnhJa3NQdnU4?oc=5",
+            "source": "Yahoo Finance",
+            "date": "Mon, 02 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Iran",
+              "Yahoo",
+              "Finance"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold rises after U.S. payrolls report, but heads for first weekly fall in five - CNBC",
+            "url": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPZG04S2p2VUxTN0VuaF9lUXJuVTJaWWl3dFBqYXdHWllzem9RRmdyNC1aSnpEMUIwS3NYeFowQUw1WmxUMGdwdWpJeWdRSlNkNk5zT3FsVThMU1A1dHRBOUdPTE9MOG1ScU1CRV9Ob2RUbW1HT3hqVkFCSllDbHFYOTg5OE9iX016VXZ2MXF0dFEzY0VnN3pEa1IxOUdSZnpzdF9aY29WZ9IBrAFBVV95cUxOUVg3WkhrTk44M1lfTmNMVzUwbnRYQ0U2cTZ4enRRV09oOXhUaUl0ekxRbVVhSXg3b2JQd0d6Y2ZIOVhUUHVhTnBZTDdEOVJHSjZveFozcERPeWtiTU85bGktUHpIY19UVkhMd0xqdVZpcDVZM0hTS2lDU0diczd4Y29ZOXBqcmZpakZPR2RKN0VHTVc3bHM4U3dtRU5BQndNcVZrbFRmOHdsc2lV?oc=5",
+            "source": "CNBC",
+            "date": "Fri, 06 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold"
+            ],
+            "bias_label": "center-right",
+            "factuality": "high"
+          },
+          {
+            "title": "Gold falls as rising yields, firm dollar eclipse safe‑haven demand - Reuters",
+            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxNYjVrOHJWb3hWcTNBYVBVcEltWkJPeDlNR3FwellZN194Z2VSZ1NvbHc1TklmbEN1YlJVTF9oLTF5cWxSYmlkLVl0WG5NaUdwajU5TTU3US1rOFhMU1J5b1FYVC1nVjVqckpkMzNqWkNzLVQ2T2VHY2RDbGxiMThMNy13MVZjcjZ2dmhtTFZCemJGeVVWR3ZmaDk3cjU?oc=5",
+            "source": "Reuters",
+            "date": "Thu, 05 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Reuters"
+            ],
+            "bias_label": "center",
+            "factuality": "high"
+          },
+          {
+            "title": "Which gold coins are best to buy right now? - CBS News",
+            "url": "https://news.google.com/rss/articles/CBMifkFVX3lxTE1FNVdJcHVnbzZLN1JMd2dmczB4ZXJubkc2YnVpRGdpbUluLTdiM0wyR2piOXNaQ2Qzb2t2SldhcDBPQkxoa1JqdkVpWndtVk96YWdxVXYxYUJjcm4wSHNfQnVVNW9sejFGb2pPVXdXT1UzOVZMbjFVM2dsdHR0dw?oc=5",
+            "source": "CBS News",
+            "date": "Mon, 02 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Which",
+              "News"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "What would $5,000 worth of gold purchased in 2016 be worth in 2026? - Fortune",
+            "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1FMUV1Vm1UNmIwNnh6M0xzdjhTMl81Y3hrdGROSkNHbW9tdXIwT0VwekRScjRHcXFON0pzZGM3VEcyc0YzbW5OUmppbW43a3hydzFBWU53OE9GQQ?oc=5",
+            "source": "Fortune",
+            "date": "Tue, 03 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "What",
+              "Fortune"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
             "title": "Gold Slips as Dollar Strength and War-Driven Oil Surge Pressure Prices - Yahoo Finance",
             "url": "https://news.google.com/rss/articles/CBMiggFBVV95cUxPWWprV2JjQkxKRVRxNldKMVNPYWZRZUxnckpLZExWZUNtdFJQNGJHOU52UHJ4ZWxUM2NOeVRyOEY4WFdQSGFZQ1B5angyc1d3RFJQdHY1dFRQYTQzb1RzMHgtV2hyeDN2MzVxLW1leTR3WjM4a1BMODBXMHF1TlVscmZR?oc=5",
             "source": "Yahoo Finance",
@@ -6672,33 +6722,20 @@
             "factuality": "unknown"
           },
           {
-            "title": "Gold falls as rising yields, firm dollar eclipse safe‑haven demand - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMinAFBVV95cUxNYjVrOHJWb3hWcTNBYVBVcEltWkJPeDlNR3FwellZN194Z2VSZ1NvbHc1TklmbEN1YlJVTF9oLTF5cWxSYmlkLVl0WG5NaUdwajU5TTU3US1rOFhMU1J5b1FYVC1nVjVqckpkMzNqWkNzLVQ2T2VHY2RDbGxiMThMNy13MVZjcjZ2dmhtTFZCemJGeVVWR3ZmaDk3cjU?oc=5",
-            "source": "Reuters",
-            "date": "Thu, 05 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Reuters"
-            ],
-            "bias_label": "center",
-            "factuality": "high"
-          },
-          {
-            "title": "What would $5,000 worth of gold purchased in 2016 be worth in 2026? - Fortune",
-            "url": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1FMUV1Vm1UNmIwNnh6M0xzdjhTMl81Y3hrdGROSkNHbW9tdXIwT0VwekRScjRHcXFON0pzZGM3VEcyc0YzbW5OUmppbW43a3hydzFBWU53OE9GQQ?oc=5",
-            "source": "Fortune",
+            "title": "Gold Price Analysis – Gold Gets Hammered on Tuesday Morning - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMirAFBVV95cUxQbVo2dFBvYXRwdkdpVmVqUklwQlUwQktnU2pNZ1Qzb1VnZkVpSTNTWFdURndaandFZ2hoU2tXdHpQOU9jZ0NJc0lMMWVGMGE1Y2psY2pZZ1hvdXNXZEVnc3lSd2taNFRyeVNlQ2Z5S2d5V3F6UmZCNGt5WElsVl9hcTd2aDR1Y21ZSTFCdXRpcENiLWtuamtDRHdqRTlDZGx0TVJSNE9ldGNpUjFt?oc=5",
+            "source": "FXEmpire",
             "date": "Tue, 03 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
-              "What",
-              "Fortune"
+              "Gold",
+              "Price",
+              "Analysis",
+              "Gets",
+              "Hammered"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6739,35 +6776,20 @@
             "factuality": "high"
           },
           {
-            "title": "Gold gains on fears of prolonged Middle East conflict - Reuters",
-            "url": "https://news.google.com/rss/articles/CBMirwFBVV95cUxNZlZHWHNZOWItbjZnS1ZkaFFUTHg4b08tTzJIR0RIVE9PYlU3bm4tUWJzYkhDaHpLaEFCVEtlSW5jV2Zzb1JHSVlyUE0ybFljYjFCV1FKTnlXRnRfWUFNTjRMaVd4X3BLMkQ2aXJBUkFMUWlSZWpMUGRjem5RbE50QVFhVm1SR1JoVU9NcUFmQTg0RjZ2QXMtT09Cclk5WGJMSWZOZ0ExTkN1bXIyRm1B?oc=5",
-            "source": "Reuters",
-            "date": "Mon, 02 Ma",
+            "title": "Gold (XAUUSD) & Silver Price Forecast: Rubio’s 24-Hour Warning – Is a Massive Gold Spike Looming? - FXEmpire",
+            "url": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxPeGNnUGRzWGNQOGxDRzlIREdkM1kyOGp3WmtWemdBdGlhNDVOaEdzbDdNT1JjS3JlLXJ2U1J0SVRnam1sUXJ0RnlkQkRIaERIS1pEUjV5WnlRd3VIYmc5Qk9DeUlfbzIzX2ViUWFwcG9yZjVZVE9Yek01Q3A3OHpPMWIyYmlQeDJ3Qm5GcDVRUWFyazY1N0k4bjB5TjdpNDNoa19td2xuY1ZHS2V1MHJ6M01ZMW10QlJ0MDRIbFcta2dXMHEyLW96N3BYOVpTVklIM1hweEJR?oc=5",
+            "source": "FXEmpire",
+            "date": "Tue, 03 Ma",
             "language": "en",
             "tone": 0.0,
             "category": "commodities",
             "relevance": 0.2,
             "keywords": [
               "Gold",
-              "Middle",
-              "East",
-              "Reuters"
-            ],
-            "bias_label": "center",
-            "factuality": "high"
-          },
-          {
-            "title": "Chart alert: Gold (XAU/USD) is down 3% for the week, but bulls may make a comeback - marketpulse.com",
-            "url": "https://news.google.com/rss/articles/CBMiswFBVV95cUxPNlRoekx6UktRaVFNNE9QRjE2U0JLcTFoOHQtZE44U3Z1WU5MQm82V3Myb2VLbFdGQkNIa2xmb2lnUjhoa0hOX2JJVlVBdEpraFJrNVEyVDk2QjNiYkVNV2UwcFNoLXFPa29XTGRZMWh0bHBpdVZVRDZ4ZmpXR3dYemtrRXN2NGRCZjFqWDJIelR3R05OV29lTkhJRDVBX0JzN0RkNTM2dF8zSHhPRVZGTnJZZw?oc=5",
-            "source": "marketpulse.com",
-            "date": "Fri, 06 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Chart",
-              "Gold"
+              "Silver",
+              "Price",
+              "Forecast",
+              "Rubio"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6788,44 +6810,6 @@
             "factuality": "unknown"
           },
           {
-            "title": "What's Behind the Sell-Off In Gold on Tuesday? - Investopedia",
-            "url": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxQeUlpT2lsM1FEMTFKLTNxdmQ3UEl3WVVYRmstMWhzbC1DTTNMRVI2VVZCcFRhbDlVdF82V0tBRjh4VWJMVldPRW9jalcxb2FYVGtXZ0twREdFOF9wSVBZd3g4NFRyVHltM0tjejRib1U3VUhLemU1WVFTS1pwVFVhb3pzYzhibkRCMUlRX1BSYlhVekxBRDk0YmFLWGhiajN3VzFiazFDZ0lyZw?oc=5",
-            "source": "Investopedia",
-            "date": "Tue, 03 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "What",
-              "Behind",
-              "Sell",
-              "Gold",
-              "Tuesday"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
-            "title": "Gold (XAUUSD) & Silver Price Forecast: Rubio’s 24-Hour Warning – Is a Massive Gold Spike Looming? - FXEmpire",
-            "url": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxPeGNnUGRzWGNQOGxDRzlIREdkM1kyOGp3WmtWemdBdGlhNDVOaEdzbDdNT1JjS3JlLXJ2U1J0SVRnam1sUXJ0RnlkQkRIaERIS1pEUjV5WnlRd3VIYmc5Qk9DeUlfbzIzX2ViUWFwcG9yZjVZVE9Yek01Q3A3OHpPMWIyYmlQeDJ3Qm5GcDVRUWFyazY1N0k4bjB5TjdpNDNoa19td2xuY1ZHS2V1MHJ6M01ZMW10QlJ0MDRIbFcta2dXMHEyLW96N3BYOVpTVklIM1hweEJR?oc=5",
-            "source": "FXEmpire",
-            "date": "Tue, 03 Ma",
-            "language": "en",
-            "tone": 0.0,
-            "category": "commodities",
-            "relevance": 0.2,
-            "keywords": [
-              "Gold",
-              "Silver",
-              "Price",
-              "Forecast",
-              "Rubio"
-            ],
-            "bias_label": "unknown",
-            "factuality": "unknown"
-          },
-          {
             "title": "Why Gold Is Rising and Why It May Not Stop When the Crisis Does - Crux Investor",
             "url": "https://news.google.com/rss/articles/CBMinwFBVV95cUxNbWEzVVRCa2VULXpjM09mR2lKeWpYbDNLWXhPZ1FDT3dHMlYwOVNSY2pjZ3hqQWcwZGx3RTE5ckRMTU5sZmlTTVhIUUw4RFpwbVh6bW5WRFN1STZmLUMydWJESS1fa1JDaWRFekxqYk1WU1pVTXBWVWtMakVfbjNWbV9WU05sbVdiT0xMc3JLM3VBWmdhU1AwMW9IRVZsWjg?oc=5",
             "source": "Crux Investor",
@@ -6840,6 +6824,25 @@
               "Stop",
               "When",
               "Crisis"
+            ],
+            "bias_label": "unknown",
+            "factuality": "unknown"
+          },
+          {
+            "title": "Gold Market Commentary: When the dollar turns on itself - World Gold Council",
+            "url": "https://news.google.com/rss/articles/CBMif0FVX3lxTE1QY1phZEpUWGx1YUxYZVpQQzRvTVZvYlpNS05vMTBpQkhMNnJ0X2pfb3J5bVFCeUE3eGRQSU5jUmthOGQ2LXF0RjF5VnV1RFZRQTFjYmVIWWhqOTZWcVFtWE1peHNOeHJLc3RUb3BHU19UcmNZRHR2cFBEc1JnWnM?oc=5",
+            "source": "World Gold Council",
+            "date": "Thu, 05 Ma",
+            "language": "en",
+            "tone": 0.0,
+            "category": "commodities",
+            "relevance": 0.2,
+            "keywords": [
+              "Gold",
+              "Market",
+              "Commentary",
+              "When",
+              "World"
             ],
             "bias_label": "unknown",
             "factuality": "unknown"
@@ -6902,10 +6905,10 @@
     ],
     "top_stories": [
       {
-        "title": "Gold (XAUUSD) & Silver Price Forecast: Khamenei Killing Ignites $5,393 Gold Gap – Will Silver Hit $100 Today? - FXEmpire",
-        "url": "https://news.google.com/rss/articles/CBMi4wFBVV95cUxNZURZcW5fZ2VMa3BKLXBQSXJtZ0FUQWdtUk5Sbmd6LVEwZ2dYODh2cHNlS2hFUVgxSzNBS3drWUp1UENwX2YteHFEaGJsUmF0cVZrS3FqUnNRclhIaUtqY19XeWd6UkF6a2d5clRnLW1NMFZnRzZ4R0xCbG9RSF8zTTkxZTdpVmlnWEVDUDROajlrX0VacDRieFFRaXBjVVB0dFc3OWRLVVVGWkRWa2tRUU5ZNk50RFZWcktqYlVEXzY1WlRJSmNPM3RWR0ZiRHZjblRFd0ZtU3dhdWoyTzk2bUotdw?oc=5",
-        "source": "FXEmpire",
-        "date": "Mon, 02 Ma",
+        "title": "Gold rises as Middle East conflict escalates, dollar rally pauses - Reuters",
+        "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOekQ3SUt0NWtReUlxVUxXdkhON1MwR3ZMMGZwRUtGTGtuNDNUZFRDWTZSZHVGVl9GMXVJUDV4Tzk2b0xVcWtvR1J6Mmhid1BRMzVteFpuNXJENVYyRHpYOFBOUkw2TlNNbTE3dnd4SDlINE5LNFBGaEJiRk5vNExKblFHTXFldjZoRlNiY1RDaXFaM0VRSFRGRWw1ZFJUdjlENVp1WEtPSW4tbldURm5WUTB3?oc=5",
+        "source": "Reuters",
+        "date": "Wed, 04 Ma",
         "language": "en",
         "tone": 0.0,
         "category": "commodities",
@@ -6913,13 +6916,12 @@
         "keywords": [
           "TES",
           "Gold",
-          "Silver",
-          "Price",
-          "Forecast",
-          "Khamenei"
+          "Middle",
+          "East",
+          "Reuters"
         ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
+        "bias_label": "center",
+        "factuality": "high"
       },
       {
         "title": "Which states have no sales tax on silver and gold? - CBS News",
@@ -6959,9 +6961,9 @@
         "factuality": "unknown"
       },
       {
-        "title": "Gold rises as Middle East conflict escalates, dollar rally pauses - Reuters",
-        "url": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOekQ3SUt0NWtReUlxVUxXdkhON1MwR3ZMMGZwRUtGTGtuNDNUZFRDWTZSZHVGVl9GMXVJUDV4Tzk2b0xVcWtvR1J6Mmhid1BRMzVteFpuNXJENVYyRHpYOFBOUkw2TlNNbTE3dnd4SDlINE5LNFBGaEJiRk5vNExKblFHTXFldjZoRlNiY1RDaXFaM0VRSFRGRWw1ZFJUdjlENVp1WEtPSW4tbldURm5WUTB3?oc=5",
-        "source": "Reuters",
+        "title": "Why Gold Is Falling? XAU/USD Price Tests $5,000 After Strongest Drop in a Month - Finance Magnates",
+        "url": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxPTWo3WW9ESUhhcXRWeVBMT0VvYU5va1lJQmNfUlpZWEJhMVgzU0tpSno0aGp3NmtiVFBGN3R3LWJ2Y0ZaZTIwcVZQbkJKMnpyVGJ3Y0E1TURZODd3WTZKLXZ6ZzYydENJWU9RNXVyR2hHUkZFTGhfNUhQZ2lQekMtbXZlZXY2WXRHTGtnRm5ReHlLUlJhTjFEeG8tSXVkM2FKX2FkVDRXY3Z2NGQ3T0RrSnFtM2dmcE1Y?oc=5",
+        "source": "Finance Magnates",
         "date": "Wed, 04 Ma",
         "language": "en",
         "tone": 0.0,
@@ -6970,12 +6972,13 @@
         "keywords": [
           "TES",
           "Gold",
-          "Middle",
-          "East",
-          "Reuters"
+          "Falling",
+          "Price",
+          "Tests",
+          "After"
         ],
-        "bias_label": "center",
-        "factuality": "high"
+        "bias_label": "unknown",
+        "factuality": "unknown"
       },
       {
         "title": "What’s driving the gold price? … and other important questions - invesco.com",
@@ -7049,25 +7052,6 @@
         "factuality": "unknown"
       },
       {
-        "title": "3 Factors Impacting the 2026 Gold Price Outlook - ETF Trends",
-        "url": "https://news.google.com/rss/articles/CBMimgFBVV95cUxORnBkY1UyQW1GNEdPc1A4dy05VzVxT19kT1VoN3VhclZiemI2bzhSMV90TzA4UW5wRVdoOXppOUkyZEdLTHo1Y1ZwczhlQXpZanhqTmxEQk9qbndmRXhrWDI3WjUtWmFiZEVhNU11cHZrT2NUY3hidlNoS1VVRjFCQjAzV29DTmt0RHM1SFRETWQ2ZHNZa1puZHpB0gGfAUFVX3lxTE5uZk1qRnl3VV9sSXJBUnVlWWVsSnh1VjdhNjhidHctVE10dWVzVUtkb3gxSGVLc1NGZUU2S19GVzduUzFZMWdoXzF5ZG0yTURXTzFVUDdaNlVqWlA5T3ZrMEN4SU13X1FZSENBVFgyWkhmUDlGYkdMcFVpMFp3NV9fWURHUlpnaHpvd0RlMklQTlItMFB1dnRJWl9lQnNLRQ?oc=5",
-        "source": "ETF Trends",
-        "date": "Tue, 03 Ma",
-        "language": "en",
-        "tone": 0.0,
-        "category": "commodities",
-        "relevance": 0.2,
-        "keywords": [
-          "Factors",
-          "Impacting",
-          "Gold",
-          "Price",
-          "Outlook"
-        ],
-        "bias_label": "unknown",
-        "factuality": "unknown"
-      },
-      {
         "title": "What is the price of gold today: March 2, 2026? - CBS News",
         "url": "https://news.google.com/rss/articles/CBMib0FVX3lxTE0xeHM5eER2a25mWjhRUHZ0SWw2bFpmN29Hc0d1Y2htS2tCT3BCcE9ubW5ra09SNHppeGhzR3BtRXVMeEJISExmcWZZOGZyUmlwVWNPYUNfRE1NT0ZBQU91c3ZsRVY3dU5nZTVmNlhRRQ?oc=5",
         "source": "CBS News",
@@ -7083,43 +7067,63 @@
         ],
         "bias_label": "unknown",
         "factuality": "unknown"
+      },
+      {
+        "title": "Gold price today, Friday, March 6: Gold is down this week with Feb. employment report on deck - Yahoo Finance",
+        "url": "https://news.google.com/rss/articles/CBMi-AFBVV95cUxPRzVtZXh0TTNSbUpodFJJRkVBX1VFbjh0T0xVNUZtMlg1ZFAzRzdBOThtN3Q3UDFYR0dtQ1Z0YmtuUmlXMW9uZjhyWVAxQldGVkdUdTZ0OGpNc004Y1N3eUdYcU9qdkhTc0R1Sl9TbW1XbC1FZ0VNYUN1alQ1R3BBMm5ONUJqUEJOWXBLV1FCeG9QNzNKbG81cWg0OHU5cnBuT1BLdE9nVDE0QldQYkZKc0Vacjc4ZmhoYnJDRzY1eGxMV3Nib3lKZThudFpIWFRtZkFVUkFkeG1qVVVWY0p5QjZlTlVWNjlTekRYdkoyc3lBZjh5LWl0RA?oc=5",
+        "source": "Yahoo Finance",
+        "date": "Fri, 06 Ma",
+        "language": "en",
+        "tone": 0.0,
+        "category": "commodities",
+        "relevance": 0.2,
+        "keywords": [
+          "Gold",
+          "Friday",
+          "March",
+          "Yahoo",
+          "Finance"
+        ],
+        "bias_label": "unknown",
+        "factuality": "unknown"
       }
     ],
     "source_diversity": {
-      "FXEmpire": 2,
+      "Reuters": 5,
       "CBS News": 6,
       "Barron's": 2,
-      "Reuters": 6,
+      "Finance Magnates": 1,
       "invesco.com": 1,
       "CNBC": 2,
       "FOREX.com": 2,
       "BullionVault": 5,
-      "ETF Trends": 1,
       "Yahoo Finance": 5,
-      "Investopedia": 2,
+      "ETF Trends": 1,
+      "Investopedia": 1,
       "GoldSilver": 1,
       "Gold Price": 1,
-      "Bloomberg": 1,
+      "Bloomberg.com": 1,
+      "FXEmpire": 3,
       "Fortune": 1,
-      "marketpulse.com": 1,
-      "Crux Investor": 1
+      "Crux Investor": 1,
+      "World Gold Council": 1
     }
   },
   "political_bias_analysis": {
     "source_bias_distribution": {
       "left": 0,
       "center-left": 0,
-      "center": 6,
+      "center": 5,
       "center-right": 3,
       "right": 0,
-      "unknown": 31
+      "unknown": 32
     },
-    "bias_diversity_score": 0.395,
+    "bias_diversity_score": 0.411,
     "factuality_distribution": {
-      "high": 9,
+      "high": 8,
       "mixed": 0,
       "low": 0,
-      "unknown": 31
+      "unknown": 32
     },
     "cluster_bias_assessments": [],
     "flagged_articles": 3,
@@ -7136,5 +7140,5 @@
   },
   "upcoming_events": [],
   "quality_score": 1.0,
-  "generated_at": "2026-07-29T13:00:11.510212+00:00"
+  "generated_at": "2026-08-28T18:00:16.317515+00:00"
 }
