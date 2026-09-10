@@ -324,8 +324,50 @@ def compute_config_hash(config: Dict[str, Any]) -> str:
     return hashlib.sha256(config_str.encode()).hexdigest()[:16]
 
 
-def load_date_ranges() -> DateRanges:
-    """Load date ranges from SSOT config."""
+def load_date_ranges(partition: str = "production") -> DateRanges:
+    """Load date ranges from the SSOT of the requested track.
+
+    DOS PARTICIONES, DOS TRACKS (no se mezclan). Anadido 2026-08-24:
+
+      "production" -> `config/date_ranges.yaml`
+          El track H1/H5. training 2020-03 -> 2024-12, validation 2025-H1,
+          test 2025-H2 -> hoy. Es el comportamiento por defecto y no cambia.
+
+      "research"   -> `config/research/partition.yaml` (CTR-RESEARCH-PARTITION-001)
+          El carril de la tesis (RL/LLM/hibrido, 5 minutos). Su hold-out se abre UNA vez
+          con manifiesto firmado (Regla B), asi que sus bloques NO pueden salir del
+          fichero de produccion: son rangos distintos, elegidos por un analisis de poder
+          distinto, y confundirlos contaminaria el hold-out.
+
+    Mapeo de bloques de investigacion a los tres campos que espera el builder:
+        development -> training     (HPO; todo Optuna aqui)
+        selection   -> validation   (top-3)
+        holdout     -> test         (juicio final, una apertura)
+    """
+    if partition == "research":
+        config_path = CONFIG_DIR / "research" / "partition.yaml"
+        if not config_path.exists():
+            raise FileNotFoundError(f"partition.yaml not found: {config_path}")
+        with open(config_path) as f:
+            cfg = yaml.safe_load(f)
+        b = cfg["blocks"]
+        logging.info(
+            "[SSOT] particion de INVESTIGACION %s | dev=%s sel=%s holdout=%s sesiones",
+            cfg.get("contract_id"), b["development"]["sessions"],
+            b["selection"]["sessions"], b["holdout"]["sessions"])
+        return DateRanges(
+            training_start=b["development"]["start"],
+            training_end=b["development"]["end"],
+            validation_start=b["selection"]["start"],
+            validation_end=b["selection"]["end"],
+            test_start=b["holdout"]["start"],
+            test_end=b["holdout"]["end"],
+        )
+
+    if partition != "production":
+        raise ValueError(
+            f"particion desconocida: {partition!r}. Usa 'production' o 'research'.")
+
     config_path = CONFIG_DIR / "date_ranges.yaml"
 
     if not config_path.exists():
@@ -1412,8 +1454,9 @@ def build_dataset(**context) -> Dict[str, Any]:
     # Load experiment config if available
     exp_config = load_experiment_config(experiment_name)
 
-    # Load date ranges (SSOT)
-    date_ranges = load_date_ranges()
+    # Load date ranges (SSOT). `partition` elige el track: 'production' (default, H1/H5)
+    # o 'research' (la tesis, config/research/partition.yaml). Ver load_date_ranges.
+    date_ranges = load_date_ranges(dag_conf.get('partition', 'production'))
 
     # Determine date range for data loading
     if exp_config and 'data' in exp_config:

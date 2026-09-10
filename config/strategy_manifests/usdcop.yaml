@@ -39,7 +39,7 @@ components:
   recipe_note: >-
     cada reentrenamiento produce un model_snapshot semanal bajo el mismo spec; el check
     es 'receta congelada, snapshots registrados', nunca 'pesos inmutables'
-  spec_fingerprint_sha256_16: 758456c8fcc51834   # sha256 canonico LF (CRLF->LF,
+  spec_fingerprint_sha256_16: 86c8e7d978bdb851   # sha256 canonico LF (CRLF->LF,
     # == blob git)[:16] sobre spec_fingerprint_inputs en orden (hiperparams
     # ridge alpha=1.0 / bayesian_ridge max_iter=300, ensemble mean — la RECETA)
   spec_fingerprint_inputs:    # declarados para que el fingerprint sea recomputable
@@ -49,7 +49,7 @@ components:
   code_reference:
   - scripts/pipeline/train_and_export_smart_simple.py
   - src/forecasting/enhance_v2.py
-  code_hash_sha256_16: 60663704514cbec2   # mismo metodo que el hash del manifiesto (LF)
+  code_hash_sha256_16: d9cd4e82dca0d72f   # mismo metodo que el hash del manifiesto (LF)
   feature_set:
     builder: src/forecasting/enhance_v2.py::enhance_features_v2
     recipe_feature_set_id: usdcop_smart_simple_v11_recipe25       # la RECETA (25)
@@ -101,9 +101,22 @@ files:
 - scripts/pipeline/train_and_export_smart_simple.py
 - src/forecasting/enhance_v2.py
 asset_id: usdcop
-code_hash_sha256_16: 60663704514cbec2
-manifest_frozen_at: '2026-07-28'
-manifest_version: 14
+code_hash_sha256_16: d9cd4e82dca0d72f
+manifest_frozen_at: '2026-08-24'
+manifest_version: 15
+refreeze_note_v15: >-
+  Re-freeze v15 (2026-08-24, auditoria de limpieza): el commit 73f8c9b0 anadio `strategy_id`
+  a la clave de los 7 UPSERT H5 de train_and_export_smart_simple.py. Motivo: la migracion 064
+  hizo las tablas H5 strategy-scoped, y un `ON CONFLICT (signal_date)` sin strategy_id hacia
+  que una corrida de v12 o v14 estampara sus filas como v11 y PISARA produccion. Cambio de
+  PERSISTENCIA, no de estrategia: 0 lineas de generacion de senal, 0 de gates o metricas,
+  backtest NO re-ejecutado, ningun numero observado => **0 trials** (quant-constitution §2,
+  strategy-engines §8). Verificado por fichero contra el blob del freeze (b67b8e4e): SOLO
+  cambio train_and_export_smart_simple.py (1cefa32f466e450b -> 90abca9b5c740824);
+  src/forecasting/enhance_v2.py (b601ae271c8e2b5f) y config/execution/smart_simple_v1.yaml
+  (5184f9c533a3a1d0) quedan IDENTICOS — el constructor de features y la config de la
+  estrategia no se tocaron, que es lo que "la senal es identica" significa en concreto.
+  Hash del manifiesto 60663704514cbec2 -> d9cd4e82dca0d72f; componente 60663704514cbec2 -> d9cd4e82dca0d72f; spec_fingerprint 758456c8fcc51834 -> 86c8e7d978bdb851. v11 sigue FROZEN, juez = forward 2026.
 refreeze_note_v14: >-
   Re-freeze v14 (2026-07-28, cierre de BL-10): `forecast_trial_ids_legacy` deja de ser el
   aplazamiento `pending-BL-10` y pasa a declarar el linaje FT REAL FT-0001..FT-0048.

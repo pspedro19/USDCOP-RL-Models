@@ -93,6 +93,37 @@ def test_fx_repair_holds_in_db(db):
     assert cur.fetchone()[0] == 0, "scale-corrupted MXN/CLP rows are back"
 
 
+# ---------------------------------------------------------------------------
+# RESUELTO 2026-08-25 — se conserva el registro porque el sintoma era desconcertante.
+#
+# Estos cuatro tests fallaban sin que hubiera NADA mal en los datos: la primera consulta
+# mataba al servidor Postgres y las tres siguientes caian en cascada, porque la fixture
+# `db` es de modulo y la conexion ya estaba cerrada.
+#
+#     psycopg2.OperationalError: server closed the connection unexpectedly
+#     psycopg2.InterfaceError: connection already closed   (x3)
+#
+#     docker logs usdcop-postgres-timescale:
+#       LOG: server process (PID ...) was terminated by signal 9: Killed
+#
+# Causa raiz: `asset_daily_ohlcv` tenia **2.430 chunks de 7 dias** (mas uno de 943) para
+# 60.542 filas — 25 filas por chunk. El hypertable se creo con el `chunk_time_interval`
+# por defecto de TimescaleDB y el backfill de historia completa (1979-2026) escribio
+# decadas con el; cambiar el intervalo despues no reescribe los chunks existentes. Un
+# GROUP BY que los recorria agotaba la memoria del contenedor y el OOM killer se llevaba
+# el backend.
+#
+# Arreglado con `scripts/ops/fix_daily_hypertable_chunks.py`: **2.431 chunks -> 6**, con
+# respaldo CSV verificado de las 60.542 filas y las 3 vistas dependientes recreadas desde
+# sus definiciones capturadas. La consulta de abajo pasa de matar al servidor a tardar
+# 0,7 s.
+#
+# La leccion, por si vuelve a aparecer en otra tabla: **un modo de fallo que parece de
+# conectividad puede ser de layout de chunks**. `SELECT (range_end - range_start), count(*)
+# FROM timescaledb_information.chunks GROUP BY 1` lo diagnostica en un segundo.
+# ---------------------------------------------------------------------------
+
+
 def test_no_duplicate_daily_dates(db):
     """One date = one daily bar per symbol, whatever hour each feed stamps.
 

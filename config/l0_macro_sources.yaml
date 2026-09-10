@@ -503,7 +503,24 @@ database:
 # =============================================================================
 validation:
   enabled: true
-  on_invalid: warn  # warn | skip | error
+
+  # CAMBIADO 2026-08-25 (CTR-L0-QUARANTINE-001): `warn` -> `quarantine`.
+  #
+  # Con `warn` este bloque no impidio absolutamente nada: los rangos estaban bien escritos
+  # —Brent [30, 150]— y aun asi entraron **59 dias de Brent a 21-23 USD** (real: 60-70)
+  # entre 2025-09-25 y 2025-12-19, dentro del hold-out de la tesis. `warn` loguea y escribe.
+  #
+  # Tampoco se pone `error`: tumbar el DAG entero por una variable mala entre 40 deja la
+  # macro stale, y macro con mas de 7 dias BLOQUEA el training (`data-freshness.md`).
+  # Cambiar un dato malo por ningun dato no es una mejora.
+  #
+  # `quarantine` aparta SOLO las filas fuera de rango, las registra en
+  # `data/quarantine/macro/<variable>.jsonl` con su motivo, y deja pasar el resto de filas
+  # y el resto de variables. Se aplica en el punto de escritura
+  # (`services/upsert_service.py`), no en una tarea del DAG que se pueda saltar.
+  #
+  # Valores admitidos: quarantine | warn | error
+  on_invalid: quarantine
   ranges:
     # Commodities (USD)
     comm_oil_brent_glb_d_brent: [30, 150]

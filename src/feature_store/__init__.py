@@ -113,13 +113,41 @@ from .feast_service import (
 )
 
 # Feature Readers - Read pre-computed features from L1 pipeline
+#
+# DOS ROLES DISTINTOS, no duplicados (desambiguado 2026-08-24 tras la auditoria
+# que encontro `FeatureReader` definido tres veces en `src/`):
+#
+#   1. `.feature_reader.FeatureReader`  -> lector A NIVEL DE REGISTRO sobre
+#      `inference_features_5m`. Es el que usa la RUTA DE PRODUCCION:
+#      `airflow/dags/tasks/l5_inference_task.py` y
+#      `airflow/dags/sensors/feature_sensor.py`. Expone `has_features()`,
+#      `get_features(symbol, ts)`, `check_norm_stats_hash()` y el singleton
+#      `get_feature_reader()`. **Este es el `FeatureReader` canonico del paquete.**
+#
+#   2. `.readers.FeatureReader`  -> lector CONSTRUCTOR DE OBSERVACION: devuelve un
+#      `FeatureResult` con `observation: np.ndarray` listo para `model.predict`,
+#      mas historico y validacion de orden. No implementa la API del (1), asi que
+#      NO es un reemplazo suyo. Se exporta como `ObservationFeatureReader` para que
+#      el nombre diga cual es cual; su ruta propia `.readers.FeatureReader` sigue
+#      intacta.
+#
+# Antes de este cambio, la raiz del paquete exportaba (2) bajo el nombre generico
+# `FeatureReader` mientras produccion importaba (1) por ruta directa: dos clases
+# distintas alcanzables con el mismo nombre. Guard: tests/regression/
+# test_no_duplicate_feature_reader.py
 from .readers import (
     FeatureNotFoundError,
     FeatureOrderMismatchError,
-    FeatureReader,
     FeatureReaderError,
     FeatureResult,
     StaleFeatureError,
+)
+from .readers import FeatureReader as ObservationFeatureReader
+from .feature_reader import (
+    FeatureReader,
+    FeatureRecord,
+    get_feature_reader,
+    reset_feature_reader,
 )
 
 __all__ = [
@@ -194,6 +222,10 @@ __all__ = [
     # Feature Readers (L1 -> L5 integration)
     "FeatureResult",
     "FeatureReader",
+    "FeatureRecord",
+    "get_feature_reader",
+    "reset_feature_reader",
+    "ObservationFeatureReader",
     "FeatureReaderError",
     "FeatureNotFoundError",
     "StaleFeatureError",

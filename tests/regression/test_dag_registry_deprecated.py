@@ -9,15 +9,16 @@ from pathlib import Path
 
 import pytest
 
-# dag_registry lives under airflow/dags/contracts and is imported as `contracts.*`
-_DAGS = str(Path(__file__).resolve().parents[2] / "airflow" / "dags")
-if _DAGS not in sys.path:
-    sys.path.insert(0, _DAGS)
+# `dag_registry` vive en airflow/dags/contracts. NO se importa por `sys.path`: el repo
+# tiene SIETE paquetes llamados `contracts` y el orden del path decide cual gana, asi
+# que `pytest tests/regression/` pasaba pero `pytest tests/` (= `make test`) fallaba.
+# Ver tests/regression/_dag_module_loader.py.
+from tests.regression._dag_module_loader import import_dag_module
 
 
 @pytest.fixture(scope="module")
 def registry():
-    return __import__("contracts.dag_registry", fromlist=["*"])
+    return import_dag_module("contracts.dag_registry")
 
 
 def test_deprecated_set_contains_the_three_rl_l4_dags(registry):

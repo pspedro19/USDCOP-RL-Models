@@ -48,6 +48,7 @@ from src.core.factories.macro_extractor_factory import (
     MacroExtractorFactory,
     MacroSource,
 )
+from src.data.investing_number import parse_investing_number
 from utils.date_parser import DateParser
 
 # Prometheus metrics
@@ -313,8 +314,10 @@ class InvestingExtractionStrategy(ConfigurableExtractor):
                     if len(cols) >= 2:
                         try:
                             date_str = self._normalize_date(cols[0].get_text(strip=True))
-                            value_text = cols[1].get_text(strip=True).replace(',', '')
-                            value = float(value_text)
+                            # Locale-aware: el sitio `es.` usa COMA decimal. Ver
+                            # parse_investing_number (CTR-DQ-MACRO-SCALE-001).
+                            value = parse_investing_number(
+                                cols[1].get_text(strip=True), url)
 
                             if date_str:
                                 if date_str not in results:

@@ -5,9 +5,18 @@ Feature Reader - Read L1 Features from Database
 Provides a clean interface for reading features computed by the L1 pipeline
 from the inference_features_5m table.
 
+LECTOR CANONICO del paquete (desambiguado 2026-08-24): `from src.feature_store
+import FeatureReader` resuelve a ESTA clase. Es la de la ruta de produccion.
+
 This class is used by:
-- L1FeaturesSensor: To check if features are available
-- L5InferenceTask: To read features for inference
+- L1FeaturesSensor (airflow/dags/sensors/feature_sensor.py): has_features /
+  get_latest_features / check_norm_stats_hash
+- L5InferenceTask (airflow/dags/tasks/l5_inference_task.py): get_features /
+  get_feature_reader
+
+El lector hermano `src/feature_store/readers/feature_reader.py` cumple otro rol
+(construye la observacion np.ndarray) y se exporta como `ObservationFeatureReader`.
+Guard: tests/regression/test_no_duplicate_feature_reader.py
 
 Usage:
     from src.feature_store.feature_reader import FeatureReader

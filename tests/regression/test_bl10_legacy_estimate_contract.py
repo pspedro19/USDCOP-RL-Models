@@ -63,6 +63,13 @@ def test_documented_direction_trials_missing_from_original_backfill_are_appended
         assert record["env"] == "legacy_backfill"
         assert record["source"].endswith("usdcop/HYPOTHESIS-REGISTRY.md")
 
-    assert [record["trial_id"] for record in records[-2:]] == ["FT-0054", "FT-0055"]
+    # Lo que este assert protege es que el ledger sea APPEND-ONLY y que los dos asientos de
+    # reconciliacion de Codex sigan en su posicion. Ya no son los ultimos: H-TESIS-RL-01 anadio
+    # AT-0185/AT-0186 el 2026-08-25. Se comprueba su posicion explicita, en vez de "los dos
+    # ultimos", que era una forma indirecta de decir "nadie ha anadido nada" y habria bloqueado
+    # el primer trial legitimo que alguien registrara.
+    ids = [record["trial_id"] for record in records]
+    assert ids[237:239] == ["FT-0054", "FT-0055"], ids[235:241]
+    assert ids.index("FT-0054") < ids.index("FT-0055")
     assert records[-2]["prev_hash"] == records[-3]["line_hash"]
     assert records[-1]["prev_hash"] == records[-2]["line_hash"]

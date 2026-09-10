@@ -88,6 +88,38 @@ def _get_variable_frequency(variable_name: str) -> Literal['daily', 'monthly', '
         return 'daily'
 
 
+try:  # la excepcion tiene que existir para el `except` de `_execute_upsert`
+    from services.range_quarantine import QuarantineBlocked
+except ImportError:  # pragma: no cover
+    try:
+        from .range_quarantine import QuarantineBlocked
+    except ImportError:
+        class QuarantineBlocked(RuntimeError):
+            """Placeholder: sin el modulo de cuarentena nunca se lanza."""
+
+
+def _quarantine_filter(variable_name, df, date_col):
+    """Aparta filas fuera del rango declarado antes de escribirlas (CTR-L0-QUARANTINE-001).
+
+    Deliberadamente TOLERANTE al import: si el modulo de cuarentena no esta disponible se
+    escribe como antes y se registra en el log. La alternativa —abortar la ingesta porque
+    falta un modulo auxiliar— convertiria una mejora de calidad en un corte de datos, y la
+    macro stale bloquea el training (`data-freshness.md`).
+
+    Pero `QuarantineBlocked` SI se propaga: si alguien puso `on_invalid: error` en el YAML,
+    esa decision es explicita y tiene que llegar arriba.
+    """
+    try:
+        from services.range_quarantine import filter_out_of_range
+    except ImportError:
+        try:
+            from .range_quarantine import filter_out_of_range
+        except ImportError:
+            logger.warning("[QUARANTINE] modulo no disponible; se escribe sin filtrar")
+            return df, None
+    return filter_out_of_range(variable_name, df, date_col=date_col)
+
+
 class UpsertService:
     """
     Unified UPSERT service for time-series data (DRY).
@@ -190,10 +222,35 @@ class UpsertService:
         df: pd.DataFrame,
         columns: List[str]
     ) -> Dict[str, Any]:
-        """Execute the actual UPSERT operation."""
+        """Execute the actual UPSERT operation.
+
+        CUARENTENA (CTR-L0-QUARANTINE-001): este es el punto de escritura de `UpsertService`,
+        y por el pasan **las dos ramas del backfill** — la de extraccion y la de restore desde
+        seeds, que hasta ahora se saltaba la validacion entera. Filtrar aqui cubre las dos sin
+        depender de que el grafo del DAG este bien cableado.
+        """
         try:
             # Filter columns to only those present in DataFrame
             available_cols = [c for c in columns if c in df.columns]
+
+            quarantined: List[Dict[str, Any]] = []
+            if available_cols:
+                try:
+                    from services.range_quarantine import filter_frame
+                except ImportError:
+                    try:
+                        from .range_quarantine import filter_frame
+                    except ImportError:
+                        filter_frame = None
+                if filter_frame is not None:
+                    df, results = filter_frame(df, available_cols, date_col=self.date_col)
+                    quarantined = [r.to_dict() for r in results if r.rows_quarantined]
+                    if df.empty:
+                        # Todas las filas eran malas: no se escribe nada, pero NO es un
+                        # error del upsert — es cuarentena haciendo su trabajo.
+                        return {'rows_affected': 0, 'success': True,
+                                'message': 'all rows quarantined',
+                                'quarantine': quarantined}
             if not available_cols:
                 return {
                     'rows_affected': 0,
@@ -244,12 +301,21 @@ class UpsertService:
                 len(data), self._full_table
             )
 
-            return {
+            out = {
                 'rows_affected': len(data),
                 'success': True,
                 'columns': available_cols
             }
+            if quarantined:
+                out['quarantine'] = quarantined
+            return out
 
+        except QuarantineBlocked:
+            # `on_invalid: error` en el YAML es una decision explicita del operador: se
+            # propaga en vez de degradarse a un dict con success=False, que quedaria
+            # indistinguible de un fallo de red y se perderia en el resumen del DAG.
+            self.conn.rollback()
+            raise
         except Exception as e:
             logger.error("[UpsertService] UPSERT failed: %s", e)
             self.conn.rollback()
@@ -397,6 +463,15 @@ class FrequencyRoutedUpsertService:
             # Deduplicate by transformed date (keep last)
             df = df.drop_duplicates(subset=[date_col], keep='last')
 
+        # CUARENTENA (CTR-L0-QUARANTINE-001) — ULTIMA parada antes de escribir.
+        #
+        # Va aqui y no en una tarea del DAG porque el incidente de Brent (59 dias a 21-23 USD
+        # con el rango [30,150] declarado) demostro que una validacion que vive en otro sitio
+        # que la escritura no protege: el DAG diario no tenia tarea de validacion, la del
+        # backfill no lanzaba, y la rama de restore se la saltaba. Desde este punto pasan
+        # TODAS esas rutas.
+        df, quarantine = _quarantine_filter(variable_name, df, date_col)
+
         # Execute upsert
         result = service.upsert_last_n(df, [variable_name], n=n)
 
@@ -405,6 +480,9 @@ class FrequencyRoutedUpsertService:
         result['frequency'] = frequency
         result['table'] = config['table']
         result['ffill_limit'] = config['ffill_limit']
+        if quarantine is not None and quarantine.rows_quarantined:
+            result['quarantined_rows'] = quarantine.rows_quarantined
+            result['quarantine'] = quarantine.to_dict()
 
         return result
 

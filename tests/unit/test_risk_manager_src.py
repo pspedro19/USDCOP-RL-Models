@@ -24,14 +24,24 @@ class TestRiskManagerBasics:
     """Basic functionality tests for RiskManager."""
 
     def test_initialization_default_limits(self):
-        """Test RiskManager initializes with default limits."""
+        """Test RiskManager initializes with default limits.
+
+        Este fichero vivia en `src/tests/` y por tanto NUNCA se ejecutaba
+        (`pyproject.toml`: `testpaths = ["tests"]`). Al moverlo aqui en la auditoria
+        de limpieza del 2026-08-24 salio a la luz que asertaba 3/30 mientras el
+        codigo devolvia 5/60 desde hacia tiempo. Se alinean con el CODIGO: 5/60 es
+        el comportamiento que corre en produccion; cambiar un default de riesgo es
+        gobierno, no limpieza. Ver la nota de procedencia en
+        `src/risk/risk_manager.py::RiskLimits` (incluye el ancla colgante a un
+        `trading_config.yaml` que no existe).
+        """
         rm = RiskManager()
 
         assert rm.limits.max_drawdown_pct == 15.0
         assert rm.limits.max_daily_loss_pct == 5.0
         assert rm.limits.max_trades_per_day == 20
-        assert rm.limits.cooldown_after_losses == 3
-        assert rm.limits.cooldown_minutes == 30
+        assert rm.limits.cooldown_after_losses == 5
+        assert rm.limits.cooldown_minutes == 60
 
     def test_initialization_custom_limits(self):
         """Test RiskManager initializes with custom limits."""

@@ -36,6 +36,15 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
+class ValidationConfigError(RuntimeError):
+    """El validador no puede saber que esta validando.
+
+    Existe para que un guard mal configurado sea RUIDOSO. La alternativa —seguir vivo con
+    cero reglas cargadas— produce informes en verde sobre datos que nadie miro, que es
+    exactamente como entraron 59 dias de Brent corrupto teniendo su rango declarado.
+    """
+
+
 class ValidationSeverity(Enum):
     """Severity levels for validation errors."""
     INFO = "info"
@@ -215,34 +224,63 @@ class RangeValidator(DataValidator):
             ranges: Dict mapping variable -> (min, max) tuple
                     If None, loads from l0_macro_sources.yaml
         """
-        self._ranges = ranges or self._load_ranges_from_config()
+        # `is None`, no `or`: un `{}` EXPLICITO significa "sin rangos", no "cargalos del
+        # config". Con `or`, `RangeValidator(ranges={})` cargaba en silencio las 24 reglas
+        # del YAML y el llamante creia estar validando con un mapa vacio. Es la misma
+        # familia de fallo que el resto de este incidente: el codigo hacia algo distinto de
+        # lo que su llamante habia pedido, sin decirlo.
+        self._ranges = ranges if ranges is not None else self._load_ranges_from_config()
 
     def _load_ranges_from_config(self) -> Dict[str, Tuple[float, float]]:
-        """Load validation ranges from l0_macro_sources.yaml."""
-        # Try multiple paths
+        """Load validation ranges from l0_macro_sources.yaml.
+
+        RAISES si no encuentra el config, o si lo encuentra y sale vacio con
+        `validation.enabled: true`. Antes devolvia `{}` con un `logger.warning` y el
+        validador seguia vivo validando CERO variables — un guard silenciosamente
+        desactivado, que es peor que no tenerlo porque los informes salen en verde.
+
+        Precedente concreto (2026-08-25): 59 dias de Brent a 21-23 USD entraron con el
+        rango `[30, 150]` declarado en el YAML. Un fallo de ruta aqui habria producido
+        exactamente ese resultado sin dejar rastro accionable.
+        """
         config_paths = [
             Path('/opt/airflow/config/l0_macro_sources.yaml'),
             Path(__file__).parent.parent.parent.parent / 'config' / 'l0_macro_sources.yaml',
         ]
 
+        last_error: Optional[Exception] = None
         for config_path in config_paths:
-            if config_path.exists():
-                try:
-                    with open(config_path, 'r', encoding='utf-8') as f:
-                        config = yaml.safe_load(f)
+            if not config_path.exists():
+                continue
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config = yaml.safe_load(f) or {}
+            except Exception as e:  # YAML corrupto: tampoco se sigue en silencio
+                last_error = e
+                logger.error(f"Failed to load ranges from {config_path}: {e}")
+                continue
 
-                    ranges_config = config.get('validation', {}).get('ranges', {})
-                    ranges = {}
-                    for var, range_list in ranges_config.items():
-                        if isinstance(range_list, list) and len(range_list) == 2:
-                            ranges[var] = (float(range_list[0]), float(range_list[1]))
-                    logger.info(f"Loaded {len(ranges)} validation ranges from config")
-                    return ranges
-                except Exception as e:
-                    logger.warning(f"Failed to load ranges from {config_path}: {e}")
+            validation = config.get('validation', {}) or {}
+            ranges_config = validation.get('ranges', {}) or {}
+            ranges = {}
+            for var, range_list in ranges_config.items():
+                if isinstance(range_list, list) and len(range_list) == 2:
+                    ranges[var] = (float(range_list[0]), float(range_list[1]))
 
-        logger.warning("No validation ranges loaded from config")
-        return {}
+            if not ranges and validation.get('enabled', False):
+                raise ValidationConfigError(
+                    f"{config_path} declara `validation.enabled: true` y no aporta ni un "
+                    "rango utilizable. El validador quedaria activo validando 0 variables."
+                )
+            logger.info(f"Loaded {len(ranges)} validation ranges from {config_path}")
+            return ranges
+
+        raise ValidationConfigError(
+            "No se encontro l0_macro_sources.yaml en ninguna de las rutas "
+            f"{[str(p) for p in config_paths]}"
+            + (f"; ultimo error: {last_error}" if last_error else "")
+            + ". Pasa `ranges=` explicitamente si quieres un RangeValidator sin config."
+        )
 
     @property
     def name(self) -> str:
@@ -302,17 +340,26 @@ class RangeValidator(DataValidator):
                 f"[{min_val}, {max_val}] for '{variable}'. Examples: {', '.join(examples)}"
             )
 
-            if out_of_range_pct > 10:
-                errors.append(message)
-            else:
-                warnings.append(message)
+            # CAMBIADO 2026-08-25: antes esto era `if out_of_range_pct > 10: errors else:
+            # warnings`. O sea, unos pocos valores imposibles pasaban como AVISO.
+            #
+            # Esa era la razon mas profunda por la que este guard no protegio nada: los 59
+            # dias de Brent a 21-23 USD nunca llegaron al 10% de ningun lote de ingesta, asi
+            # que un RangeValidator perfectamente cableado y bloqueante los habria dejado
+            # pasar igual.
+            #
+            # Un porcentaje tiene sentido para "esta serie esta derivando"; no lo tiene para
+            # "este valor es posible". Un solo Brent a 23 USD es imposible haya o no otros
+            # 999 valores correctos alrededor. El conteo y el porcentaje siguen en el
+            # mensaje y en `metadata` para quien quiera medir la magnitud.
+            errors.append(message)
 
         return ValidationResult(
             passed=len(errors) == 0,
             validator=self.name,
             errors=errors,
             warnings=warnings,
-            severity=ValidationSeverity.WARNING if errors else ValidationSeverity.INFO,
+            severity=ValidationSeverity.CRITICAL if errors else ValidationSeverity.INFO,
             metadata={
                 'variable': variable,
                 'range': [min_val, max_val],

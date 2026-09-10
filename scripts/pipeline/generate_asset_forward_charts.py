@@ -67,6 +67,11 @@ def main() -> int:
 
     import matplotlib
     matplotlib.use("Agg")
+    # PNG deterministas: omite el chunk `Software` de matplotlib para que subir de
+    # version no reescriba los 1.492 graficos versionados. Ver
+    # src/utils/plot_determinism.py (auditoria de limpieza 2026-08-24).
+    from src.utils.plot_determinism import enable_deterministic_png
+    enable_deterministic_png()
     import matplotlib.pyplot as plt
 
     for asset in targets:

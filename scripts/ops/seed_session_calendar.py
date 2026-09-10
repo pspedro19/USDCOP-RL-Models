@@ -156,11 +156,20 @@ def main() -> int:
         spx[col] = spx[col] * factor
     spx["close"] = spx["adj_close"]
     # Repair path: earlier seeds wrote unadjusted O/H/L; replace SPX rows wholesale.
-    cur.execute("DELETE FROM asset_daily_ohlcv WHERE symbol = 'SPX500'")
-    n2 = upsert_daily(spx, "SPX500", "yahoo_snapshot", available_col="available_at")
+    #
+    # SIMBOLO: 'SPX/500', no 'SPX500' (corregido 2026-08-24, migracion 083).
+    # `market_ohlcv_daily` resuelve el activo con `JOIN dim_asset ON da.symbol = d.symbol`.
+    # Escribir 'SPX500' aqui creaba filas que NINGUNA fila de dim_asset casaba, asi que
+    # desaparecian de la capa canonica sin error ni aviso — el dashboard leia 'missing'
+    # en dias en que NYSE estuvo abierto. El AssetProfile SSOT
+    # (`config/assets/spx500.yaml`) distingue `symbol: "SPX/500"` (dato) de
+    # `chart_symbol: "SPX500"` (grafico); aqui manda el del DATO.
+    # Guard: tests/regression/test_dim_asset_covers_all_symbols.py
+    cur.execute("DELETE FROM asset_daily_ohlcv WHERE symbol IN ('SPX500', 'SPX/500')")
+    n2 = upsert_daily(spx, "SPX/500", "yahoo_snapshot", available_col="available_at")
 
     conn.commit()
-    print(f"asset_daily_ohlcv: +{n1} COP, +{n2} SPX500 (ON CONFLICT DO NOTHING)")
+    print(f"asset_daily_ohlcv: +{n1} COP, +{n2} SPX/500 (ON CONFLICT DO NOTHING)")
 
     cur.execute("SELECT symbol, COUNT(*), MIN(time)::date, MAX(time)::date "
                 "FROM asset_daily_ohlcv GROUP BY symbol ORDER BY symbol")

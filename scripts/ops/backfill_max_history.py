@@ -246,6 +246,40 @@ def _cop_session_ok(ts: datetime) -> bool:
     return lt.weekday() < 5 and dtime(8, 0) <= lt.time() <= dtime(12, 55)
 
 
+# Simbolos cuyo mercado NO opera fines de semana. BTC va aparte (24/7) y no pasa por aqui.
+WEEKDAY_ONLY_SYMBOLS = frozenset({"USD/COP", "USD/MXN", "USD/BRL", "XAU/USD", "SPY",
+                                  "SPX/500"})
+
+
+def _weekday_only(ts: datetime) -> bool:
+    """Rechaza barras DIARIAS en sabado o domingo.
+
+    ROOT CAUSE (2026-08-24). La llamada de 5 minutos ya pasaba `session_filter=
+    _cop_session_ok`, pero la de `asset_daily_ohlcv` no pasaba NINGUNO. Resultado: el
+    proveedor devolvia barras de sabado y domingo —que ni el peso colombiano ni el oro
+    spot cotizan— y entraban tal cual.
+
+    Se detecto porque `test_dim_asset_covers_all_symbols::
+    test_no_weekend_bars_for_session_bound_assets` volvio a fallar HORAS despues de que
+    `fix_non_session_daily_bars.py` borrara 57 de esas barras: la ingesta las repuso. Un
+    borrado sin filtro en la escritura es un parche que dura hasta la siguiente corrida.
+
+    Los FESTIVOS no se filtran aqui: distinguirlos exige el calendario por activo
+    (`market_session_calendar`), que este script no consulta, y su limpieza retroactiva es
+    una decision del operador (95 barras de 2020-2026 en la serie de produccion). El fin
+    de semana, en cambio, es inequivoco y no depende de calendario.
+
+    **Se evalua la fecha UTC, NO la convertida a Bogota.** Una barra DIARIA del sabado
+    llega sellada a las 00:00 UTC; convertirla a COT la mueve al VIERNES 19:00 y pasaria
+    el filtro. La primera version de esta funcion hacia justo eso y las barras de fin de
+    semana volvieron una tercera vez (2026-08-24). Para una barra diaria la fecha ES la
+    fecha: es tambien como la lee el JOIN con `market_session_calendar`
+    (`(time AT TIME ZONE 'UTC')::date`) y como la comprueba
+    `test_dim_asset_covers_all_symbols::test_no_weekend_bars_for_session_bound_assets`.
+    """
+    return ts.astimezone(UTC).weekday() < 5
+
+
 def td_series(conn, symbol: str, interval: str, start: date, end: date,
               table: str, tf_label: str | None = None, session_filter=None,
               window_days: int = 15, source: str | None = None) -> int:
@@ -433,6 +467,8 @@ def catchup(conn) -> None:
             # immutable while allowing the immediately prior partial bar to heal.
             td_series(conn, sym, "1day", d0 - timedelta(days=1), today_plus,
                       "asset_daily_ohlcv",
+                      session_filter=(_weekday_only
+                                      if sym in WEEKDAY_ONLY_SYMBOLS else None),
                       window_days=400, source="twelvedata_daily_deep")
         d0 = last("asset_native_ohlcv", sym, "1month")
         if d0:

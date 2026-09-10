@@ -21,7 +21,7 @@ from typing import Any
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from pydantic import BaseModel, Field
 
-from services.shared.feature_flags import get_feature_flags
+from services.common.feature_flags import get_feature_flags
 
 logger = logging.getLogger(__name__)
 

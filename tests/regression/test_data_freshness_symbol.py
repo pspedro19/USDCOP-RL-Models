@@ -17,14 +17,14 @@ import pytest
 # monkeypatched), so a dummy value just satisfies the import.
 os.environ.setdefault("POSTGRES_PASSWORD", "test_dummy")
 
-_DAGS = str(Path(__file__).resolve().parents[2] / "airflow" / "dags")
-if _DAGS not in sys.path:
-    sys.path.insert(0, _DAGS)
+# Mismo motivo que en test_dag_registry_deprecated.py: importar por ruta, no por
+# `sys.path`, porque hay varios paquetes `utils`/`contracts` en el repo.
+from tests.regression._dag_module_loader import import_dag_module
 
 
 @pytest.fixture(scope="module")
 def data_quality():
-    return __import__("utils.data_quality", fromlist=["*"])
+    return import_dag_module("utils.data_quality")
 
 
 def test_freshness_gate_accepts_symbol_param(data_quality):

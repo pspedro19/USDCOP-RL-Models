@@ -8,7 +8,19 @@ Instead of recalculating features at inference time (L5), this reader fetches
 the already computed features from L1, ensuring:
 1. Perfect parity between feature calculation (done once in L1)
 2. Reduced latency at inference time
-3. Single source of truth for feature values
+
+ROL (desambiguado 2026-08-24). Este es el lector **constructor de observacion**:
+devuelve un `FeatureResult` con `observation: np.ndarray` listo para
+`model.predict`, mas historico (`get_features_history`) y validacion de orden.
+Se exporta desde la raiz del paquete como `ObservationFeatureReader`.
+
+NO es el lector de la ruta de produccion. Ese es
+`src/feature_store/feature_reader.py::FeatureReader` (a nivel de registro), que
+usan `airflow/dags/tasks/l5_inference_task.py` y
+`airflow/dags/sensors/feature_sensor.py`, y que expone `has_features()`,
+`get_features(symbol, ts)` y `check_norm_stats_hash()` — metodos que esta clase
+no implementa. Los dos leen `inference_features_5m`; no son intercambiables.
+Guard: tests/regression/test_no_duplicate_feature_reader.py
 
 Architecture:
     L0 (OHLCV/Macro) -> L1 (Feature Calculation) -> inference_features_5m

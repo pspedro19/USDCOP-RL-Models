@@ -249,12 +249,30 @@ class ExperimentRunner:
             return gym.make("MountainCarContinuous-v0")
 
         # Load data
-        from src.feature_store import FeatureReader
-
-        reader = FeatureReader()
-        data = reader.get_training_data(
-            start_date=self.config.data.train_start,
-            end_date=self.config.data.train_end,
+        #
+        # DEFECTO LATENTE (detectado 2026-08-24, auditoria de limpieza): esta ruta
+        # llamaba `FeatureReader.get_training_data(...)`, metodo que NO EXISTE en
+        # ninguna de las implementaciones de `FeatureReader` del repo — ni en
+        # `src/feature_store/feature_reader.py`, ni en
+        # `src/feature_store/readers/feature_reader.py`, ni en
+        # `src/features/feature_reader.py`. Cualquier llamada a
+        # `_create_environment()` con `TradingEnv` disponible reventaba con
+        # AttributeError. Estaba oculto porque el `except ImportError` de arriba
+        # devuelve un env de gym cuando `TradingEnv` no importa, que es lo que pasa
+        # en la mayoria de entornos de test.
+        #
+        # Se convierte en un fallo EXPLICITO en vez de un AttributeError opaco. El
+        # cableado real (elegir el loader por rango de fechas) es trabajo de
+        # implementacion, no de limpieza: los lectores del feature store sirven
+        # barras puntuales o historicos por timestamp, no un split de entrenamiento.
+        raise NotImplementedError(
+            "experiment_runner._create_environment: falta el cargador de datos de "
+            "entrenamiento. `FeatureReader.get_training_data()` nunca existio "
+            f"(rango pedido: {self.config.data.train_start} -> "
+            f"{self.config.data.train_end}). Cablear contra un loader real "
+            "(p.ej. src/forecasting/dataset_loader.py::load_dataset o "
+            "src/ml_workflow/experiment_manager.py::load_dataset) antes de usar "
+            "esta ruta."
         )
 
         if for_eval and self.config.data.validation_split > 0:

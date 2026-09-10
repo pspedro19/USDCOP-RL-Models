@@ -232,6 +232,12 @@ FORWARD_LEDGER_WEEKLY = "forward_ledger_weekly"  # Fri 19:00 UTC forward-evidenc
 L0_MULTIFRAME_CATCHUP = "l0_multiframe_catchup"  # hourly M5/1h/4h/daily/monthly catch-up + matview refresh (2026-07-22)
 CONTROL_SYSTEM_HEALTH = "control_system_health"  # BL-25 tres relojes (datos/modelo/PnL), :30 13-18 UTC Mon-Fri (2026-07-27)
 
+# Carril de INVESTIGACION (tesis). `schedule=None`: se dispara a mano, nunca por cron.
+# Vive en el registro igual que los demas porque `get_all_dag_ids()` es la cuenta de la
+# flota y omitir un DAG real es exactamente como se colo el "40 DAGs" en las specs.
+RESEARCH_THESIS_PPO_TRAINING = "research_thesis_ppo_training"  # CTR-RESEARCH-PPO-001 (2026-08-25)
+RESEARCH_FORWARD_ARMS = "research_forward_arms"  # CTR-RESEARCH-FORWARD-001 (2026-08-25)
+
 # Config-driven, emitted per enabled asset by airflow/dags/asset_pipeline_factory.py
 # from config/assets/pipelines.yaml — never hardcode; derive with get_asset_dag_ids().
 ASSET_PIPELINE_DAG_PATTERN = "asset_{asset}_pipeline_weekly"
@@ -565,6 +571,8 @@ def get_all_dag_ids() -> List[str]:
         FORWARD_LEDGER_WEEKLY,
         L0_MULTIFRAME_CATCHUP,
         CONTROL_SYSTEM_HEALTH,
+        RESEARCH_THESIS_PPO_TRAINING,
+        RESEARCH_FORWARD_ARMS,
     ]
 
 

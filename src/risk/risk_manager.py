@@ -58,14 +58,28 @@ class RiskLimits:
         max_drawdown_pct: Maximum portfolio drawdown before kill switch (default: 15%)
         max_daily_loss_pct: Maximum daily loss before blocking trading (default: 5%)
         max_trades_per_day: Maximum number of trades per day (default: 20)
-        cooldown_after_losses: Number of consecutive losses before cooldown (default: 3)
-        cooldown_minutes: Duration of cooldown period in minutes (default: 30)
+        cooldown_after_losses: Number of consecutive losses before cooldown (default: 5)
+        cooldown_minutes: Duration of cooldown period in minutes (default: 60)
+
+    NOTA DE PROCEDENCIA (auditoria de limpieza 2026-08-24). Tres registros de estos
+    dos valores se contradecian entre si:
+      - el codigo decia 5 / 60,
+      - este docstring decia 3 / 30,
+      - `src/tests/test_risk_manager.py` asertaba 3 -- y NUNCA se ejecutaba, porque
+        vivia bajo `src/` mientras `pyproject.toml` fija `testpaths = ["tests"]`.
+        Al moverlo a `tests/unit/test_risk_manager_src.py` el fallo salio a la luz.
+    Se sincronizan docstring y test CON EL CODIGO: 5/60 es el comportamiento que
+    lleva corriendo en produccion y cambiar un default de riesgo es gobierno, no
+    limpieza.
+    ANCLA COLGANTE: los comentarios inline citaban `trading_config.yaml` como fuente
+    de 5/60; ese fichero NO EXISTE en el repo. Hoy son defaults a nivel de codigo sin
+    SSOT que los respalde -- si deben venir de config, hay que crearla y anclarlos.
     """
     max_drawdown_pct: float = 15.0      # Kill switch trigger
     max_daily_loss_pct: float = 5.0     # Stop trading today
     max_trades_per_day: int = 20        # Pause trading
-    cooldown_after_losses: int = 5      # Circuit breaker: 5 consecutive losses (matches trading_config.yaml)
-    cooldown_minutes: int = 60          # Cooldown: 12 bars × 5 min = 60 min (matches trading_config.yaml)
+    cooldown_after_losses: int = 5      # Circuit breaker: 5 perdidas consecutivas
+    cooldown_minutes: int = 60          # Cooldown: 12 barras x 5 min = 60 min
 
 
 @dataclass

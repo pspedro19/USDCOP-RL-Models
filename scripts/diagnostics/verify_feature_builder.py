@@ -1,7 +1,17 @@
 """
-Test script for FeatureBuilder consolidated module.
+Script de VERIFICACION de FeatureBuilder (no es un test de pytest).
 
-Validates:
+Movido desde `tests/scripts/test_feature_builder.py` el 2026-08-24. Vivia bajo `tests/` con
+nombre `test_*.py`, asi que **pytest lo importaba y ejecutaba sus 306 lineas de `print()` en
+cada coleccion** — sin contener una sola funcion recolectable. Un fallo aqui se convertia en
+un error de coleccion de toda la suite, y su salida se mezclaba con la de los tests reales.
+
+Es un script de diagnostico, y `scripts/diagnostics/` es donde el repo los guarda
+(`CLAUDE.md`: prefijos `diagnose_`/`verify_`). Guard: tests/regression/
+test_every_test_actually_runs.py
+
+Valida:
+
 1. Configuration loading
 2. Feature calculation (RSI, ATR, ADX)
 3. Observation building

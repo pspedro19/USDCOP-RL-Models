@@ -132,8 +132,11 @@ def main() -> int:
                count(*) FILTER (WHERE open=high AND high=low AND low=close),
                min(time), max(time), count(available_at)
         FROM asset_daily_ohlcv GROUP BY symbol""")
+    # Simbolos tal y como estan en `asset_daily_ohlcv`. SPX es 'SPX/500' (el `symbol` del
+    # AssetProfile), no 'SPX500' (que es su `chart_symbol`, para el dashboard). Antes de la
+    # migracion 083 este mapeo devolvia None para SPX y el scorecard lo saltaba en silencio.
     daily_asset = {"USD/COP": "usdcop", "XAU/USD": "xauusd",
-                   "BTC/USDT": "btcusdt", "SPX500": "spx500"}
+                   "BTC/USDT": "btcusdt", "SPX/500": "spx500"}
     for sym, n, bad, flat, first, last, pit in cur.fetchall():
         aid = daily_asset.get(sym)
         if aid:

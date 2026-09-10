@@ -154,10 +154,19 @@ def test_backfilled_families_carry_legacy_estimate_note():
             continue
         text = yaml_path.read_text(encoding="utf-8")
         assert "legacy_estimate" in text
-    # y en el ledger: toda línea de backfill estimada lleva la etiqueta
+    # Y en el ledger: toda línea de BACKFILL lleva su etiqueta.
+    #
+    # CORREGIDO 2026-08-25. Este bucle exigía `env == "legacy_backfill"` a **todas** las
+    # líneas, no solo a las del backfill. Funcionaba porque en su día el ledger entero era
+    # backfill — y habría fallado con el primer trial genuinamente nuevo que registrara
+    # cualquiera, que es justo lo que este fichero existe para permitir. El primero fue
+    # `AT-0185` (`env: research_thesis_ppo_training`).
     for record in _records():
-        assert record["env"] == "legacy_backfill"
         assert record["label"] in {"legacy_estimate", "documented"}
+        if record["label"] == "legacy_estimate":
+            assert record["env"] == "legacy_backfill", (
+                f"{record['trial_id']}: `legacy_estimate` solo tiene sentido en backfill"
+            )
 
 
 def test_full_validator_green():

@@ -49,7 +49,12 @@ import os
 import sys
 
 WALL_SOURCES = ("twelvedata_backfill", "twelvedata_gap_fill", "twelvedata_manual_test")
-WALL_SYMBOLS = ("USD/COP", "USD/MXN")   # BRL backfill is already true-instant (UTC quirk)
+# USD/MXN salio de aqui el 2026-08-24: dejo de ser una serie acotada por sesion (hoy son
+# 462.193 filas cubriendo las 24 horas), asi que la premisa "hora 8-12 UTC == reloj-pared" ya
+# no le aplica y el paso de colisiones habria borrado 95.562 barras legitimas. El pre-flight de
+# `main()` lo vuelve a comprobar en cada corrida por si el dato cambia otra vez.
+# BRL nunca estuvo: su rama de fetch pedia UTC y localizaba bien (el quirk documentado).
+WALL_SYMBOLS = ("USD/COP",)
 BACKUP = "usdcop_m5_ohlcv_tz_backup_20260721"
 
 WALL_PRED = f"""
@@ -78,6 +83,39 @@ def main() -> int:
     )
     conn.autocommit = False
     cur = conn.cursor()
+
+    # ------------------------------------------------------------------------
+    # PRE-FLIGHT (anadido 2026-08-24). Este script asume que WALL_SYMBOLS son pares
+    # ACOTADOS POR SESION (08:00-12:55 COT = 13-17 UTC), donde "hora 8-12 UTC" solo puede
+    # significar reloj-COT mal etiquetado.
+    #
+    # Esa premisa CADUCO para USD/MXN: alguien backfilleo su historia completa despues de
+    # escribirse este script, y hoy es una serie de 24 HORAS (462.193 filas, horas 0-23).
+    # En una serie 24h la hora 8-12 UTC es legitima, y ademas el hueco +5h siempre esta
+    # ocupado, asi que el paso de colisiones las clasificaria todas como borrables:
+    #
+    #     medido el 2026-08-24: 96.544 filas de MXN clasificadas como "pared",
+    #     de las cuales 95.562 SE BORRARIAN. Todas legitimas.
+    #
+    # La verificacion final habria hecho rollback (MXN seguiria teniendo filas fuera de
+    # 13-17), asi que el script falla en seguro — pero es una mina: basta con que alguien
+    # relaje esa verificacion para creer que "ya pasa" y perder 95k barras.
+    #
+    # USD/COP si sigue siendo mono-convencion 13-17 y con 0 filas pared: su migracion ya
+    # se completo el 2026-07-21. Este guard deja constancia y aborta antes de tocar nada.
+    cur.execute("""
+        SELECT symbol, COUNT(DISTINCT EXTRACT(hour FROM time AT TIME ZONE 'UTC'))
+        FROM usdcop_m5_ohlcv WHERE symbol = ANY(%s) GROUP BY 1
+    """, (list(WALL_SYMBOLS),))
+    not_session_bound = [(sym, int(h)) for sym, h in cur.fetchall() if h > 5]
+    if not_session_bound:
+        print("ABORTA: estos WALL_SYMBOLS ya NO son series acotadas por sesion:")
+        for sym, h in not_session_bound:
+            print(f"  {sym}: {h} horas distintas (una sesion COT tiene 5). "
+                  f"Sus barras en 8-12 UTC son LEGITIMAS, no reloj-pared.")
+        print("Quita esos simbolos de WALL_SYMBOLS antes de volver a correr esto.")
+        conn.rollback()
+        return 2
 
     wall_where = """
         source IN %s AND symbol IN %s
@@ -152,11 +190,14 @@ def main() -> int:
 
     # 5) verify mono-convention: session symbols must now live in 13-17 UTC only
     cur.execute("""
+        -- Solo los simbolos realmente acotados por sesion. MXN/BRL son series 24h desde su
+        -- backfill de historia completa (ver nota en WALL_SYMBOLS): exigirles 13-17 haria
+        -- fallar la verificacion siempre y tentaria a relajarla.
         SELECT symbol, source, COUNT(*) FROM usdcop_m5_ohlcv
-        WHERE symbol IN ('USD/COP','USD/MXN','USD/BRL')
+        WHERE symbol = ANY(%s)
         AND EXTRACT(hour FROM time AT TIME ZONE 'UTC') NOT BETWEEN 13 AND 17
         GROUP BY 1,2
-    """)
+    """, (list(WALL_SYMBOLS),))
     leftovers = cur.fetchall()
     if leftovers:
         conn.rollback()

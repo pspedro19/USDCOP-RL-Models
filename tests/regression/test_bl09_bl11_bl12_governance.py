@@ -55,14 +55,30 @@ def _dump(path: Path, data: dict) -> None:
 # =========================================================================================
 
 def test_ledger_bl10_content_is_intact(records):
-    """El contenido de Codex (BL-10) no se toca: 239 globales, 55 FT / 184 AT, COP 111."""
+    """El contenido de Codex (BL-10) no se toca.
+
+    ACTUALIZADO 2026-08-25 (H-TESIS-RL-01): 239 -> **241** globales, 184 -> **186** AT,
+    COP 111 -> **113**. Los dos trials nuevos son `AT-0185` (`ppo_regime`) y `AT-0186`
+    (`ppo_backbone`), familia `usdcop_rl_intraday`, cobrados por evaluar ambas
+    configuraciones sobre el bloque de SELECCION.
+
+    Estas constantes estan a proposito escritas a mano: obligan a que cualquier variacion
+    del ledger sea un cambio DELIBERADO con su justificacion, en vez de un recuento
+    automatico que absorbe en silencio un trial que alguien olvido registrar.
+    """
     lineage = Counter(record["trial_id"][:2] for record in records)
     per_asset = Counter(record["asset"] for record in records)
-    assert len(records) == 239
-    assert lineage["FT"] == 55 and lineage["AT"] == 184
-    assert per_asset == {"usdcop": 111, "xauusd": 77, "btcusdt": 34, "spx500": 17}
-    # los dos asientos de reconciliación de Codex siguen siendo los últimos y encadenados
-    assert [record["trial_id"] for record in records[-2:]] == ["FT-0054", "FT-0055"]
+    assert len(records) == 243
+    assert lineage["FT"] == 55 and lineage["AT"] == 188   # +2 H-TESIS-RL-01, +2 carril forward
+    assert per_asset == {"usdcop": 115, "xauusd": 77, "btcusdt": 34, "spx500": 17}
+    # Lo que este bloque protege es que el ledger sea APPEND-ONLY: los asientos de
+    # reconciliación de Codex siguen ahí, en su sitio y encadenados. Ya no son los últimos
+    # —H-TESIS-RL-01 añadió AT-0185/AT-0186 el 2026-08-25— así que se comprueba su posición
+    # explícita en vez de «los dos últimos», que era una forma de decir «nadie ha añadido
+    # nada» y habría bloqueado el primer trial legítimo.
+    assert [record["trial_id"] for record in records[237:239]] == ["FT-0054", "FT-0055"]
+    assert [record["trial_id"] for record in records[239:241]] == ["AT-0185", "AT-0186"]
+    assert [record["trial_id"] for record in records[-2:]] == ["AT-0187", "AT-0188"]
     assert ledger.check_hash_chain(records) == []
 
 
@@ -79,7 +95,7 @@ def test_every_ledger_family_has_a_declared_yaml(records):
     declared = set(ledger.load_families())
     ledger_families = set(record["family"] for record in records)
     assert ledger_families == declared
-    assert len(declared) == 10
+    assert len(declared) == 12   # +usdcop_rl_intraday, +usdcop_llm_forward
 
 
 def test_no_ledger_row_has_an_unclassified_null_cutoff(records):
@@ -107,8 +123,8 @@ def test_trend_regime_granularity_is_declared_cell_by_cell():
 def test_readme_declared_totals_match_the_ledger(records):
     """BL-12-r3: la cabecera publicada es maquinal y coincide con el ledger."""
     declared = ledger.parse_declared_totals()
-    assert declared["n_global"] == len(records) == 239
-    assert declared["per_asset"]["usdcop"] == 111
+    assert declared["n_global"] == len(records) == 243
+    assert declared["per_asset"]["usdcop"] == 115
     assert ledger.check_declared_totals(records) == []
 
 
@@ -146,10 +162,10 @@ def test_three_dsr_levels_are_actually_computed_for_the_production_track(records
         family["deflation_scope"],
     )
     assert result["method"] == "computed"
-    assert result["n_x3"] == {"family": 60, "cluster": 138, "global": 239}
+    assert result["n_x3"] == {"family": 60, "cluster": 138, "global": 243}
     assert result["dsr_family"] == 0.6368
     assert result["dsr_cluster"] == 0.6212
-    assert result["dsr_global"] == 0.6116
+    assert result["dsr_global"] == pytest.approx(0.6112, abs=5e-4)  # N_global crece, deflacta mas
     assert result["claim_allowed"] is False
     # el DSR es no-creciente en n_trials: family >= cluster >= global
     assert result["dsr_family"] >= result["dsr_cluster"] >= result["dsr_global"]
@@ -285,11 +301,16 @@ def test_red_provenance_citing_an_action_trial_as_forecast_is_rejected(records, 
 
 
 def test_red_stale_header_237_109_is_rejected(records, tmp_path):
-    """LA regresión de BL-12-r2: cabecera 237/109 contra un ledger 239/111."""
+    """LA regresión de BL-12-r2: una cabecera stale contra el ledger real.
+
+    Los numeros del nombre (237/109) son los del incidente original y se conservan como
+    etiqueta historica; lo que el test inyecta es un desfase RELATIVO al ledger vigente,
+    para que siga probando lo mismo cuando el ledger crece.
+    """
     readme = tmp_path / "README.md"
     original = (ROOT / "registries" / "README.md").read_text(encoding="utf-8")
     readme.write_text(
-        original.replace("n_global: 239", "n_global: 237").replace("usdcop: 111", "usdcop: 109"),
+        original.replace("n_global: 243", "n_global: 237").replace("usdcop: 115", "usdcop: 109"),
         encoding="utf-8",
     )
     errors = ledger.check_declared_totals(records, readme)
@@ -307,7 +328,7 @@ def test_red_header_evasion_by_case_or_order_no_longer_works(records, tmp_path):
     readme = tmp_path / "README.md"
     original = (ROOT / "registries" / "README.md").read_text(encoding="utf-8")
     readme.write_text(
-        original.replace("n_global: 239", "N_GLOBAL: 239").replace("<!-- LEDGER-TOTALS", "<!-- ledger-totals"),
+        original.replace("n_global: 243", "N_GLOBAL: 243").replace("<!-- LEDGER-TOTALS", "<!-- ledger-totals"),
         encoding="utf-8",
     )
     errors = ledger.check_declared_totals(records, readme)

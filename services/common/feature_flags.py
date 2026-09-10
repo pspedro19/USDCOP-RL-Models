@@ -13,7 +13,7 @@ Features:
 - Default values for missing flags
 
 Usage:
-    from services.shared.feature_flags import get_feature_flags
+    from services.common.feature_flags import get_feature_flags
 
     flags = get_feature_flags()
 
