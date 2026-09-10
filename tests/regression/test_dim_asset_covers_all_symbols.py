@@ -16,7 +16,7 @@ las **7.962 filas** de SPX (1995-2026) llevaban meses invisibles. El sintoma lle
 camino largo: el dashboard reportaba `missing` para el 2026-07-20, un dia en que NYSE
 estuvo abierto, la fila existia y el calendario decia `is_trading_day = t`.
 
-Corregido por la migracion `083_dim_asset_spx_symbol_alignment.sql`. Este test evita que
+Corregido por la migracion `089_dim_asset_spx_symbol_alignment.sql`. Este test evita que
 vuelva a pasar con cualquier activo: el modo de fallo es silencioso, asi que la unica
 defensa es una comprobacion explicita.
 

@@ -8,11 +8,11 @@
     "v13": "EXCLUIDA hasta freeze (abrir 2026 = +1 trial, decisi\u00f3n del operador)"
   },
   "judge_note": "el juez sellado de v12/v14 consume SOLO judge_window (post-freeze); la serie completa es monitoreo, no evidencia confirmatoria",
-  "generated_at": "2026-08-28",
+  "generated_at": "2026-08-11",
   "strategies": {
     "smart_simple_v11": {
-      "ret_2026_ytd_pct": 0.66,
-      "n_trades": 12,
+      "ret_2026_ytd_pct": 2.9,
+      "n_trades": 11,
       "note_n": "N<20 => solo conteo y PnL",
       "judge_window": null,
       "trades": [
@@ -99,29 +99,27 @@
         {
           "timestamp": "2026-07-27T09:00:00-05:00",
           "side": "LONG",
-          "pnl_pct": -2.1129,
-          "exit_reason": "hard_stop",
-          "leverage": 0.705,
-          "equity": 10073.09
-        },
-        {
-          "timestamp": "2026-08-10T09:00:00-05:00",
-          "side": "LONG",
-          "pnl_pct": -0.0679,
+          "pnl_pct": -0.004,
           "exit_reason": "week_end",
-          "leverage": 0.617,
-          "equity": 10066.26
+          "leverage": 0.705,
+          "equity": 10290.11
         }
-      ]
+      ],
+      "lineage": {
+        "timestamp": "2026-01-05T09:00:00-05:00",
+        "signal_node_id": "ab0abbcd-bc64-48ba-b1f2-04cbb98132ab",
+        "snapshot_node_id": "74b9f313-e566-4807-ba64-a9fa6b89dc9c",
+        "bar_l0_node_id": "3eaee4a4-04d8-467e-bd58-ec5edb8829b9"
+      }
     },
     "smart_simple_v12": {
-      "ret_2026_ytd_pct": 0.43,
-      "n_trades": 12,
+      "ret_2026_ytd_pct": 2.67,
+      "n_trades": 11,
       "note_n": "N<20 => solo conteo y PnL",
       "judge_window": {
         "starts_after": "2026-07-21",
-        "n_trades": 2,
-        "pnl_pct_compound": -2.1794,
+        "n_trades": 1,
+        "pnl_pct_compound": -0.004,
         "note": "N<20 => solo conteo y PnL"
       },
       "trades": [
@@ -208,29 +206,21 @@
         {
           "timestamp": "2026-07-27T09:00:00-05:00",
           "side": "LONG",
-          "pnl_pct": -2.1129,
-          "exit_reason": "hard_stop",
-          "leverage": 0.705,
-          "equity": 10050.05
-        },
-        {
-          "timestamp": "2026-08-10T09:00:00-05:00",
-          "side": "LONG",
-          "pnl_pct": -0.0679,
+          "pnl_pct": -0.004,
           "exit_reason": "week_end",
-          "leverage": 0.617,
-          "equity": 10043.22
+          "leverage": 0.705,
+          "equity": 10266.57
         }
       ]
     },
     "smart_simple_v14": {
-      "ret_2026_ytd_pct": 0.4,
-      "n_trades": 12,
+      "ret_2026_ytd_pct": 2.63,
+      "n_trades": 11,
       "note_n": "N<20 => solo conteo y PnL",
       "judge_window": {
         "starts_after": "2026-07-21",
-        "n_trades": 2,
-        "pnl_pct_compound": -2.1794,
+        "n_trades": 1,
+        "pnl_pct_compound": -0.004,
         "note": "N<20 => solo conteo y PnL"
       },
       "trades": [
@@ -317,18 +307,10 @@
         {
           "timestamp": "2026-07-27T09:00:00-05:00",
           "side": "LONG",
-          "pnl_pct": -2.1129,
-          "exit_reason": "hard_stop",
-          "leverage": 0.705,
-          "equity": 10046.68
-        },
-        {
-          "timestamp": "2026-08-10T09:00:00-05:00",
-          "side": "LONG",
-          "pnl_pct": -0.0679,
+          "pnl_pct": -0.004,
           "exit_reason": "week_end",
-          "leverage": 0.617,
-          "equity": 10039.86
+          "leverage": 0.705,
+          "equity": 10263.13
         }
       ]
     }
@@ -424,20 +406,18 @@
       },
       {
         "iso_week": "2026-W31",
-        "cop_component_pct": -2.1129,
-        "xau_component_pct": null,
-        "btc_component_pct": null,
-        "book_ret_pct": null,
-        "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
-      },
-      {
-        "iso_week": "2026-W33",
-        "cop_component_pct": -0.0679,
+        "cop_component_pct": -0.004,
         "xau_component_pct": null,
         "btc_component_pct": null,
         "book_ret_pct": null,
         "status": "PARTIAL \u2014 solo sleeve COP poblado por este runner; XAU/BTC via sus bundles (semana sin dato = NA)"
       }
     ]
+  },
+  "identity": {
+    "schema_version": "1.0.0",
+    "semantic_hash": "sha256:137473d953b2e80ec0888be00222eda1975da424f6645d984a9bf3be18467bba",
+    "decision_fingerprint": "sha256:cfcd88c01d057e4db187f9a66bfd4e95a73c60c326e3280ff2b9472de167b796",
+    "derivation_id": "sha256:7caa8aef0c057e2ef2d7a79b3835929848dd82a55e23688bce53e2ec7b296541"
   }
 }

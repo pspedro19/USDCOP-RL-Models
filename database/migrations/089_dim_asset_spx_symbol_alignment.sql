@@ -1,5 +1,5 @@
 -- =============================================================================
--- 083 · Alinea `dim_asset.symbol` de SPX con el simbolo REAL del dato
+-- 089 · Alinea `dim_asset.symbol` de SPX con el simbolo REAL del dato
 -- =============================================================================
 -- Contract: CTR-MKT-CANON-001 (correccion) · Date: 2026-08-24
 --

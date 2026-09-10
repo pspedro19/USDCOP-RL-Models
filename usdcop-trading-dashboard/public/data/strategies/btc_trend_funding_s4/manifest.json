@@ -3,11 +3,10 @@
   "asset_id": "btcusdt",
   "symbol": "BTC/USDT",
   "chart_symbol": "BTCUSDT",
-  "display_name": "Bitcoin \u00b7 Trend \u00d7 funding brake (S4)",
+  "display_name": "Bitcoin · Trend × funding brake (S4)",
   "pipeline_type": "hybrid",
   "timeframe": "daily",
   "status": "archived",
-  "surface": "action",
   "schema_version": "1.0.0",
   "capabilities": {
     "replay": true,
@@ -16,11 +15,30 @@
   },
   "produced_by": {
     "source": "BundlePublisher",
-    "version": "1.0.0",
-    "year": 2026,
-    "generated_at": "2026-08-24T19:36:10.779012+00:00"
+    "version": "1.2.1",
+    "year": 2025,
+    "generated_at": "2026-07-27T20:45:11.666204+00:00"
   },
   "backtests": [
+    {
+      "model_version": "1.0.0",
+      "year": 2026,
+      "immutable_id": "btc_trend_funding_s4__1.0.0__2026",
+      "summary": "strategies/btc_trend_funding_s4/backtests/1.0.0/summary_2026.json",
+      "trades": "strategies/btc_trend_funding_s4/backtests/1.0.0/trades_2026.json",
+      "signals": "strategies/btc_trend_funding_s4/backtests/1.0.0/signals_2026.json",
+      "replayable": true,
+      "gates": {
+        "passed": 5,
+        "of": 5,
+        "recommendation": "REVIEW"
+      },
+      "headline": {
+        "return_pct": 256.92,
+        "sharpe": 1.329,
+        "p_value": 0.0002
+      }
+    },
     {
       "model_version": "1.2.1",
       "year": 2026,
@@ -58,32 +76,13 @@
         "sharpe": 1.329,
         "p_value": 0.0002
       }
-    },
-    {
-      "model_version": "1.0.0",
-      "year": 2026,
-      "immutable_id": "btc_trend_funding_s4__1.0.0__2026",
-      "summary": "strategies/btc_trend_funding_s4/backtests/1.0.0/summary_2026.json",
-      "trades": "strategies/btc_trend_funding_s4/backtests/1.0.0/trades_2026.json",
-      "signals": "strategies/btc_trend_funding_s4/backtests/1.0.0/signals_2026.json",
-      "replayable": true,
-      "gates": {
-        "passed": 5,
-        "of": 5,
-        "recommendation": "REVIEW"
-      },
-      "headline": {
-        "return_pct": 257.83,
-        "sharpe": 1.323,
-        "p_value": 0.0
-      }
     }
   ],
   "production": null,
   "approval": null,
   "model_versions": [
     {
-      "version": "1.2.1",
+      "version": "1.0.0",
       "active": false,
       "trained_at": null,
       "train_window": null,
@@ -92,7 +91,7 @@
       "artifact_uri": null
     },
     {
-      "version": "1.0.0",
+      "version": "1.2.1",
       "active": true,
       "trained_at": null,
       "train_window": null,
@@ -100,5 +99,6 @@
       "norm_stats_hash": null,
       "artifact_uri": null
     }
-  ]
+  ],
+  "surface": "action"
 }

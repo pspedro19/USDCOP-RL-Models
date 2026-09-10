@@ -15,7 +15,7 @@
 
 1. **H5 Weekly Pipeline (PRODUCTION, v11 FROZEN)**: Smart Simple v2.0, Ridge+BR + Regime Gate (XGBoost = experimento offline, `use_xgboost: false` — `smart_simple_v1.yaml:206`)
    - **2025 OOS oficial: +7.35%, Sharpe 0.942, p=0.2277 → NOT statistically significant** (32 trades, 2L/30S, MaxDD 7.84%, $10K → $10,735). Cascada de honestidad +26.05 → +13.05 → +7.66 → +7.35 (datos, purga, fills open-aware); los +25.63%/p=0.006 anteriores están **superseded** (`HYPOTHESIS-REGISTRY.md` § RE-MEDICIÓN #3). Fuente: bundle `public/data/production/summary_2025.json`.
-   - **2026 forward (único juez limpio)**: paper ledger tal como lo corrieron los DAGs = **+0.66% YTD, 12 trades hasta 2026-W33** (`production/paper/candidates_ledger_2026.json`, 2026-08-28); replay 2026 con el método corregido = +3.36%, 11 trades (`summary.json`). **N<20 ⇒ solo conteo y PnL** (constitución §6). Corte A del protocolo de retiro (26 sem) ≈ **2026-09-16**.
+   - **2026 forward (único juez limpio)**: paper ledger tal como lo corren los DAGs con el método corregido = **+2.90% YTD, 11 trades hasta 2026-W31** (último 2026-07-27, $10K → $10,290; `production/paper/candidates_ledger_2026.json`, 2026-08-11); replay 2026 = +3.36%, 11 trades (`summary.json`). **N<20 ⇒ solo conteo y PnL** (constitución §6). Corte A del protocolo de retiro (26 sem) ≈ **2026-09-16**; el ledger lleva W32+ sin poblar (stack apagado).
    - **Gates 4/6 = REVIEW** (p-value y DSR fallan): `data/approvals/approval_state.json` en `PENDING_APPROVAL` con **DSR trial-aware 0.0587, N=59** (2026-08-06; el rango 0.50-0.92 de julio quedó superado al crecer el conteo). El bundle `strategies/smart_simple_v11/backtests/2.0.0/` aún publica los valores de abril; `production/trades/smart_simple_v11_2025.json` compone +7.35%/32 — cuadra el segundo.
    - Architecture: Regime Gate (Hurst) → Ridge/BR ensemble → Effective HS → DL → CB
    - DAGs: H5-L3/L4/L4b/L5/L6/L7 (see `.claude/specs/tracks/h5-smart-simple.md`)
@@ -41,8 +41,8 @@ Anti-selection discipline is now transversal (`.claude/rules/quant-constitution.
 `.claude/specs/audit/PLAN-completar-sistema-2026-07.md`.
 
 **Current Best** (números de decisión = bundle publicado + registro de hipótesis, nunca de memoria):
-- H5 Weekly v2.0 (`smart_simple_v11`): $10K → $10,735 (2025 OOS oficial), $10K → $10,066 (2026 forward paper, W33)
-- Candidatas v12/v14: replay descriptivo + forward post-freeze (ventana juez 4 sem), +0.43% / +0.40% YTD — ninguna bate a v11
+- H5 Weekly v2.0 (`smart_simple_v11`): $10K → $10,735 (2025 OOS oficial), $10K → $10,290 (2026 forward paper, W31)
+- Candidatas v12/v14: replay descriptivo + forward post-freeze (ventana juez 4 sem), +2.67% / +2.63% YTD (ventana juez post-freeze: 1 trade, −0.4%) — ninguna bate a v11
 - RL: rechazado (ver track 4); V21.5b (+2.51%, Jan-2026) queda como historia
 
 ---
