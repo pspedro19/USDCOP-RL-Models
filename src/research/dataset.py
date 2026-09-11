@@ -165,7 +165,8 @@ def build_research_data(m5: pd.DataFrame | None = None, min_context: int = 60,
             if d not in regimes.index or not np.isfinite(regimes.at[d, "spread_pips"]):
                 dropped["sin_regimen"].append(d)
                 continue
-            if d not in macro.index or not np.isfinite(macro.loc[pd.Timestamp(d), MACRO_FEATURES]).all():
+            macro_row = macro.reindex([pd.Timestamp(d)])[MACRO_FEATURES].iloc[0]
+            if not np.isfinite(macro_row.to_numpy(dtype=float)).all():
                 dropped["sin_macro"].append(d)
                 continue
 
