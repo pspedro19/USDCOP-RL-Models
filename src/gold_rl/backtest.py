@@ -83,10 +83,15 @@ def block_bootstrap_pvalue(r: pd.Series, *, block: int = 20, n_boot: int = 5000,
         sample = np.concatenate([r[s:s + block] for s in starts])[:n]
         means[b] = sample.mean()
     ann = means * TRADING_DAYS
-    p = float((means <= 0).mean())
+    # Finite Monte-Carlo resolution: never report an impossible p=0.  The
+    # +1 correction is conservative and makes the number reproducible as a
+    # bound of this bootstrap procedure rather than a claim of exact zero.
+    exceedances = int((means <= 0).sum())
+    p = float((exceedances + 1) / (n_boot + 1))
     return {"p_value": round(p, 4), "ci_low": round(float(np.percentile(ann, 2.5)) * 100, 2),
             "ci_high": round(float(np.percentile(ann, 97.5)) * 100, 2),
-            "significant": bool(p < 0.05)}
+            "significant": bool(p < 0.05), "n_boot": int(n_boot),
+            "n_exceedances": exceedances}
 
 
 # --------------------------------------------------------------------------- trades segmentation
