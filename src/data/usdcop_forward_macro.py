@@ -1696,6 +1696,7 @@ def attach_forward_macro_features(
             ["series_id", "observation_date", "available_at"], keep="last"
         )
         group = group[["observation_date", "available_at", "value"]].copy()
+        group["observation_date"] = pd.to_datetime(group["observation_date"])
         group[f"{slug}__release_delta"] = group["value"].diff()
         denominator = group["value"].shift(1).abs().replace(0, np.nan)
         group[f"{slug}__release_pct"] = group["value"].diff() / denominator
