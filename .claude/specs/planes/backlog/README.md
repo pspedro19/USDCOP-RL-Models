@@ -164,5 +164,6 @@ BL-05 ─→ BL-32 (paper ledger visible es el primer ladrillo del Passport)
 | [BL-47 — Migración de estrategias al motor de políticas (R6-R8)](BL-47-policy-migracion-r6-r8.md) | PARTIAL |
 | [BL-48 — El costo de ejecución es la variable dominante en el intradía de USD/COP](BL-48-costos-ejecucion-intradia.md) | PLANNED |
 | [BL-49 — Los dos tests de §13 que quedaron sin implementar](BL-49-tests-2-y-14-tesis.md) | PLANNED |
+| [BL-50 — Reparación y re-evaluación de la tesis RL (EXP-TESIS-RL-01)](BL-50-reparacion-tesis-rl.md) | PARTIAL |
 
 <!-- /idx -->

@@ -1,9 +1,9 @@
 ---
 kind: as-built
-status: IMPLEMENTED
+status: PARTIAL
 contract: CTR-RESEARCH-RESULTS-001
-version: 1.0.0
-last_verified: 2026-08-25
+version: 1.1.0
+last_verified: 2026-09-11
 supersedes: []
 code_anchors:
   - scripts/analysis/thesis_baselines.py
@@ -25,6 +25,151 @@ code_anchors:
 > **Ninguna cifra de este documento está escrita a mano.** Todas salen de
 > `outputs/thesis/statistics_<bloque>.json` y de las 10 corridas en `data/thesis/ppo/`,
 > generadas por `scripts/presentation/generar_resultados_y_figuras.py` (§14 del plan).
+
+---
+
+## CORRIGENDUM (2026-09-11, v1.1.0) — leer antes que nada
+
+> **Este documento se publicó el 2026-08-25 con defectos de implementación y de redacción
+> estadística.** Dos auditorías independientes los encontraron:
+> [auditoría Codex](../../../docs/analysis/exp-tesis-rl-01-auditoria-2026-09-10.md) (con
+> [evidencia hasheada](../../../docs/analysis/exp-tesis-rl-01-evidence-2026-09-10.json) y
+> diagnóstico reproducible `scripts/diagnostics/audit_thesis_rl_integrity.py`) y la revisión
+> Claude del mismo día. **Cada cifra de esta sección sale de esa evidencia**, no de una
+> relectura del texto anterior. Las secciones §0-§8 se conservan **sin reescribir** para que
+> la corrección sea auditable contra lo que efectivamente se publicó; donde contradigan a
+> esta sección, **manda esta sección**.
+
+### Lo que se sostiene
+
+**El rechazo económico.** Las políticas PPO evaluadas pierden frente a la abstención bajo el
+modelo de costos especificado, en los dos bloques, con las diez corridas netas negativas y
+supervivencia nula al doble de costos. Re-precio sobre las **mismas acciones publicadas**
+(`net_d(k) = gross_d − k·cost_d`, compuesto):
+
+| Configuración | Costos ×1 | ×2 | ×3 |
+|---|---:|---:|---:|
+| `ppo_regime` | −54,8658 % | −84,5866 % | −94,7491 % |
+| `ppo_backbone` | −56,4364 % | −86,1460 % | −95,6075 % |
+
+**La causa contable inmediata:** los costos acumulados superan al bruto. Eso está medido.
+
+### Lo que NO se sostiene y queda retirado
+
+**1. «El agente aprende una política con señal real» (§0, §5b.1).** Retirado como afirmación.
+Tres razones independientes, cualquiera de ellas suficiente:
+
+- **Fuga macro (P0, comprobada).** `attach_macro_features` resolvía `merge_asof(backward)`
+  sobre la fecha de sesión: el valor fechado `d` —cierre de DXY/Brent publicado *después* del
+  cierre colombiano de las 12:55— entraba en la observación de las 08:00 de ese mismo día.
+  Perturbar la fila macro del 2023-06-15 cambiaba el contexto del agente en `max_abs = 0,0953`
+  (`causality_gate_pass = False`). El nombre `*_ret_prev` no correspondía al valor calculado.
+- **Bruto no pre-registrado.** El primario registrado era el ΔSharpe **neto** contra
+  `always_flat`; el bruto apareció después del rechazo. Es exploratorio por construcción.
+- **Es una media de semillas, no una política.** Ver punto 3.
+
+**2. Suma aritmética presentada junto a compuesto (§0).** El «+27,95 % bruto» era **suma de
+retornos diarios** mientras el «−54,87 % neto» era **compuesto**. Comparables (compuestos):
+
+| Hold-out, media de 5 semillas | Bruto suma | **Bruto compuesto** | **Neto compuesto** |
+|---|---:|---:|---:|
+| `ppo_regime` | +27,9497 % | **+31,8449 %** | **−54,8658 %** |
+| `ppo_backbone` | +31,5108 % | **+36,5743 %** | **−56,4364 %** |
+
+**3. «Sharpe bruto +2,23, IC excluye cero, 10/10 semillas positivas» (§0).** El +2,2254 es el
+Sharpe de la **serie media de cinco semillas**, que es una cartera de cinco políticas, no la
+semilla típica. Por semilla (hold-out, bruto):
+
+| Semilla | 42 | 123 | 456 | 789 | 1337 |
+|---|---:|---:|---:|---:|---:|
+| `ppo_regime` compuesto | +58,72 % | +26,15 % | **+0,69 %** | +27,64 % | +51,02 % |
+| `ppo_regime` Sharpe | 2,011 | 1,245 | **0,072** | 1,266 | 2,156 |
+| `ppo_backbone` compuesto | +38,79 % | +71,04 % | **−0,02 %** | +23,84 % | +57,30 % |
+
+Y el «10/10 positivas» **es falso en compuesto**: `ppo_backbone` semilla 456 da
+**−0,0211 %**. La diferencia frente a su suma aritmética (+1,269 %) es arrastre por
+volatilidad, no un error de cálculo.
+
+**4. «ρ cayó de 0,97 a 0,58» (§0, §3, §6.5, §7).** **Nunca ocurrió.** Los valores
+recalculados y los propios JSON originales dan **0,5853 en selección** y **0,5821 en
+hold-out**. Queda retirada toda la explicación de pérdida de potencia o de efecto del refit
+que se apoyaba en esa caída. H2 en hold-out: ΔSR = 0,4319, IC [−0,8828; 1,8606], p = 0,5358
+— indecidible por potencia insuficiente **en ambos bloques**, no por un desvanecimiento.
+
+**5. `p < 0,0001` (§0, §2, §2b).** Es resolución de Monte Carlo, no precisión medida. El dato
+honesto: **0 excedencias en 10 000 réplicas** del bootstrap estacionario. El Sharpe de
+`always_flat` es una convención (σ = 0), no una medición.
+
+**6. «La política rentable no existe dentro del espacio de acción» (§4).** Falso: `w = 0` está
+en el espacio y obtiene exactamente 0 %. Lo correcto es **«esta receta de PPO no la
+encontró»**, y los modelos refit pierden incluso dentro de su propio conjunto de
+entrenamiento. Es fallo del optimizador y/o del objetivo, no una propiedad demostrada del
+mercado.
+
+**7. «El alfa vive en la alta frecuencia» (§5b.3).** La descomposición dice lo contrario:
+**+48,9078 puntos** provienen del signo de la exposición **media diaria** y **−20,9582
+puntos** son residuo de timing intradía. Además esa atribución es **retrospectiva**: la
+exposición media incorpora acciones posteriores al inicio del día, así que no describe una
+señal disponible a las 08:00.
+
+**8. PBO 0,116 / 0,2113.** Reproducen, pero su alcance es otro: el CSCV se construyó sobre
+**diez políticas por semilla dentro de un bloque**, así que mide selección hipotética entre
+semillas, no el procedimiento candidato/OOF que la regla pre-registrada describía. Invocar
+esa regla sobre este estadístico fue un error de aplicación.
+
+**9. Stress de costos ×2/×3 (§2b).** El publicado usaba un P&L **sintético** (exposición media
+× retorno cierre-a-cierre − k·costo medio), no el de la estrategia. La tabla de arriba lo
+sustituye con el re-precio sobre las posiciones reales. El veredicto no cambia; el artefacto
+estaba mal etiquetado.
+
+**10. H1 cambió de identidad.** El pre-registro fija `PPO régimen` frente a
+`baseline_matched`; el documento llamó H1 al contraste frente a `always_flat`. **El
+comparador registrado nunca se construyó.** Lo reportado es subdesempeño frente a la
+abstención, no el rechazo de la H1 registrada.
+
+**11. `N ≥ 125` trials.** Afirmación mía, no demostrada. Hay **115 documentados**; la
+conciliación de cadencias y sensibilidades está pendiente y se hace en el registro, no aquí.
+
+### Defectos de implementación encontrados (todos corregidos y con test)
+
+| Defecto | Efecto | Estado |
+|---|---|---|
+| Macro del mismo día en la observación | Fuga de disponibilidad temporal | Corregido: regla `available_at` en `config/research/macro_availability.yaml`; gate `causality_gate = True` |
+| Reward omitía el costo de liquidación terminal | El agente optimizaba un juego con salida gratis y se puntuaba en otro que la cobra | Corregido en `session_gym.py` + test de paridad invertido |
+| Cierre terminal valorado con `c58`/`σ58` | Precio equivocado en el paso que la cronología declara en `c59` | Corregido en `session_env.py`/`cost_model.py` |
+| 82,41 % de barras con O=H=L=C (100 % en todo el desarrollo) | `parkinson_12` y `garman_klass_12` constantes en train y saturando el clip en el hold-out | Excluidas en el schema v2 (39 → 37 features) |
+| Ventanas cruzando el salto nocturno | 1 378 sesiones con `logret_1` de apertura distinto de cero, contra §6.4 | Corregido: ventanas intra-sesión |
+| Máscara sin reglas §6.3 ni festivos de EE. UU. | Sesiones que la spec excluía entraban | Corregido; `train_valid` separado de `valid` |
+| Caché del dataset sin invalidar por código/contenido | Un arreglo semántico podía cargar el pickle viejo | Corregido: identidad por sha256 |
+| Fuentes macro sin identidad certificada | Brent mezcla futuros y parche spot; DGS2 de Investing no coincide con FRED; DXY admite fallback a otro índice | Declarado en `macro_availability.yaml`; reconciliación pendiente |
+| Ledger forward con sellado falso | `sealed_before_open = True` hardcodeado y `build_live_spec` exigiendo 60 barras | Corregido: specs parciales y metadatos de sellado por barra |
+
+### Lo que esta corrección **no** autoriza a decir
+
+No se ha demostrado que USD/COP intradía sea imposible de negociar con beneficio, ni que
+corregir estos defectos produzca rentabilidad. Tampoco se puede asignar qué porcentaje de la
+pérdida publicada corresponde a cada defecto: para eso hace falta el reentrenamiento sin
+fugas, que es un experimento nuevo con sus propios trials. **Mejorar los datos puede incluso
+reducir el bruto**, porque parte de él venía de la fuga.
+
+Y una regla que esta corrección no levanta: **selección 2023 y hold-out 2024-26 ya se
+miraron, y motivaron estas correcciones.** Cualquier replay de la versión corregida sobre
+esos bloques es **diagnóstico retrospectivo**. El juez confirmatorio de la versión v2 es el
+carril **forward**, desde su fecha de congelación.
+
+### Texto defendible mientras tanto
+
+> En los artefactos auditados, las políticas PPO evaluadas presentan rendimiento neto
+> negativo frente a la abstención bajo el modelo de costos especificado. La atribución del
+> rendimiento bruto a una señal negociable no está establecida, por problemas de
+> disponibilidad temporal en las entradas macro, de representación de la serie de precios y
+> de convención estadística en el reporte. El programa de reparación y re-evaluación está
+> especificado en el pre-registro v3.
+
+> Programa de reparación: [`06-PRE-REGISTRATION-v3.md`](06-PRE-REGISTRATION-v3.md) ·
+> Backlog: [`BL-48`](backlog/BL-48-costos-ejecucion-intradia.md),
+> [`BL-49`](backlog/BL-49-tests-2-y-14-tesis.md),
+> [`BL-50`](backlog/BL-50-reparacion-tesis-rl.md)
 
 ---
 

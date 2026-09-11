@@ -9,11 +9,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 
-from src.research.session_gym import SessionTradingEnv
+# El script se invoca como fichero (`python scripts/analysis/...`), no como modulo,
+# asi que la raiz del repo no esta en sys.path y `src` no resuelve. Los demas
+# scripts de `scripts/analysis/` hacen exactamente esto; sin ello el runner
+# committeado nunca pudo ejecutarse (ModuleNotFoundError en el primer import).
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from src.research.session_gym import SessionTradingEnv  # noqa: E402
 from src.research.synthetic_sessions import Fixture, make_sessions, oracle_result
 
 
