@@ -1,0 +1,120 @@
+{
+  "contract": "CTR-RESEARCH-FEATURES-001",
+  "n_features": 37,
+  "sha256": "a0568db4b953604cabb6d64eab73631419f65184d0fc96bd61a6f994f75d2e8b",
+  "order": [
+    "logret_1",
+    "logret_3",
+    "logret_6",
+    "logret_12",
+    "ret_sesion_acum",
+    "close_pos_rango",
+    "rv_12",
+    "rv_78",
+    "rv_ratio",
+    "atr_14",
+    "atr_norm",
+    "ema_dist_12",
+    "ema_dist_26",
+    "ema_dist_72",
+    "macd_norm",
+    "macd_signal_norm",
+    "slope_20",
+    "rsi_14",
+    "zscore_60",
+    "min_desde_apertura",
+    "sin_hora",
+    "cos_hora",
+    "primeros_30min",
+    "ultimos_30min",
+    "dia_semana",
+    "w_prev",
+    "pnl_no_realizado",
+    "barras_en_posicion",
+    "drawdown_sesion",
+    "n_cambios",
+    "brent_ret_prev",
+    "dxy_ret_prev",
+    "spread_ibr_dgs2",
+    "p_regime_0",
+    "p_regime_1",
+    "p_regime_2",
+    "p_regime_3"
+  ],
+  "groups": {
+    "precio": [
+      "logret_1",
+      "logret_3",
+      "logret_6",
+      "logret_12",
+      "ret_sesion_acum",
+      "close_pos_rango"
+    ],
+    "volatilidad": [
+      "rv_12",
+      "rv_78",
+      "rv_ratio",
+      "atr_14",
+      "atr_norm"
+    ],
+    "tendencia": [
+      "ema_dist_12",
+      "ema_dist_26",
+      "ema_dist_72",
+      "macd_norm",
+      "macd_signal_norm",
+      "slope_20",
+      "rsi_14",
+      "zscore_60"
+    ],
+    "temporal": [
+      "min_desde_apertura",
+      "sin_hora",
+      "cos_hora",
+      "primeros_30min",
+      "ultimos_30min",
+      "dia_semana"
+    ],
+    "posicion": [
+      "w_prev",
+      "pnl_no_realizado",
+      "barras_en_posicion",
+      "drawdown_sesion",
+      "n_cambios"
+    ],
+    "macro": [
+      "brent_ret_prev",
+      "dxy_ret_prev",
+      "spread_ibr_dgs2"
+    ],
+    "regimen": [
+      "p_regime_0",
+      "p_regime_1",
+      "p_regime_2",
+      "p_regime_3"
+    ]
+  },
+  "endogenous": [
+    "barras_en_posicion",
+    "drawdown_sesion",
+    "n_cambios",
+    "pnl_no_realizado",
+    "w_prev"
+  ],
+  "excluded_groups": {
+    "volumen": "100% de 99.714 barras con volumen 0 (criterio §6.5: <= 5%); USD/COP spot es OTC y el proveedor no publica volumen",
+    "sorpresa_macro": "§6.5 la condiciona a consenso historico verificable; el repo no lo tiene y fabricarlo seria inventar el dato que la feature mide",
+    "texto": "pertenece al brazo LLM, fuera del alcance de 2 brazos",
+    "microestructura_ohlc": "parkinson_12 y garman_klass_12 excluidas en v2: OHLC plano en la mayor parte del desarrollo las hace degenerar a cero; se conservan solo como diagnóstico, no como entrada del modelo"
+  },
+  "formula_versions": {
+    "atr_14": "wilder_rma_v1",
+    "rsi_14": "wilder_rma_v1"
+  },
+  "availability": {
+    "market": "informacion <= cierre de la barra b (§9.1)",
+    "macro": "merge_asof(backward): ultimo valor publicado <= la sesion",
+    "regimen": "posterior filtrado con datos <= cierre de la sesion anterior",
+    "posicion": "endogena; se reinicia cada sesion con w_{-1}=0"
+  }
+}

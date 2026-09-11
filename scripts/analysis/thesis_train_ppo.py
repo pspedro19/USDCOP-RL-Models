@@ -213,14 +213,17 @@ def main() -> int:
     ap.add_argument("--timesteps", type=int, default=TOTAL_TIMESTEPS)
     ap.add_argument("--output-dir", type=Path,
                     help="directorio versionado; evita sobrescribir artefactos v1")
+    ap.add_argument("--portable-path", type=Path,
+                    help="dataset portable versionado; rechaza identidades obsoletas")
     ap.add_argument("--refit", action="store_true",
                     help="entrena sobre desarrollo+seleccion (paso F8 del pre-registro)")
     args = ap.parse_args()
 
     # El formato portable no lleva el objeto hmmlearn, asi que funciona dentro del
     # contenedor de Airflow, que no tiene esa dependencia instalada.
-    if PORTABLE.is_file():
-        data = load_portable()
+    portable_path = args.portable_path or PORTABLE
+    if portable_path.is_file():
+        data = load_portable(portable_path)
         print(f"dataset portable: {data.summary()}")
     else:
         data = load_or_build()

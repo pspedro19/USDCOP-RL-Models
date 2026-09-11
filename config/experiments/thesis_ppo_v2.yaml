@@ -5,7 +5,9 @@
 experiment_id: EXP-TESIS-RL-02
 dataset_version: v2
 dataset_identity_required: true
-source_schema: config/research/feature_schema.json
+source_schema: config/research/feature_schema_v2.json
+frozen_scaler: config/research/feature_scaler_frozen_v2.json
+frozen_regime: config/research/regime_hmm_frozen_v2.json
 portable_dataset: data/thesis/research_data_portable_v2.pkl
 model_output_dir: outputs/thesis-repair/ppo_v2
 configs:
