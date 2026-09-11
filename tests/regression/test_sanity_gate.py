@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -43,6 +44,22 @@ def test_macro_identity_gate_binds_positive_report_to_ssot(tmp_path):
                "fallback": spec.get("fallback"), "status": "COINCIDE", "honoured": True}
         for name, spec in declared.items()
     }
+    clean = root / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_DAILY_CLEAN.parquet"
+    def digest(path):
+        h = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                h.update(chunk)
+        return h.hexdigest()
     report = tmp_path / "macro.json"
-    report.write_text(json.dumps({"all_declared_identities_honoured": True, "series": series}))
-    assert require_macro_identity(report, availability=availability)["series"] == series
+    report.write_text(json.dumps({"all_declared_identities_honoured": True, "series": series,
+                                  "inputs": {"availability_sha256": digest(availability),
+                                             "clean_sha256": digest(clean)}}))
+    assert require_macro_identity(report, availability=availability, clean=clean)["series"] == series
+
+
+def test_macro_identity_checker_exposes_input_hashes():
+    from scripts.diagnostics.verify_macro_declared_identity import _digest
+    root = Path(__file__).resolve().parents[2]
+    availability = root / "config" / "research" / "macro_availability.yaml"
+    assert len(_digest(availability)) == 64

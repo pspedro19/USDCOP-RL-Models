@@ -46,6 +46,16 @@ FRED_SOURCES = {"FRED_DCOILBRENTEU": "DCOILBRENTEU", "FRED_DGS2": "DGS2"}
 TOLERANCE = 0.01
 
 
+def _digest(path: Path) -> str:
+    import hashlib
+
+    h = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def _fred(series_id: str):
     import pandas as pd
 
@@ -115,6 +125,12 @@ def main() -> int:
 
     out = {"contract": "CTR-RESEARCH-MACRO-AVAILABILITY-001",
            "measured_at_utc": datetime.now(timezone.utc).isoformat(),
+           "inputs": {
+               "availability_sha256": _digest(AVAILABILITY),
+               "clean_sha256": _digest(CLEAN),
+               "availability_path": str(AVAILABILITY),
+               "clean_path": str(CLEAN),
+           },
            "tolerance": TOLERANCE, "series": report,
            "all_declared_identities_honoured": honoured}
     text = json.dumps(out, indent=2, ensure_ascii=False) + "\n"
