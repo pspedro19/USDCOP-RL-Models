@@ -91,8 +91,8 @@ audit/ (5)
 data/ (1)
 operations/ (2)
 pipelines/ (3)
-planes/ (12)
-planes/backlog/ (49)
+planes/ (13)
+planes/backlog/ (50)
 platform/ (22)
 tracks/ (1)
 tracks/news-analysis/ (13)
@@ -100,7 +100,7 @@ tracks/news-analysis/ (13)
 <!-- /inv -->
 
 <!-- inv:knowledge -->
-**10 rules** (~2,910 palabras auto-cargadas) · **171 specs** · **32 skills** · **3 agents**
+**10 rules** (~2,910 palabras auto-cargadas) · **173 specs** · **32 skills** · **3 agents**
 <!-- /inv -->
 
 ## Capacidades y responsabilidades (generado)
