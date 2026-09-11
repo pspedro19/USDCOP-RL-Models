@@ -393,6 +393,19 @@ class TestUnifiedMacroLoader:
         assert 'vix' in columns
         assert 'embi' in columns
 
+    def test_load_5min_does_not_use_same_day_daily_macro(self, tmp_path, monkeypatch):
+        loader = UnifiedMacroLoader(fallback_parquet=True)
+        daily = pd.DataFrame({
+            "date": pd.to_datetime(["2024-01-02", "2024-01-03"]),
+            "dxy": [100.0, 110.0],
+        })
+        source = tmp_path / "macro.parquet"
+        daily.to_parquet(source)
+        monkeypatch.setattr(loader, "_find_parquet_file", lambda: source)
+        out = loader.load_5min("2024-01-02", "2024-01-03", columns=["dxy"])
+        first_day = out[out["time"].dt.date == pd.Timestamp("2024-01-02").date()]
+        assert first_day["dxy"].isna().all()
+
 
 # =============================================================================
 # INTEGRATION TESTS

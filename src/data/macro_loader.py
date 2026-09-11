@@ -194,7 +194,10 @@ class UnifiedMacroLoader:
             use_friendly_names=True
         )
 
-        # Normalize date column name
+        # Normalize date column name. Daily observations are made available on
+        # the following calendar day because this loader has no release-time
+        # metadata; assigning a row at 00:00 of its observation date would leak
+        # the close into that day's 08:00 decision.
         date_col = 'date' if 'date' in df_daily.columns else 'fecha'
         df_daily = df_daily.rename(columns={date_col: 'date'})
         df_daily['date'] = pd.to_datetime(df_daily['date'])
@@ -203,25 +206,31 @@ class UnifiedMacroLoader:
         grid = self.calendar.generate_5min_grid(start_date, end_date)
         df_5min = pd.DataFrame({'time': grid})
 
-        # Add date column for merge
-        df_5min['date'] = df_5min['time'].dt.date
+        df_daily = self._add_derived_columns(df_daily)
+        df_daily['available_at'] = df_daily['date'] + pd.Timedelta(days=1)
+        left_tz = df_5min['time'].dt.tz
+        right_tz = df_daily['available_at'].dt.tz
+        if left_tz is not None and right_tz is None:
+            df_daily['available_at'] = df_daily['available_at'].dt.tz_localize('UTC')
+        elif left_tz is None and right_tz is not None:
+            df_5min['time'] = df_5min['time'].dt.tz_localize('UTC')
+        elif left_tz is not None and right_tz is not None:
+            df_daily['available_at'] = df_daily['available_at'].dt.tz_convert(left_tz)
+        right = df_daily.drop(columns=['date']).sort_values('available_at')
+        df_5min = pd.merge_asof(
+            df_5min.sort_values('time'), right,
+            left_on='time', right_on='available_at', direction='backward',
+            allow_exact_matches=False,
+        ).drop(columns=['available_at'], errors='ignore')
 
-        # Merge with daily macro (assign start-of-day value to all bars)
-        df_daily['date_for_merge'] = df_daily['date'].dt.date
-        df_5min = df_5min.merge(
-            df_daily.drop(columns=['date']),
-            left_on='date',
-            right_on='date_for_merge',
-            how='left'
-        )
-        df_5min = df_5min.drop(columns=['date_for_merge'], errors='ignore')
-
-        # Forward-fill with limit
+        # Forward-fill only within the returned decision grid and only as an
+        # explicit bounded policy for missing observations.
         macro_cols = [c for c in columns if c in df_5min.columns]
         df_5min = safe_ffill(df_5min, columns=macro_cols, limit=ffill_limit)
 
-        # Calculate derived columns
-        df_5min = self._add_derived_columns(df_5min)
+        # Derived columns were computed at native daily cadence above; never use
+        # pct_change(1) on repeated 5-minute copies of a daily observation.
+        df_5min = df_5min.sort_values('time')
 
         return df_5min
 

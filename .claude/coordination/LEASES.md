@@ -14,6 +14,8 @@
 - src/research/regime_hmm.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:05:00-05:00
 - src/data/safe_merge.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:30:00-05:00
 - tests/unit/test_temporal_joins.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:30:00-05:00
+- src/data/macro_loader.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T22:15:00-05:00
+- tests/unit/test_data_loaders.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T22:15:00-05:00
 # (CODEX 2026-09-10T20:30:00-05:00) RELEASE EXP-TESIS-REPAIR-01: cambios focales
 # verificados; revisión cruzada pendiente. No se liberan artefactos no incluidos.
 # formato: - <ruta> | <CLAUDE|CODEX> | <instance_id> | expira <ISO>
