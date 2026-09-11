@@ -427,6 +427,20 @@ class TestSafeMergeIntegration:
         with pytest.raises(ValueError, match="DATA LEAKAGE"):
             validate_no_future_data(invalid_df)
 
+    def test_publication_hour_is_preserved(self, intraday_ohlcv):
+        macro = pd.DataFrame({
+            "datetime": pd.to_datetime(["2025-01-09 16:00"]),
+            "value": [1.0],
+        })
+        result = safe_merge_macro(intraday_ohlcv, macro, track_source=True)
+        matched = result["macro_source_date"].dropna()
+        assert not matched.empty
+        assert (matched.dt.hour == 16).all()
+
+    def test_missing_tracking_column_fails_closed(self):
+        with pytest.raises(ValueError, match="tracking column"):
+            validate_no_future_data(pd.DataFrame({"datetime": pd.to_datetime(["2025-01-01"])}))
+
 
 # =============================================================================
 # Test Edge Cases

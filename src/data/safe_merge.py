@@ -97,19 +97,12 @@ def safe_merge_macro(
     if datetime_col not in df_macro.columns:
         raise ValueError(f"'{datetime_col}' no encontrado en df_macro")
 
-    # Para datos macro diarios, usar inicio del dia
+    # Preserve publication timestamps. Normalizing a daily release to midnight
+    # can make a 16:00 publication appear available at the session open.
     df_macro_daily = df_macro.copy()
     df_macro_daily[datetime_col] = pd.to_datetime(
         df_macro_daily[datetime_col]
     )
-
-    # Normalizar a inicio del dia para macro data
-    if df_macro_daily[datetime_col].dt.hour.nunique() > 1:
-        # Tiene diferentes horas - es intraday, no modificar
-        pass
-    else:
-        # Es daily - normalizar a inicio del dia
-        df_macro_daily[datetime_col] = df_macro_daily[datetime_col].dt.normalize()
 
     if track_source:
         df_macro_daily['macro_source_date'] = df_macro_daily[datetime_col].copy()
@@ -150,7 +143,9 @@ def validate_no_future_data(
         ValueError: Si se detecta data leakage
     """
     if source_col not in df.columns:
-        return True  # No tracking column - skip validation
+        raise ValueError(
+            f"tracking column '{source_col}' is required for temporal validation"
+        )
 
     # Convertir a datetime si es necesario
     target = pd.to_datetime(df[target_col])
