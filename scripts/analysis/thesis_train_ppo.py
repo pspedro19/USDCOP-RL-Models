@@ -64,6 +64,7 @@ from src.research.dataset import PORTABLE, load_or_build, load_portable  # noqa:
 from src.research.features import GROUPS  # noqa: E402
 from src.research.session_env import daily_series  # noqa: E402
 from src.research.session_gym import SessionSpec, SessionTradingEnv  # noqa: E402
+from scripts.diagnostics.audit_research_data_contract import require_contract  # noqa: E402
 
 SEEDS = (42, 123, 456, 789, 1337)          # `experiment-protocol.md` regla 2
 CONFIGS = ("ppo_regime", "ppo_backbone")
@@ -220,6 +221,10 @@ def main() -> int:
     ap.add_argument("--refit", action="store_true",
                     help="entrena sobre desarrollo+seleccion (paso F8 del pre-registro)")
     args = ap.parse_args()
+
+    evidence = require_contract()
+    print(f"data contract: structural={evidence['verdict']['structural_m5_clean']} "
+          f"macro_complete={evidence['verdict']['macro_columns_complete']}")
 
     # El formato portable no lleva el objeto hmmlearn, asi que funciona dentro del
     # contenedor de Airflow, que no tiene esa dependencia instalada.

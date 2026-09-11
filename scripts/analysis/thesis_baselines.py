@@ -60,6 +60,7 @@ if str(ROOT) not in sys.path:
 from services.common.metrics import (  # noqa: E402
     calculate_max_drawdown, cost_stress, paired_exposure_baseline, sharpe_ratio_stderr)
 from src.research.evaluation_mask import build_mask  # noqa: E402
+from scripts.diagnostics.audit_research_data_contract import require_contract  # noqa: E402
 from src.research.regime_hmm import (  # noqa: E402
     build_regime_observations, fit_frozen, spread_series)
 from src.research.session_env import (  # noqa: E402
@@ -237,6 +238,10 @@ def main() -> int:
     ap.add_argument("--block", default="holdout", choices=["development", "selection", "holdout"])
     ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args()
+
+    evidence = require_contract()
+    print(f"data contract: structural={evidence['verdict']['structural_m5_clean']} "
+          f"macro_complete={evidence['verdict']['macro_columns_complete']}")
 
     part = yaml.safe_load(PARTITION.read_text(encoding="utf-8"))
     blk = part["blocks"][a.block]

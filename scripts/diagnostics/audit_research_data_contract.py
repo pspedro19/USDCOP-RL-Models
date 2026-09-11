@@ -91,6 +91,17 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
     }
 
 
+def require_contract(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
+    """Fail-closed gate for research jobs; returns evidence when the contract passes."""
+    report = audit(m5_path, macro_path)
+    verdict = report["verdict"]
+    failures = [name for name in ("structural_m5_clean", "macro_columns_complete")
+                if not verdict[name]]
+    if failures:
+        raise RuntimeError("research data contract failed: " + ", ".join(failures))
+    return report
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--output", type=Path, required=True)
