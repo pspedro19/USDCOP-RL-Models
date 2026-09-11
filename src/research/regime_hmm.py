@@ -148,24 +148,36 @@ def _attach_macro(daily: pd.DataFrame) -> pd.DataFrame:
     publicado en o antes de `d`. Es la defensa de la capa 1 de `quant-constitution.md` §4;
     un `reindex().ffill()` ingenuo daría lo mismo hoy pero no declara la intención.
     """
-    for name in ("dxy_ret", "brent_ret"):
-        daily[name] = 0.0
     if not MACRO_CLEAN.is_file():
         raise FileNotFoundError(f"macro artifact missing: {MACRO_CLEAN}")
     macro = pd.read_parquet(MACRO_CLEAN)
     cols = {"dxy_ret": "FXRT_INDEX_DXY_USA_D_DXY", "brent_ret": "COMM_OIL_BRENT_GLB_D_BRENT"}
+    missing = sorted(set(cols.values()) - set(macro.columns))
+    if missing:
+        raise ValueError(f"macro artifact missing required HMM columns: {missing}")
     for out, src in cols.items():
         if src not in macro.columns:
             continue
         s = macro[src].dropna().sort_index()
         r = np.log(s / s.shift(1)).dropna()
         left = pd.DataFrame({"d": pd.to_datetime(daily.index)})
-        right = pd.DataFrame({"d": pd.to_datetime(r.index), out: r.to_numpy()})
+        right = pd.DataFrame({"d": pd.to_datetime(r.index), out: r.to_numpy(),
+                              "_source": pd.to_datetime(r.index)})
         merged = pd.merge_asof(
             left.sort_values("d"), right.sort_values("d"), on="d",
             direction="backward", allow_exact_matches=False,
         )
-        daily[out] = merged[out].fillna(0.0).to_numpy()
+        values = merged[out].to_numpy(dtype=float)
+        source_dates = pd.to_datetime(merged["_source"])
+        target_dates = pd.to_datetime(left["d"])
+        # A stale macro value is unknown information, not a neutral return.
+        stale = np.array([
+            bool(pd.isna(src_date))
+            or np.busday_count(src_date.date(), target_date.date()) > 5
+            for src_date, target_date in zip(source_dates, target_dates, strict=True)
+        ])
+        values[stale] = np.nan
+        daily[out] = values
     return daily
 
 
