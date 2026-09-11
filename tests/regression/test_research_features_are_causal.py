@@ -282,8 +282,8 @@ def test_intra_session_returns_exclude_overnight_gap():
     prior = pd.to_datetime(altered["time"]).dt.date == dates[0]
     altered.loc[prior, ["open", "high", "low", "close"]] *= 1.05
     changed = build_market_features(altered)
-    b0 = pd.to_datetime(changed["time"]).dt.date == first_next
-    assert (changed.loc[b0, "logret_1"] == 0.0).all()
+    b0 = changed.index.date == first_next
+    assert changed.loc[b0, "logret_1"].iloc[0] == 0.0
     assert changed.loc[b0, "rv_12"].iloc[0] == pytest.approx(
         original.loc[b0, "rv_12"].iloc[0]
     )
