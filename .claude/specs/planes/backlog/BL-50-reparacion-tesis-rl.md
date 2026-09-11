@@ -40,8 +40,8 @@ ejecución pasiva queda suspendida hasta tener un venue con libro de órdenes).
 |---|---|---|
 | 1. Fuentes y costos | `macro_availability.yaml` (regla de disponibilidad), `cost_contract.yaml` con unidad declarada, máscara v2 con reglas §6.3 y festivos de EE. UU., schema v2 (39 → 37 features) | HECHO |
 | 2. Entorno | Fuga macro cerrada, costo terminal en el reward y valorado en la barra 59, ventanas intra-sesión, identidad del dataset por sha256, tests HMM no tautológicos, specs parciales para el carril live | HECHO |
-| 3. Sanidad del optimizador | S1 ejecutada y **FALLA 0/5**: la receta no encuentra el flat sobre ruido puro. Faltan S2-S4 y las sondas | PARCIAL |
-| 4. Reentreno sin fugas y juez forward | v3 redactado (sin firmar), entreno v2, baselines que faltaban, carril forward sellando de verdad | PENDIENTE |
+| 3. Sanidad del optimizador | S1 ejecutada con las 5 semillas y las 4 sondas: **ninguna receta pasa**. Faltan S2-S4, que sólo tienen sentido con una receta candidata | HECHO en su parte decisiva |
+| 4. Reentreno sin fugas y juez forward | **BLOQUEADA por la compuerta de sanidad**, no por falta de tiempo: el v3 exige congelar una receta que pase S1 y no hay ninguna | BLOQUEADA |
 | 5. Corrigendum | Correcciones de §0-§7 con cifras de la evidencia | HECHO |
 | 6. Gobernanza | Brief de contabilidad redactado para el operador; ledger y registro sin tocar desde este carril | PARCIAL |
 
@@ -138,7 +138,32 @@ done
 memoria del huérfano provoca el corte siguiente. Antes de relanzar hay que barrerlos; se
 encontraron tres en una noche.
 
-**Resultado de S1 a 100.000 pasos (2026-09-11): FALLA, 0/5.** Exposiciones medias 0,527 /
+**Resultado de S1 a 100.000 pasos (2026-09-11): ninguna receta pasa.**
+
+| Receta | Planas | Exposición media por semilla |
+|---|---:|---|
+| baseline | 0/5 | 0,527 · 0,966 · 0,485 · 0,985 · 0,968 |
+| `ent_coef = 0` | 0/2 | 0,958 · 0,965 |
+| `norm_reward = False` | 0/2 | 0,976 · 0,963 |
+| `γ = 1.0` | 0/2 | 0,603 · 0,618 |
+| `κ_turn = 1.0` | 1/3 | **0,052** · 0,499 · 0,580 |
+
+Una sonda se descarta al segundo fallo, porque ya no puede llegar a 4/5. Quitar entropía o
+normalización **empeora** el churn (de 0,53 a ~0,97), así que no eran la causa. La única que
+produjo una semilla plana es `κ_turn`, el penalizador de turnover que §9.6 del diseño
+especificaba y la tesis nunca implementó.
+
+**Esto reordena el plan.** La Etapa 4 no está pendiente por tiempo: está **bloqueada por la
+compuerta**. Reentrenar v2 con una receta que no encuentra el flat sobre ruido produciría otra
+conclusión confundida entre optimizador y mercado, que es el defecto que este programa existe
+para corregir. La búsqueda de receta sigue en terreno sintético, donde no se gasta ningún trial.
+
+Direcciones que el propio experimento sugiere, ninguna ejecutada: `κ_turn` por encima de 1
+—el único eje que movió la aguja—, presupuesto mayor que 100.000 pasos (≈3,4 pasadas sobre 500
+sesiones sintéticas), y revisar si el reward ×100 con `clip_reward=10` recorta justo la señal
+de costo. Cada una es una variable y se declara antes de mirarla.
+
+**Detalle histórico:** Exposiciones medias 0,527 /
 0,966 / 0,485 / 0,985 / 0,968 sobre una serie de ruido iid con costo, donde la política óptima
 es no operar. La regla pre-registrada exigía ≥4/5 planas. Evidencia en
 `outputs/thesis-repair/sanity_S1_protocol.json`; lectura en el corrigendum §6.

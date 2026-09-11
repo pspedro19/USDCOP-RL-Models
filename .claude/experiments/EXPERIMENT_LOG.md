@@ -590,9 +590,38 @@ por ser falsa —flat existe y vale 0—; esto lo refuerza por una segunda vía 
 tampoco encuentra flat cuando flat es la única respuesta correcta.** Cualquier conclusión sobre
 el intradía de USD/COP obtenida con esta receta describe al optimizador tanto como al activo.
 
-**Siguiente paso pre-registrado.** Sondas ordenadas, una variable cada una, solo sintético,
-parar en la primera que pase S1-S4: `ent_coef 0.01→0`, `norm_reward=False`, `γ 0.98→1.0`,
-`κ_turn=1.0`. Ninguna receta se congela para v2 hasta que una pase las cuatro fixtures.
+### Sondas ordenadas: las cuatro fallan (mismo día)
+
+Ejecutadas en el orden pre-registrado, una variable cada una, solo sintético. Una sonda queda
+descartada en cuanto acumula dos semillas que operan, porque ya no puede llegar a 4/5.
+
+| Receta | Planas | Exposición media por semilla | Estado |
+|---|---:|---|---|
+| baseline | 0/5 | 0,527 · 0,966 · 0,485 · 0,985 · 0,968 | descartada |
+| `ent_coef = 0` | 0/2 | 0,958 · 0,965 | descartada |
+| `norm_reward = False` | 0/2 | 0,976 · 0,963 | descartada |
+| `γ = 1.0` | 0/2 | 0,603 · 0,618 | descartada |
+| `κ_turn = 1.0` | 1/3 | **0,052** · 0,499 · 0,580 | descartada |
+
+**Ninguna receta del protocolo pasa S1.** Quitar el suelo de entropía o la normalización del
+reward lo empeora (de 0,53 a ~0,97): no eran la causa. La única que produjo una semilla plana
+es `κ_turn`, el penalizador de turnover que **el propio documento de diseño especificaba en su
+§9.6 y que la tesis original nunca implementó** — y aun así solo funcionó en una de tres.
+
+**Consecuencia sobre el plan.** El pre-registro v3 dice que la receta ganadora se congela
+*antes* de tocar datos de mercado. No hay ganadora, así que **la Etapa 4 no puede ejecutarse
+tal cual**: reentrenar v2 con una receta que no encuentra el flat sobre ruido produciría otra
+conclusión confundida entre optimizador y mercado. Lo que corresponde es buscar la receta en
+el terreno sintético —donde no se gasta ni un trial de mercado— hasta que una pase S1-S4.
+
+**Direcciones que el propio experimento sugiere**, ninguna ejecutada aún: `κ_turn` por encima
+de 1 (el único eje que movió la aguja), presupuesto de pasos mayor (100.000 ≈ 3,4 pasadas sobre
+500 sesiones sintéticas, quizá insuficiente para converger a una política degenerada), y
+revisar si la escala del reward ×100 con `clip_reward=10` está recortando justo la señal de
+costo. Cada una es una variable y se declara antes de mirarla.
+
+**Reproducir.** `outputs/thesis-repair/sanity_S1_protocol.json` trae las cinco recetas con sus
+semillas, hash del runner y commit base.
 
 **Reproducir.** `outputs/thesis-repair/sanity_S1_protocol.json` trae las cinco corridas con
 hash del runner y commit base. Entrenado por tramos con `--resume` (el entorno corta los

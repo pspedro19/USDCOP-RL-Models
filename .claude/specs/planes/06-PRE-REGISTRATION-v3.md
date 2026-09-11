@@ -20,6 +20,20 @@ Este documento gobierna la versión corregida después de la auditoría EXP-TESI
 de 2023 y 2024–2026 son diagnósticos retrospectivos y no pueden convertirse en evidencia
 confirmatoria.
 
+
+## Compuerta de sanidad — NO SUPERADA (2026-09-11)
+
+Este pre-registro exige congelar una receta que pase las fixtures de solución conocida
+**antes** de tocar datos de mercado. Ejecutada S1 (ruido iid con costo, óptimo = no operar) con
+las cinco semillas y las cuatro sondas ordenadas: **ninguna receta pasa**, y la de referencia da
+0/5 semillas planas.
+
+Mientras eso siga así, **la Etapa 4 de [`BL-50`](backlog/BL-50-reparacion-tesis-rl.md) no se
+ejecuta**: reentrenar v2 con una receta que no encuentra el flat sobre ruido puro produciría
+otra conclusión confundida entre optimizador y mercado, que es exactamente el defecto que este
+programa existe para corregir. La búsqueda de receta continúa en terreno sintético, donde no se
+gasta ningún trial de mercado.
+
 ## Identidad congelada
 
 | Elemento | Valor |

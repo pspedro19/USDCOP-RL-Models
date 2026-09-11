@@ -118,8 +118,14 @@ mercado.
 > datos **sin señal alguna**, pagando costo en cada cambio. Aquí no hay mercado al que culpar:
 > los datos son ruido generado. **La receta no converge a la solución trivial ni cuando esa
 > solución es la única correcta**, así que cualquier conclusión sobre el intradía de USD/COP
-> obtenida con ella describe al optimizador tanto como al activo. Evidencia:
-> `outputs/thesis-repair/sanity_S1_protocol.json`; registro en
+> obtenida con ella describe al optimizador tanto como al activo.
+>
+> Se probaron además las cuatro sondas pre-registradas, una variable cada una: `ent_coef = 0`
+> (0,958 · 0,965), `norm_reward = False` (0,976 · 0,963), `γ = 1.0` (0,603 · 0,618) y
+> `κ_turn = 1.0` (**0,052** · 0,499 · 0,580). **Ninguna pasa.** Quitar la entropía o la
+> normalización lo empeora, así que no eran la causa. La única que produjo una semilla plana
+> es `κ_turn`, el penalizador de turnover que **§9.6 del diseño especificaba y esta tesis
+> nunca implementó**. Evidencia: `outputs/thesis-repair/sanity_S1_protocol.json`; registro en
 > [`EXPERIMENT_LOG`](../../experiments/EXPERIMENT_LOG.md) § EXP-TESIS-RL-02-SANITY-S1.
 
 **7. «El alfa vive en la alta frecuencia» (§5b.3).** La descomposición dice lo contrario:
