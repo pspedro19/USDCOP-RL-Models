@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from src.research.sanity_gate import require_sanity_pass
+from src.research.sanity_gate import require_macro_identity, require_sanity_pass
 
 
 def test_sanity_gate_rejects_negative_s1_report(tmp_path):
@@ -22,3 +22,11 @@ def test_sanity_gate_accepts_complete_protocol(tmp_path):
                                   "selected_probe": "ent_coef_zero",
                                   "attempts": [{"fixtures": [{"fixture": f} for f in ("S1", "S2", "S3", "S4")]}]}))
     assert require_sanity_pass(report)["selected_probe"] == "ent_coef_zero"
+
+
+def test_macro_identity_gate_rejects_unreconciled_sources(tmp_path):
+    report = tmp_path / "macro.json"
+    report.write_text(json.dumps({"all_declared_identities_honoured": False,
+                                  "series": {"brent": {"status": "NO COINCIDE"}}}))
+    with pytest.raises(RuntimeError, match="no coinciden"):
+        require_macro_identity(report)

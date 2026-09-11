@@ -11,6 +11,7 @@ frozen_regime: config/research/regime_hmm_frozen_v2.json
 portable_dataset: data/thesis/research_data_portable_v2.pkl
 model_output_dir: outputs/thesis-repair/ppo_v2
 sanity_gate_report: outputs/thesis-repair/sanity_protocol_v2.json
+macro_identity_report: outputs/thesis-repair/macro_identity.json
 configs:
   ppo_regime_v2:
     parent: ppo_regime

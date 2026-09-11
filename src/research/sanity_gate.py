@@ -20,3 +20,13 @@ def require_sanity_pass(report: Path, *, fixtures: tuple[str, ...] = ("S1", "S2"
     if missing:
         raise RuntimeError(f"sanity gate: faltan fixtures {sorted(missing)}")
     return payload
+
+
+def require_macro_identity(report: Path) -> dict:
+    """Exige reconciliación positiva de todas las fuentes macro declaradas."""
+    if not report.is_file():
+        raise RuntimeError(f"macro identity gate: falta el informe {report}")
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    if payload.get("all_declared_identities_honoured") is not True:
+        raise RuntimeError("macro identity gate: una o más fuentes no coinciden con el SSOT")
+    return payload

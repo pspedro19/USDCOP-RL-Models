@@ -65,7 +65,7 @@ from src.research.features import GROUPS  # noqa: E402
 from src.research.session_env import daily_series  # noqa: E402
 from src.research.session_gym import SessionSpec, SessionTradingEnv  # noqa: E402
 from scripts.diagnostics.audit_research_data_contract import require_contract  # noqa: E402
-from src.research.sanity_gate import require_sanity_pass  # noqa: E402
+from src.research.sanity_gate import require_macro_identity, require_sanity_pass  # noqa: E402
 
 SEEDS = (42, 123, 456, 789, 1337)          # `experiment-protocol.md` regla 2
 CONFIGS = ("ppo_regime", "ppo_backbone")
@@ -221,6 +221,8 @@ def main() -> int:
                     help="dataset portable versionado; rechaza identidades obsoletas")
     ap.add_argument("--require-sanity", type=Path,
                     help="informe S1-S4 aprobado; obligatorio antes de un entrenamiento v2")
+    ap.add_argument("--require-macro-identity", type=Path,
+                    help="informe de reconciliación positiva de fuentes macro")
     ap.add_argument("--refit", action="store_true",
                     help="entrena sobre desarrollo+seleccion (paso F8 del pre-registro)")
     args = ap.parse_args()
@@ -231,6 +233,9 @@ def main() -> int:
     if args.require_sanity:
         sanity = require_sanity_pass(args.require_sanity)
         print(f"sanity gate: receta={sanity['selected_probe']}")
+    if args.require_macro_identity:
+        identity = require_macro_identity(args.require_macro_identity)
+        print(f"macro identity gate: {len(identity.get('series', {}))} series verificadas")
 
     # El formato portable no lleva el objeto hmmlearn, asi que funciona dentro del
     # contenedor de Airflow, que no tiene esa dependencia instalada.
