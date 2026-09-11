@@ -9,6 +9,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from src.gold_rl.cost_contract import load_gold_cost_contract
+
 # Shared, trial-aware stats (single home — never re-implement PSR/DSR here; see
 # services/common/metrics.py, the same "define once, import everywhere" pattern as safe_json_dump).
 try:
@@ -217,6 +219,7 @@ def run_backtest(df_positions: pd.DataFrame, strategy_id: str, strategy_name: st
     gross_loss = abs(sum(t["pnl_pct"] for t in trades if t["pnl_pct"] < 0))
     pf = round(gross_win / gross_loss, 3) if gross_loss > 0 else None
     final_eq = initial_capital * float(d["equity"].iloc[-1])
+    cost_contract = load_gold_cost_contract()
 
     strat_stats = {
         "final_equity": round(final_eq, 2), "total_return_pct": m["total_return_pct"],
@@ -239,6 +242,16 @@ def run_backtest(df_positions: pd.DataFrame, strategy_id: str, strategy_name: st
     summary = {
         "strategy_id": strategy_id, "strategy_name": strategy_name, "year": year,
         "initial_capital": initial_capital, "asset": "XAU/USD",
+        # The historical constants below are diagnostic only.  Keeping their
+        # provenance in every artifact prevents a consumer from mistaking this
+        # backtest for venue-executable performance.
+        "cost_contract": {
+            "id": cost_contract.get("contract"),
+            "status": cost_contract.get("status"),
+            "observability": cost_contract.get("observability", {}).get("source"),
+            "diagnostic_cost_bps": COST_BPS,
+            "diagnostic_swap_annual": SWAP_ANNUAL,
+        },
         "n_trading_days": int(len(d)),
         "strategies": strategies,
         "statistical_tests": {"p_value": boot["p_value"], "significant": boot["significant"],
