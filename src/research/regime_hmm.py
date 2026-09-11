@@ -64,12 +64,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from src.research.cost_contract import COMMISSION_PIPS_PER_SIDE, SPREAD_PIPS_BY_LEVEL
+
 REPO = Path(__file__).resolve().parents[2]
 MACRO_CLEAN = REPO / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_DAILY_CLEAN.parquet"
-
-# Spread por nivel de volatilidad, en pips (§8.4). 1 pip = 1,00 COP.
-SPREAD_PIPS_BY_LEVEL: tuple[float, float, float] = (2.0, 3.0, 6.0)
-COMMISSION_PIPS_PER_SIDE = 0.5           # §9.3
 
 # §8.2, textual: K ∈ {2,3,4,5}; K=3 se mantiene salvo que otro mejore el BIC en >10 puntos.
 K_CANDIDATES: tuple[int, ...] = (2, 3, 4, 5)

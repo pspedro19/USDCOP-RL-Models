@@ -1,0 +1,13 @@
+contract: CTR-RESEARCH-COST-001
+version: 2
+source: "TwelveData /price and /time_series: no bid-ask quotes; implicit research scenarios only"
+unit: cop_per_usd
+market_tick_cop: 0.01
+commission_per_side: 0.5
+slippage_coef: 0.1
+scenarios:
+  low: [2.0, 3.0, 6.0]
+  central: [2.0, 3.0, 6.0]
+  high: [10.0, 20.0, 50.0]
+regime_order: [calm, intermediate, shock]
+observability: implicit_bounds

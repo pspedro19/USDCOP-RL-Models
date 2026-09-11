@@ -50,9 +50,10 @@ from dataclasses import dataclass
 
 import numpy as np
 
-# §9.3. 1 pip = 1,00 COP por USD.
-COMMISSION_PIPS_PER_SIDE = 0.5
-SLIPPAGE_COEF = 0.1          # `0.1 · |Δw| · sigma12_pips`
+from src.research.cost_contract import COMMISSION_PIPS_PER_SIDE, SLIPPAGE_COEF
+
+# Values are loaded from config/research/cost_contract.yaml.  The legacy names
+# remain as a compatibility surface for frozen tests and artefacts.
 RV_WINDOW_BARS = 12          # rv_12: 12 barras de 5 min = 1 hora
 
 
