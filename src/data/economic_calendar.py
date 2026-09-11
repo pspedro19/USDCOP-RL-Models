@@ -85,7 +85,7 @@ class EconomicCalendar:
         logger.info(f"Loaded {len(self.variables)} variables from SSOT")
 
         # Cache de fechas de publicación calculadas
-        self._pub_date_cache: dict[tuple[str, str], pd.Timestamp] = {}
+        self._pub_date_cache: dict[tuple[str, str, bool], pd.Timestamp] = {}
 
     def _load_from_ssot(self, config_path: Path | None = None):
         """Load calendar data from SSOT."""
@@ -120,9 +120,7 @@ class EconomicCalendar:
 
         if sched.typical_day is not None:
             publication['typical_day'] = sched.typical_day
-        elif sched.delay_days is not None:
-            # For daily variables, typical_day is delay_days
-            publication['typical_day'] = sched.delay_days
+        publication['delay_days'] = sched.delay_days
 
         if sched.day_range is not None:
             publication['day_range'] = list(sched.day_range)
@@ -214,7 +212,7 @@ class EconomicCalendar:
             data_period = pd.Timestamp(data_period)
 
         # Check cache
-        cache_key = (variable_name, data_period.strftime('%Y-%m'))
+        cache_key = (variable_name, data_period.isoformat(), bool(return_datetime))
         if cache_key in self._pub_date_cache:
             cached = self._pub_date_cache[cache_key]
             return cached if return_datetime else cached.date()
@@ -224,7 +222,10 @@ class EconomicCalendar:
         # Calcular mes de publicación
         frequency = var_config.get('frequency', 'monthly')
 
-        if frequency == 'quarterly':
+        if frequency == 'daily':
+            pub_date = data_period + timedelta(days=int(pub_config.get('delay_days', 0)))
+            pub_day, pub_month, pub_year = pub_date.day, pub_date.month, pub_date.year
+        elif frequency == 'quarterly':
             # Para trimestrales, el lag es en trimestres
             quarter_lag = pub_config.get('quarter_lag', 1)
             days_after = pub_config.get('days_after_quarter', 90)
