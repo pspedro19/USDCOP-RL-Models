@@ -14,7 +14,7 @@ Contract: CTR-RESEARCH-FEATURES-001 · Date: 2026-08-24
   repo no tiene serie de consenso, y fabricarla sería inventar el dato que la feature mide.
 - **TEXTO (`s_d`, `n_docs`, …) — fuera de alcance.** Pertenece al brazo LLM, descopado.
 
-Queda un vector de **39 features** en siete grupos, todas con disponibilidad temporal
+Queda un vector de **37 features** en siete grupos, todas con disponibilidad temporal
 declarada en `feature_schema.json`.
 
 ## Ventanas que cruzan la sesión, y por qué es legítimo
@@ -55,8 +55,10 @@ SESSION_OPEN_MINUTE = 8 * 60          # 08:00 COT
 GROUPS: dict[str, tuple[str, ...]] = {
     "precio": ("logret_1", "logret_3", "logret_6", "logret_12",
                "ret_sesion_acum", "close_pos_rango"),
-    "volatilidad": ("rv_12", "rv_78", "rv_ratio", "atr_14", "atr_norm",
-                    "parkinson_12", "garman_klass_12"),
+    # Parkinson y Garman–Klass se calculan para trazabilidad, pero se excluyen
+    # del vector v2: el OHLC de desarrollo es mayoritariamente plano y ambas
+    # medidas degeneran a cero, produciendo una representación no portable.
+    "volatilidad": ("rv_12", "rv_78", "rv_ratio", "atr_14", "atr_norm"),
     "tendencia": ("ema_dist_12", "ema_dist_26", "ema_dist_72", "macd_norm",
                   "macd_signal_norm", "slope_20", "rsi_14", "zscore_60"),
     "temporal": ("min_desde_apertura", "sin_hora", "cos_hora",
@@ -74,6 +76,9 @@ EXCLUDED_GROUPS = {
     "sorpresa_macro": "§6.5 la condiciona a consenso historico verificable; el repo no lo "
                       "tiene y fabricarlo seria inventar el dato que la feature mide",
     "texto": "pertenece al brazo LLM, fuera del alcance de 2 brazos",
+    "microestructura_ohlc": "parkinson_12 y garman_klass_12 excluidas en v2: OHLC plano en la "
+                            "mayor parte del desarrollo las hace degenerar a cero; se conservan "
+                            "solo como diagnóstico, no como entrada del modelo",
 }
 
 # Features endogenas: dependen de la trayectoria del agente, no del mercado (§10.6).
