@@ -149,7 +149,14 @@ encontraron tres en una noche.
 | `κ_turn = 1.0` | 1/3 | **0,052** · 0,499 · 0,580 |
 
 Una sonda se descarta al segundo fallo, porque ya no puede llegar a 4/5. Quitar entropía o
-normalización **empeora** el churn (de 0,53 a ~0,97), así que no eran la causa. La única que
+normalización **empeora** la exposición (de 0,53 a ~0,97), así que no eran la causa.
+
+**Y no es churn, aunque lo pareciera.** Contados los cambios de posición: **2,0 y 2,3 por
+sesión** de 59 posibles, con un costo de 0,0008 frente a los 0,0258 que pagaría una política
+que rotara. El agente entra, mantiene y cierra. El fallo real es que sobre ruido puro la
+receta **apuesta una dirección constante en lugar de quedarse fuera**. El mismo patrón está en
+las corridas de mercado de la tesis: 1.682-2.314 cambios en 584 sesiones, ~3 por sesión — lo
+que también deja sin base la lectura «el alfa vive en la alta frecuencia». La única que
 produjo una semilla plana es `κ_turn`, el penalizador de turnover que §9.6 del diseño
 especificaba y la tesis nunca implementó.
 

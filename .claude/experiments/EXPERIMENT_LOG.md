@@ -578,10 +578,31 @@ semillas del protocolo.
 
 **0/5 se quedan planas; la regla pre-registrada exige ≥4/5. S1 FALLA.**
 
-**Qué significa.** El agente opera con la mitad o la totalidad del capital sobre una serie
-**sin señal alguna**, pagando costo en cada cambio, cuando bastaba con no hacer nada. No hay
-mercado al que culpar: los datos son ruido generado. Es la receta —normalización del reward,
-suelo de entropía, presupuesto de pasos— la que no converge a la solución trivial.
+**Qué significa, medido y NO lo que parecía.** La primera lectura de esta tabla fue «el agente
+hace churn y se come el costo». **Es falsa, y la corrijo aquí.** Contando los cambios de
+posición de las políticas entrenadas:
+
+| Política | Exposición | Cambios/sesión (de 59) | Costo/sesión | Neto/sesión |
+|---|---:|---:|---:|---:|
+| baseline seed 42 | 0,524 | **2,0** | 0,00079 | −0,00075 |
+| baseline seed 123 | 0,969 | **2,3** | 0,00113 | −0,00138 |
+| `κ_turn` seed 42 (plana) | 0,075 | 0,4 | 0,00019 | −0,00038 |
+
+Una política que realmente rotara pagaría **0,0258** por sesión; estas pagan **0,0008**. El
+agente **no hace churn: entra, mantiene y cierra** — dos cambios, que son la entrada y el
+cierre terminal obligatorio.
+
+Así que el fallo no es «opera de más», sino: **sobre ruido puro, la receta converge a apostar
+una dirección constante en vez de quedarse fuera.** La diferencia económica entre una cosa y
+la otra es el costo de ese único viaje de ida y vuelta, ~0,08 % por sesión, frente a un ruido
+de retorno con desviación 0,22 % por sesión. La política de apostar tiene valor esperado cero
+y cuesta un poco; la de no operar vale exactamente cero. PPO no resuelve esa diferencia en
+100.000 pasos.
+
+Esto importa para la tesis por una razón concreta: las corridas de mercado publicadas tienen
+**1.682 a 2.314 cambios en 584 sesiones**, es decir ~3 por sesión — el mismo patrón de
+mantener, no de rotar. La lectura «el alfa vive en la alta frecuencia y el costo lo mata»
+tampoco describe lo que el agente hizo allí.
 
 **Consecuencia para EXP-TESIS-RL-01.** El rechazo económico se mantiene: PPO pierde contra
 `always_flat` sobre USD/COP. Lo que **no** se sostiene es atribuir ese resultado al mercado.

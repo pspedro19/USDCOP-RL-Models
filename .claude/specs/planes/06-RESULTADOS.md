@@ -114,11 +114,17 @@ mercado.
 > |---|---:|---:|---:|---:|---:|
 > | Exposición media | 0,527 | 0,966 | 0,485 | 0,985 | 0,968 |
 >
-> **0 de 5 se quedan planas.** El agente opera con la mitad o la totalidad del capital sobre
-> datos **sin señal alguna**, pagando costo en cada cambio. Aquí no hay mercado al que culpar:
-> los datos son ruido generado. **La receta no converge a la solución trivial ni cuando esa
-> solución es la única correcta**, así que cualquier conclusión sobre el intradía de USD/COP
-> obtenida con ella describe al optimizador tanto como al activo.
+> **0 de 5 se quedan planas.** Aquí no hay mercado al que culpar: los datos son ruido generado.
+> **La receta no converge a la solución trivial ni cuando esa solución es la única correcta**,
+> así que cualquier conclusión sobre el intradía de USD/COP obtenida con ella describe al
+> optimizador tanto como al activo.
+>
+> **Qué hace exactamente, contado y no supuesto:** estas políticas dan **2,0 y 2,3 cambios de
+> posición por sesión** de 59 posibles y pagan 0,0008 por sesión; una que rotara de verdad
+> pagaría 0,0258. **No hacen churn: entran, mantienen y cierran.** El fallo es que sobre ruido
+> puro la receta apuesta una dirección constante en vez de quedarse fuera — valor esperado
+> cero más el costo de un viaje de ida y vuelta. Y el mismo patrón está en las corridas de
+> mercado publicadas: 1.682 a 2.314 cambios en 584 sesiones, ~3 por sesión.
 >
 > Se probaron además las cuatro sondas pre-registradas, una variable cada una: `ent_coef = 0`
 > (0,958 · 0,965), `norm_reward = False` (0,976 · 0,963), `γ = 1.0` (0,603 · 0,618) y
