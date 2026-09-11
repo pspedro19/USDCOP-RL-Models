@@ -51,3 +51,25 @@ def test_daily_ffill_respects_publication_timestamp():
     safe = cal.apply_publication_aware_ffill(frame, "daily_series")
     assert safe.loc[pd.Timestamp("2024-01-10 08:00")] != 10.0
     assert safe.loc[pd.Timestamp("2024-01-11 16:00")] == pytest.approx(10.0)
+
+
+def test_ffill_expires_at_ssot_row_limit():
+    cal = calendar_for()
+    cal.config = {"global_rules": {"ffill_limits": {
+        "daily_bars": {"daily_data": 1}
+    }}}
+    index = pd.date_range("2024-01-10 00:00", periods=43, freq="h")
+    frame = pd.DataFrame({"daily_series": [10.0] + [None] * 42}, index=index)
+    safe = cal.apply_publication_aware_ffill(frame, "daily_series")
+    assert safe.loc[pd.Timestamp("2024-01-11 16:00")] == pytest.approx(10.0)
+    assert safe.loc[pd.Timestamp("2024-01-11 17:00")] == pytest.approx(10.0)
+    assert pd.isna(safe.loc[pd.Timestamp("2024-01-11 18:00")])
+
+
+def test_publication_timezone_is_not_collapsed_to_midnight():
+    cal = calendar_for()
+    index = pd.date_range("2024-01-10 00:00", periods=42, freq="h")
+    frame = pd.DataFrame({"daily_series": [10.0] + [None] * 41}, index=index)
+    safe = cal.apply_publication_aware_ffill(frame, "daily_series")
+    assert pd.isna(safe.loc[pd.Timestamp("2024-01-11 15:00")])
+    assert safe.loc[pd.Timestamp("2024-01-11 16:00")] == pytest.approx(10.0)

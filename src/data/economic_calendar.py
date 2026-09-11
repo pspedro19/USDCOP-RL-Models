@@ -380,22 +380,30 @@ class EconomicCalendar:
         # Serie resultado (inicialmente todo NaN)
         result = pd.Series(index=df.index, dtype=float, name=f"{variable_name}_safe")
 
-        # Obtener valores no-NaN (datos mensuales originales)
-        monthly_data = df[variable_name].dropna().sort_index()
+        # Obtener valores no-NaN (datos nativos de la serie).  La publicación
+        # se calcula con hora: usar ``return_datetime=False`` convertiría una
+        # publicación vespertina en medianoche y reintroduciría look-ahead.
+        native_data = df[variable_name].dropna().sort_index()
 
         if verbose:
             logger.info(f"\n{'='*60}")
             logger.info(f"Publication-aware forward-fill: {variable_name}")
             logger.info(f"{'='*60}")
-            logger.info(f"Monthly data points: {len(monthly_data)}")
+            logger.info(f"Native data points: {len(native_data)}")
             logger.info(f"Target rows: {len(df)}")
             logger.info(f"Target frequency: {target_frequency}")
             logger.info(f"Max ffill limit: {max_ffill} bars")
 
-        # Para cada valor mensual, propagar solo desde su fecha de publicación
-        for data_date, value in monthly_data.items():
+        # Para cada valor, propagar solo desde su timestamp de publicación y
+        # durante el límite SSOT.  El límite se expresa en filas de la grilla
+        # objetivo (barras), no en días calendario.
+        index = df.index
+        native_items = list(native_data.items())
+        for item_no, (data_date, value) in enumerate(native_items):
             # Calcular fecha de publicación
-            pub_date = self.get_publication_date(variable_name, data_date)
+            pub_date = self.get_publication_date(
+                variable_name, data_date, return_datetime=True
+            )
 
             if pub_date is None:
                 if verbose:
@@ -403,6 +411,16 @@ class EconomicCalendar:
                 continue
 
             pub_timestamp = pd.Timestamp(pub_date)
+            # Alinear la zona horaria de la publicación con la grilla. Una
+            # grilla naive se interpreta en la zona de la grilla, preservando
+            # la hora wall-clock para fixtures y fuentes locales.
+            if index.tz is None:
+                if pub_timestamp.tzinfo is not None:
+                    pub_timestamp = pub_timestamp.tz_localize(None)
+            elif pub_timestamp.tzinfo is None:
+                pub_timestamp = pub_timestamp.tz_localize(index.tz)
+            else:
+                pub_timestamp = pub_timestamp.tz_convert(index.tz)
 
             if verbose:
                 logger.info(f"\n  Data period: {data_date.strftime('%Y-%m')}")
@@ -410,7 +428,27 @@ class EconomicCalendar:
                 logger.info(f"    Published: {pub_date}")
 
             # ✅ CRÍTICO: Solo propagar desde fecha de publicación
-            propagation_mask = (df.index >= pub_timestamp)
+            eligible = np.flatnonzero(index >= pub_timestamp)
+            if max_ffill >= 0:
+                eligible = eligible[: int(max_ffill) + 1]
+            # A newer publication supersedes the previous value even when the
+            # older value's row limit has not expired.  Conversely, no older
+            # value may reappear after the newer value expires.
+            if item_no + 1 < len(native_items):
+                next_pub = self.get_publication_date(
+                    variable_name, native_items[item_no + 1][0], return_datetime=True
+                )
+                if next_pub is not None:
+                    next_timestamp = pd.Timestamp(next_pub)
+                    if index.tz is None and next_timestamp.tzinfo is not None:
+                        next_timestamp = next_timestamp.tz_localize(None)
+                    elif index.tz is not None and next_timestamp.tzinfo is None:
+                        next_timestamp = next_timestamp.tz_localize(index.tz)
+                    elif index.tz is not None and next_timestamp.tzinfo is not None:
+                        next_timestamp = next_timestamp.tz_convert(index.tz)
+                    eligible = eligible[index[eligible] < next_timestamp]
+            propagation_mask = np.zeros(len(index), dtype=bool)
+            propagation_mask[eligible] = True
 
             # Sobrescribir valores previos (el dato más reciente publicado gana)
             result.loc[propagation_mask] = value
