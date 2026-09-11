@@ -219,8 +219,9 @@ def test_macro_uses_strictly_prior_observation(tmp_path, monkeypatch):
     out = features_module.attach_macro_features([pd.Timestamp("2023-06-15")])
     # The only usable DXY return is 2023-06-15? No: the session must use the
     # return observed on 2023-06-14, which needs a still earlier level; with
-    # only two rows this is unavailable and the feature is the explicit neutral 0.
-    assert out.loc[pd.Timestamp("2023-06-15"), "dxy_ret_prev"] == 0.0
+    # only two rows this is unavailable and remains NaN: missing macro must not
+    # be silently converted into a neutral zero.
+    assert pd.isna(out.loc[pd.Timestamp("2023-06-15"), "dxy_ret_prev"])
 
 
 def test_macro_artifact_missing_fails_closed(monkeypatch, tmp_path):
@@ -229,6 +230,23 @@ def test_macro_artifact_missing_fails_closed(monkeypatch, tmp_path):
     monkeypatch.setattr(features_module, "MACRO_CLEAN", tmp_path / "missing.parquet")
     with pytest.raises(FileNotFoundError):
         features_module.attach_macro_features([pd.Timestamp("2023-06-15")])
+
+
+def test_macro_staleness_remains_missing_instead_of_zero_fill(monkeypatch, tmp_path):
+    import src.research.features as features_module
+
+    dates = pd.to_datetime(["2023-01-02", "2023-01-03"])
+    macro = pd.DataFrame({
+        "COMM_OIL_BRENT_GLB_D_BRENT": [70.0, 71.0],
+        "FXRT_INDEX_DXY_USA_D_DXY": [100.0, 101.0],
+        "FINC_RATE_IBR_OVERNIGHT_COL_D_IBR": [10.0, 10.0],
+        "FINC_BOND_YIELD2Y_USA_D_DGS2": [4.0, 4.0],
+    }, index=dates)
+    path = tmp_path / "macro.parquet"
+    macro.to_parquet(path)
+    monkeypatch.setattr(features_module, "MACRO_CLEAN", path)
+    out = features_module.attach_macro_features([pd.Timestamp("2023-01-12")])
+    assert out.isna().all(axis=None)
 
 
 def test_dataset_close_cache_is_invalidated_when_input_changes():

@@ -152,6 +152,7 @@ def build_research_data(m5: pd.DataFrame | None = None, min_context: int = 60,
     }
     dropped.setdefault("sin_regimen", [])
     dropped.setdefault("barras_incompletas", [])
+    dropped.setdefault("sin_macro", [])
 
     by_session = {d: g for d, g in feats.groupby("_session")}
     for name in ("development", "selection", "holdout"):
@@ -163,6 +164,9 @@ def build_research_data(m5: pd.DataFrame | None = None, min_context: int = 60,
                 continue
             if d not in regimes.index or not np.isfinite(regimes.at[d, "spread_pips"]):
                 dropped["sin_regimen"].append(d)
+                continue
+            if d not in macro.index or not np.isfinite(macro.loc[pd.Timestamp(d), MACRO_FEATURES]).all():
+                dropped["sin_macro"].append(d)
                 continue
 
             X = (g[MARKET_FEATURES].to_numpy(dtype=float) - mean) / scale

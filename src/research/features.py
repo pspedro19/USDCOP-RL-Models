@@ -312,12 +312,23 @@ def attach_macro_features(per_session_index) -> pd.DataFrame:
     def asof(series: pd.Series, name: str) -> pd.Series:
         s = series.dropna()
         left = pd.DataFrame({"d": idx})
-        right = pd.DataFrame({"d": pd.to_datetime(s.index), name: s.to_numpy()})
+        right = pd.DataFrame({"d": pd.to_datetime(s.index), name: s.to_numpy(),
+                              "_source": pd.to_datetime(s.index)})
         merged = pd.merge_asof(
             left.sort_values("d"), right.sort_values("d"), on="d",
             direction="backward", allow_exact_matches=False,
         )
-        return pd.Series(merged[name].to_numpy(), index=idx)
+        values = merged[name].to_numpy(dtype=float)
+        sources = pd.to_datetime(merged["_source"])
+        # A stale observation is missing information, not a neutral signal.
+        # np.busday_count counts business days strictly after source and before
+        # target, so Monday can use Friday while a six-day-old release cannot.
+        stale = np.array([
+            bool(pd.isna(src)) or np.busday_count(src.date(), target.date()) > 5
+            for src, target in zip(sources, merged["d"], strict=True)
+        ])
+        values[stale] = np.nan
+        return pd.Series(values, index=idx)
 
     if "COMM_OIL_BRENT_GLB_D_BRENT" in macro:
         b = macro["COMM_OIL_BRENT_GLB_D_BRENT"].dropna()
@@ -329,7 +340,7 @@ def attach_macro_features(per_session_index) -> pd.DataFrame:
         ibr = asof(macro["FINC_RATE_IBR_OVERNIGHT_COL_D_IBR"], "x")
         dgs = asof(macro["FINC_BOND_YIELD2Y_USA_D_DGS2"], "x")
         out["spread_ibr_dgs2"] = (ibr - dgs) / 100.0
-    return out.fillna(0.0)
+    return out
 
 
 def write_schema(path: Path = SCHEMA_PATH) -> dict:
