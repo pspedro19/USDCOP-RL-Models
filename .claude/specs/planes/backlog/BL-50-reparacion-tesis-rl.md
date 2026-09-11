@@ -80,6 +80,23 @@ linaje BL-24 se persiste en la misma transacción que escribe el fichero. El pue
 ocupa otro proyecto del operador. El número reproducible hoy es **+0,66 % con 12 operaciones**
 para `smart_simple_v11`; el artefacto publicado dice +2,90 % y está desfasado.
 
+**Segunda brecha, destapada por la primera:** refrescar el precio dejó a la vista que
+`MACRO_DAILY_CLEAN` sigue en el **2026-08-24**, trece días hábiles por detrás. Con la nueva
+regla de disponibilidad —que es correcta— el carril live **no puede sellar** ninguna de esas
+doce sesiones, así que el juez forward se queda sin datos aunque el precio esté fresco. Antes
+del refresco esto era invisible: precio y macro estaban igual de viejos y nada se quejaba.
+`tests/regression/test_live_spec_parity.py::test_macro_is_not_behind_price_for_the_live_lane`
+lo deja **rojo a propósito** con la instrucción. No se rellena a mano: mezclar Brent spot con
+futuros, o DGS2 de dos fuentes, es exactamente lo que la auditoría acaba de limpiar.
+
+## Siguiente acción del operador, en orden
+
+1. `git push origin HEAD:refs/heads/main` — hay commits locales sin publicar y el push falla
+   en sesión no interactiva por falta de credencial guardada.
+2. Levantar el stack y correr el pipeline macro L0 hasta hoy. Desbloquea el sellado del
+   carril live y el ledger de paper, en ese orden.
+3. Firmar el pre-registro v3 (hoy `PARTIAL`) antes de la primera corrida v2.
+
 ## Criterio de cierre
 
 1. `scripts/diagnostics/audit_thesis_rl_integrity.py` reporta `causality_gate = True`
