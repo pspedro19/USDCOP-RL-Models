@@ -1,0 +1,36 @@
+# SSOT de disponibilidad para EXP-TESIS-RL-02.
+# `observation_date` no equivale a `available_at`: el merge de investigación solo
+# puede usar una fila cuando available_at es estrictamente anterior a la apertura COT.
+contract: CTR-RESEARCH-MACRO-AVAILABILITY-001
+timezone: UTC
+merge_rule: strict_before_session_open
+max_staleness_business_days: 5
+series:
+  dxy:
+    column: FXRT_INDEX_DXY_USA_D_DXY
+    frequency: daily
+    source: ICE_DXY
+    unit: index_points
+    publication_lag_business_days: 1
+    fallback: forbidden
+  brent:
+    column: COMM_OIL_BRENT_GLB_D_BRENT
+    frequency: daily
+    source: FRED_DCOILBRENTEU
+    unit: usd_per_barrel
+    publication_lag_business_days: 1
+    fallback: forbidden
+  ibr:
+    column: FINC_RATE_IBR_OVERNIGHT_COL_D_IBR
+    frequency: daily
+    source: BANREP_IBR
+    unit: percent
+    publication_lag_business_days: 1
+    fallback: forbidden
+  dgs2:
+    column: FINC_BOND_YIELD2Y_USA_D_DGS2
+    frequency: daily
+    source: FRED_DGS2
+    unit: percent
+    publication_lag_business_days: 1
+    fallback: forbidden
