@@ -1,14 +1,14 @@
-"""
+﻿"""
 Regression: la mascara de evaluacion es comun, reproducible y honesta.
 
-Contract: CTR-RESEARCH-EVALMASK-001 · Date: 2026-08-24
+Contract: CTR-RESEARCH-EVALMASK-001 Â· Date: 2026-08-24
 
-§9.5 del plan de tesis y su test 15: todos los sistemas se evaluan sobre EL MISMO conjunto
+Â§9.5 del plan de tesis y su test 15: todos los sistemas se evaluan sobre EL MISMO conjunto
 de sesiones validas; ninguna invalida entra como retorno 0 ni cuenta en `n`.
 
 Sin esto, un festivo relleno por el proveedor (retorno ~0) baja la volatilidad y sube el
-Sharpe de todas las estrategias por igual — incluidos los baselines, asi que el sesgo NO se
-cancela en la diferencia pareada— y ademas infla el `n` sobre el que se calculan los IC.
+Sharpe de todas las estrategias por igual â€” incluidos los baselines, asi que el sesgo NO se
+cancela en la diferencia pareadaâ€” y ademas infla el `n` sobre el que se calculan los IC.
 """
 from __future__ import annotations
 
@@ -21,8 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "config" / "research" / "evaluation_mask.json"
 
 # Medido el 2026-08-24 sobre la serie ya reparada (CTR-DQ-TZ-001).
-EXPECTED_VALID = 1383
-MIN_HOLDOUT_VALID = 500   # umbral de §11.2 del plan: por debajo, el contraste es indecidible
+EXPECTED_VALID = 1249
+MIN_HOLDOUT_VALID = 500   # umbral de Â§11.2 del plan: por debajo, el contraste es indecidible
 
 
 @pytest.fixture(scope="module")
@@ -63,12 +63,27 @@ def test_holidays_are_excluded_whether_full_or_partial(mask):
         assert d in excluded, f"{d} es festivo colombiano y sigue en la mascara"
 
 
+def test_us_holiday_union_is_excluded(mask):
+    """The declared calendar is Colombia ∪ USA, including Independence Day."""
+    from datetime import date
+
+    assert date(2025, 7, 4) in set(mask.excluded.get("us_holiday", ()))
+
+
+def test_flat_ohlc_provenance_is_persisted(mask):
+    """Flat-print quality is metadata, never an implicit return filter."""
+    assert mask.flat_ohlc_pct
+    assert all(0.0 <= value <= 100.0 for value in mask.flat_ohlc_pct.values())
+    payload = mask.to_dict()
+    assert "flat_ohlc_pct" in payload
+
+
 def test_no_weekend_or_out_of_window_session_survives(mask):
     assert not any(d.weekday() >= 5 for d in mask.valid), "hay fines de semana en la mascara"
 
 
 def test_valid_count_is_stable(mask):
-    """Si cambia, hay que mirar por que — no ajustar el numero sin explicacion."""
+    """Si cambia, hay que mirar por que â€” no ajustar el numero sin explicacion."""
     assert len(mask) == EXPECTED_VALID, (
         f"sesiones validas: {len(mask)} != {EXPECTED_VALID} congeladas. Si el dato cambio "
         "(reparacion, backfill), actualiza el numero Y di en el commit que lo movio."
@@ -86,7 +101,7 @@ def test_holdout_keeps_enough_power():
     h = p["blocks"]["holdout"]
     n = len(build_mask().in_block(h["start"], h["end"]))
     assert n >= MIN_HOLDOUT_VALID, (
-        f"hold-out efectivo tras la mascara: {n} < {MIN_HOLDOUT_VALID}. §11.2 del plan "
+        f"hold-out efectivo tras la mascara: {n} < {MIN_HOLDOUT_VALID}. Â§11.2 del plan "
         "llama a 500 'el limite' para que el contraste principal sea decidible; por debajo "
         "hay que reportarlo como indecidible o reabrir la decision de particion."
     )

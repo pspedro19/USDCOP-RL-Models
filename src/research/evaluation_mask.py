@@ -46,6 +46,7 @@ from datetime import date
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 
 REPO = Path(__file__).resolve().parents[2]
 CALENDAR = REPO / "config" / "trading_calendar.json"
@@ -100,6 +101,7 @@ class EvaluationMask:
     valid: tuple[date, ...]
     excluded: dict[str, tuple[date, ...]] = field(default_factory=dict)
     source: str = ""
+    flat_ohlc_pct: dict[date, float] = field(default_factory=dict)
 
     @property
     def sha256(self) -> str:
@@ -125,6 +127,7 @@ class EvaluationMask:
             "last": self.valid[-1].isoformat() if self.valid else None,
             "excluded": {k: [d.isoformat() for d in v] for k, v in self.excluded.items()},
             "excluded_counts": {k: len(v) for k, v in self.excluded.items()},
+            "flat_ohlc_pct": {d.isoformat(): float(v) for d, v in self.flat_ohlc_pct.items()},
         }
 
 
@@ -135,6 +138,33 @@ def colombia_holidays() -> set[str]:
         cal = json.loads(CALENDAR.read_text(encoding="utf-8"))
         for key, vals in cal.items():
             if key.startswith("holidays_") and key.endswith("_colombia"):
+                out |= set(vals)
+    return out
+
+
+def usa_holidays() -> set[str]:
+    """Federal US holidays for the observed data span, plus SSOT entries.
+
+    The market is OTC, but the macro inputs include US releases and the frozen
+    contract explicitly requires the Colombia ∪ USA calendar.  The generated
+    federal calendar supplies years not yet present in the JSON SSOT.
+    """
+    out: set[str] = set()
+    try:
+        from pandas.tseries.holiday import USFederalHolidayCalendar
+
+        dates = USFederalHolidayCalendar().holidays(
+            start="2019-01-01", end="2030-12-31"
+        )
+        out.update(pd.Timestamp(d).date().isoformat() for d in dates)
+    except ImportError:
+        # pandas is a hard dependency of this module; retain a clear empty set
+        # only for constrained import-time tooling.
+        pass
+    if CALENDAR.is_file():
+        cal = json.loads(CALENDAR.read_text(encoding="utf-8"))
+        for key, vals in cal.items():
+            if key.startswith("holidays_") and key.endswith("_usa"):
                 out |= set(vals)
     return out
 
@@ -153,9 +183,36 @@ def build_mask(seed: Path | None = None) -> EvaluationMask:
     per_day = pd.DataFrame({"d": d, "h": hours}).groupby("d").agg(
         n=("h", "size"), h_min=("h", "min"), h_max=("h", "max"))
 
+    # Validate the complete OHLC contract before counting a session.  A single
+    # malformed bar invalidates the session; it must never become a zero return.
+    numeric = df[["open", "high", "low", "close"]].apply(pd.to_numeric, errors="coerce")
+    invalid = (
+        ~np.isfinite(numeric.to_numpy()).all(axis=1)
+        | (numeric <= 0).any(axis=1)
+        | (numeric["high"] < numeric[["open", "close"]].max(axis=1))
+        | (numeric["low"] > numeric[["open", "close"]].min(axis=1))
+        | (numeric["high"] < numeric["low"])
+    )
+    invalid_days = set(d[invalid].tolist())
+
+    # Outlier suspicion is a quality flag, not a return-based selection rule:
+    # the threshold is estimated from the preceding 1,560 bars only.
+    close = numeric["close"]
+    logret = np.log(close).diff()
+    rolling_sigma = logret.rolling(1560, min_periods=100).std().shift(1)
+    outlier_days = set(d[(logret.abs() > 8.0 * rolling_sigma).fillna(False)].tolist())
+
+    flat_by_day = (
+        (numeric["open"] == numeric["high"])
+        & (numeric["high"] == numeric["low"])
+        & (numeric["low"] == numeric["close"])
+    ).groupby(d).mean().mul(100.0)
+
     holidays = colombia_holidays()
-    excluded: dict[str, list[date]] = {"holiday": [], "incomplete": [], "weekend": [],
-                                       "out_of_window": []}
+    holidays_usa = usa_holidays()
+    excluded: dict[str, list[date]] = {"holiday": [], "us_holiday": [], "incomplete": [],
+                                       "weekend": [], "out_of_window": [],
+                                       "invalid_ohlc": [], "outlier_suspect": []}
     valid: list[date] = []
 
     for day, row in per_day.iterrows():
@@ -165,8 +222,14 @@ def build_mask(seed: Path | None = None) -> EvaluationMask:
             # Se excluye tenga 60 barras (relleno sintetico) o 3 (residuo): en ambos casos
             # el mercado colombiano estuvo cerrado.
             excluded["holiday"].append(day)
+        elif day.isoformat() in holidays_usa:
+            excluded["us_holiday"].append(day)
         elif not (SESSION_LO <= row.h_min and row.h_max <= SESSION_HI):
             excluded["out_of_window"].append(day)
+        elif day in invalid_days:
+            excluded["invalid_ohlc"].append(day)
+        elif day in outlier_days:
+            excluded["outlier_suspect"].append(day)
         elif row.n < BARS_PER_SESSION:
             excluded["incomplete"].append(day)
         else:
@@ -176,6 +239,7 @@ def build_mask(seed: Path | None = None) -> EvaluationMask:
         valid=tuple(sorted(valid)),
         excluded={k: tuple(sorted(v)) for k, v in excluded.items() if v},
         source=path.relative_to(REPO).as_posix(),
+        flat_ohlc_pct={d: float(flat_by_day.get(d, 0.0)) for d in per_day.index},
     )
 
 
