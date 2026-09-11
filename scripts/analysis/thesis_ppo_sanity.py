@@ -29,7 +29,7 @@ PPO_KWARGS = {
 SEEDS = (42, 123, 456, 789, 2024)
 
 
-def _train_one(fixture: Fixture, seed: int, timesteps: int):
+def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str):
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
@@ -37,7 +37,23 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int):
     vec = DummyVecEnv([lambda: SessionTradingEnv(sessions, seed=seed, shuffle=True)])
     norm = VecNormalize(vec, norm_obs=False, norm_reward=True, clip_reward=10.0,
                         gamma=PPO_KWARGS["gamma"])
-    model = PPO("MlpPolicy", norm, seed=seed, verbose=0, **PPO_KWARGS)
+    kwargs = dict(PPO_KWARGS)
+    if probe == "ent_coef_zero":
+        kwargs["ent_coef"] = 0.0
+    elif probe == "gamma_one":
+        kwargs["gamma"] = 1.0
+        norm.gamma = 1.0
+    elif probe == "kappa_turn_one":
+        # A positive turn penalty is an environment parameter, not a PPO knob.
+        vec = DummyVecEnv([lambda: SessionTradingEnv(
+            sessions, seed=seed, shuffle=True, kappa_turn=1.0)])
+        norm = VecNormalize(vec, norm_obs=False, norm_reward=True, clip_reward=10.0,
+                            gamma=kwargs["gamma"])
+    elif probe == "norm_reward_off":
+        norm.norm_reward = False
+    elif probe != "baseline":
+        raise ValueError(f"unknown sanity probe: {probe}")
+    model = PPO("MlpPolicy", norm, seed=seed, verbose=0, **kwargs)
     model.learn(total_timesteps=timesteps)
 
     norm.training = False
@@ -64,9 +80,9 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int):
 
 
 def run(fixture: Fixture | str, seeds: tuple[int, ...] = SEEDS,
-        timesteps: int = 100_000) -> dict:
+        timesteps: int = 100_000, probe: str = "baseline") -> dict:
     fixture = Fixture(fixture)
-    rows = [_train_one(fixture, seed, timesteps) for seed in seeds]
+    rows = [_train_one(fixture, seed, timesteps, probe) for seed in seeds]
     oracle = [oracle_result(fixture, s).daily_return
               for s in make_sessions(fixture, n=100, seed=991)]
     if fixture in (Fixture.NOISE_WITH_COST, Fixture.SIGNAL_BELOW_COST):
@@ -79,6 +95,7 @@ def run(fixture: Fixture | str, seeds: tuple[int, ...] = SEEDS,
         "synthetic_only": True,
         "market_trials_charged": 0,
         "timesteps": timesteps,
+        "probe": probe,
         "rows": rows,
         "oracle_mean_net": float(np.mean(oracle)),
         "pass_rule": "4/5 seeds satisfy the pre-registered fixture criterion",
@@ -90,9 +107,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixture", choices=[f.value for f in Fixture], required=True)
     parser.add_argument("--timesteps", type=int, default=100_000)
+    parser.add_argument("--probe", choices=("baseline", "ent_coef_zero", "norm_reward_off",
+                                              "gamma_one", "kappa_turn_one"), default="baseline")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    report = run(args.fixture, timesteps=args.timesteps)
+    report = run(args.fixture, timesteps=args.timesteps, probe=args.probe)
     text = json.dumps(report, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -103,4 +122,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
