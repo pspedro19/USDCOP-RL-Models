@@ -70,7 +70,7 @@ class ResearchData:
     scaler_mean: np.ndarray
     scaler_scale: np.ndarray
     regime_model: object
-    dropped: dict[str, int]
+    dropped: dict[str, list]
 
     def block(self, name: str) -> list[SessionSpec]:
         return {"development": self.development, "selection": self.selection,
@@ -78,7 +78,8 @@ class ResearchData:
 
     def summary(self) -> str:
         return (f"desarrollo {len(self.development)} · selección {len(self.selection)} · "
-                f"hold-out {len(self.holdout)} · descartadas {self.dropped}")
+                f"hold-out {len(self.holdout)} · descartadas "
+                f"{ {k: len(v) for k, v in self.dropped.items()} }")
 
 
 def load_partition() -> dict:
@@ -142,7 +143,13 @@ def build_research_data(m5: pd.DataFrame | None = None, min_context: int = 60,
 
     prob_cols = [c for c in regimes.columns if c.startswith("p_")]
     blocks: dict[str, list[SessionSpec]] = {}
-    dropped = {"sin_regimen": 0, "barras_incompletas": 0}
+    # Preserve dates, not just counts: a published dataset must explain every
+    # session that disappeared before model fitting/evaluation.
+    dropped: dict[str, list] = {
+        reason: list(dates) for reason, dates in mask.excluded.items()
+    }
+    dropped.setdefault("sin_regimen", [])
+    dropped.setdefault("barras_incompletas", [])
 
     by_session = {d: g for d, g in feats.groupby("_session")}
     for name in ("development", "selection", "holdout"):
@@ -150,10 +157,10 @@ def build_research_data(m5: pd.DataFrame | None = None, min_context: int = 60,
         for d in _block_dates(part, name, valid):
             g = by_session.get(d)
             if g is None or len(g) != BARS_PER_SESSION:
-                dropped["barras_incompletas"] += 1
+                dropped["barras_incompletas"].append(d)
                 continue
             if d not in regimes.index or not np.isfinite(regimes.at[d, "spread_pips"]):
-                dropped["sin_regimen"] += 1
+                dropped["sin_regimen"].append(d)
                 continue
 
             X = (g[MARKET_FEATURES].to_numpy(dtype=float) - mean) / scale
@@ -176,7 +183,7 @@ def build_research_data(m5: pd.DataFrame | None = None, min_context: int = 60,
             print(f"  {name:<12} {len(specs):>4} sesiones")
 
     if verbose and any(dropped.values()):
-        print(f"  descartadas: {dropped}")
+        print(f"  descartadas: { {k: len(v) for k, v in dropped.items()} }")
 
     return ResearchData(development=blocks["development"], selection=blocks["selection"],
                         holdout=blocks["holdout"], scaler_mean=mean, scaler_scale=scale,
