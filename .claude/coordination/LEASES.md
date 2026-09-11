@@ -18,6 +18,8 @@
 - tests/unit/test_data_loaders.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T22:15:00-05:00
 - src/data/economic_calendar.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T22:45:00-05:00
 - tests/unit/test_economic_calendar_causality.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T22:45:00-05:00
+- src/data/usdcop_forward_macro.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T23:15:00-05:00
+- tests/unit/test_usdcop_forward_macro.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T23:15:00-05:00
 # (CODEX 2026-09-10T20:30:00-05:00) RELEASE EXP-TESIS-REPAIR-01: cambios focales
 # verificados; revisión cruzada pendiente. No se liberan artefactos no incluidos.
 # formato: - <ruta> | <CLAUDE|CODEX> | <instance_id> | expira <ISO>

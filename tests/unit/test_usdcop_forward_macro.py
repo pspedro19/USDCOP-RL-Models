@@ -287,6 +287,9 @@ def test_asof_join_never_uses_a_future_release(tmp_path: Path):
     assert enriched.loc[2, "br_eme_usdcop_near_mean"] == 4100.0
     assert pd.isna(enriched.loc[3, "br_eme_usdcop_near_mean"])
     assert "pit_eme_near_gap_pct" in features
+    assert "br_eme_usdcop_near_mean__observation_date" in enriched.columns
+    assert "br_eme_usdcop_near_mean__available_at" in enriched.columns
+    assert enriched.loc[1, "br_eme_usdcop_near_mean__observation_date"] == pd.Timestamp("2025-01-31")
 
 
 def test_socrata_uses_official_peso_currency_code(tmp_path: Path, monkeypatch):

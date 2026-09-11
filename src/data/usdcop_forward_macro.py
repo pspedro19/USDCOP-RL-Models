@@ -1686,10 +1686,16 @@ def attach_forward_macro_features(
         slug = re.sub(r"[^a-z0-9]+", "_", series_id.lower()).strip("_")
         frequencies = group["frequency"].dropna().astype(str).str.lower()
         frequency = frequencies.iloc[-1] if not frequencies.empty else "monthly"
-        group = group.sort_values(["available_at", "retrieved_at"]).drop_duplicates(
-            "available_at", keep="last"
+        # A single release timestamp may contain several reference periods.  Do
+        # not collapse those observations merely because they arrived together;
+        # retain the period identity and only deduplicate an identical
+        # (series, period, availability) vintage.
+        group = group.sort_values(
+            ["observation_date", "available_at", "retrieved_at"]
+        ).drop_duplicates(
+            ["series_id", "observation_date", "available_at"], keep="last"
         )
-        group = group[["available_at", "value"]].copy()
+        group = group[["observation_date", "available_at", "value"]].copy()
         group[f"{slug}__release_delta"] = group["value"].diff()
         denominator = group["value"].shift(1).abs().replace(0, np.nan)
         group[f"{slug}__release_pct"] = group["value"].diff() / denominator
@@ -1708,6 +1714,8 @@ def attach_forward_macro_features(
         value_columns = [slug, f"{slug}__release_delta", f"{slug}__release_pct"]
         merged.loc[stale, value_columns] = np.nan
         raw_values[slug] = merged[slug].to_numpy()
+        raw_values[f"{slug}__observation_date"] = merged["observation_date"].to_numpy()
+        raw_values[f"{slug}__available_at"] = merged["published_at"].to_numpy()
         raw_values[f"{slug}__release_delta"] = merged[f"{slug}__release_delta"].to_numpy()
         raw_values[f"{slug}__release_pct"] = merged[f"{slug}__release_pct"].to_numpy()
         raw_columns[series_id] = slug
