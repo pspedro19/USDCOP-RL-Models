@@ -35,11 +35,17 @@ PPO_KWARGS = {
     "ent_coef": 0.01,
     "policy_kwargs": {"net_arch": [256, 256]},
 }
-SEEDS = (42, 123, 456, 789, 2024)
+# `experiment-protocol.md` regla 2: estas cinco, sin excepciones. La lista tenia 2024 en
+# lugar de 1337, lo que contradecia ademas la identidad congelada del pre-registro v3 y
+# hacia que la evidencia de sanidad no fuera comparable por semilla con las corridas de
+# mercado de `thesis_train_ppo.py`, que si usa las cinco correctas.
+SEEDS = (42, 123, 456, 789, 1337)
 PROBES = ("baseline", "ent_coef_zero", "norm_reward_off", "gamma_one", "kappa_turn_one")
 
 
-def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str):
+def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
+               checkpoint_dir: Path | None = None,
+               resume: Path | None = None):
     from stable_baselines3 import PPO
     from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 
@@ -63,8 +69,17 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str):
         norm.norm_reward = False
     elif probe != "baseline":
         raise ValueError(f"unknown sanity probe: {probe}")
-    model = PPO("MlpPolicy", norm, seed=seed, verbose=0, **kwargs)
-    model.learn(total_timesteps=timesteps)
+    model = (PPO.load(str(resume), env=norm, device="cpu") if resume is not None
+             else PPO("MlpPolicy", norm, seed=seed, verbose=0, **kwargs))
+    callback = None
+    if checkpoint_dir is not None:
+        from stable_baselines3.common.callbacks import CheckpointCallback
+        checkpoint_dir.mkdir(parents=True, exist_ok=True)
+        callback = CheckpointCallback(save_freq=max(1, 10_000),
+                                      save_path=str(checkpoint_dir),
+                                      name_prefix=f"{fixture.value}_{probe}_seed{seed}")
+    model.learn(total_timesteps=timesteps, callback=callback,
+                reset_num_timesteps=resume is None)
 
     norm.training = False
     norm.norm_reward = False
@@ -90,9 +105,14 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str):
 
 
 def run(fixture: Fixture | str, seeds: tuple[int, ...] = SEEDS,
-        timesteps: int = 100_000, probe: str = "baseline") -> dict:
+        timesteps: int = 100_000, probe: str = "baseline",
+        checkpoint_dir: Path | None = None,
+        resume: Path | None = None) -> dict:
     fixture = Fixture(fixture)
-    rows = [_train_one(fixture, seed, timesteps, probe) for seed in seeds]
+    if resume is not None and len(seeds) != 1:
+        raise ValueError("--resume requiere exactamente una semilla")
+    rows = [_train_one(fixture, seed, timesteps, probe, checkpoint_dir=checkpoint_dir,
+                       resume=resume) for seed in seeds]
     oracle = [oracle_result(fixture, s).daily_return
               for s in make_sessions(fixture, n=100, seed=991)]
     if fixture in (Fixture.NOISE_WITH_COST, Fixture.SIGNAL_BELOW_COST):
@@ -140,14 +160,23 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixture", choices=[f.value for f in Fixture], required=True)
     parser.add_argument("--timesteps", type=int, default=100_000)
+    parser.add_argument("--seed", type=int,
+                        help="ejecuta una sola semilla para jobs reanudables")
+    parser.add_argument("--checkpoint-dir", type=Path,
+                        help="guarda checkpoints cada 10k pasos")
+    parser.add_argument("--resume", type=Path,
+                        help="reanuda un checkpoint de una sola semilla")
     parser.add_argument("--probe", choices=("baseline", "ent_coef_zero", "norm_reward_off",
                                               "gamma_one", "kappa_turn_one"), default="baseline")
     parser.add_argument("--protocol", action="store_true",
                         help="ejecuta S1-S4 y detiene las sondas en la primera receta válida")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    report = (run_protocol(timesteps=args.timesteps) if args.protocol
-              else run(args.fixture, timesteps=args.timesteps, probe=args.probe))
+    seeds = (args.seed,) if args.seed is not None else SEEDS
+    report = (run_protocol(seeds=seeds, timesteps=args.timesteps) if args.protocol
+              else run(args.fixture, seeds=seeds, timesteps=args.timesteps,
+                       probe=args.probe, checkpoint_dir=args.checkpoint_dir,
+                       resume=args.resume))
     text = json.dumps(report, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)

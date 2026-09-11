@@ -24,8 +24,15 @@ confirmatoria.
 
 | Elemento | Valor |
 |---|---|
-| Schema | `feature_schema_v2.json`, 37 features, SHA `a0568db4b953604cabb6d64eab73631419f65184d0fc46f35f36c695487484cb` |
+| Schema | `feature_schema_v2.json`, 37 features, SHA `a0568db4b953604cabb6d64eab73631419f65184d0fc96bd61a6f994f75d2e8b` |
 | Dataset portable | `research_data_portable_v2.pkl`, identidad `c4d32158a08e37c735b44137efa9003ce0a1b7a7b2fd46f35f36c695487484cb` |
+
+> **Corrección 2026-09-11.** El SHA del schema que figuraba aquí terminaba en
+> `…46f35f36c695487484cb`, que es la cola de la identidad del dataset portable: una pegada
+> defectuosa había reemplazado los últimos 18 caracteres. Dos hashes independientes no
+> comparten sufijo, y un congelamiento cuyo hash no se puede verificar no congela nada. El
+> valor correcto se lee del propio artefacto, y `tests/regression/test_prereg_v3_identity.py`
+> vuelve a comprobarlo en cada corrida para que no se degrade en silencio.
 | Macro | `macro_availability.yaml`, disponibilidad estricta anterior a apertura |
 | Semillas | `42, 123, 456, 789, 1337` |
 | Anualización | 221 sesiones/año |
