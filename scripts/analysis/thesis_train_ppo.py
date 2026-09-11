@@ -138,6 +138,8 @@ def evaluate(model, specs: list[SessionSpec]) -> dict:
         "mean_abs_exposure": float(np.mean([r.mean_abs_exposure for r in results])),
         "total_cost": float(sum(r.total_cost for r in results)),
         "daily_returns": [float(x) for x in daily],
+        "daily_gross_returns": [float(r.gross_return) for r in results],
+        "daily_costs": [float(r.total_cost) for r in results],
         "dates": [str(r.date) for r in results],
     }
 

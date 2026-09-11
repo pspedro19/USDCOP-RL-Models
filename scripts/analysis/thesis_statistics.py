@@ -121,6 +121,10 @@ def ppo_series(config: str, block: str) -> dict[int, dict]:
             continue
         b = blob[block]
         out[seed] = {"returns": np.asarray(b["daily_returns"], dtype=float),
+                     "gross_returns": (np.asarray(b["daily_gross_returns"], dtype=float)
+                                       if "daily_gross_returns" in b else None),
+                     "daily_costs": (np.asarray(b["daily_costs"], dtype=float)
+                                     if "daily_costs" in b else None),
                      "dates": b["dates"], "n_ops": b["n_ops"],
                      "mean_abs_exposure": b["mean_abs_exposure"],
                      "total_cost": b["total_cost"]}
@@ -278,13 +282,17 @@ def main() -> int:
               f"({'pasa' if dsr[config]['passes'] else 'NO pasa'} el bar 0.95)")
 
         runs = ppo_series(config, args.block)
-        exposure = np.full(len(r), float(np.mean(
-            [runs[s]["mean_abs_exposure"] for s in runs])))
-        cost = np.full(len(r), float(np.mean(
-            [runs[s]["total_cost"] for s in runs])) / len(r))
-        asset = np.diff(np.array([s.close[-1] for s in specs]), prepend=specs[0].close[-1])
-        asset = asset / np.array([s.close[-1] for s in specs])
-        stress[config] = cost_stress(exposure, asset, cost, None, ANN_SESSIONS)
+        if not all(runs[s]["gross_returns"] is not None and runs[s]["daily_costs"] is not None
+                   for s in runs):
+            stress[config] = {"status": "unavailable",
+                              "reason": "artefacto legacy sin costos realizados por sesión"}
+            print("  stress de costos: NO DISPONIBLE (faltan costos diarios)")
+            continue
+        # Re-price the realized gross P&L and realized costs, not an exposure×asset proxy.
+        gross = np.mean([runs[s]["gross_returns"] for s in runs], axis=0)
+        realized_cost = np.mean([runs[s]["daily_costs"] for s in runs], axis=0)
+        stress[config] = cost_stress(np.ones(len(gross)), gross, realized_cost,
+                                      None, ANN_SESSIONS)
         print(f"  stress de costos: x2 {'sobrevive' if stress[config]['survives_2x'] else 'MUERE'}"
               f" · x3 {'sobrevive' if stress[config]['survives_3x'] else 'MUERE'}")
 
