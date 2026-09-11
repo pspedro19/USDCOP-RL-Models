@@ -35,10 +35,30 @@ def _alpha(fixture: Fixture) -> float:
     }[fixture]
 
 
+def _spread_pips(fixture: Fixture) -> float:
+    """Coste por fixture. **S2 no cobra coste; S3 si.**
+
+    Sin esto, S2 y S3 eran la MISMA fixture byte a byte: ambas declaran `alpha = 0.002` y
+    ambas heredaban `spread_pips = 3.0`, asi que generaban cierres y features identicos con la
+    misma semilla. La bateria decia probar cuatro condiciones y probaba tres, con una contada
+    dos veces. Medido el 2026-09-11.
+
+    Lo que cada una debe aislar, segun el diseno:
+      * **S2** senal plantada **sin coste** -> ¿la receta aprende la senal siquiera?
+      * **S3** la misma senal **pagando coste** -> ¿opera cuando el alfa lo supera?
+
+    Con el mismo coste en ambas, S2 no puede responder su pregunta: un fallo de S2 seria
+    indistinguible de un fallo de S3, y un aprobado de S3 hacia redundante a S2.
+    """
+    return 0.0 if fixture is Fixture.SIGNAL_PLANTED else 3.0
+
+
 def make_sessions(fixture: Fixture | str, n: int = 500, seed: int = 0,
-                  spread_pips: float = 3.0) -> list[SessionSpec]:
+                  spread_pips: float | None = None) -> list[SessionSpec]:
     """Generate reproducible ``SessionSpec`` objects for one control fixture."""
     fixture = Fixture(fixture)
+    if spread_pips is None:
+        spread_pips = _spread_pips(fixture)
     rng = np.random.default_rng(seed)
     alpha = _alpha(fixture)
     sessions: list[SessionSpec] = []
