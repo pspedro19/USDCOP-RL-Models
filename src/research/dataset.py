@@ -35,6 +35,7 @@ posterior filtrado. No se inventan: se **descartan**, y el conteo descartado se 
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -287,6 +288,41 @@ PORTABLE = Path(os.environ.get(
     "THESIS_PORTABLE", REPO / "data" / "thesis" / "research_data_portable.pkl"))
 
 
+def _file_digest(path: Path) -> str:
+    if not path.is_file():
+        raise FileNotFoundError(f"missing dataset identity input: {path}")
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def dataset_identity() -> str:
+    """Return the immutable identity of the current research dataset contract."""
+    from src.research.evaluation_mask import build_mask
+    from src.research.features import SCHEMA, attach_macro_features
+
+    source_files = {
+        name: _file_digest(REPO / name)
+        for name in (
+            "src/research/features.py", "src/research/dataset.py",
+            "src/research/regime_hmm.py", "src/research/cost_model.py",
+            "src/research/evaluation_mask.py",
+        )
+    }
+    payload = {
+        "mask": build_mask().sha256,
+        "schema": SCHEMA.sha256,
+        "formula_versions": SCHEMA.formula_versions,
+        "seed_m5": _file_digest(SEED_M5),
+        "macro": _file_digest(attach_macro_features.__globals__["MACRO_CLEAN"]),
+        "partition": _file_digest(PARTITION),
+        "source_files": source_files,
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
 def save_portable(data: ResearchData, path: Path = PORTABLE) -> Path:
     """Serializa los specs sin `regime_model`, para que el consumidor no necesite hmmlearn.
 
@@ -308,6 +344,7 @@ def save_portable(data: ResearchData, path: Path = PORTABLE) -> Path:
         "covariance_type": m.covariance_type, "feature_names": list(m.feature_names),
     }
     blob = {
+        "identity": dataset_identity(),
         "development": data.development, "selection": data.selection,
         "holdout": data.holdout, "scaler_mean": data.scaler_mean,
         "scaler_scale": data.scaler_scale, "dropped": data.dropped,
@@ -319,12 +356,23 @@ def save_portable(data: ResearchData, path: Path = PORTABLE) -> Path:
     return path
 
 
-def load_portable(path: Path = PORTABLE) -> ResearchData:
-    """Lee el formato portable. `regime_model` queda como la ficha, no como el objeto."""
+def load_portable(path: Path = PORTABLE, *, allow_stale: bool = False) -> ResearchData:
+    """Lee el portable y rechaza artefactos de otra identidad por defecto.
+
+    ``allow_stale`` existe únicamente para auditorías retrospectivas explícitas;
+    los carriles de entrenamiento, evaluación y forward deben dejarlo en False.
+    """
     import pickle
 
     with path.open("rb") as fh:
         blob = pickle.load(fh)
+    expected = dataset_identity()
+    actual = blob.get("identity")
+    if actual != expected and not allow_stale:
+        raise ValueError(
+            "portable dataset identity mismatch; rebuild v2 before training/evaluation "
+            f"(expected {expected[:16]}, found {str(actual)[:16]})"
+        )
     return ResearchData(
         development=blob["development"], selection=blob["selection"],
         holdout=blob["holdout"], scaler_mean=blob["scaler_mean"],
