@@ -40,7 +40,7 @@ ejecución pasiva queda suspendida hasta tener un venue con libro de órdenes).
 |---|---|---|
 | 1. Fuentes y costos | `macro_availability.yaml` (regla de disponibilidad), `cost_contract.yaml` con unidad declarada, máscara v2 con reglas §6.3 y festivos de EE. UU., schema v2 (39 → 37 features) | HECHO |
 | 2. Entorno | Fuga macro cerrada, costo terminal en el reward y valorado en la barra 59, ventanas intra-sesión, identidad del dataset por sha256, tests HMM no tautológicos, specs parciales para el carril live | HECHO |
-| 3. Sanidad del optimizador | S1 ejecutada con las 5 semillas y las 4 sondas: **ninguna receta pasa**. Faltan S2-S4, que sólo tienen sentido con una receta candidata | HECHO en su parte decisiva |
+| 3. Sanidad del optimizador | **CERRADA con veredicto**: siete recetas (4 pre-registradas + 3 derivadas de medir el mecanismo), ninguna pasa S1. La corrección tiene que ser estructural, no un ajuste | HECHO |
 | 4. Reentreno sin fugas y juez forward | **BLOQUEADA por la compuerta de sanidad**, no por falta de tiempo: el v3 exige congelar una receta que pase S1 y no hay ninguna | BLOQUEADA |
 | 5. Corrigendum | Correcciones de §0-§7 con cifras de la evidencia | HECHO |
 | 6. Gobernanza | Brief de contabilidad redactado para el operador; ledger y registro sin tocar desde este carril | PARCIAL |
@@ -165,10 +165,19 @@ compuerta**. Reentrenar v2 con una receta que no encuentra el flat sobre ruido p
 conclusión confundida entre optimizador y mercado, que es el defecto que este programa existe
 para corregir. La búsqueda de receta sigue en terreno sintético, donde no se gasta ningún trial.
 
-Direcciones que el propio experimento sugiere, ninguna ejecutada: `κ_turn` por encima de 1
-—el único eje que movió la aguja—, presupuesto mayor que 100.000 pasos (≈3,4 pasadas sobre 500
-sesiones sintéticas), y revisar si el reward ×100 con `clip_reward=10` recorta justo la señal
-de costo. Cada una es una variable y se declara antes de mirarla.
+**Se ejecutaron las direcciones, y las tres hipótesis cayeron.** El costo no está enterrado
+(por barra es 2,5× la desviación del retorno). No hay churn (2 cambios por sesión de 59). Y la
+entropía no es la palanca: desde 0,01, bajarla a 0 da 0,732 y subirla a 0,05 da 0,927, ambas
+peores. El mecanismo medido es **compromiso temprano**: `κ_turn` castiga el *cambio* y no la
+*exposición*, así que enseña «no te muevas» y encierra a la política donde la dejó su
+inicialización — volver a plano cuesta lo mismo que haber salido.
+
+**Veredicto: siete recetas, ninguna pasa.** El fallo es robusto a todo el espacio de
+hiperparámetros declarado, así que la corrección tiene que ser **estructural**. Tres candidatas,
+ninguna ejecutada, cada una declarable como experimento propio: inicializar la política sesgada
+hacia flat; recocer `κ_turn` desde cero; o cambiar la parametrización de la acción a
+exposición-objetivo, para que el costo penalice la exposición y no solo el cambio, que es la
+asimetría que crea la trampa.
 
 **Detalle histórico:** Exposiciones medias 0,527 /
 0,966 / 0,485 / 0,985 / 0,968 sobre una serie de ruido iid con costo, donde la política óptima
@@ -197,10 +206,22 @@ declarada con `scripts/diagnostics/verify_macro_declared_identity.py`:
 El Brent del fichero son **futuros** con un parche spot de 59 filas, no la serie spot que la
 declaración nombra. El DGS2 viene de Investing, no de FRED, y se le parece sin ser igual.
 
-Esto **no se arregla extendiendo el fichero**: hacerlo con FRED mezclaría un tercer instrumento
-sobre los dos que ya conviven, que es el defecto original ampliado. Lo que corresponde es
-**re-obtener cada serie de su fuente declarada de punta a punta**, con procedencia por fila, y
-recongelar el schema. Es requisito de la Etapa 4, independiente de la compuerta de sanidad:
+**Resuelto a medias el mismo día, y sin parchear el fichero viejo.**
+`scripts/data/build_research_macro.py` escribe un artefacto **separado**,
+`MACRO_RESEARCH_v2.parquet`, donde cada serie viene entera de su fuente declarada y cada fila
+lleva procedencia:
+
+| Serie | Estado | Cobertura |
+|---|---|---|
+| `brent` | **verificada** contra `FRED_DCOILBRENTEU` | 1987-05-20 → **2026-09-09** |
+| `dgs2` | **verificada** contra `FRED_DGS2` | 1976-06-01 → **2026-09-09** |
+| `dxy` | copiada, `source_verified: false` | → 2026-08-24 |
+| `ibr` | copiada, `source_verified: false` | → 2026-08-24 |
+
+Dos de cuatro honran su declaración y además llegan al 9 de septiembre, con lo que el hueco de
+macro se cierra para ellas. Las otras dos exigen ICE y BanRep, y **se marcan como no
+verificadas en vez de presentarse como correctas**. Falta apuntar el cargador de investigación
+a este artefacto y recongelar el schema, que es trabajo de la Etapa 4. Es requisito de la Etapa 4, independiente de la compuerta de sanidad:
 entrenar v2 sobre datos cuya identidad contradice su propio pre-registro reproduciría el
 defecto que este programa existe para corregir.
 

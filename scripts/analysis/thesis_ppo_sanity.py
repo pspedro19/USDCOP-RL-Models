@@ -41,7 +41,7 @@ PPO_KWARGS = {
 # mercado de `thesis_train_ppo.py`, que si usa las cinco correctas.
 SEEDS = (42, 123, 456, 789, 1337)
 PROBES = ("baseline", "ent_coef_zero", "norm_reward_off", "gamma_one", "kappa_turn_one",
-          "kappa_turn_one_ent_zero")
+          "kappa_turn_one_ent_zero", "kappa_turn_one_ent_high")
 # `kappa_turn_one_ent_zero` se declara el 2026-09-11, despues de agotar las cuatro sondas
 # originales y de MEDIR por que fallaron. No es una quinta prueba a ciegas: con kappa_turn=1 un
 # cambio de posicion cuesta 1,0 en unidades de reward mientras el neto economico por barra es
@@ -76,6 +76,17 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
                             gamma=kwargs["gamma"])
     elif probe == "kappa_turn_one_ent_zero":
         kwargs["ent_coef"] = 0.0
+        vec = DummyVecEnv([lambda: SessionTradingEnv(
+            sessions, seed=seed, shuffle=True, kappa_turn=1.0)])
+        norm = VecNormalize(vec, norm_obs=False, norm_reward=True, clip_reward=10.0,
+                            gamma=kwargs["gamma"])
+    elif probe == "kappa_turn_one_ent_high":
+        # Una variable respecto a `kappa_turn_one`: mas exploracion, no menos. La direccion la
+        # dicta la medicion, no una corazonada: quitar la entropia empeoro (0,052 -> 0,732) y
+        # el conteo mostro por que -- sin exploracion la politica se compromete en la barra 0 y
+        # la penalizacion de turnover la encierra, porque castiga el cambio y no la exposicion.
+        # Si el fallo es comprometerse antes de aprender, retrasar el compromiso es el remedio.
+        kwargs["ent_coef"] = 0.05
         vec = DummyVecEnv([lambda: SessionTradingEnv(
             sessions, seed=seed, shuffle=True, kappa_turn=1.0)])
         norm = VecNormalize(vec, norm_obs=False, norm_reward=True, clip_reward=10.0,
@@ -199,7 +210,7 @@ def main() -> int:
     parser.add_argument("--resume", type=Path,
                         help="reanuda un checkpoint de una sola semilla")
     parser.add_argument("--probe", choices=("baseline", "ent_coef_zero", "norm_reward_off",
-                                              "gamma_one", "kappa_turn_one", "kappa_turn_one_ent_zero"), default="baseline")
+                                              "gamma_one", "kappa_turn_one", "kappa_turn_one_ent_zero", "kappa_turn_one_ent_high"), default="baseline")
     parser.add_argument("--protocol", action="store_true",
                         help="ejecuta S1-S4 y detiene las sondas en la primera receta válida")
     parser.add_argument("--output", type=Path)

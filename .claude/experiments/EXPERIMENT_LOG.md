@@ -624,6 +624,7 @@ descartada en cuanto acumula dos semillas que operan, porque ya no puede llegar 
 | `γ = 1.0` | 0/2 | 0,603 · 0,618 | descartada |
 | `κ_turn = 1.0` | 1/3 | **0,052** · 0,499 · 0,580 | descartada |
 | `κ_turn = 1.0` + `ent_coef = 0` | 0/1 | 0,732 | descartada |
+| `κ_turn = 1.0` + `ent_coef = 0,05` | 0/1 | 0,927 | descartada |
 
 **Ninguna receta del protocolo pasa S1.** Quitar el suelo de entropía o la normalización del
 reward lo empeora (de 0,53 a ~0,97): no eran la causa. La única que produjo una semilla plana
@@ -668,11 +669,34 @@ aprender y sí encuentra el flat — en la semilla 42, no en la 123 ni en la 456
 agente que se desvía de flat está desincentivado a volver. Es una propiedad del entorno, no un
 defecto del optimizador, y explica por qué las corridas de mercado mantienen posición.
 
-**Recomendación para la siguiente iteración**, declarada aquí y no ejecutada: la receta
-candidata es `κ_turn` **con** entropía, y lo que falta resolver es la varianza entre semillas
-que produce el compromiso temprano — inicializar la política sesgada hacia flat, o recocer
-`κ_turn` desde cero, atacan la causa medida. Subir `κ_turn` por encima de 1 **no** es una de
-ellas: con 1 la penalización ya es dos mil veces el neto económico por barra.
+**4. La entropía tampoco es la palanca — probado en las dos direcciones.** Si el fallo es
+comprometerse antes de aprender, retrasar el compromiso debería ayudar. Se declaró y ejecutó
+`κ_turn = 1` con `ent_coef = 0.05`:
+
+| Semilla | `ent = 0` | `ent = 0.01` | `ent = 0.05` |
+|---|---:|---:|---:|
+| 42 | 0,732 | **0,052** | — |
+| 123 | — | 0,499 | 0,927 |
+
+**Las dos direcciones desde 0,01 empeoran.** El coeficiente de entropía no es el eje, ni
+subiéndolo ni bajándolo.
+
+### Conclusión de la Etapa 3
+
+**Siete recetas: las cuatro pre-registradas y tres derivadas de medir por qué fallaban. Ninguna
+pasa S1.** El fallo es robusto a todo el espacio de hiperparámetros declarado, así que la
+corrección no es un ajuste: tiene que ser **estructural**. Las tres candidatas, ninguna
+ejecutada y todas declarables como experimento propio:
+
+1. **Inicializar la política sesgada hacia flat.** Ataca la causa medida —el compromiso
+   temprano— en vez de compensarla después.
+2. **Recocer `κ_turn` desde cero.** Deja que aprenda la economía antes de encerrarla; subir
+   `κ_turn` por encima de 1 **no** es una opción, con 1 ya es dos mil veces el neto por barra.
+3. **Cambiar la parametrización de la acción** a exposición-objetivo en vez de nivel discreto,
+   de modo que el costo penalice la exposición y no solo el cambio — que es la asimetría que
+   crea la trampa.
+
+Mientras ninguna pase, **la Etapa 4 no se ejecuta**, y eso es el pre-registro funcionando.
 
 **Reproducir.** `outputs/thesis-repair/sanity_S1_protocol.json` trae las cinco recetas con sus
 semillas, hash del runner y commit base.

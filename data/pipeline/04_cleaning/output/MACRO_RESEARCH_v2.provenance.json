@@ -1,0 +1,57 @@
+{
+  "contract": "CTR-RESEARCH-MACRO-AVAILABILITY-001",
+  "built_at_utc": "2026-09-11T12:36:04.997242+00:00",
+  "artifact": "data/pipeline/04_cleaning/output/MACRO_RESEARCH_v2.parquet",
+  "artifact_sha256": "3186f5d3268fb216b96ca0ab5589a00c908450ac11d63d792311b92a0186783c",
+  "rows": 12891,
+  "first": "1976-06-01",
+  "last": "2026-09-09",
+  "series": {
+    "dxy": {
+      "column": "FXRT_INDEX_DXY_USA_D_DXY",
+      "declared_source": "ICE_DXY",
+      "source_verified": false,
+      "copied_from": "MACRO_DAILY_CLEAN.parquet",
+      "warning": "la fuente declarada no es alcanzable desde este script; la columna se copia TAL CUAL y NO se certifica que sea el instrumento declarado",
+      "rows": 10319,
+      "first": "1986-01-02",
+      "last": "2026-08-24"
+    },
+    "brent": {
+      "column": "COMM_OIL_BRENT_GLB_D_BRENT",
+      "declared_source": "FRED_DCOILBRENTEU",
+      "source_verified": true,
+      "fetched_from": "fredgraph.csv?id=DCOILBRENTEU",
+      "payload_sha256": "90b25160f3193d9c1440e8bb45e4fb621f69bb19a4c5736928fdb0c7f2bdc7fb",
+      "rows": 9973,
+      "first": "1987-05-20",
+      "last": "2026-09-09"
+    },
+    "ibr": {
+      "column": "FINC_RATE_IBR_OVERNIGHT_COL_D_IBR",
+      "declared_source": "BANREP_IBR",
+      "source_verified": false,
+      "copied_from": "MACRO_DAILY_CLEAN.parquet",
+      "warning": "la fuente declarada no es alcanzable desde este script; la columna se copia TAL CUAL y NO se certifica que sea el instrumento declarado",
+      "rows": 4438,
+      "first": "2008-01-02",
+      "last": "2026-08-24"
+    },
+    "dgs2": {
+      "column": "FINC_BOND_YIELD2Y_USA_D_DGS2",
+      "declared_source": "FRED_DGS2",
+      "source_verified": true,
+      "fetched_from": "fredgraph.csv?id=DGS2",
+      "payload_sha256": "e899b2cfa4b417c72199e8c998be600471798851d984ded55b3eb0dbbab9f2ab",
+      "rows": 12565,
+      "first": "1976-06-01",
+      "last": "2026-09-09"
+    }
+  },
+  "series_verified_against_declared_source": [
+    "brent",
+    "dgs2"
+  ],
+  "all_series_verified": false,
+  "note": "Artefacto SEPARADO a proposito: MACRO_DAILY_CLEAN no se parchea. Las series no verificadas se copian y se marcan, nunca se presentan como correctas."
+}
