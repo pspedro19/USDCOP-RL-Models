@@ -41,7 +41,7 @@ PPO_KWARGS = {
 # mercado de `thesis_train_ppo.py`, que si usa las cinco correctas.
 SEEDS = (42, 123, 456, 789, 1337)
 PROBES = ("baseline", "ent_coef_zero", "norm_reward_off", "gamma_one", "kappa_turn_one",
-          "kappa_turn_one_ent_zero", "kappa_turn_one_ent_high")
+          "kappa_turn_one_ent_zero", "kappa_turn_one_ent_high", "flat_init")
 # `kappa_turn_one_ent_zero` se declara el 2026-09-11, despues de agotar las cuatro sondas
 # originales y de MEDIR por que fallaron. No es una quinta prueba a ciegas: con kappa_turn=1 un
 # cambio de posicion cuesta 1,0 en unidades de reward mientras el neto economico por barra es
@@ -91,6 +91,12 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
             sessions, seed=seed, shuffle=True, kappa_turn=1.0)])
         norm = VecNormalize(vec, norm_obs=False, norm_reward=True, clip_reward=10.0,
                             gamma=kwargs["gamma"])
+    elif probe == "flat_init":
+        # Mismo entorno que `kappa_turn_one`; lo unico que cambia es donde arranca la politica.
+        vec = DummyVecEnv([lambda: SessionTradingEnv(
+            sessions, seed=seed, shuffle=True, kappa_turn=1.0)])
+        norm = VecNormalize(vec, norm_obs=False, norm_reward=True, clip_reward=10.0,
+                            gamma=kwargs["gamma"])
     elif probe == "norm_reward_off":
         norm.norm_reward = False
     elif probe != "baseline":
@@ -108,6 +114,23 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
         norm = restored
     model = (PPO.load(str(resume), env=norm, device="cpu") if resume is not None
              else PPO("MlpPolicy", norm, seed=seed, verbose=0, **kwargs))
+    if probe == "flat_init" and resume is None:
+        # Candidata ESTRUCTURAL, no un hiperparametro: se ataca la causa medida en vez de
+        # compensarla. Las siete recetas anteriores fallan porque la politica se compromete con
+        # una direccion antes de aprender la economia, y `kappa_turn` la encierra ahi al
+        # castigar el cambio y no la exposicion. Si el problema es donde empieza, se empieza en
+        # el sitio correcto: se sesga el sesgo de la capa de accion hacia el nivel de exposicion
+        # 0.0, de modo que la politica arranque practicamente plana y tenga que APRENDER a
+        # salir. No se congela nada -- es solo el punto de partida, y sobre una fixture sin
+        # senal la respuesta correcta es quedarse.
+        import torch
+        from src.research.session_env import EXPOSURE_LEVELS
+
+        flat_index = EXPOSURE_LEVELS.index(0.0)
+        with torch.no_grad():
+            bias = model.policy.action_net.bias
+            bias.zero_()
+            bias[flat_index] = 3.0        # ~95 % de masa inicial en "no operar"
     callback = None
     if checkpoint_dir is not None:
         from stable_baselines3.common.callbacks import CheckpointCallback
@@ -210,7 +233,8 @@ def main() -> int:
     parser.add_argument("--resume", type=Path,
                         help="reanuda un checkpoint de una sola semilla")
     parser.add_argument("--probe", choices=("baseline", "ent_coef_zero", "norm_reward_off",
-                                              "gamma_one", "kappa_turn_one", "kappa_turn_one_ent_zero", "kappa_turn_one_ent_high"), default="baseline")
+                                              "gamma_one", "kappa_turn_one", "kappa_turn_one_ent_zero", "kappa_turn_one_ent_high",
+                                              "flat_init"), default="baseline")
     parser.add_argument("--protocol", action="store_true",
                         help="ejecuta S1-S4 y detiene las sondas en la primera receta válida")
     parser.add_argument("--output", type=Path)

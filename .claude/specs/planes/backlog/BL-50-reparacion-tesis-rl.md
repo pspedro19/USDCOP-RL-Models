@@ -40,7 +40,7 @@ ejecución pasiva queda suspendida hasta tener un venue con libro de órdenes).
 |---|---|---|
 | 1. Fuentes y costos | `macro_availability.yaml` (regla de disponibilidad), `cost_contract.yaml` con unidad declarada, máscara v2 con reglas §6.3 y festivos de EE. UU., schema v2 (39 → 37 features) | HECHO |
 | 2. Entorno | Fuga macro cerrada, costo terminal en el reward y valorado en la barra 59, ventanas intra-sesión, identidad del dataset por sha256, tests HMM no tautológicos, specs parciales para el carril live | HECHO |
-| 3. Sanidad del optimizador | **CERRADA con veredicto**: siete recetas (4 pre-registradas + 3 derivadas de medir el mecanismo), ninguna pasa S1. La corrección tiene que ser estructural, no un ajuste | HECHO |
+| 3. Sanidad del optimizador | 7 recetas de hiperparámetros fallan; la 8ª, **estructural (`flat_init`), pasa en la semilla que peor iba**. Faltan 4 semillas para el veredicto | CASI |
 | 4. Reentreno sin fugas y juez forward | **BLOQUEADA por la compuerta de sanidad**, no por falta de tiempo: el v3 exige congelar una receta que pase S1 y no hay ninguna | BLOQUEADA |
 | 5. Corrigendum | Correcciones de §0-§7 con cifras de la evidencia | HECHO |
 | 6. Gobernanza | Brief de contabilidad redactado para el operador; ledger y registro sin tocar desde este carril | PARCIAL |
@@ -172,7 +172,24 @@ peores. El mecanismo medido es **compromiso temprano**: `κ_turn` castiga el *ca
 *exposición*, así que enseña «no te muevas» y encierra a la política donde la dejó su
 inicialización — volver a plano cuesta lo mismo que haber salido.
 
-**Veredicto: siete recetas, ninguna pasa.** El fallo es robusto a todo el espacio de
+**Primera candidata estructural ejecutada, resultado parcial.** Se implementó `flat_init`
+—sesgar el bias de la capa de acción hacia exposición 0, para que la política arranque plana y
+tenga que *aprender* a salir— y en la semilla 123, **la que peor iba**, da exposición **0,021**
+frente a 0,966 del baseline y 0,499 con `κ_turn`. **Pasa.** Es la primera de ocho recetas que
+lo consigue, y es coherente con el mecanismo: si el fallo era comprometerse antes de aprender,
+empezar en el sitio correcto lo elimina en vez de compensarlo.
+
+**Falta terminarlo**: 42, 456, 789 y 1337. Una semilla no abre la compuerta, que exige 4/5.
+Dos llamadas por semilla, ~10 min cada una:
+
+```bash
+for s in 42 456 789 1337; do
+  OMP_NUM_THREADS=1 python scripts/analysis/thesis_ppo_sanity.py --fixture S1 --seed $s       --probe flat_init --timesteps 60000 --checkpoint-dir outputs/thesis-repair/ckpt       --output outputs/thesis-repair/sanity/_f$s.json
+  OMP_NUM_THREADS=1 python scripts/analysis/thesis_ppo_sanity.py --fixture S1 --seed $s       --probe flat_init --timesteps 100000       --resume outputs/thesis-repair/ckpt/S1_flat_init_seed${s}_final.zip       --checkpoint-dir outputs/thesis-repair/ckpt       --output outputs/thesis-repair/sanity/S1fi_seed$s.json
+done
+```
+
+**Veredicto de las recetas de hiperparámetros: siete, ninguna pasa.** El fallo es robusto a todo el espacio de
 hiperparámetros declarado, así que la corrección tiene que ser **estructural**. Tres candidatas,
 ninguna ejecutada, cada una declarable como experimento propio: inicializar la política sesgada
 hacia flat; recocer `κ_turn` desde cero; o cambiar la parametrización de la acción a

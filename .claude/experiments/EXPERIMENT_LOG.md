@@ -625,6 +625,7 @@ descartada en cuanto acumula dos semillas que operan, porque ya no puede llegar 
 | `κ_turn = 1.0` | 1/3 | **0,052** · 0,499 · 0,580 | descartada |
 | `κ_turn = 1.0` + `ent_coef = 0` | 0/1 | 0,732 | descartada |
 | `κ_turn = 1.0` + `ent_coef = 0,05` | 0/1 | 0,927 | descartada |
+| **`flat_init`** (estructural) | **1/1** | **0,021** | **prometedora, incompleta** |
 
 **Ninguna receta del protocolo pasa S1.** Quitar el suelo de entropía o la normalización del
 reward lo empeora (de 0,53 a ~0,97): no eran la causa. La única que produjo una semilla plana
@@ -696,7 +697,24 @@ ejecutada y todas declarables como experimento propio:
    de modo que el costo penalice la exposición y no solo el cambio — que es la asimetría que
    crea la trampa.
 
-Mientras ninguna pase, **la Etapa 4 no se ejecuta**, y eso es el pre-registro funcionando.
+### Primera candidata estructural ejecutada: `flat_init` (resultado parcial)
+
+De las tres, se implementó y probó la primera: **sesgar el bias de la capa de acción hacia el
+nivel de exposición 0**, de modo que la política arranque prácticamente plana y tenga que
+*aprender* a salir. Entorno idéntico a `kappa_turn_one`; lo único que cambia es dónde empieza.
+
+| Semilla 123 | baseline | `κ_turn` | `κ_turn`+ent 0,05 | **`flat_init`** |
+|---|---:|---:|---:|---:|
+| Exposición | 0,966 | 0,499 | 0,927 | **0,021** |
+
+En la semilla que peor iba, **pasa**. Es la primera receta de ocho que lo consigue, y es
+coherente con el mecanismo medido: si el fallo era comprometerse antes de aprender, empezar en
+el sitio correcto lo elimina en vez de compensarlo.
+
+**INCOMPLETO y así se declara:** falta correr 42, 456, 789 y 1337. Una semilla no abre la
+compuerta, que exige 4/5. Hasta entonces **la Etapa 4 sigue sin ejecutarse**, y eso es el
+pre-registro funcionando. El comando para terminarlo está en
+[`BL-50`](../specs/planes/backlog/BL-50-reparacion-tesis-rl.md).
 
 **Reproducir.** `outputs/thesis-repair/sanity_S1_protocol.json` trae las cinco recetas con sus
 semillas, hash del runner y commit base.
