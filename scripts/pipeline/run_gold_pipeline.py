@@ -32,6 +32,7 @@ except ModuleNotFoundError:  # Airflow container without services/ mount
 from src.gold_rl import backtest as bt
 from src.gold_rl import strategies as st
 from src.gold_rl.indicators import build_daily_features, classify_regime, regime_transitions_per_year
+from src.gold_rl.cost_contract import require_executable_gold_contract
 
 PUBLIC_DATA = REPO / "usdcop-trading-dashboard" / "public" / "data"
 
@@ -176,6 +177,11 @@ def main() -> int:
     if a.no_publish:
         print("\n[publish] skipped (--no-publish)")
         return 0
+
+    # Historical performance may be inspected diagnostically without a venue,
+    # but publication would imply executable profitability. Fail closed until
+    # bid/ask, fills, tick, multiplier and swaps are verified in the SSOT.
+    require_executable_gold_contract()
 
     sm = _load_publisher()
     pub = sm.BundlePublisher(PUBLIC_DATA, generated_at=str(pd.Timestamp.utcnow().isoformat()))

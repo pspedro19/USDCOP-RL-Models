@@ -1,0 +1,26 @@
+contract: CTR-RESEARCH-XAUUSD-COST-001
+version: 1
+status: PENDING_VENUE
+instrument:
+  symbol: XAU/USD
+  venue: null
+  asset_type: unresolved
+  price_unit: USD_per_troy_ounce
+  tick_size: null
+  contract_multiplier: null
+costs:
+  spread: null
+  commission: null
+  slippage: null
+  swap_long_annual: null
+  swap_short_annual: null
+  triple_swap_weekday: null
+observability:
+  bid_ask_history: false
+  fills_history: false
+  source: null
+  measured_from: null
+  measured_to: null
+policy: >-
+  No se puede publicar ni reclamar rentabilidad de XAU/USD hasta que todos los
+  campos instrumentales y de coste estén verificados por un venue concreto.
