@@ -180,7 +180,14 @@ lo consigue, y es coherente con el mecanismo: si el fallo era comprometerse ante
 empezar en el sitio correcto lo elimina en vez de compensarlo.
 
 **Falta terminarlo**: 42, 456, 789 y 1337. Una semilla no abre la compuerta, que exige 4/5.
-Dos llamadas por semilla, ~10 min cada una:
+Hay un solo comando que lo cierra, salta lo ya hecho y agrega el veredicto en la evidencia:
+
+```bash
+python scripts/analysis/finish_sanity_gate.py     # ~50 min, 0 trials de mercado
+```
+
+Entrena por tramos para que cada llamada quepa en el entorno, y si algo lo corta basta
+relanzarlo. Por debajo son estas dos llamadas por semilla:
 
 ```bash
 for s in 42 456 789 1337; do
