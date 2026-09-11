@@ -432,8 +432,65 @@ def _write_seed(df: pd.DataFrame, rel_path: str | None) -> None:
         return
     path = REPO / rel_path
     path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(path, index=False)
-    log.info("  seed -> %s (%d rows)", rel_path, len(df))
+    merged = _merge_into_existing_seed(df, path)
+    merged.to_parquet(path, index=False)
+    log.info("  seed -> %s (%d rows)", rel_path, len(merged))
+
+
+def _merge_into_existing_seed(fresh: pd.DataFrame, path: Path) -> pd.DataFrame:
+    """UPSERT por `(time, symbol)` contra el seed existente. Nunca escritura plana.
+
+    `data-governance.md` lo exige para todo ingest ("Siempre UPSERT por `(time, symbol)`,
+    nunca INSERT plano") y el seed es precisamente el fallback de restore, asi que la
+    invariante aplica aqui con mas fuerza, no con menos.
+
+    Esto era un `to_parquet` directo. Para Gold y BTC no se notaba: son activos recien
+    incorporados cuya historia entra completa en la ventana que devuelve el proveedor. Para
+    USD/COP, cuyo seed guarda desde 2019-12 y cuya API solo devuelve unas semanas por
+    llamada, el comando documentado
+
+        python scripts/data/ingest_asset_ohlcv.py --asset usdcop --no-db
+
+    reemplazaba 99.714 filas por las 4.533 de la ventana fresca y borraba seis anos de
+    historia -- despues de que el gate de calidad diera PASS, porque el gate valida lo que
+    llega, no lo que se pierde. Medido el 2026-09-11.
+
+    El conteo no puede bajar: una ventana fresca solo puede anadir barras o corregir las que
+    ya estaban. Si baja, algo va mal aguas arriba y se prefiere fallar a escribir.
+    """
+    if not path.is_file():
+        return fresh
+    try:
+        previous = pd.read_parquet(path)
+    except Exception as exc:  # un seed ilegible no autoriza a sobrescribirlo
+        raise RuntimeError(
+            f"no se pudo leer el seed existente {path}: {type(exc).__name__}: {exc}. "
+            "Se aborta antes de escribir: sobrescribir un seed que no se pudo leer es "
+            "indistinguible de perderlo."
+        ) from exc
+
+    keys = [k for k in ("time", "symbol") if k in fresh.columns and k in previous.columns]
+    if not keys:
+        raise RuntimeError(
+            f"el seed {path} y las barras nuevas no comparten clave (time, symbol); "
+            "sin clave no hay UPSERT posible y no se sobrescribe."
+        )
+
+    # Las barras frescas ganan el conflicto: son la correccion, no el historico.
+    combined = pd.concat([previous, fresh], ignore_index=True)
+    combined = combined.drop_duplicates(subset=keys, keep="last")
+    combined = combined.sort_values(keys).reset_index(drop=True)
+
+    if len(combined) < len(previous):
+        raise RuntimeError(
+            f"el merge dejaria el seed {path} con {len(combined)} filas frente a "
+            f"{len(previous)} previas. Una ventana fresca solo puede anadir o corregir, "
+            "nunca reducir. Se aborta sin escribir."
+        )
+    added = len(combined) - len(previous)
+    log.info("  seed merge: %d previas + %d frescas -> %d (%d nuevas)",
+             len(previous), len(fresh), len(combined), added)
+    return combined
 
 
 def _write_seed_manifest(df: pd.DataFrame, rel_path: str, *, provider: str,
