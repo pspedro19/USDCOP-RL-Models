@@ -142,6 +142,6 @@ Este árbol es documentación de acompañamiento, más narrativa y de proceso.
 | [PROJECT_DEFINITION.md — GlobalMinds](PROJECT_DEFINITION.md) | — |
 | [Remediación de fuga de .env — 2026-07-09](SECURITY-env-leak-remediation.md) | — |
 
-**Subdirectorios:** [`adr/`](adr/README.md) · [`analysis/`](analysis/TRAINING_LINEAGE.md) · [`architecture/`](architecture/README.md) · [`guides/`](guides/README.md) · [`legal/`](legal/SFC-GATE-CHECKLIST.md) · [`model_cards/`](model_cards/README.md) · [`operations/`](operations/README.md) · [`rbac/`](rbac/README.md) · [`runbooks/`](runbooks/README.md) · [`slides/`](slides/README.md) · [`templates/`](templates/README.md) · [`utils/`](utils/README_BACKUP_UTILITIES.md)
+**Subdirectorios:** [`adr/`](adr/README.md) · [`analysis/`](analysis/README.md) · [`architecture/`](architecture/README.md) · [`guides/`](guides/README.md) · [`legal/`](legal/SFC-GATE-CHECKLIST.md) · [`model_cards/`](model_cards/README.md) · [`operations/`](operations/README.md) · [`rbac/`](rbac/README.md) · [`runbooks/`](runbooks/README.md) · [`slides/`](slides/README.md) · [`templates/`](templates/README.md) · [`utils/`](utils/README_BACKUP_UTILITIES.md)
 
 <!-- /idx -->
