@@ -22,6 +22,7 @@ artefacto que la borre es peor que no tenerlo.
 
 Uso:
     python scripts/data/build_research_macro.py [--out-dir DIR]
+    python scripts/data/build_research_macro.py --allow-unverified  # solo diagnóstico
 """
 from __future__ import annotations
 
@@ -64,6 +65,10 @@ def main() -> int:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT)
+    parser.add_argument(
+        "--allow-unverified", action="store_true",
+        help="escribe un artefacto parcial para diagnóstico; nunca usarlo para entrenar",
+    )
     args = parser.parse_args()
 
     if not (AVAILABILITY.is_file() and CLEAN.is_file()):
@@ -104,6 +109,16 @@ def main() -> int:
                 "first": str(series.index.min().date()), "last": str(series.index.max().date()),
             }
 
+    unverified = [name for name, prov in provenance.items()
+                  if not prov.get("source_verified", False)]
+    if unverified and not args.allow_unverified:
+        print(
+            "ABORTA: fuentes no verificadas " + ", ".join(sorted(unverified))
+            + ". Use --allow-unverified solo para diagnóstico; no se escribe ningún artefacto.",
+            file=sys.stderr,
+        )
+        return 2
+
     frame = pd.DataFrame(columns).sort_index()
     frame.index.name = "fecha"
     args.out_dir.mkdir(parents=True, exist_ok=True)
@@ -121,6 +136,7 @@ def main() -> int:
         "series": provenance,
         "series_verified_against_declared_source": sorted(verified),
         "all_series_verified": len(verified) == len(provenance),
+        "write_mode": "diagnostic_partial" if unverified else "strict_verified",
         "note": ("Artefacto SEPARADO a proposito: MACRO_DAILY_CLEAN no se parchea. Las series "
                  "no verificadas se copian y se marcan, nunca se presentan como correctas."),
     }
