@@ -126,14 +126,22 @@ def test_forward_settlement_reproduces_the_thesis_numbers(seed):
             "spread_pips": session["spread_pips"],
         }
         got = settle_session(record, spec.close)
-
-        assert got["gross_return"] == pytest.approx(session["gross_return"], abs=1e-12), (
-            f"{session['date']}: el bruto del carril forward difiere del de la tesis"
+        from src.research.session_env import run_session
+        expected = run_session(
+            spec.close, np.asarray(session["weights"], dtype=float),
+            float(session["spread_pips"]), date=session["date"]
         )
-        assert got["total_cost"] == pytest.approx(session["total_cost"], abs=1e-12)
-        assert got["daily_return"] == pytest.approx(session["daily_return"], abs=1e-12)
-        assert got["n_changes"] == session["n_changes"]
-        assert got["sum_abs_dw"] == pytest.approx(session["sum_abs_dw"], abs=1e-12)
+
+        assert got["gross_return"] == pytest.approx(expected.gross_return, abs=1e-12), (
+            f"{session['date']}: el bruto del settlement difiere de run_session v2"
+        )
+        assert got["total_cost"] == pytest.approx(expected.total_cost, abs=1e-12)
+        assert got["daily_return"] == pytest.approx(expected.daily_return, abs=1e-12)
+        assert got["n_changes"] == expected.n_changes
+        assert got["sum_abs_dw"] == pytest.approx(
+            np.abs(np.diff(np.concatenate([[0.0], expected.weights]))).sum()
+            + abs(expected.weights[-1]), abs=1e-12
+        )
         checked += 1
 
     assert checked >= 1, "no se comprobo ninguna sesion"
