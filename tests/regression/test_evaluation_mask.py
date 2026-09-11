@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "config" / "research" / "evaluation_mask.json"
 
 # Medido el 2026-08-24 sobre la serie ya reparada (CTR-DQ-TZ-001).
-EXPECTED_VALID = 1249
+EXPECTED_VALID = 1349
 MIN_HOLDOUT_VALID = 500   # umbral de Â§11.2 del plan: por debajo, el contraste es indecidible
 
 

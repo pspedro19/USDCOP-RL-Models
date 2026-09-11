@@ -102,6 +102,10 @@ class EvaluationMask:
     excluded: dict[str, tuple[date, ...]] = field(default_factory=dict)
     source: str = ""
     flat_ohlc_pct: dict[date, float] = field(default_factory=dict)
+    # Outlier suspicion is a training-quality flag, not an outcome-based
+    # deletion from the common evaluation universe.  `train_valid` is the
+    # conservative subset used for fitting; `valid` remains the shared judge.
+    train_valid: tuple[date, ...] = ()
 
     @property
     def sha256(self) -> str:
@@ -125,6 +129,10 @@ class EvaluationMask:
             "sha256": self.sha256,
             "first": self.valid[0].isoformat() if self.valid else None,
             "last": self.valid[-1].isoformat() if self.valid else None,
+            "n_train_valid": len(self.train_valid),
+            "train_valid_sha256": hashlib.sha256(
+                "\n".join(d.isoformat() for d in self.train_valid).encode()
+            ).hexdigest(),
             "excluded": {k: [d.isoformat() for d in v] for k, v in self.excluded.items()},
             "excluded_counts": {k: len(v) for k, v in self.excluded.items()},
             "flat_ohlc_pct": {d.isoformat(): float(v) for d, v in self.flat_ohlc_pct.items()},
@@ -214,6 +222,7 @@ def build_mask(seed: Path | None = None) -> EvaluationMask:
                                        "weekend": [], "out_of_window": [],
                                        "invalid_ohlc": [], "outlier_suspect": []}
     valid: list[date] = []
+    train_valid: list[date] = []
 
     for day, row in per_day.iterrows():
         if day.weekday() >= 5:
@@ -228,18 +237,23 @@ def build_mask(seed: Path | None = None) -> EvaluationMask:
             excluded["out_of_window"].append(day)
         elif day in invalid_days:
             excluded["invalid_ohlc"].append(day)
-        elif day in outlier_days:
-            excluded["outlier_suspect"].append(day)
         elif row.n < BARS_PER_SESSION:
             excluded["incomplete"].append(day)
         else:
             valid.append(day)
+            if day in outlier_days:
+                # Keep it in the shared evaluation universe, but never fit a
+                # scaler/HMM on the suspicious session.
+                excluded["outlier_suspect"].append(day)
+            else:
+                train_valid.append(day)
 
     return EvaluationMask(
         valid=tuple(sorted(valid)),
         excluded={k: tuple(sorted(v)) for k, v in excluded.items() if v},
         source=path.relative_to(REPO).as_posix(),
         flat_ohlc_pct={d: float(flat_by_day.get(d, 0.0)) for d in per_day.index},
+        train_valid=tuple(sorted(train_valid)),
     )
 
 
