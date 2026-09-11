@@ -625,7 +625,7 @@ descartada en cuanto acumula dos semillas que operan, porque ya no puede llegar 
 | `κ_turn = 1.0` | 1/3 | **0,052** · 0,499 · 0,580 | descartada |
 | `κ_turn = 1.0` + `ent_coef = 0` | 0/1 | 0,732 | descartada |
 | `κ_turn = 1.0` + `ent_coef = 0,05` | 0/1 | 0,927 | descartada |
-| **`flat_init`** (estructural) | **1/1** | **0,021** | **prometedora, incompleta** |
+| **`flat_init`** (estructural) | **5/5** | 0,019 · 0,021 · 0,041 · 0,018 · 0,014 | **PASA S1** |
 
 **Ninguna receta del protocolo pasa S1.** Quitar el suelo de entropía o la normalización del
 reward lo empeora (de 0,53 a ~0,97): no eran la causa. La única que produjo una semilla plana
@@ -711,10 +711,28 @@ En la semilla que peor iba, **pasa**. Es la primera receta de ocho que lo consig
 coherente con el mecanismo medido: si el fallo era comprometerse antes de aprender, empezar en
 el sitio correcto lo elimina en vez de compensarlo.
 
-**INCOMPLETO y así se declara:** falta correr 42, 456, 789 y 1337. Una semilla no abre la
-compuerta, que exige 4/5. Hasta entonces **la Etapa 4 sigue sin ejecutarse**, y eso es el
-pre-registro funcionando. El comando para terminarlo está en
-[`BL-50`](../specs/planes/backlog/BL-50-reparacion-tesis-rl.md).
+**COMPLETADO el mismo día: 5/5 semillas planas. S1 PASA.**
+
+| Semilla | 42 | 123 | 456 | 789 | 1337 |
+|---|---:|---:|---:|---:|---:|
+| baseline | 0,527 | 0,966 | 0,485 | 0,985 | 0,968 |
+| **`flat_init`** | **0,019** | **0,021** | **0,041** | **0,018** | **0,014** |
+
+Las cinco por debajo de 0,1, la regla exigía cuatro. **La compuerta de sanidad S1 queda
+abierta**, y es la primera receta de ocho que lo consigue.
+
+**Lo que esto establece, y lo que no.** Establece que el fallo era **de arranque, no de
+capacidad**: la misma red, el mismo entorno, el mismo presupuesto y los mismos
+hiperparámetros encuentran la política óptima en cuanto se les deja empezar en el sitio
+correcto. Siete recetas de hiperparámetros habían fallado sobre exactamente el mismo problema.
+
+**No** establece que la receta sirva para el mercado: S1 solo prueba que no opera sobre ruido.
+Faltan **S2** (¿aprende una señal plantada?), **S3** (¿opera cuando el alfa supera el costo?) y
+**S4** (¿se abstiene cuando no lo supera?). Una receta que se queda quieta siempre pasaría S1 y
+S4 y fracasaría en S2 y S3, así que sin ellas no hay receta que congelar.
+
+Evidencia: `outputs/thesis-repair/sanity_S1_protocol.json`. Siguiente paso:
+`python scripts/analysis/thesis_ppo_sanity.py --fixture S2 --probe flat_init --timesteps 100000`
 
 **Reproducir.** `outputs/thesis-repair/sanity_S1_protocol.json` trae las cinco recetas con sus
 semillas, hash del runner y commit base.

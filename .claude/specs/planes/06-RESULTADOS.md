@@ -137,6 +137,14 @@ mercado.
 > plano: es una propiedad del entorno, no un defecto del optimizador, y explica por qué las
 > corridas de mercado mantienen posición en vez de rotar.
 >
+> **Y la corrección funciona (2026-09-11).** Una candidata **estructural** —sesgar el arranque
+> de la política hacia no operar, para que tenga que *aprender* a salir— pasa S1 con **5/5
+> semillas planas**: 0,019 · 0,021 · 0,041 · 0,018 · 0,014, frente a 0,527 · 0,966 · 0,485 ·
+> 0,985 · 0,968 del baseline. Misma red, mismo entorno, mismo presupuesto, mismos
+> hiperparámetros. **El fallo era de arranque, no de capacidad**, y eso refuerza el punto: lo
+> que la tesis midió sobre USD/COP describe a una receta que ni siquiera resolvía el caso
+> trivial, no a una imposibilidad del activo.
+>
 > Se probaron además las cuatro sondas pre-registradas, una variable cada una: `ent_coef = 0`
 > (0,958 · 0,965), `norm_reward = False` (0,976 · 0,963), `γ = 1.0` (0,603 · 0,618) y
 > `κ_turn = 1.0` (**0,052** · 0,499 · 0,580). **Ninguna pasa.** Quitar la entropía o la
