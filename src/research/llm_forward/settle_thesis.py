@@ -114,7 +114,7 @@ def run(closes_by_session, min_bars: int = MIN_BARS) -> int:
         decision_id = record["decision_id"]
         if decision_id in already:
             continue
-        if not record["sealed_before_open"]:
+        if not record.get("sealed_before_next_bar", record["sealed_before_open"]):
             print(f"  [excluida] {decision_id}: no se sello antes de la apertura")
             continue
         if record["abstained"]:

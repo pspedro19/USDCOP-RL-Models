@@ -106,6 +106,12 @@ class DecisionRecord:
     # LLM no. Los dos sellan antes de que exista r_1, pero no con la misma informacion.
     information_edge: str | None = None
 
+    # Campos aditivos para brazos que sellan por barra. Los registros históricos no los
+    # llevan; lectores deben hacer fallback a ``sealed_before_open``.
+    sealed_before_next_bar: bool | None = None
+    bar_index: int | None = None
+    bar_received_at_utc: str | None = None
+
     prev_hash: str = ""
     record_hash: str = ""
 

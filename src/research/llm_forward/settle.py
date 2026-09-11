@@ -61,7 +61,7 @@ def run(price_csv: Path, min_bars: int = 10) -> int:
 
         if decision_id in already_settled:
             continue
-        if not record["sealed_before_open"]:
+        if not record.get("sealed_before_next_bar", record["sealed_before_open"]):
             print(f"  [skip] {decision_id}: not sealed before open")
             continue
         if record["abstained"]:

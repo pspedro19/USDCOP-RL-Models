@@ -47,7 +47,7 @@ REPO = Path(__file__).resolve().parents[4]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from src.research.live_spec import build_live_spec  # noqa: E402
+from src.research.live_spec import (build_live_spec, build_live_spec_partial)  # noqa: E402
 from src.research.llm_forward.canonical import sha256_text  # noqa: E402
 from src.research.llm_forward.decide import arm_spec, load_preregistration  # noqa: E402
 from src.research.llm_forward.ledger import Ledger, LedgerError  # noqa: E402
@@ -55,7 +55,8 @@ from src.research.llm_forward.paths import DECISIONS_PATH, PREREG_PATH  # noqa: 
 from src.research.llm_forward.schema import (Decision, DecisionRecord,  # noqa: E402
                                              utc_now_iso)
 from src.research.session_env import EXPOSURE_LEVELS, OPERABLE_RETURNS  # noqa: E402
-from src.research.session_gym import SessionTradingEnv  # noqa: E402
+from src.research.session_gym import SessionTradingEnv, position_state  # noqa: E402
+from src.research.dataset import SEED_M5  # noqa: E402
 
 MODELS_DIR = REPO / "data" / "thesis" / "ppo"
 
@@ -89,6 +90,17 @@ def decide_weights(spec, model_path: Path, hold_all_session: bool) -> np.ndarray
     return np.asarray(weights, dtype=float)
 
 
+def decide_first_weight(partial, model_path: Path) -> float:
+    """Primera decisión usando exclusivamente la barra 0 ya cerrada."""
+    from stable_baselines3 import PPO
+
+    model = PPO.load(str(model_path), device="cpu")
+    obs = np.concatenate([partial.market[0], position_state(0.0, 0, 0.0, 0.0, 0),
+                          partial.context]).astype(np.float32)
+    action, _ = model.predict(obs, deterministic=True)
+    return float(EXPOSURE_LEVELS[int(action)])
+
+
 def run(session_date: str, arm_id: str = "ppo_regime_fwd_k59",
         now_override: datetime | None = None, dry_run: bool = False) -> int:
     """Sella la decisión del brazo RL para una sesión."""
@@ -101,9 +113,22 @@ def run(session_date: str, arm_id: str = "ppo_regime_fwd_k59",
     if not model_path.is_file():
         raise FileNotFoundError(f"falta el modelo congelado {model_path}")
 
-    session_spec = build_live_spec(session_date)
     hold = int(arm["decisions_per_session"]) == 1
-    weights = decide_weights(session_spec, model_path, hold_all_session=hold)
+    if hold:
+        # k59 is the only arm eligible to seal on the first bar. The native 59-decision
+        # arm remains legacy/excluded until per-bar state persistence is implemented.
+        m5 = __import__("pandas").read_parquet(SEED_M5)
+        t = __import__("pandas").to_datetime(m5["time"])
+        first = m5[t.dt.date == __import__("pandas").Timestamp(session_date).date()].head(1)
+        partial = build_live_spec_partial(session_date, first)
+        session_spec = build_live_spec(session_date)
+        w = decide_first_weight(partial, model_path)
+        weights = np.full(OPERABLE_RETURNS, w)
+        partial_sealed = True
+    else:
+        session_spec = build_live_spec(session_date)
+        weights = decide_weights(session_spec, model_path, hold_all_session=False)
+        partial_sealed = False
 
     w0 = float(weights[0])
     n_changes = int(np.count_nonzero(np.diff(np.concatenate([[0.0], weights]))))
@@ -124,7 +149,7 @@ def run(session_date: str, arm_id: str = "ppo_regime_fwd_k59",
         emitted_at_utc=utc_now_iso(),
         cutoff_utc=now.isoformat(timespec="seconds"),
         session_open_utc=now.isoformat(timespec="seconds"),
-        sealed_before_open=True,
+        sealed_before_open=False,
         preregistration_sha256=prereg_hash,
         # No hay prompt: se hashea la senda de exposicion, que es el analogo — el objeto que
         # define la decision y que tiene que quedar sellado antes del resultado.
@@ -152,6 +177,9 @@ def run(session_date: str, arm_id: str = "ppo_regime_fwd_k59",
             "ve la barra 0 de la sesion para construir su observacion; el brazo LLM no. "
             "Los dos sellan antes de que exista r_1."
         ),
+        sealed_before_next_bar=partial_sealed,
+        bar_index=0 if partial_sealed else None,
+        bar_received_at_utc=now.isoformat(timespec="seconds") if partial_sealed else None,
     )
 
     ledger = Ledger(DECISIONS_PATH, key_field="decision_id")

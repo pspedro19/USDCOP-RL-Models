@@ -33,11 +33,12 @@ def main() -> int:
 
     # Operational summary. The counts that matter for the thesis are not the
     # scores but the denominators: how many sessions are actually usable.
-    late = sum(1 for r in rows if not r["sealed_before_open"])
+    sealed = lambda r: r.get("sealed_before_next_bar", r["sealed_before_open"]) is True
+    late = sum(1 for r in rows if not sealed(r))
     abstained = sum(1 for r in rows if r["abstained"])
     # Count the property we want, not len minus exclusions: a record can be
     # both late and abstained, and subtracting both double-counts it.
-    usable = sum(1 for r in rows if r["sealed_before_open"] and not r["abstained"])
+    usable = sum(1 for r in rows if sealed(r) and not r["abstained"])
     cost = sum((r["usage"] or {}).get("cost_usd", 0.0) for r in rows)
     docs = sum(len(r["corpus"]) for r in rows)
 
