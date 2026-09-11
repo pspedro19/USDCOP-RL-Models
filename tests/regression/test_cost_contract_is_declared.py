@@ -13,7 +13,7 @@ def test_cost_contract_declares_unit_source_and_three_scenarios() -> None:
     raw = yaml.safe_load(CONTRACT_PATH.read_text(encoding="utf-8"))
     assert raw["unit"] == "cop_per_usd"
     assert raw["market_tick_cop"] == 0.01
-    assert raw["observability"] == "implicit_bounds"
+    assert raw["observability"] == "implicit_estimate"
     assert set(raw["scenarios"]) == {"low", "central", "high"}
     assert all(len(values) == 3 for values in raw["scenarios"].values())
     assert "TwelveData" in raw["source"]

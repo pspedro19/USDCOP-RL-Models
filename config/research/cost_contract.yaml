@@ -10,4 +10,6 @@ scenarios:
   central: [2.0, 3.0, 6.0]
   high: [10.0, 20.0, 50.0]
 regime_order: [calm, intermediate, shock]
-observability: implicit_bounds
+# TwelveData no entrega bid/ask histórico en este flujo. Son escenarios
+# implícitos/estimadores, no cotas matemáticas del spread ejecutable.
+observability: implicit_estimate
