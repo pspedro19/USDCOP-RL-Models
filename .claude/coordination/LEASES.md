@@ -10,6 +10,7 @@
 - src/research/cost_model.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:05:00-05:00
 - tests/regression/test_session_env_and_costs.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:05:00-05:00
 - tests/regression/test_engine_parity_independent.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:05:00-05:00
+- src/research/dataset.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:05:00-05:00
 # (CODEX 2026-09-10T20:30:00-05:00) RELEASE EXP-TESIS-REPAIR-01: cambios focales
 # verificados; revisión cruzada pendiente. No se liberan artefactos no incluidos.
 # formato: - <ruta> | <CLAUDE|CODEX> | <instance_id> | expira <ISO>

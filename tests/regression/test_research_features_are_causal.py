@@ -229,3 +229,14 @@ def test_macro_artifact_missing_fails_closed(monkeypatch, tmp_path):
     monkeypatch.setattr(features_module, "MACRO_CLEAN", tmp_path / "missing.parquet")
     with pytest.raises(FileNotFoundError):
         features_module.attach_macro_features([pd.Timestamp("2023-06-15")])
+
+
+def test_dataset_close_cache_is_invalidated_when_input_changes():
+    """La cache de cierres no puede servir datos de otro parquet en el mismo proceso."""
+    import src.research.dataset as dataset_module
+
+    first = synthetic_m5(n_sessions=1, seed=31)
+    second = first.copy()
+    second.loc[second.index[-1], "close"] += 17.0
+    day = pd.Timestamp(first["time"].iloc[0]).date()
+    assert dataset_module._closes(first, day)[-1] != dataset_module._closes(second, day)[-1]

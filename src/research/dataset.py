@@ -34,6 +34,7 @@ posterior filtrado. No se inventan: se **descartan**, y el conteo descartado se 
 
 from __future__ import annotations
 
+import hashlib
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -182,12 +183,26 @@ def build_research_data(m5: pd.DataFrame | None = None, min_context: int = 60,
                         regime_model=model, dropped=dropped)
 
 
+_CLOSE_CACHE_KEY: tuple | None = None
 _CLOSE_CACHE: dict = {}
+
+
+def _close_cache_key(m5: pd.DataFrame) -> tuple:
+    """Identity of the price input; never reuse closes from another dataframe."""
+    t = pd.to_datetime(m5["time"])
+    values = pd.util.hash_pandas_object(
+        pd.DataFrame({"time": t, "close": m5["close"]}), index=False
+    ).to_numpy(dtype="uint64", copy=False)
+    return len(m5), int(values.sum(dtype="uint64")), int(values[-1]) if len(values) else 0
 
 
 def _closes(m5: pd.DataFrame, d) -> np.ndarray:
     """Cierres de la sesión `d`, cacheados: se piden una vez por sesión y bloque."""
-    if not _CLOSE_CACHE:
+    global _CLOSE_CACHE_KEY, _CLOSE_CACHE
+    cache_key = _close_cache_key(m5)
+    if cache_key != _CLOSE_CACHE_KEY:
+        _CLOSE_CACHE_KEY = cache_key
+        _CLOSE_CACHE = {}
         t = pd.to_datetime(m5["time"])
         df = m5.assign(_t=t, _d=t.dt.date).sort_values("_t")
         if "symbol" in df.columns:
@@ -221,7 +236,21 @@ def load_or_build(rebuild: bool = False, verbose: bool = True) -> ResearchData:
     from src.research.evaluation_mask import build_mask as _bm
     from src.research.features import SCHEMA as _S
 
-    key = {"mask": _bm().sha256[:16], "schema": _S.sha256[:16]}
+    def digest(path: Path) -> str:
+        h = hashlib.sha256()
+        with path.open("rb") as fh:
+            for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+                h.update(chunk)
+        return h.hexdigest()
+
+    # Names alone are insufficient: a corrected macro parquet or partition with the
+    # same schema must invalidate the cache as well.
+    inputs = {
+        "seed_m5": digest(SEED_M5),
+        "macro": digest(attach_macro_features.__globals__["MACRO_CLEAN"]),
+        "partition": digest(PARTITION),
+    }
+    key = {"mask": _bm().sha256, "schema": _S.sha256, "inputs": inputs}
     if CACHE.is_file() and not rebuild:
         with CACHE.open("rb") as fh:
             blob = pickle.load(fh)
