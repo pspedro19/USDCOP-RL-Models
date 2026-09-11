@@ -64,7 +64,8 @@ def safe_merge_macro(
     df_ohlcv: pd.DataFrame,
     df_macro: pd.DataFrame,
     datetime_col: str = 'datetime',
-    track_source: bool = True
+    track_source: bool = True,
+    allow_exact_matches: bool = False,
 ) -> pd.DataFrame:
     """
     Merge macro data SIN data leakage.
@@ -79,6 +80,10 @@ def safe_merge_macro(
         df_macro: Macro data con datetime column
         datetime_col: Nombre de la columna datetime
         track_source: Si True, agrega columna macro_source_date para auditoria
+        allow_exact_matches: Permite una observación con el mismo timestamp que
+                              la decisión. Por defecto es False: ``datetime``
+                              representa disponibilidad y una publicación exacta
+                              aún no está disponible al inicio de la barra.
 
     Returns:
         DataFrame merged sin data leakage
@@ -115,8 +120,9 @@ def safe_merge_macro(
         df_ohlcv.sort_values(datetime_col),
         df_macro_daily.sort_values(datetime_col),
         on=datetime_col,
-        direction='backward'
-        # NO tolerance - strict temporal ordering
+        direction='backward',
+        allow_exact_matches=allow_exact_matches,
+        # NO tolerance - freshness se controla por la política de la serie.
     )
 
     # Validar no hay future data

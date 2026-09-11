@@ -111,6 +111,15 @@ class TestSafeMergeMacro:
 
         assert 'macro_source_date' in result.columns
 
+    def test_merge_rejects_exact_publication_timestamp_by_default(self):
+        ts = pd.Timestamp("2026-01-10 13:00")
+        ohlcv = pd.DataFrame({'datetime': [ts], 'close': [4250.0]})
+        macro = pd.DataFrame({'datetime': [ts], 'dxy': [105.0]})
+        result = safe_merge_macro(ohlcv, macro)
+        assert pd.isna(result['dxy'].iloc[0])
+        allowed = safe_merge_macro(ohlcv, macro, allow_exact_matches=True)
+        assert allowed['dxy'].iloc[0] == pytest.approx(105.0)
+
     def test_merge_detects_future_data(self):
         """safe_merge_macro DEBE detectar data leakage."""
         # Crear datos donde macro es del futuro
