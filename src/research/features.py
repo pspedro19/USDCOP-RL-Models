@@ -242,8 +242,17 @@ def build_market_features(m5: pd.DataFrame, valid_sessions=None) -> pd.DataFrame
 
     # --- volatilidad y rango ---------------------------------------------
     r1 = logc.groupby(session_group).diff(1).fillna(0.0)
-    out["rv_12"] = r1.rolling(12, min_periods=2).std()
-    out["rv_78"] = r1.rolling(78, min_periods=10).std()
+    # Volatilidad estrictamente intrasesión: un rolling global contaminaría
+    # las primeras barras de cada día con retornos de la sesión anterior,
+    # aunque el overnight se haya convertido en cero en ``r1``.
+    def _session_rolling_std(window: int, min_periods: int) -> pd.Series:
+        return (r1.groupby(session_group, sort=False)
+                .rolling(window, min_periods=min_periods).std()
+                .reset_index(level=0, drop=True)
+                .reindex(r1.index))
+
+    out["rv_12"] = _session_rolling_std(12, 2)
+    out["rv_78"] = _session_rolling_std(78, 10)
     out["rv_ratio"] = out["rv_12"] / out["rv_78"].replace(0.0, np.nan)
     atr14 = wilder_atr(h, l, c, period=14)
     out["atr_14"] = atr14

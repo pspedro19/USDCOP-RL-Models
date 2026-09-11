@@ -287,3 +287,19 @@ def test_intra_session_returns_exclude_overnight_gap():
     assert changed.loc[b0, "rv_12"].iloc[0] == pytest.approx(
         original.loc[b0, "rv_12"].iloc[0]
     )
+
+
+def test_intraday_volatility_window_does_not_import_prior_session_returns():
+    base = synthetic_m5(n_sessions=3, seed=23)
+    dates = pd.to_datetime(base["time"]).dt.date.unique()
+    original = build_market_features(base)
+    altered = base.copy()
+    prior = pd.to_datetime(altered["time"]).dt.date == dates[0]
+    altered.loc[prior, ["open", "high", "low", "close"]] *= 3.0
+    changed = build_market_features(altered)
+    next_session = changed.index.date == dates[1]
+    # All of the first 12 bars must be identical: no prior-session return can
+    # enter an intraday volatility window.
+    assert changed.loc[next_session, "rv_12"].iloc[:12].to_numpy() == pytest.approx(
+        original.loc[next_session, "rv_12"].iloc[:12].to_numpy(), nan_ok=True
+    )
