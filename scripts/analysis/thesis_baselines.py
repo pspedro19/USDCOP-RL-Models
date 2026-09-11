@@ -64,7 +64,7 @@ from src.research.regime_hmm import (  # noqa: E402
     build_regime_observations, fit_frozen, spread_series)
 from src.research.session_env import (  # noqa: E402
     BARS_PER_SESSION, constant_policy, daily_series, equity_curve, random_policy,
-    run_policy)
+    run_policy, run_session)
 
 PARTITION = ROOT / "config" / "research" / "partition.yaml"
 SEED = ROOT / "seeds" / "latest" / "usdcop_m5_ohlcv.parquet"
@@ -140,6 +140,45 @@ def summarize(name: str, results, ann: float, costs_arr=None) -> dict:
         "calmar": round(ann_ret / abs(mdd), 3) if mdd else None,
     })
     return row
+
+
+def momentum_policy(close: np.ndarray) -> np.ndarray:
+    """Regla fija de momentum: signo del retorno de las últimas 3 barras."""
+    c = np.asarray(close, dtype=float)
+    out = np.zeros(59, dtype=float)
+    for b in range(59):
+        if b >= 3:
+            out[b] = np.sign(c[b] / c[b - 3] - 1.0)
+    return np.clip(out, -1.0, 1.0)
+
+
+def mean_reversion_policy(close: np.ndarray) -> np.ndarray:
+    """Regla fija MR: posición contraria al z-score de una ventana de 12 barras."""
+    c = np.asarray(close, dtype=float)
+    out = np.zeros(59, dtype=float)
+    for b in range(59):
+        if b >= 12:
+            window = np.log(c[b - 11:b + 1] / c[b - 12:b])
+            sd = float(np.std(window, ddof=1))
+            if sd > 0:
+                z = float((window[-1] - np.mean(window)) / sd)
+                out[b] = -1.0 if z > 1.0 else (1.0 if z < -1.0 else 0.0)
+    return out
+
+
+def opening_range_policy(close: np.ndarray) -> np.ndarray:
+    """Opening-range breakout fijo: compara cada cierre con el rango de barras 0–5."""
+    c = np.asarray(close, dtype=float)
+    out = np.zeros(59, dtype=float)
+    hi, lo = float(np.max(c[:6])), float(np.min(c[:6]))
+    out[6:] = np.where(c[6:59] > hi, 1.0, np.where(c[6:59] < lo, -1.0, 0.0))
+    return out
+
+
+def regime_rules_policy(state: int) -> np.ndarray:
+    """Dos reglas publicadas: shock→corto, intermedio_2→largo, resto flat."""
+    level = -1.0 if state == 3 else (1.0 if state == 2 else 0.0)
+    return np.full(59, level, dtype=float)
 
 
 
@@ -229,6 +268,9 @@ def main() -> int:
         "NULL_A_short_1x": constant_policy(-1.0),
         "always_flat": constant_policy(0.0),
         "random_seed42": random_policy(42),
+        "momentum_3bar": momentum_policy,
+        "mean_reversion_12bar": mean_reversion_policy,
+        "opening_range_6bar": opening_range_policy,
     }
 
     rows, per_baseline = [passive_buy_hold(sessions, ann)], {}
@@ -236,6 +278,15 @@ def main() -> int:
         res = run_policy(sessions, spreads, pol)
         per_baseline[name] = res
         rows.append(summarize(name, res, ann))
+
+    # Regime rule uses the same frozen posterior embedded in each research SessionSpec. It is
+    # evaluated through the same run_session engine, with no parameter fitting.
+    regime_results = []
+    for d, close in sessions.items():
+        state = int(np.argmax(sp.loc[pd.Timestamp(d), [c for c in sp.columns if c.startswith("p_")]]))
+        regime_results.append(run_session(close, regime_rules_policy(state), spreads[d], date=d))
+    per_baseline["regime_two_rules"] = regime_results
+    rows.append(summarize("regime_two_rules", regime_results, ann))
 
     # B1' — exposición constante igual a la media realizada de B1 (§3.2 de la constitución).
     ref = per_baseline["B1_buy_hold_1x"]
@@ -286,7 +337,7 @@ def main() -> int:
         "rows": rows,
         "cost_stress": stress,
     }
-    out = a.out or (OUT_DIR / f"baselines_{a.block}.json")
+    out = (a.out.resolve() if a.out else (OUT_DIR / f"baselines_{a.block}.json"))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, indent=2, default=str) + "\n", encoding="utf-8")
     print(f"\nartefacto: {out.relative_to(ROOT).as_posix()}")

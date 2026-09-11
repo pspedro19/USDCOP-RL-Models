@@ -44,3 +44,19 @@ def test_sanity_protocol_stops_at_first_recipe(monkeypatch):
     report = sanity.run_protocol(seeds=(1,), timesteps=10)
     assert report["selected_probe"] == "ent_coef_zero"
     assert [p for _, p in calls] == ["baseline"] * 4 + ["ent_coef_zero"] * 4
+
+
+def test_rule_baselines_have_fixed_causal_lengths():
+    from scripts.analysis.thesis_baselines import (
+        mean_reversion_policy, momentum_policy, opening_range_policy,
+        regime_rules_policy,
+    )
+
+    close = np.linspace(4000.0, 4100.0, 60)
+    for policy in (momentum_policy, mean_reversion_policy, opening_range_policy):
+        weights = policy(close)
+        assert weights.shape == (59,)
+        assert np.isfinite(weights).all()
+    assert np.all(regime_rules_policy(3) == -1.0)
+    assert np.all(regime_rules_policy(2) == 1.0)
+    assert np.all(regime_rules_policy(0) == 0.0)
