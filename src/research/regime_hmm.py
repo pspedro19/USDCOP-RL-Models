@@ -153,7 +153,7 @@ def _attach_macro(daily: pd.DataFrame) -> pd.DataFrame:
     for name in ("dxy_ret", "brent_ret"):
         daily[name] = 0.0
     if not MACRO_CLEAN.is_file():
-        return daily
+        raise FileNotFoundError(f"macro artifact missing: {MACRO_CLEAN}")
     macro = pd.read_parquet(MACRO_CLEAN)
     cols = {"dxy_ret": "FXRT_INDEX_DXY_USA_D_DXY", "brent_ret": "COMM_OIL_BRENT_GLB_D_BRENT"}
     for out, src in cols.items():
@@ -163,8 +163,10 @@ def _attach_macro(daily: pd.DataFrame) -> pd.DataFrame:
         r = np.log(s / s.shift(1)).dropna()
         left = pd.DataFrame({"d": pd.to_datetime(daily.index)})
         right = pd.DataFrame({"d": pd.to_datetime(r.index), out: r.to_numpy()})
-        merged = pd.merge_asof(left.sort_values("d"), right.sort_values("d"),
-                               on="d", direction="backward")
+        merged = pd.merge_asof(
+            left.sort_values("d"), right.sort_values("d"), on="d",
+            direction="backward", allow_exact_matches=False,
+        )
         daily[out] = merged[out].fillna(0.0).to_numpy()
     return daily
 
