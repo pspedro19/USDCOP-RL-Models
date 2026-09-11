@@ -87,6 +87,10 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
     dup = int(m5.duplicated(subset=[c for c in ("symbol", "time") if c in m5]).sum())
     off_grid = int(((m5["time"].dt.minute % 5) != 0).sum())
     bad_counts = {str(k): int(v) for k, v in counts[counts != SESSION_BARS].items()}
+    ohlc_cols = [c for c in ("open", "high", "low", "close") if c in m5.columns]
+    ohlc_numeric_invalid = int(
+        m5[ohlc_cols].apply(pd.to_numeric, errors="coerce").isna().any(axis=1).sum()
+    ) if len(ohlc_cols) == 4 else int(len(m5))
 
     macro = pd.read_parquet(macro_path)
     availability = yaml.safe_load(AVAILABILITY.read_text(encoding="utf-8"))
@@ -111,6 +115,13 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
     }
     available = [name for name, col in raw_macro.items()
                  if col in macro.columns and name in declared]
+    macro_numeric_invalid = {}
+    for name, col in raw_macro.items():
+        if col in macro.columns:
+            raw_values = macro[col]
+            converted = pd.to_numeric(raw_values, errors="coerce")
+            # Missing observations are a freshness/PIT concern, not a type error.
+            macro_numeric_invalid[name] = int((raw_values.notna() & converted.isna()).sum())
     availability_errors = []
     for name, col in raw_macro.items():
         spec = declared.get(name)
@@ -134,6 +145,7 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
                    "macro": str(macro_path), "macro_sha256": _digest(macro_path)},
         "m5": {"rows": int(len(m5)), "symbols": sorted(m5.get("symbol", pd.Series()).astype(str).unique().tolist()),
                "duplicate_symbol_time": dup, "off_five_minute_grid": off_grid,
+               "ohlc_numeric_invalid": ohlc_numeric_invalid,
                "session_count": int(len(counts)), "sessions_not_60_bars": bad_counts,
                "complete_60_bar_sessions": int((counts == SESSION_BARS).sum()),
                "intraday_diffs_not_5m": int((diffs != FIVE_MINUTES).sum()),
@@ -142,6 +154,7 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
         "macro": {"rows": int(len(macro)), "duplicate_dates": macro_dup,
                   "features_present": available,
                   "features_missing": [name for name in raw_macro if name not in available],
+                  "numeric_invalid_by_series": macro_numeric_invalid,
                   "availability_errors": availability_errors,
                   "date_min": str(macro_dates.min().date()),
                   "date_max": str(macro_dates.max().date()),
@@ -156,8 +169,11 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
             "note": "M5/H1/H4/D1 variants share the same market history and are not independent trials.",
         },
         "verdict": {"structural_m5_clean": bool(dup == 0 and off_grid == 0),
+                    "market_numeric_clean": ohlc_numeric_invalid == 0,
                     "complete_session_grid": bool(not bad_counts),
                     "macro_columns_complete": len(available) == len(raw_macro),
+                    "macro_numeric_clean": len(macro_numeric_invalid) == len(raw_macro)
+                    and all(v == 0 for v in macro_numeric_invalid.values()),
                     "macro_availability_declared": not availability_errors,
                     "requires_pit_merge": True},
     }
@@ -167,7 +183,8 @@ def require_contract(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) ->
     """Fail-closed gate for research jobs; returns evidence when the contract passes."""
     report = audit(m5_path, macro_path)
     verdict = report["verdict"]
-    failures = [name for name in ("structural_m5_clean", "macro_columns_complete",
+    failures = [name for name in ("structural_m5_clean", "market_numeric_clean",
+                                  "macro_columns_complete", "macro_numeric_clean",
                                   "macro_availability_declared")
                 if not verdict[name]]
     if failures:

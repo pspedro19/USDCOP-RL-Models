@@ -8,6 +8,8 @@ def test_data_contract_audit_reports_frequency_and_pit_requirements():
     assert report["verdict"]["structural_m5_clean"] is True
     assert report["verdict"]["requires_pit_merge"] is True
     assert report["verdict"]["macro_columns_complete"] is True
+    assert report["verdict"]["market_numeric_clean"] is True
+    assert report["verdict"]["macro_numeric_clean"] is True
     assert report["verdict"]["macro_availability_declared"] is True
     assert report["m5"]["duplicate_symbol_time"] == 0
     assert report["m5"]["off_five_minute_grid"] == 0
