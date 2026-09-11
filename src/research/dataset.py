@@ -118,7 +118,8 @@ def build_research_data(m5: pd.DataFrame | None = None, min_context: int = 60,
     if m5 is None:
         m5 = pd.read_parquet(SEED_M5)
 
-    dev_dates = set(_block_dates(part, "development", valid))
+    train_valid = list(mask.train_valid) or valid
+    dev_dates = set(_block_dates(part, "development", train_valid))
 
     # --- HMM congelado sobre desarrollo (§8.2) ---------------------------
     # `build_regime_observations` indexa por Timestamp y `fit_frozen` cuenta con ello
