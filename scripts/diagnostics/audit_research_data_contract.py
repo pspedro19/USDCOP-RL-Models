@@ -14,11 +14,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 
 from src.research.dataset import MACRO_FEATURES, SEED_M5
 from src.research.features import MACRO_CLEAN
 
 ROOT = Path(__file__).resolve().parents[2]
+AVAILABILITY = ROOT / "config" / "research" / "macro_availability.yaml"
 SESSION_BARS = 60
 FIVE_MINUTES = pd.Timedelta(minutes=5)
 SESSION_OPEN = (8, 0)
@@ -45,6 +47,8 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
     bad_counts = {str(k): int(v) for k, v in counts[counts != SESSION_BARS].items()}
 
     macro = pd.read_parquet(macro_path)
+    availability = yaml.safe_load(AVAILABILITY.read_text(encoding="utf-8"))
+    declared = availability.get("series", {})
     if "fecha" in macro.columns:
         macro_dates = pd.to_datetime(macro["fecha"])
     else:
@@ -63,7 +67,17 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
         "ibr": "FINC_RATE_IBR_OVERNIGHT_COL_D_IBR",
         "dgs2": "FINC_BOND_YIELD2Y_USA_D_DGS2",
     }
-    available = [name for name, col in raw_macro.items() if col in macro.columns]
+    available = [name for name, col in raw_macro.items()
+                 if col in macro.columns and name in declared]
+    availability_errors = []
+    for name, col in raw_macro.items():
+        spec = declared.get(name)
+        if spec is None:
+            availability_errors.append(f"{name}:missing_declaration")
+        elif spec.get("column") != col:
+            availability_errors.append(f"{name}:column_mismatch")
+        elif spec.get("frequency") != "daily" or spec.get("fallback") != "forbidden":
+            availability_errors.append(f"{name}:frequency_or_fallback_policy")
     return {
         "contract": "CTR-RESEARCH-DATA-AUDIT-001",
         "inputs": {"m5": str(m5_path), "m5_sha256": _digest(m5_path),
@@ -78,6 +92,7 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
         "macro": {"rows": int(len(macro)), "duplicate_dates": macro_dup,
                   "features_present": available,
                   "features_missing": [name for name in raw_macro if name not in available],
+                  "availability_errors": availability_errors,
                   "date_min": str(macro_dates.min().date()),
                   "date_max": str(macro_dates.max().date()),
                   "max_calendar_gap_days": float(macro_gap.dt.days.max()) if len(macro_gap) else 0.0,
@@ -87,6 +102,7 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
         "verdict": {"structural_m5_clean": bool(dup == 0 and off_grid == 0),
                     "complete_session_grid": bool(not bad_counts),
                     "macro_columns_complete": len(available) == len(raw_macro),
+                    "macro_availability_declared": not availability_errors,
                     "requires_pit_merge": True},
     }
 
@@ -95,7 +111,8 @@ def require_contract(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) ->
     """Fail-closed gate for research jobs; returns evidence when the contract passes."""
     report = audit(m5_path, macro_path)
     verdict = report["verdict"]
-    failures = [name for name in ("structural_m5_clean", "macro_columns_complete")
+    failures = [name for name in ("structural_m5_clean", "macro_columns_complete",
+                                  "macro_availability_declared")
                 if not verdict[name]]
     if failures:
         raise RuntimeError("research data contract failed: " + ", ".join(failures))
