@@ -1,4 +1,4 @@
-"""Contrato de costos de la tesis (§9.3): pips, no basis points.
+"""Contrato de costos de la tesis (§9.3), expresado en COP por USD.
 
 Contract: CTR-RESEARCH-COST-001 · Date: 2026-08-24
 
@@ -11,6 +11,10 @@ volatilidad del día. Un costo plano abarata los días malos y encarece los buen
 al revés de la realidad, y en la dirección que infla el Sharpe.
 
 ## La fórmula, tal cual §9.3 (no hay nada que elegir aquí)
+
+La interfaz histórica conserva el nombre ``spread_pips``, pero los valores son
+unidades internas de COP/USD declaradas en ``config/research/cost_contract.yaml``.
+El tick de mercado es 0,01 COP y no debe confundirse con un pip universal.
 
     sigma12_pips = C_b · rv_12
     cost_pips    = |Δw_b| · (spread_d/2 + 0.5) + 0.1 · |Δw_b| · sigma12_pips
