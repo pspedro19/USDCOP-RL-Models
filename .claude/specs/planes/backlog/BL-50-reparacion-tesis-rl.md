@@ -108,6 +108,41 @@ La distinción es vendible tal cual —"regla congelada, resultado reproducible"
 como "track record auditado en vivo". Construir el sellado semanal real es trabajo de producto,
 y es lo que el carril forward de la tesis (BL-50 etapa 4.3) hace bien por diseño.
 
+## Coste medido de la Etapa 3 y cómo reanudarla (2026-09-11)
+
+Calibrado en esta máquina: **20.000 pasos = 147 s**, o sea **~12,3 min por semilla** a los
+100.000 pasos declarados. De ahí:
+
+| Alcance | Corridas | Tiempo |
+|---|---:|---:|
+| S1 base (5 semillas) | 5 | ~61 min |
+| S1+S4 base (ruta mínima del plan) | 10 | ~2 h |
+| Protocolo completo con sondas | hasta 100 | ~20 h |
+
+**El entorno corta los trabajos de fondo por presión de memoria**: Docker/WSL retiene ~6,5 GB
+para otro proyecto del operador y quedan ~4-5 GB, mientras cada corrida PPO pide ~1,4 GB. Por
+eso la Etapa 3 se ejecuta **una semilla por proceso**, escribiendo
+`outputs/thesis-repair/sanity/S1_seed<N>.json`: el bucle salta las semillas ya hechas, así que
+cada corte conserva lo avanzado y basta relanzar.
+
+```bash
+for s in 42 123 456 789 1337; do
+  out="outputs/thesis-repair/sanity/S1_seed${s}.json"
+  [ -f "$out" ] && continue
+  OMP_NUM_THREADS=1 python scripts/analysis/thesis_ppo_sanity.py \
+      --fixture S1 --seed "$s" --timesteps 100000 --output "$out"
+done
+```
+
+**Aviso operativo:** cada corte deja el proceso vivo (mata el shell, no el árbol), y la
+memoria del huérfano provoca el corte siguiente. Antes de relanzar hay que barrerlos; se
+encontraron tres en una noche.
+
+**Señal preliminar, no concluyente:** a 20.000 pasos la exposición media fue **0,549**, es
+decir el agente **opera sobre ruido puro** en vez de quedarse plano. Es exactamente el modo de
+fallo que S1 existe para detectar, pero a ese presupuesto está infraentrenado y no decide nada.
+El número que cuenta es el de 100.000.
+
 ## Siguiente acción del operador, en orden
 
 1. `git push origin HEAD:refs/heads/main` — hay commits locales sin publicar y el push falla
