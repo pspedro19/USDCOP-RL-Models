@@ -26,6 +26,48 @@ FIVE_MINUTES = pd.Timedelta(minutes=5)
 SESSION_OPEN = (8, 0)
 
 
+def audit_frequency_file(path: Path, *, expected_frequency: str | None = None) -> dict:
+    """Inspect an OHLCV artifact without computing a strategy or return series.
+
+    The output is deliberately about representation only: effective cadence,
+    timezone, ordering, duplicate timestamps and gaps.  A file that is not
+    present is reported as ``missing`` so a caller can fail closed explicitly.
+    """
+    if not path.is_file():
+        return {"path": str(path), "status": "missing"}
+    frame = pd.read_parquet(path)
+    time_col = next((c for c in ("time", "datetime", "timestamp", "date") if c in frame.columns), None)
+    if time_col is None:
+        return {"path": str(path), "status": "invalid", "error": "no timestamp column"}
+    raw = pd.to_datetime(frame[time_col], errors="coerce")
+    invalid = int(raw.isna().sum())
+    # Convert to UTC only after recording whether the source actually carried a
+    # timezone.  A naive source is a provenance defect, not an inferred UTC.
+    timezone_present = raw.dt.tz is not None
+    ordered = raw.dropna().sort_values()
+    delta = ordered.diff().dropna()
+    mode = delta.mode().iloc[0] if not delta.empty else pd.NaT
+    nonpositive = int((delta <= pd.Timedelta(0)).sum())
+    result = {
+        "path": str(path), "status": "ok", "rows": int(len(frame)),
+        "timestamp_column": time_col, "timezone_present": bool(timezone_present),
+        "invalid_timestamps": invalid, "duplicate_timestamps": int(ordered.duplicated().sum()),
+        "nonpositive_deltas": nonpositive,
+        "effective_delta": str(mode) if pd.notna(mode) else None,
+        "min_timestamp": str(ordered.iloc[0]) if len(ordered) else None,
+        "max_timestamp": str(ordered.iloc[-1]) if len(ordered) else None,
+    }
+    if expected_frequency:
+        expected = {"5min": pd.Timedelta(minutes=5), "1h": pd.Timedelta(hours=1),
+                    "daily": pd.Timedelta(days=1)}.get(expected_frequency)
+        if expected is None:
+            raise ValueError(f"unsupported expected frequency: {expected_frequency}")
+        result["expected_frequency"] = expected_frequency
+        result["expected_delta"] = str(expected)
+        result["delta_mismatch_count"] = int((delta != expected).sum())
+    return result
+
+
 def _digest(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -78,6 +120,14 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
             availability_errors.append(f"{name}:column_mismatch")
         elif spec.get("frequency") != "daily" or spec.get("fallback") != "forbidden":
             availability_errors.append(f"{name}:frequency_or_fallback_policy")
+    frequency_files = {
+        "usdcop_m5": (m5_path, "5min"),
+        "usdcop_1h": (ROOT / "seeds" / "latest" / "usdcop_1h_ohlcv.parquet", "1h"),
+        "xauusd_m5": (ROOT / "seeds" / "latest" / "xauusd_m5_ohlcv.parquet", "5min"),
+        "xauusd_daily": (ROOT / "seeds" / "latest" / "xauusd_daily_ohlcv.parquet", "daily"),
+    }
+    frequency_audit = {name: audit_frequency_file(path, expected_frequency=freq)
+                       for name, (path, freq) in frequency_files.items()}
     return {
         "contract": "CTR-RESEARCH-DATA-AUDIT-001",
         "inputs": {"m5": str(m5_path), "m5_sha256": _digest(m5_path),
@@ -99,6 +149,12 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
                   "same_day_values_usable": False,
                   "future_observation_count": macro_future,
                   "note": "publication timestamps are absent; PIT causality is verified by attach_macro_features tests."},
+        "frequency_lineage": {
+            "artifacts": frequency_audit,
+            "merge_policy": "frequency-specific; no implicit resample or forward-fill",
+            "independent_samples": False,
+            "note": "M5/H1/H4/D1 variants share the same market history and are not independent trials.",
+        },
         "verdict": {"structural_m5_clean": bool(dup == 0 and off_grid == 0),
                     "complete_session_grid": bool(not bad_counts),
                     "macro_columns_complete": len(available) == len(raw_macro),
