@@ -105,7 +105,7 @@ def test_t9_holding_all_session_costs_exactly_one_round_trip():
     """B1 mantiene `+1` todo el día: un cambio al abrir, otro al cerrar. Nada más."""
     close = flat_close()
     w = constant_policy(1.0)(close)
-    costs, breakdown = session_costs(w, close[:OPERABLE_RETURNS], spread_pips=2.0)
+    costs, breakdown = session_costs(w, close, spread_pips=2.0)
     nonzero = [b for b in breakdown if b.cost_pips > 0]
     assert len(nonzero) == 2, (
         f"B1 debería cobrar 2 veces (apertura + cierre), cobra {len(nonzero)}"
@@ -170,6 +170,15 @@ def test_t13_terminal_cost_is_charged_and_visible():
         "debe haber un paso de costo MAS que decisiones: el terminal tiene costo y no retorno"
     )
     assert res.costs[-1] == pytest.approx(res.terminal_cost)
+
+
+def test_terminal_close_uses_bar_59_price():
+    """La liquidación usa el cierre final, no el cierre de la decisión 58."""
+    close = np.full(BARS_PER_SESSION, 4000.0)
+    close[-1] = 4400.0
+    res = run_session(close, constant_policy(1.0)(close), spread_pips=3.0)
+    # The last jump contributes to terminal slippage as well as spread/commission.
+    assert res.terminal_cost == pytest.approx(0.003205913352872407)
 
 
 def test_t13_daily_return_is_gross_minus_all_costs_including_terminal():

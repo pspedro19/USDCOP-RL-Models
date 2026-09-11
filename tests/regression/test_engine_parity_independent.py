@@ -95,8 +95,8 @@ def reference_session_pnl(close: np.ndarray, weights: np.ndarray,
     cash += units * last_price
 
     terminal_pips = abs(0.0 - prev_w) * (spread_pips / 2.0 + COMMISSION_PIPS_PER_SIDE)
-    terminal_pips += SLIPPAGE_COEF * abs(prev_w) * sigma[len(w) - 1]
-    cash -= terminal_pips / c[len(w) - 1]
+    terminal_pips += SLIPPAGE_COEF * abs(prev_w) * sigma[len(w)]
+    cash -= terminal_pips / c[len(w)]
 
     return cash
 

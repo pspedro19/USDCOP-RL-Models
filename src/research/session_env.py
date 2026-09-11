@@ -112,7 +112,7 @@ def run_session(close: np.ndarray, weights: Sequence[float], spread_pips: float,
             f"se esperan {OPERABLE_RETURNS} decisiones operables (§9.1), llegan {len(w)}")
 
     r = simple_returns(c)                         # r_1 .. r_59, longitud 59
-    costs, breakdown = session_costs(w, c[:OPERABLE_RETURNS], spread_pips,
+    costs, breakdown = session_costs(w, c, spread_pips,
                                      include_terminal=True)
 
     gross = float(np.sum(w * r))

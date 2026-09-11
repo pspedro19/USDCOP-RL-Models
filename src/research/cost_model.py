@@ -150,6 +150,11 @@ def session_costs(weights: np.ndarray, close: np.ndarray, spread_pips: float,
     """
     w = np.asarray(weights, dtype=float)
     c = np.asarray(close, dtype=float)
+    if include_terminal and len(c) != len(w) + 1:
+        raise ValueError(
+            "con cierre terminal se requieren len(close) == len(weights) + 1; "
+            "el último cierre liquida w_last"
+        )
     sigma = realized_vol_pips(c)
 
     prev = 0.0

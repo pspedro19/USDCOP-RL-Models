@@ -4,15 +4,15 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-09-10T20:28:00-05:00
+timestamp: 2026-09-10T20:40:00-05:00
 instance_id: codex-thesis-repair-20260910
 estado: PARA_REVIEW
-bl_activos: ["EXP-TESIS-REPAIR-01: macro causal + reward terminal"]
+bl_activos: ["EXP-TESIS-REPAIR-01: macro causal + reward terminal + liquidación bar 59"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
-archivos_bloqueados: ["src/research/features.py", "src/research/session_gym.py", "tests/regression/test_research_features_are_causal.py", "tests/regression/test_session_gym_parity.py"]
+archivos_bloqueados: ["src/research/features.py", "src/research/session_gym.py", "src/research/session_env.py", "src/research/cost_model.py", "tests/regression/test_research_features_are_causal.py", "tests/regression/test_session_gym_parity.py", "tests/regression/test_session_env_and_costs.py", "tests/regression/test_engine_parity_independent.py"]
 necesito_del_otro: []
-para_review: ["commit pendiente: macro strict as-of y reward terminal; 21 pruebas focales verdes"]
+para_review: ["commit pendiente: macro strict as-of, reward terminal y liquidación al cierre bar 59; 33 pruebas focales verdes"]
 
 ## LOG (append, mas reciente arriba)
 - 2026-09-10T19:57:52-05:00 — Auditoria entregable: informe, JSON con hashes, diagnostico sin training y dos indices sincronizados. Macro causalidad FALLA; politica pierde bajo costos publicados; no claim de imposibilidad/rentabilidad. 48P focales, 1092P gobernanza; inventory/index/links/graph OK; Ruff final OK. Revisor datos y estadistica sin discrepancias materiales. Modelos, datasets y registro trials preservados. Se liberan leases de la auditoria; no se marca ningun BL historico ni se publica.
