@@ -178,6 +178,15 @@ def test_zero_variance_series_does_not_explode():
     assert t.diff == 0.0 and np.isfinite(t.ci_low)
 
 
+def test_pvalue_exposes_finite_bootstrap_resolution():
+    rng = np.random.default_rng(44)
+    a = rng.normal(0.02, 0.001, 120)
+    b = rng.normal(0.0, 0.001, 120)
+    t = paired_sharpe_test(a, b, n_boot=200, blocks=(5,))
+    assert t.n_exceedances >= 0
+    assert t.p_value > 0.0
+
+
 # ---------------------------------------------------------------------------
 # Regla B
 # ---------------------------------------------------------------------------

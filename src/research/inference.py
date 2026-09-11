@@ -104,6 +104,7 @@ class PairedTest:
     n_boot: int
     blocks: tuple = field(default_factory=tuple)
     correlation: float = 0.0
+    n_exceedances: int = 0
 
     @property
     def decisive(self) -> bool:
@@ -149,7 +150,13 @@ def paired_sharpe_test(a, b, name_a: str = "A", name_b: str = "B", n_boot: int =
     # p a dos colas por el metodo del percentil: cuanto de la distribucion remuestreada
     # cae al otro lado del cero respecto al efecto observado.
     centred = diffs - diffs.mean()
-    p = 2.0 * min(np.mean(centred >= abs(observed)), np.mean(centred <= -abs(observed)))
+    upper = int(np.sum(centred >= abs(observed)))
+    lower = int(np.sum(centred <= -abs(observed)))
+    # Finite bootstrap resolution: the corrected estimate cannot claim an
+    # exact zero p-value. Store the exceedance count so reports expose the
+    # Monte-Carlo resolution and method rather than printing p<0.0001 as a
+    # mathematical fact.
+    p = 2.0 * min((upper + 1) / (k + 1), (lower + 1) / (k + 1))
 
     return PairedTest(
         name_a=name_a, name_b=name_b, n=n,
@@ -157,6 +164,7 @@ def paired_sharpe_test(a, b, name_a: str = "A", name_b: str = "B", n_boot: int =
         diff=float(observed), ci_low=float(lo), ci_high=float(hi),
         p_value=float(min(p, 1.0)), n_boot=k, blocks=tuple(blocks),
         correlation=float(np.corrcoef(x, y)[0, 1]) if n > 2 else 0.0,
+        n_exceedances=int(min(upper, lower)),
     )
 
 
