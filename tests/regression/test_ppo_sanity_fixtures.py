@@ -30,3 +30,17 @@ def test_above_cost_signal_oracle_is_profitable_and_beats_flat():
     values = [oracle_result(Fixture.SIGNAL_ABOVE_COST, spec).daily_return for spec in specs]
     assert min(values) > 0.0
 
+
+def test_sanity_protocol_stops_at_first_recipe(monkeypatch):
+    import scripts.analysis.thesis_ppo_sanity as sanity
+
+    calls = []
+
+    def fake_run(fixture, seeds, timesteps, probe):
+        calls.append((fixture, probe))
+        return {"passed": probe == "ent_coef_zero"}
+
+    monkeypatch.setattr(sanity, "run", fake_run)
+    report = sanity.run_protocol(seeds=(1,), timesteps=10)
+    assert report["selected_probe"] == "ent_coef_zero"
+    assert [p for _, p in calls] == ["baseline"] * 4 + ["ent_coef_zero"] * 4

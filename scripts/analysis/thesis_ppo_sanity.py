@@ -27,6 +27,7 @@ PPO_KWARGS = {
     "policy_kwargs": {"net_arch": [256, 256]},
 }
 SEEDS = (42, 123, 456, 789, 2024)
+PROBES = ("baseline", "ent_coef_zero", "norm_reward_off", "gamma_one", "kappa_turn_one")
 
 
 def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str):
@@ -103,21 +104,47 @@ def run(fixture: Fixture | str, seeds: tuple[int, ...] = SEEDS,
     }
 
 
+def run_protocol(seeds: tuple[int, ...] = SEEDS, timesteps: int = 100_000) -> dict:
+    """Ejecuta S1–S4 y sondas en el orden pre-registrado.
+
+    Una receta solo se congela si pasa las cuatro fixtures. En cuanto una receta pasa, no se
+    ejecutan sondas posteriores. El resultado es sintético y cobra cero trials de mercado.
+    """
+    attempts = []
+    for probe in PROBES:
+        fixture_reports = [run(f, seeds=seeds, timesteps=timesteps, probe=probe)
+                           for f in Fixture]
+        passed = all(r["passed"] for r in fixture_reports)
+        attempts.append({"probe": probe, "fixtures": fixture_reports, "passed_all": passed})
+        if passed:
+            return {"synthetic_only": True, "market_trials_charged": 0,
+                    "timesteps": timesteps, "selected_probe": probe,
+                    "attempts": attempts,
+                    "pass_rule": "primera receta que pasa S1-S4"}
+    return {"synthetic_only": True, "market_trials_charged": 0,
+            "timesteps": timesteps, "selected_probe": None,
+            "attempts": attempts,
+            "pass_rule": "primera receta que pasa S1-S4"}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fixture", choices=[f.value for f in Fixture], required=True)
     parser.add_argument("--timesteps", type=int, default=100_000)
     parser.add_argument("--probe", choices=("baseline", "ent_coef_zero", "norm_reward_off",
                                               "gamma_one", "kappa_turn_one"), default="baseline")
+    parser.add_argument("--protocol", action="store_true",
+                        help="ejecuta S1-S4 y detiene las sondas en la primera receta válida")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    report = run(args.fixture, timesteps=args.timesteps, probe=args.probe)
+    report = (run_protocol(timesteps=args.timesteps) if args.protocol
+              else run(args.fixture, timesteps=args.timesteps, probe=args.probe))
     text = json.dumps(report, indent=2) + "\n"
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(text, encoding="utf-8")
     print(text, end="")
-    return 0 if report["passed"] else 2
+    return 0 if report.get("passed", report.get("selected_probe") is not None) else 2
 
 
 if __name__ == "__main__":
