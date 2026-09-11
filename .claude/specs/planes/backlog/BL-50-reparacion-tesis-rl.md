@@ -89,6 +89,25 @@ del refresco esto era invisible: precio y macro estaban igual de viejos y nada s
 lo deja **rojo a propósito** con la instrucción. No se rellena a mano: mezclar Brent spot con
 futuros, o DGS2 de dos fuentes, es exactamente lo que la auditoría acaba de limpiar.
 
+## Qué significa "forward" en la serie 2026 de v11 (2026-09-11)
+
+Importa para cualquier afirmación comercial, así que se deja escrito antes de que lo pregunte
+un tercero. El generador etiqueta la serie 2026 de `smart_simple_v11` como *"forward real todo
+2026 (producción)"*. Eso es cierto en el sentido **metodológico**: la estrategia está congelada
+desde marzo de 2026 con fecha y hashes verificables, así que el resultado de 2026 no pudo
+elegirse mirando el período.
+
+No es cierto en el sentido de **libro sellado semana a semana**. Las tablas de ejecución
+(`forecast_h5_paper_trading`, `forecast_h5_executions`) tienen **ocho filas, todas con el mismo
+`created_at` del 2026-07-05**: son un relleno retroactivo, no una captura semanal, y cubren
+hasta junio mientras el ledger reporta doce operaciones. El rendimiento de 2026 se obtiene
+**reejecutando la regla congelada** sobre los datos posteriores, y esa reejecución sí es
+reproducible por un tercero.
+
+La distinción es vendible tal cual —"regla congelada, resultado reproducible"— y no lo sería
+como "track record auditado en vivo". Construir el sellado semanal real es trabajo de producto,
+y es lo que el carril forward de la tesis (BL-50 etapa 4.3) hace bien por diseño.
+
 ## Siguiente acción del operador, en orden
 
 1. `git push origin HEAD:refs/heads/main` — hay commits locales sin publicar y el push falla
