@@ -1,0 +1,40 @@
+# EXP-TESIS-RL-02 — configuración v2 después de la auditoría PIT/contable.
+# Este archivo es una declaración de identidad, no un selector de parámetros:
+# la receta de PPO se conserva y las sondas de sanidad solo se ejecutan sobre
+# fixtures sintéticas antes de congelar cualquier variante.
+experiment_id: EXP-TESIS-RL-02
+dataset_version: v2
+dataset_identity_required: true
+source_schema: config/research/feature_schema.json
+portable_dataset: data/thesis/research_data_portable_v2.pkl
+model_output_dir: outputs/thesis-repair/ppo_v2
+configs:
+  ppo_regime_v2:
+    parent: ppo_regime
+    regime_features: true
+  ppo_backbone_v2:
+    parent: ppo_backbone
+    regime_features: false
+training:
+  timesteps: 300000
+  seeds: [42, 123, 456, 789, 1337]
+  learning_rate: 0.0003
+  n_steps: 4096
+  batch_size: 128
+  n_epochs: 10
+  gamma: 0.98
+  gae_lambda: 0.95
+  clip_range: 0.2
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  normalize_advantage: true
+  net_arch: [[256, 256], [256, 256]]
+evaluation:
+  annualization_sessions: 221
+  delays_bars: [0, 1, 2]
+  cost_scenarios: [low, central, high]
+  report_per_seed: true
+  report_ensemble_separately: true
+  holdout_role: retrospective_diagnostic_only
+  confirmatory_role: forward_after_freeze

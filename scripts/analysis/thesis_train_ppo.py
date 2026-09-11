@@ -80,7 +80,7 @@ NET_ARCH = dict(pi=[256, 256], vf=[256, 256])
 TOTAL_TIMESTEPS = 300_000     # ver `_timesteps_note`
 
 
-def _timesteps_note(n_dev: int) -> str:
+def _timesteps_note(n_dev: int, timesteps: int = TOTAL_TIMESTEPS) -> str:
     """Por que 300k y no los 2M del baseline de produccion.
 
     El baseline entrena sobre 70.000 barras continuas. Aqui desarrollo son 499 sesiones x 59
@@ -92,7 +92,7 @@ def _timesteps_note(n_dev: int) -> str:
     tabulares y mantiene el sobreajuste acotado. Es una decision declarada ex-ante y COMUN a
     las dos configuraciones, asi que no puede favorecer a ninguna: no altera la ablacion.
     """
-    return f"{TOTAL_TIMESTEPS:,} pasos ~= {TOTAL_TIMESTEPS / (n_dev * 59):.1f} pasadas"
+    return f"{timesteps:,} pasos ~= {timesteps / (n_dev * 59):.1f} pasadas"
 
 
 def strip_regimes(specs: list[SessionSpec]) -> list[SessionSpec]:
@@ -143,7 +143,8 @@ def evaluate(model, specs: list[SessionSpec]) -> dict:
 
 
 def train_one(config: str, seed: int, data, timesteps: int = TOTAL_TIMESTEPS,
-              verbose: bool = True, refit: bool = False) -> dict:
+              verbose: bool = True, refit: bool = False,
+              output_dir: Path | None = None) -> dict:
     """Entrena una configuracion.
 
     Con `refit=True` entrena sobre **desarrollo + seleccion**, que es lo que el pre-registro
@@ -173,10 +174,14 @@ def train_one(config: str, seed: int, data, timesteps: int = TOTAL_TIMESTEPS,
     model.learn(total_timesteps=timesteps, progress_bar=False)
     elapsed = time.time() - t0
 
-    OUT.mkdir(parents=True, exist_ok=True)
+    # v2 must never overwrite the published v1 artifacts.  Callers can provide a
+    # versioned directory; the environment variable remains backwards compatible
+    # for the original v1 runner.
+    out = output_dir or OUT
+    out.mkdir(parents=True, exist_ok=True)
     tag = f"{config}_refit_seed{seed}" if refit else f"{config}_seed{seed}"
-    model.save(OUT / f"{tag}.zip")
-    venv.save(str(OUT / f"{tag}_vecnorm.pkl"))
+    model.save(out / f"{tag}.zip")
+    venv.save(str(out / f"{tag}_vecnorm.pkl"))
 
     # Evaluacion con VecNormalize CONGELADO: el modelo predice sobre las mismas
     # observaciones que vio entrenando, y el reward normalizado no interviene aqui.
@@ -192,7 +197,7 @@ def train_one(config: str, seed: int, data, timesteps: int = TOTAL_TIMESTEPS,
         # presente como fuera de muestra: seria el error que §11 llama subperiodo in-sample.
         res["selection"]["in_sample"] = True
         res["development"]["in_sample"] = True
-    (OUT / f"{tag}.json").write_text(json.dumps(res, indent=2), encoding="utf-8")
+    (out / f"{tag}.json").write_text(json.dumps(res, indent=2), encoding="utf-8")
     if verbose:
         s = res["selection"]
         print(f"  {tag:<24} sel: ret {s['total_return']:+7.2%}  Sharpe {s['sharpe']:+6.2f}  "
@@ -206,6 +211,8 @@ def main() -> int:
     ap.add_argument("--seed", type=int)
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--timesteps", type=int, default=TOTAL_TIMESTEPS)
+    ap.add_argument("--output-dir", type=Path,
+                    help="directorio versionado; evita sobrescribir artefactos v1")
     ap.add_argument("--refit", action="store_true",
                     help="entrena sobre desarrollo+seleccion (paso F8 del pre-registro)")
     args = ap.parse_args()
@@ -217,7 +224,7 @@ def main() -> int:
         print(f"dataset portable: {data.summary()}")
     else:
         data = load_or_build()
-    print(_timesteps_note(len(data.development)))
+    print(_timesteps_note(len(data.development), args.timesteps))
 
     jobs = ([(c, s) for c in CONFIGS for s in SEEDS] if args.all
             else [(args.config, args.seed)])
@@ -225,7 +232,8 @@ def main() -> int:
         ap.error("usa --all, o --config y --seed juntos")
 
     for config, seed in jobs:
-        train_one(config, seed, data, timesteps=args.timesteps, refit=args.refit)
+        train_one(config, seed, data, timesteps=args.timesteps, refit=args.refit,
+                  output_dir=args.output_dir)
     return 0
 
 
