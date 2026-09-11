@@ -69,6 +69,17 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
         norm.norm_reward = False
     elif probe != "baseline":
         raise ValueError(f"unknown sanity probe: {probe}")
+    # `PPO.load` restaura la politica, NO el wrapper de normalizacion: al reanudar, las
+    # medias y varianzas corrientes del reward volverian a cero y el reward efectivo daria un
+    # salto a mitad del entrenamiento. En un fixture cuyo proposito es diagnosticar si la
+    # receta -- normalizacion incluida -- hace que el agente opere sobre ruido, eso contamina
+    # justo lo que se mide. Se guarda y se restaura junto al checkpoint.
+    norm_state = None if resume is None else Path(str(resume)).with_suffix(".vecnorm.pkl")
+    if norm_state is not None and norm_state.is_file():
+        from stable_baselines3.common.vec_env import VecNormalize as _VN
+        restored = _VN.load(str(norm_state), vec)
+        restored.training, restored.norm_reward = True, norm.norm_reward
+        norm = restored
     model = (PPO.load(str(resume), env=norm, device="cpu") if resume is not None
              else PPO("MlpPolicy", norm, seed=seed, verbose=0, **kwargs))
     callback = None
@@ -77,9 +88,15 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
         checkpoint_dir.mkdir(parents=True, exist_ok=True)
         callback = CheckpointCallback(save_freq=max(1, 10_000),
                                       save_path=str(checkpoint_dir),
-                                      name_prefix=f"{fixture.value}_{probe}_seed{seed}")
+                                      name_prefix=f"{fixture.value}_{probe}_seed{seed}",
+                                      save_vecnormalize=True)
     model.learn(total_timesteps=timesteps, callback=callback,
                 reset_num_timesteps=resume is None)
+    if checkpoint_dir is not None:
+        # Ultimo estado, con el mismo nombre que espera `--resume` en la llamada siguiente.
+        final = checkpoint_dir / f"{fixture.value}_{probe}_seed{seed}_final.zip"
+        model.save(str(final))
+        norm.save(str(final.with_suffix(".vecnorm.pkl")))
 
     norm.training = False
     norm.norm_reward = False

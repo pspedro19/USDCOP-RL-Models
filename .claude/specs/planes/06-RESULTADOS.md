@@ -106,6 +106,22 @@ encontró»**, y los modelos refit pierden incluso dentro de su propio conjunto 
 entrenamiento. Es fallo del optimizador y/o del objetivo, no una propiedad demostrada del
 mercado.
 
+> **Medido el 2026-09-11, y es más fuerte que lo anterior.** Se corrió la misma receta sobre
+> una serie **sintética de ruido iid con costo positivo**, donde la política óptima es
+> demostrablemente no operar. Las cinco semillas del protocolo, 100.000 pasos:
+>
+> | Semilla | 42 | 123 | 456 | 789 | 1337 |
+> |---|---:|---:|---:|---:|---:|
+> | Exposición media | 0,527 | 0,966 | 0,485 | 0,985 | 0,968 |
+>
+> **0 de 5 se quedan planas.** El agente opera con la mitad o la totalidad del capital sobre
+> datos **sin señal alguna**, pagando costo en cada cambio. Aquí no hay mercado al que culpar:
+> los datos son ruido generado. **La receta no converge a la solución trivial ni cuando esa
+> solución es la única correcta**, así que cualquier conclusión sobre el intradía de USD/COP
+> obtenida con ella describe al optimizador tanto como al activo. Evidencia:
+> `outputs/thesis-repair/sanity_S1_protocol.json`; registro en
+> [`EXPERIMENT_LOG`](../../experiments/EXPERIMENT_LOG.md) § EXP-TESIS-RL-02-SANITY-S1.
+
 **7. «El alfa vive en la alta frecuencia» (§5b.3).** La descomposición dice lo contrario:
 **+48,9078 puntos** provienen del signo de la exposición **media diaria** y **−20,9582
 puntos** son residuo de timing intradía. Además esa atribución es **retrospectiva**: la

@@ -443,3 +443,6 @@ vendor/quant-skills/**/__pycache__/
 .trash/
 usdcop_trading_paquete_*.zip
 usdcop_dataset_*.zip
+
+# Checkpoints intermedios de la sanidad sintetica (regenerables, ~50 MB por semilla)
+outputs/thesis-repair/ckpt/

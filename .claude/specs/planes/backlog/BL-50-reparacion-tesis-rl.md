@@ -40,7 +40,7 @@ ejecución pasiva queda suspendida hasta tener un venue con libro de órdenes).
 |---|---|---|
 | 1. Fuentes y costos | `macro_availability.yaml` (regla de disponibilidad), `cost_contract.yaml` con unidad declarada, máscara v2 con reglas §6.3 y festivos de EE. UU., schema v2 (39 → 37 features) | HECHO |
 | 2. Entorno | Fuga macro cerrada, costo terminal en el reward y valorado en la barra 59, ventanas intra-sesión, identidad del dataset por sha256, tests HMM no tautológicos, specs parciales para el carril live | HECHO |
-| 3. Sanidad del optimizador | `thesis_ppo_sanity.py` con fixtures S1-S4 de solución conocida y sondas ordenadas | EN CURSO |
+| 3. Sanidad del optimizador | S1 ejecutada y **FALLA 0/5**: la receta no encuentra el flat sobre ruido puro. Faltan S2-S4 y las sondas | PARCIAL |
 | 4. Reentreno sin fugas y juez forward | v3 redactado (sin firmar), entreno v2, baselines que faltaban, carril forward sellando de verdad | PENDIENTE |
 | 5. Corrigendum | Correcciones de §0-§7 con cifras de la evidencia | HECHO |
 | 6. Gobernanza | Brief de contabilidad redactado para el operador; ledger y registro sin tocar desde este carril | PARCIAL |
@@ -138,10 +138,16 @@ done
 memoria del huérfano provoca el corte siguiente. Antes de relanzar hay que barrerlos; se
 encontraron tres en una noche.
 
-**Señal preliminar, no concluyente:** a 20.000 pasos la exposición media fue **0,549**, es
-decir el agente **opera sobre ruido puro** en vez de quedarse plano. Es exactamente el modo de
-fallo que S1 existe para detectar, pero a ese presupuesto está infraentrenado y no decide nada.
-El número que cuenta es el de 100.000.
+**Resultado de S1 a 100.000 pasos (2026-09-11): FALLA, 0/5.** Exposiciones medias 0,527 /
+0,966 / 0,485 / 0,985 / 0,968 sobre una serie de ruido iid con costo, donde la política óptima
+es no operar. La regla pre-registrada exigía ≥4/5 planas. Evidencia en
+`outputs/thesis-repair/sanity_S1_protocol.json`; lectura en el corrigendum §6.
+
+Se resolvió el problema de entorno que lo bloqueaba: `thesis_ppo_sanity.py` ahora **guarda y
+restaura `VecNormalize` junto al checkpoint**, así que el entrenamiento se parte en tramos sin
+que las estadísticas de normalización del reward se reinicien a mitad. Con eso cada semilla
+cabe en dos llamadas de ~5 min. **Ojo con la semántica**: al reanudar, `--timesteps` es el
+total acumulado, no el incremento.
 
 ## Siguiente acción del operador, en orden
 

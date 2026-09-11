@@ -561,6 +561,45 @@ Recommendation: Return to 5-min frequency and continue experiment queue (trailin
 
 ---
 
+## EXP-TESIS-RL-02-SANITY-S1: la receta no encuentra el flat sobre ruido puro — 2026-09-11
+
+**0 trials de mercado.** Fixture sintética: retornos iid sin señal y costo positivo, donde la
+política óptima es demostrablemente **no operar** (neto exactamente 0, disponible en el espacio
+de acción). Receta idéntica a la de la tesis (`thesis_ppo_v2.yaml`), 100.000 pasos, las cinco
+semillas del protocolo.
+
+| Semilla | Exposición media | Neto medio | Veredicto |
+|---|---:|---:|---|
+| 42 | 0,527 | −0,00067 | opera |
+| 123 | 0,966 | −0,00143 | opera |
+| 456 | 0,485 | −0,00070 | opera |
+| 789 | 0,985 | −0,00044 | opera |
+| 1337 | 0,968 | −0,00147 | opera |
+
+**0/5 se quedan planas; la regla pre-registrada exige ≥4/5. S1 FALLA.**
+
+**Qué significa.** El agente opera con la mitad o la totalidad del capital sobre una serie
+**sin señal alguna**, pagando costo en cada cambio, cuando bastaba con no hacer nada. No hay
+mercado al que culpar: los datos son ruido generado. Es la receta —normalización del reward,
+suelo de entropía, presupuesto de pasos— la que no converge a la solución trivial.
+
+**Consecuencia para EXP-TESIS-RL-01.** El rechazo económico se mantiene: PPO pierde contra
+`always_flat` sobre USD/COP. Lo que **no** se sostiene es atribuir ese resultado al mercado.
+El corrigendum ya había retirado «la política rentable no existe dentro del espacio de acción»
+por ser falsa —flat existe y vale 0—; esto lo refuerza por una segunda vía medida: **la receta
+tampoco encuentra flat cuando flat es la única respuesta correcta.** Cualquier conclusión sobre
+el intradía de USD/COP obtenida con esta receta describe al optimizador tanto como al activo.
+
+**Siguiente paso pre-registrado.** Sondas ordenadas, una variable cada una, solo sintético,
+parar en la primera que pase S1-S4: `ent_coef 0.01→0`, `norm_reward=False`, `γ 0.98→1.0`,
+`κ_turn=1.0`. Ninguna receta se congela para v2 hasta que una pase las cuatro fixtures.
+
+**Reproducir.** `outputs/thesis-repair/sanity_S1_protocol.json` trae las cinco corridas con
+hash del runner y commit base. Entrenado por tramos con `--resume` (el entorno corta los
+trabajos largos); `VecNormalize` se guarda y restaura con el checkpoint para que la
+normalización del reward no se reinicie a mitad.
+
+
 ## EXP-TESIS-RL-01: PPO intradía sobre sesión acotada (USD/COP) — 2026-08-25
 
 **Contrato**: CTR-RESEARCH-PPO-001 · **Registro**: `HYPOTHESIS-REGISTRY.md::APERTURA H-TESIS-RL-01`
