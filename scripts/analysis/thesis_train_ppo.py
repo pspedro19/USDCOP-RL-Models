@@ -219,6 +219,8 @@ def main() -> int:
                     help="directorio versionado; evita sobrescribir artefactos v1")
     ap.add_argument("--portable-path", type=Path,
                     help="dataset portable versionado; rechaza identidades obsoletas")
+    ap.add_argument("--dataset-version", choices=("v1", "v2"), default="v1",
+                    help="v2 exige automáticamente sanidad sintética e identidad macro")
     ap.add_argument("--require-sanity", type=Path,
                     help="informe S1-S4 aprobado; obligatorio antes de un entrenamiento v2")
     ap.add_argument("--require-macro-identity", type=Path,
@@ -230,11 +232,18 @@ def main() -> int:
     evidence = require_contract()
     print(f"data contract: structural={evidence['verdict']['structural_m5_clean']} "
           f"macro_complete={evidence['verdict']['macro_columns_complete']}")
-    if args.require_sanity:
-        sanity = require_sanity_pass(args.require_sanity)
+    sanity_path = args.require_sanity
+    macro_path = args.require_macro_identity
+    if args.dataset_version == "v2":
+        sanity_path = sanity_path or (REPO / "outputs" / "thesis-repair" / "sanity_protocol_v2.json")
+        macro_path = macro_path or (REPO / "outputs" / "thesis-repair" / "macro_identity.json")
+        if not sanity_path.is_file() or not macro_path.is_file():
+            ap.error("dataset v2 exige informes de sanidad e identidad macro existentes")
+    if sanity_path:
+        sanity = require_sanity_pass(sanity_path)
         print(f"sanity gate: receta={sanity['selected_probe']}")
-    if args.require_macro_identity:
-        identity = require_macro_identity(args.require_macro_identity)
+    if macro_path:
+        identity = require_macro_identity(macro_path)
         print(f"macro identity gate: {len(identity.get('series', {}))} series verificadas")
 
     # El formato portable no lleva el objeto hmmlearn, asi que funciona dentro del
