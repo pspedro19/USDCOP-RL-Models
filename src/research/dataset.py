@@ -250,7 +250,12 @@ def load_or_build(rebuild: bool = False, verbose: bool = True) -> ResearchData:
         "macro": digest(attach_macro_features.__globals__["MACRO_CLEAN"]),
         "partition": digest(PARTITION),
     }
-    key = {"mask": _bm().sha256, "schema": _S.sha256, "inputs": inputs}
+    key = {
+        "mask": _bm().sha256,
+        "schema": _S.sha256,
+        "formula_versions": _S.formula_versions,
+        "inputs": inputs,
+    }
     if CACHE.is_file() and not rebuild:
         with CACHE.open("rb") as fh:
             blob = pickle.load(fh)

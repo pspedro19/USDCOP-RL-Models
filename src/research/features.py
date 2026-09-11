@@ -89,6 +89,11 @@ class FeatureSchema:
     excluded: dict[str, str]
     endogenous: tuple[str, ...]
 
+    # Formulae are part of the data contract, not an implementation detail.  A
+    # change from the legacy rolling ATR to Wilder's RMA must invalidate every
+    # frozen scaler/portable dataset that consumed the old values.
+    formula_versions: dict[str, str]
+
     @property
     def sha256(self) -> str:
         payload = json.dumps({"order": list(self.order),
@@ -105,6 +110,7 @@ class FeatureSchema:
             "groups": {k: list(v) for k, v in self.groups.items()},
             "endogenous": sorted(self.endogenous),
             "excluded_groups": self.excluded,
+            "formula_versions": self.formula_versions,
             "availability": {
                 "market": "informacion <= cierre de la barra b (§9.1)",
                 "macro": "merge_asof(backward): ultimo valor publicado <= la sesion",
@@ -115,7 +121,8 @@ class FeatureSchema:
 
 
 SCHEMA = FeatureSchema(order=FEATURE_ORDER, groups=GROUPS, excluded=EXCLUDED_GROUPS,
-                       endogenous=tuple(sorted(ENDOGENOUS)))
+                       endogenous=tuple(sorted(ENDOGENOUS)),
+                       formula_versions={"atr_14": "wilder_rma_v1", "rsi_14": "wilder_rma_v1"})
 
 
 # ---------------------------------------------------------------------------
@@ -164,6 +171,27 @@ def true_range(h: pd.Series, l: pd.Series, c: pd.Series) -> pd.Series:
     return pd.concat([h - l, (h - prev).abs(), (l - prev).abs()], axis=1).max(axis=1)
 
 
+def wilder_atr(h: pd.Series, l: pd.Series, c: pd.Series, period: int = 14) -> pd.Series:
+    """Average True Range using Wilder's RMA with an explicit SMA seed.
+
+    The first published value is the arithmetic mean of the first ``period``
+    true ranges; subsequent values follow ``((n-1)*ATR[t-1]+TR[t])/n``.
+    This is distinct from a rolling SMA and from pandas' default EMA.
+    """
+    if period < 1:
+        raise ValueError("period must be positive")
+    tr = true_range(h, l, c).astype(float)
+    out = pd.Series(np.nan, index=tr.index, dtype=float)
+    if len(tr) < period:
+        return out
+    seed = tr.iloc[:period].mean()
+    out.iloc[period - 1] = seed
+    alpha = 1.0 / period
+    for i in range(period, len(tr)):
+        out.iloc[i] = (1.0 - alpha) * out.iloc[i - 1] + alpha * tr.iloc[i]
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Construccion
 # ---------------------------------------------------------------------------
@@ -207,8 +235,7 @@ def build_market_features(m5: pd.DataFrame, valid_sessions=None) -> pd.DataFrame
     out["rv_12"] = r1.rolling(12, min_periods=2).std()
     out["rv_78"] = r1.rolling(78, min_periods=10).std()
     out["rv_ratio"] = out["rv_12"] / out["rv_78"].replace(0.0, np.nan)
-    tr = true_range(h, l, c)
-    atr14 = tr.rolling(14, min_periods=3).mean()
+    atr14 = wilder_atr(h, l, c, period=14)
     out["atr_14"] = atr14
     out["atr_norm"] = atr14 / c
     out["parkinson_12"] = parkinson(h, l, 12)

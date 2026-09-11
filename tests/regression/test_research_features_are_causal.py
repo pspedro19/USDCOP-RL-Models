@@ -39,7 +39,7 @@ if str(ROOT) not in sys.path:
 
 from src.research.features import (  # noqa: E402
     ENDOGENOUS, EXCLUDED_GROUPS, FEATURE_ORDER, GROUPS, SCHEMA, SCHEMA_PATH,
-    build_market_features, wilder_rsi)
+    build_market_features, true_range, wilder_atr, wilder_rsi)
 
 MARKET_GROUPS = ("precio", "volatilidad", "tendencia", "temporal")
 MARKET_FEATURES = [f for g in MARKET_GROUPS for f in GROUPS[g]]
@@ -240,3 +240,16 @@ def test_dataset_close_cache_is_invalidated_when_input_changes():
     second.loc[second.index[-1], "close"] += 17.0
     day = pd.Timestamp(first["time"].iloc[0]).date()
     assert dataset_module._closes(first, day)[-1] != dataset_module._closes(second, day)[-1]
+
+
+def test_atr_uses_wilder_rma_with_explicit_seed():
+    h = pd.Series([10.0, 12.0, 13.0, 15.0, 14.0])
+    l = pd.Series([9.0, 10.0, 11.0, 12.0, 12.0])
+    c = pd.Series([9.5, 11.0, 12.0, 13.0, 13.0])
+    got = wilder_atr(h, l, c, period=3)
+    tr = true_range(h, l, c).to_numpy()
+    seed = tr[:3].mean()
+    expected = (1 - 1 / 3) * seed + (1 / 3) * tr[3]
+    assert got.iloc[2] == pytest.approx(seed)
+    assert got.iloc[3] == pytest.approx(expected)
+    assert got.iloc[3] != pytest.approx(tr[1:4].mean())

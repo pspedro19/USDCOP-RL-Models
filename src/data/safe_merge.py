@@ -5,7 +5,7 @@ CLAUDE-T6, CLAUDE-T7 | Plan Items: P0-10, P0-11
 
 IMPORTANTE: Este modulo implementa operaciones de datos SIN data leakage.
 - ffill siempre tiene limite
-- merge_asof nunca tiene tolerance
+- merge_asof conserva timestamps de publicación; la disponibilidad se valida por PIT
 """
 
 
@@ -69,7 +69,10 @@ def safe_merge_macro(
     """
     Merge macro data SIN data leakage.
 
-    IMPORTANTE: No usar tolerance en merge_asof - permite data leakage.
+    IMPORTANTE: ``merge_asof`` no sustituye un contrato de disponibilidad. Se
+    conserva el timestamp de publicación y ``validate_no_future_data`` bloquea
+    valores futuros; la frescura se controla aparte con ``safe_ffill`` o el
+    cargador específico de cada frecuencia.
 
     Args:
         df_ohlcv: OHLCV data con datetime column
@@ -107,7 +110,7 @@ def safe_merge_macro(
     if track_source:
         df_macro_daily['macro_source_date'] = df_macro_daily[datetime_col].copy()
 
-    # Merge SIN tolerance - CRITICO para evitar data leakage
+    # Merge retrospectivo; la validación posterior bloquea cualquier timestamp futuro.
     df = pd.merge_asof(
         df_ohlcv.sort_values(datetime_col),
         df_macro_daily.sort_values(datetime_col),

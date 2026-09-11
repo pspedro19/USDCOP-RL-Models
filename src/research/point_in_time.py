@@ -69,18 +69,19 @@ def read_point_in_time(
     available_at_field: str = "available_at",
     **reader_kwargs: Any,
 ) -> list[Mapping[str, Any]]:
-    """Read data and impose the cutoff for screening at both input and output."""
+    """Read data with the cutoff enforced for every research environment.
+
+    Environment labels describe the workflow, not permission to bypass
+    point-in-time controls.  A replay or paper run that can read future rows is
+    just as invalid as a screening run, so the reader is always bounded and the
+    materialized result is always re-checked.
+    """
     env = ResearchEnvironment(environment)
     boundary = normalize_utc(cutoff)
-    if env is ResearchEnvironment.SCREENING:
-        reader_kwargs["cutoff"] = boundary
-        reader_kwargs["available_at_field"] = available_at_field
+    reader_kwargs["cutoff"] = boundary
+    reader_kwargs["available_at_field"] = available_at_field
     rows = list(reader(**reader_kwargs))
-    if env is ResearchEnvironment.SCREENING:
-        return assert_available_at(
-            rows, cutoff=boundary, available_at_field=available_at_field
-        )
-    return rows
+    return assert_available_at(rows, cutoff=boundary, available_at_field=available_at_field)
 
 
 async def read_point_in_time_async(
@@ -93,15 +94,10 @@ async def read_point_in_time_async(
 ) -> list[Mapping[str, Any]]:
     env = ResearchEnvironment(environment)
     boundary = normalize_utc(cutoff)
-    if env is ResearchEnvironment.SCREENING:
-        reader_kwargs["cutoff"] = boundary
-        reader_kwargs["available_at_field"] = available_at_field
+    reader_kwargs["cutoff"] = boundary
+    reader_kwargs["available_at_field"] = available_at_field
     rows = list(await reader(**reader_kwargs))
-    if env is ResearchEnvironment.SCREENING:
-        return assert_available_at(
-            rows, cutoff=boundary, available_at_field=available_at_field
-        )
-    return rows
+    return assert_available_at(rows, cutoff=boundary, available_at_field=available_at_field)
 
 
 @dataclass(frozen=True)

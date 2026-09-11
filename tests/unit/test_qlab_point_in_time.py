@@ -68,6 +68,23 @@ def test_async_screening_reader_forwards_cutoff_and_rejects_late_rows() -> None:
     assert seen["available_at_field"] == "available_at"
 
 
+@pytest.mark.parametrize("environment", list(ResearchEnvironment))
+def test_every_environment_is_point_in_time_bounded(environment: ResearchEnvironment) -> None:
+    seen: dict[str, object] = {}
+
+    def reader(**kwargs):
+        seen.update(kwargs)
+        return [{"id": "future", "available_at": "2025-01-01T00:00:00.000001Z"}]
+
+    with pytest.raises(PointInTimeViolation):
+        read_point_in_time(
+            reader,
+            cutoff="2025-01-01T00:00:00Z",
+            environment=environment,
+        )
+    assert seen["cutoff"] == datetime(2025, 1, 1, tzinfo=timezone.utc)
+
+
 def test_bounded_select_sql_has_no_raw_predicate_escape_hatch() -> None:
     query = bounded_select_sql(
         table="research.observations",
