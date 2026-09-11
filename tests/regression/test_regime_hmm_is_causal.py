@@ -65,23 +65,42 @@ def test_posterior_is_filtered_not_smoothed(fitted):
     clean = obs.dropna()
     arr = clean.to_numpy(dtype=float)
     n = len(arr)
-    # Puntos repartidos por la serie, con contexto suficiente y futuro real por delante.
-    for t in (200, n // 2, n - 50):
-        truncated = model.filtered_posterior(arr[: t + 1])
-        full = model.filtered_posterior(arr[: t + 1])          # mismo cálculo, reproducible
-        assert np.allclose(truncated, full, atol=1e-12), "el posterior no es determinista"
 
-        # El contraste que importa: añadir futuro NO puede mover el posterior en t.
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            smoothed_all = model.model.predict_proba(
-                model._standardize(arr))[t][list(model.vol_order)]
-        moved = float(np.abs(truncated - smoothed_all).max())
-        assert moved > 1e-6, (
-            f"en t={t} el posterior filtrado y el SUAVIZADO sobre la serie completa "
-            "coinciden. O la serie es degenerada, o se está leyendo el suavizado — que es "
-            "exactamente el look-ahead que este test existe para impedir."
-        )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        smoothed_all = model.model.predict_proba(model._standardize(arr))[:, list(model.vol_order)]
+
+    # Se muestrea la MITAD INICIAL de la serie: cuanto más cerca del final está `t`, menos
+    # futuro le queda al suavizado para discrepar del filtrado, así que exigir diferencia en
+    # `n-50` no prueba causalidad, prueba aritmética. En la cola llegan a coincidir a 1e-16.
+    sampled = range(200, n // 2, 29)
+    differences = []
+    for t in sampled:
+        truncated = model.filtered_posterior(arr[: t + 1])
+        repeat = model.filtered_posterior(arr[: t + 1])
+        assert np.allclose(truncated, repeat, atol=1e-12), "el posterior no es determinista"
+        differences.append(float(np.abs(truncated - smoothed_all[t]).max()))
+
+    moved = np.asarray(differences)
+    # Se compara una FRACCIÓN, no cada punto. En un instante cuyo régimen es inequívoco, el
+    # posterior es casi one-hot y conocer el futuro no aporta nada: filtrado y suavizado
+    # coinciden de forma legítima, y eso pasa en ~36 % de los puntos medidos. La versión
+    # anterior exigía diferencia en tres índices fijos y se puso roja el 2026-09-11 al
+    # alargarse la serie, cuando dos de los tres cayeron sobre puntos de esos.
+    #
+    # El poder del guardia no se pierde: si el código devolviera el suavizado, coincidirían
+    # TODOS los puntos y la fracción caeria a cero.
+    fraction_moved = float((moved > 1e-6).mean())
+    assert fraction_moved > 0.25, (
+        f"solo el {100 * fraction_moved:.1f}% de los puntos muestreados difiere del suavizado "
+        f"sobre la serie completa (mediana {np.median(moved):.2e}). Si practicamente ninguno "
+        "se mueve, se esta leyendo el suavizado — que es exactamente el look-ahead que este "
+        "test existe para impedir."
+    )
+    assert moved.max() > 1e-3, (
+        "ningun punto de la primera mitad difiere de forma apreciable del suavizado; la serie "
+        "es degenerada o el filtrado no lo es."
+    )
 
 
 def test_adding_future_does_not_change_a_past_posterior(fitted):

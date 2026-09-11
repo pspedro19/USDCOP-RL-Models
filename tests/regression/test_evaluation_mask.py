@@ -20,8 +20,16 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 ARTIFACT = ROOT / "config" / "research" / "evaluation_mask.json"
 
-# Medido el 2026-08-24 sobre la serie ya reparada (CTR-DQ-TZ-001).
-EXPECTED_VALID = 1349
+# Medido el 2026-09-11 sobre la serie ya reparada (CTR-DQ-TZ-001).
+#
+# Movido de 1349 a 1361 el 2026-09-11 al refrescar el seed intradia hasta el 2026-09-10 para
+# devolverle datos al juez forward antes del corte del protocolo de retiro. Las doce sesiones
+# nuevas son 2026-08-25 .. 2026-09-10, **todas posteriores al fin del hold-out (2026-08-24)**,
+# asi que caen fuera de los tres bloques particionados y la identidad congelada de la tesis no
+# se mueve: desarrollo, seleccion y hold-out contienen exactamente las mismas sesiones. La
+# mascara crece, los bloques no. Si alguna vez crece por DENTRO de un bloque, eso no es un
+# refresco: es una reparacion de datos historicos y obliga a repensar el congelamiento.
+EXPECTED_VALID = 1361
 MIN_HOLDOUT_VALID = 500   # umbral de Â§11.2 del plan: por debajo, el contraste es indecidible
 
 

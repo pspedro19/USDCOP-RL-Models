@@ -168,14 +168,71 @@ def test_partial_live_spec_is_prefix_causal(artifacts_exist):
 
     if not SEED_M5.is_file():
         pytest.skip("falta el seed de 5 minutos")
-    target = sorted(build_mask().valid)[-1]
     m5 = pd.read_parquet(SEED_M5)
+    sessions = sorted(build_mask().valid)
+
+    # Lo que este test verifica es que un prefijo de sesion produzca las mismas observaciones
+    # que la sesion completa; la fecha concreta es incidental. Tomar siempre la ULTIMA sesion
+    # ataba el test a que macro estuviera tan fresca como el precio, y el 2026-09-11 se puso
+    # roja con un `ValueError: macro ausente o stale` al refrescarse el seed intradia hasta el
+    # 2026-09-10 mientras MACRO_DAILY_CLEAN seguia en el 2026-08-24. El desfase es real y hay
+    # que verlo, pero es un problema de frescura de datos, no de causalidad del builder: se
+    # comprueba aparte, abajo, con un mensaje que dice que pasa.
+    target = full = None
+    unsealable: list[str] = []
+    for candidate in reversed(sessions[-40:]):
+        bars = m5[pd.to_datetime(m5["time"]).dt.date == candidate]
+        if len(bars) != 60:
+            continue
+        try:
+            # Los DOS caminos tienen que poder construirse: el completo y el parcial validan
+            # la disponibilidad macro por separado, y una fecha puede pasar uno y fallar el otro.
+            candidate_full = build_live_spec(candidate, m5=m5)
+            build_live_spec_partial(candidate, bars.iloc[:1])
+        except ValueError as exc:            # macro ausente o stale para esa fecha
+            unsealable.append(f"{candidate}: {exc}")
+            continue
+        target, full = candidate, candidate_full
+        break
+
+    assert target is not None, (
+        "ninguna de las ultimas 40 sesiones validas puede construir un spec completo:\n  "
+        + "\n  ".join(unsealable[:5])
+    )
+
     day = m5[pd.to_datetime(m5["time"]).dt.date == target]
     assert len(day) == 60
-    full = build_live_spec(target, m5=m5)
     for n in (1, 11, 59):
         partial = build_live_spec_partial(target, day.iloc[:n])
         assert partial.bars_received == n
         np.testing.assert_allclose(partial.market, full.market[:n], atol=1e-5)
         np.testing.assert_allclose(partial.context, full.context, atol=1e-5)
         np.testing.assert_array_equal(partial.closes, full.close[:n])
+
+
+def test_macro_is_not_behind_price_for_the_live_lane():
+    """El carril live no puede sellar mientras macro vaya por detras del precio.
+
+    Es una comprobacion de FRESCURA, separada a proposito de la causalidad del builder. El
+    2026-09-11 el seed intradia se refresco hasta el 2026-09-10 para devolverle datos al juez
+    forward, pero `MACRO_DAILY_CLEAN` siguio en el 2026-08-24: doce sesiones con precio y sin
+    macro. La regla de disponibilidad hace lo correcto -- se niega a sellar -- y el efecto
+    visible era un `ValueError` opaco desde dentro del builder en otro test. Aqui se nombra.
+    """
+    import pandas as pd
+
+    from src.research.dataset import SEED_M5
+
+    macro = ROOT / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_DAILY_CLEAN.parquet"
+    if not (SEED_M5.is_file() and macro.is_file()):
+        pytest.skip("faltan seed o macro materializados")
+
+    price_last = pd.to_datetime(pd.read_parquet(SEED_M5)["time"]).max().date()
+    macro_last = pd.read_parquet(macro).index.max().date()
+    lag = len(pd.bdate_range(macro_last, price_last)) - 1
+    assert lag <= 5, (
+        f"macro llega al {macro_last} y el precio al {price_last}: {lag} dias habiles de "
+        "desfase. El carril live no puede sellar decisiones en esa ventana, asi que el juez "
+        "forward se queda sin sesiones aunque el precio este fresco. Refresca macro "
+        "(`data/pipeline/04_cleaning/run_clean.py` sobre L0) o declara la ventana como hueco."
+    )
