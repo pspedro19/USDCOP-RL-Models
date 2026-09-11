@@ -4,17 +4,21 @@
 # la seccion ACTUAL se sobreescribe.
 
 ## ACTUAL
-timestamp: 2026-08-11T14:40:00-0500
-instance_id: codex-root-20260810
-estado: WAITING_ACK         # IDLE | WORKING | BLOCKED | WAITING_ACK | DONE_CYCLE
-bl_activos: ["contrato SPX equity diaria vs posicion/costes"]
+timestamp: 2026-09-10T20:28:00-05:00
+instance_id: codex-thesis-repair-20260910
+estado: PARA_REVIEW
+bl_activos: ["EXP-TESIS-REPAIR-01: macro causal + reward terminal"]
 agentes_en_vuelo: 0
 terminal_auxiliar: ninguno
-archivos_bloqueados: [".claude/coordination/CODEX-STATUS.md"]
-necesito_del_otro: ["Claude: ACK/objecion C039 R2 DailyReplayRow generico + piloto SPX"]
-para_review: ["4f9e9fa2 fronteras temporales", "be9f4f95 autoridad contractual de cobertura", "1061b682 identidad de activo fail-closed", "1a4acf7d DSR SSOT 239", "8ba10915 baseline sin seleccion"]
+archivos_bloqueados: ["src/research/features.py", "src/research/session_gym.py", "tests/regression/test_research_features_are_causal.py", "tests/regression/test_session_gym_parity.py"]
+necesito_del_otro: []
+para_review: ["commit pendiente: macro strict as-of y reward terminal; 21 pruebas focales verdes"]
 
 ## LOG (append, mas reciente arriba)
+- 2026-09-10T19:57:52-05:00 — Auditoria entregable: informe, JSON con hashes, diagnostico sin training y dos indices sincronizados. Macro causalidad FALLA; politica pierde bajo costos publicados; no claim de imposibilidad/rentabilidad. 48P focales, 1092P gobernanza; inventory/index/links/graph OK; Ruff final OK. Revisor datos y estadistica sin discrepancias materiales. Modelos, datasets y registro trials preservados. Se liberan leases de la auditoria; no se marca ningun BL historico ni se publica.
+- 2026-09-10T19:56:11-05:00 — Informe revisado independientemente, cifras y poblaciones sin discrepancias. Tests focales 48P; gobernanza 1092P. Gate indices requiere regenerar solo docs/INDEX.md y docs/analysis/README.md por documento nuevo; leases tomados. Ruff detecto dos detalles de estilo, corregidos. Se regenerara evidencia propia para mantener hash del script final; fuentes/modelos intactos.
+- 2026-09-10T19:47:12-05:00 — Evidencia reproducida: 99714 barras; macro perturbado del mismo dia cambia observacion (gate false); paridad market/macro/scaler con portable delta 0. Hallazgos adicionales: H1 comparador cambiado, bruto suma vs neto compuesto, diario identico al agregado M5, stress sintetico, trazabilidad de apertura no certificada. Script diagnostico ejecutado exit 0; salida no equivale a gates verdes. Informe en redaccion; revision independiente y knowledge gates en curso. No nuevos modelos ni trials.
+- 2026-09-10T19:30:15-05:00 — Auditoria independiente sobre c43b72f673b7a2314410be4749982092b336b7d7. Modo degradado: canales historicos, sin dependencia de ACK para diagnosticos. Tres subagentes solo lectura (datos, PPO, estadistica); raiz publica diagnostico e informe. Sin cambios en datos, modelos, contratos, registries ni configuraciones congeladas; sin nuevos trials ni entrenamiento. WIP ajeno preexistente preservado. No se retoma backlog historico SPX.
 - 2026-08-11T14:40:00-0500 — C039 R2: `{d,eq}` reducido afecta 5 BTC + 9 Gold activos.
   Contrato se generaliza, implementacion no: piloto SPX; resto requiere auditoria propia.
   Espera ACK, sin leases/publicacion. ZIP excluido.

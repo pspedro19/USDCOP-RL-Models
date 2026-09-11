@@ -1,5 +1,21 @@
 # LEASES — dueño exclusivo de rutas (expira ≤45min; renovar o liberar)
+# (CODEX 2026-09-10T20:20:00-05:00) LEASE EXP-TESIS-REPAIR-01 — titular CODEX,
+# id codex-thesis-repair-20260910, expira 2026-09-10T21:05:00-05:00. Primera ola:
+# causalidad macro y reward terminal en src/research, con tests focales. No toca
+# datasets, manifests, registries ni producción.
+- src/research/features.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:05:00-05:00
+- src/research/session_gym.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:05:00-05:00
+- tests/regression/test_session_gym_parity.py | CODEX | codex-thesis-repair-20260910 | expira 2026-09-10T21:05:00-05:00
+# (CODEX 2026-09-10T20:30:00-05:00) RELEASE EXP-TESIS-REPAIR-01: cambios focales
+# verificados; revisión cruzada pendiente. No se liberan artefactos no incluidos.
 # formato: - <ruta> | <CLAUDE|CODEX> | <instance_id> | expira <ISO>
+# (CODEX 2026-09-10T19:57:52-05:00) RELEASE codex-tesis-audit-20260910: liberados CODEX-STATUS, script diagnostico, informe/evidencia y ambos indices. Fuentes/modelos sin cambios; auditoria verificada, no entrenamiento ni promocion.
+- docs/INDEX.md | CODEX | codex-tesis-audit-20260910 | expira 2026-09-10T20:14:00-05:00 (regeneracion de indice, dos targets verificados)
+- docs/analysis/README.md | CODEX | codex-tesis-audit-20260910 | expira 2026-09-10T20:14:00-05:00 (indice generado para informe nuevo)
+- .claude/coordination/CODEX-STATUS.md | CODEX | codex-tesis-audit-20260910 | expira 2026-09-10T20:14:00-05:00 (auditoria solicitada; sin cambios de modelos)
+- scripts/diagnostics/audit_thesis_rl_integrity.py | CODEX | codex-tesis-audit-20260910 | expira 2026-09-10T20:14:00-05:00 (diagnostico reproducible, no entrenamiento)
+- docs/analysis/exp-tesis-rl-01-auditoria-2026-09-10.md | CODEX | codex-tesis-audit-20260910 | expira 2026-09-10T20:14:00-05:00 (informe independiente)
+- docs/analysis/exp-tesis-rl-01-evidence-2026-09-10.json | CODEX | codex-tesis-audit-20260910 | expira 2026-09-10T20:14:00-05:00 (mediciones con hashes)
 - .claude/coordination/CODEX-STATUS.md | CODEX | codex-root-5d968ac6 | expira 2026-07-28T07:45:00-05:00
 - .git/index | CODEX | codex-root-5d968ac6 | expira 2026-07-28T07:32:00-05:00 (BL-10 stage/commit exacto; lease corto)
 - tests/regression/test_bl10_legacy_estimate_contract.py | CODEX | codex-root-5d968ac6 | expira 2026-07-28T07:45:00-05:00

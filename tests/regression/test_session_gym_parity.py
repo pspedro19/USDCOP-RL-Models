@@ -81,12 +81,8 @@ def test_gym_matches_run_session_on_random_paths():
         assert info["n_changes"] == offline.n_changes
 
 
-def test_episode_reward_equals_daily_return_before_the_terminal_cost():
-    """El reward acumulado es la contabilidad SIN el cierre terminal.
-
-    La diferencia debe ser exactamente `terminal_cost`. Si fuese otra cosa, el Env estaría
-    cobrando algo que las tablas no ven — o al revés.
-    """
+def test_episode_reward_equals_daily_return_including_terminal_cost():
+    """El reward de entrenamiento y la liquidación reportada tienen la misma contabilidad."""
     spec = make_spec(seed=3)
     env = SessionTradingEnv([spec], seed=0, shuffle=False)
     rng = np.random.default_rng(5)
@@ -99,7 +95,7 @@ def test_episode_reward_equals_daily_return_before_the_terminal_cost():
         total += r / env.reward_scale
 
     res = env.last_result
-    assert total == pytest.approx(res.daily_return + res.terminal_cost, abs=1e-12)
+    assert total == pytest.approx(res.daily_return, abs=1e-12)
     assert res.terminal_cost >= 0.0
 
 

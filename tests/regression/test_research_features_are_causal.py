@@ -199,3 +199,33 @@ def test_position_features_are_flagged_endogenous():
     """
     assert ENDOGENOUS == set(GROUPS["posicion"])
     assert ENDOGENOUS.isdisjoint(set(MARKET_FEATURES))
+
+
+def test_macro_uses_strictly_prior_observation(tmp_path, monkeypatch):
+    """La fila macro de d no puede entrar en la decisión de la misma sesión."""
+    import src.research.features as features_module
+
+    dates = pd.date_range("2023-06-14", periods=2, freq="D")
+    macro = pd.DataFrame({
+        "COMM_OIL_BRENT_GLB_D_BRENT": [70.0, 77.0],
+        "FXRT_INDEX_DXY_USA_D_DXY": [100.0, 110.0],
+        "FINC_RATE_IBR_OVERNIGHT_COL_D_IBR": [10.0, 11.0],
+        "FINC_BOND_YIELD2Y_USA_D_DGS2": [4.0, 5.0],
+    }, index=dates)
+    path = tmp_path / "macro.parquet"
+    macro.to_parquet(path)
+    monkeypatch.setattr(features_module, "MACRO_CLEAN", path)
+
+    out = features_module.attach_macro_features([pd.Timestamp("2023-06-15")])
+    # The only usable DXY return is 2023-06-15? No: the session must use the
+    # return observed on 2023-06-14, which needs a still earlier level; with
+    # only two rows this is unavailable and the feature is the explicit neutral 0.
+    assert out.loc[pd.Timestamp("2023-06-15"), "dxy_ret_prev"] == 0.0
+
+
+def test_macro_artifact_missing_fails_closed(monkeypatch, tmp_path):
+    import src.research.features as features_module
+
+    monkeypatch.setattr(features_module, "MACRO_CLEAN", tmp_path / "missing.parquet")
+    with pytest.raises(FileNotFoundError):
+        features_module.attach_macro_features([pd.Timestamp("2023-06-15")])

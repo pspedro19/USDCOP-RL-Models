@@ -261,21 +261,30 @@ def _finalize(out: pd.DataFrame) -> pd.DataFrame:
 
 
 def attach_macro_features(per_session_index) -> pd.DataFrame:
-    """Grupo macro (§6.5), con `merge_asof(backward)` — capa 1 del anti-look-ahead."""
+    """Attach only macro observations available strictly before each session.
+
+    A macro row dated ``d`` is not available at the opening of session ``d``.  The
+    join therefore uses the latest *strictly earlier* observation and preserves the
+    original daily timestamp (including weekends/holidays).  This is intentionally
+    fail-closed: a missing required macro artifact must never become an all-zero
+    feature vector.
+    """
     idx = pd.to_datetime(sorted(per_session_index))
     out = pd.DataFrame(index=idx,
                        columns=["brent_ret_prev", "dxy_ret_prev", "spread_ibr_dgs2"],
                        dtype=float)
     if not MACRO_CLEAN.is_file():
-        return out.fillna(0.0)
+        raise FileNotFoundError(f"macro artifact missing: {MACRO_CLEAN}")
     macro = pd.read_parquet(MACRO_CLEAN).sort_index()
 
     def asof(series: pd.Series, name: str) -> pd.Series:
         s = series.dropna()
         left = pd.DataFrame({"d": idx})
         right = pd.DataFrame({"d": pd.to_datetime(s.index), name: s.to_numpy()})
-        merged = pd.merge_asof(left.sort_values("d"), right.sort_values("d"),
-                               on="d", direction="backward")
+        merged = pd.merge_asof(
+            left.sort_values("d"), right.sort_values("d"), on="d",
+            direction="backward", allow_exact_matches=False,
+        )
         return pd.Series(merged[name].to_numpy(), index=idx)
 
     if "COMM_OIL_BRENT_GLB_D_BRENT" in macro:

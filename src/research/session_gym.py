@@ -169,11 +169,14 @@ class SessionTradingEnv(gym.Env if _GYM else object):
         self._b += 1
 
         terminated = self._b >= OPERABLE_RETURNS
+        terminal_cost_ret = 0.0
         if terminated:
-            # `run_session` es la autoridad contable: cobra el cierre terminal y produce
-            # el numero que va a las tablas. El reward acumulado NO se usa para reportar.
+            # The terminal liquidation is part of the economic objective.  Keep
+            # run_session as the accounting authority and charge exactly the same
+            # terminal cost in the final reward step.
             self.last_result = run_session(self._spec.close, np.asarray(self._weights),
                                            self._spec.spread_pips, date=self._spec.date)
+            terminal_cost_ret = self.last_result.terminal_cost
             obs = np.zeros(self._obs_dim, dtype=np.float32)
             info = {"daily_return": self.last_result.daily_return,
                     "n_changes": self.last_result.n_changes,
@@ -182,7 +185,7 @@ class SessionTradingEnv(gym.Env if _GYM else object):
         else:
             obs, info = self._observe(), {}
 
-        return obs, float(net * self.reward_scale), terminated, False, info
+        return obs, float((net - terminal_cost_ret) * self.reward_scale), terminated, False, info
 
     # -- observación -------------------------------------------------------
     def _observe(self) -> np.ndarray:
