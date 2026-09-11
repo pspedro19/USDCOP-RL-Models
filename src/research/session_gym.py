@@ -93,13 +93,18 @@ class SessionTradingEnv(gym.Env if _GYM else object):
     metadata = {"render_modes": []}
 
     def __init__(self, sessions: list[SessionSpec], seed: int | None = None,
-                 reward_scale: float = 100.0, shuffle: bool = True):
+                 reward_scale: float = 100.0, shuffle: bool = True,
+                 kappa_turn: float = 0.0, lambda_dd: float = 0.0):
         if not _GYM:                                          # pragma: no cover
             raise ImportError("gymnasium no está instalado")
         if not sessions:
             raise ValueError("no hay sesiones")
         self.sessions = sessions
         self.reward_scale = float(reward_scale)
+        if kappa_turn < 0 or lambda_dd < 0:
+            raise ValueError("kappa_turn y lambda_dd deben ser >= 0")
+        self.kappa_turn = float(kappa_turn)
+        self.lambda_dd = float(lambda_dd)
         self.shuffle = shuffle
         self._rng = np.random.default_rng(seed)
         self._order = np.arange(len(sessions))
@@ -185,7 +190,13 @@ class SessionTradingEnv(gym.Env if _GYM else object):
         else:
             obs, info = self._observe(), {}
 
-        return obs, float((net - terminal_cost_ret) * self.reward_scale), terminated, False, info
+        # Optional diagnostics-only shaping. Defaults are exactly identity;
+        # economic P&L remains the unshaped `run_session` result.
+        drawdown = max(0.0, self._peak - self._cum)
+        shaped = net - terminal_cost_ret
+        shaped -= self.kappa_turn * abs(dw)
+        shaped -= self.lambda_dd * drawdown
+        return obs, float(shaped * self.reward_scale), terminated, False, info
 
     # -- observación -------------------------------------------------------
     def _observe(self) -> np.ndarray:

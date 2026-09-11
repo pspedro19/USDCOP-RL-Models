@@ -109,6 +109,18 @@ def test_always_flat_earns_exactly_zero():
     assert info["terminal_cost"] == pytest.approx(0.0)
 
 
+def test_reward_shaping_defaults_to_identity():
+    """The diagnostic shaping knobs must not change the frozen objective by default."""
+    env = SessionTradingEnv([make_spec(seed=7)], seed=7, shuffle=False)
+    _obs, _ = env.reset()
+    total = 0.0
+    terminated = False
+    while not terminated:
+        _obs, reward, terminated, _truncated, _info = env.step(2)  # flat action
+        total += reward
+    assert total == pytest.approx(env.last_result.daily_return * env.reward_scale)
+
+
 # ---------------------------------------------------------------------------
 # Cronología y espacios
 # ---------------------------------------------------------------------------
