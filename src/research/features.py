@@ -220,8 +220,13 @@ def build_market_features(m5: pd.DataFrame, valid_sessions=None) -> pd.DataFrame
 
     # --- precio -----------------------------------------------------------
     logc = np.log(c)
+    # Returns are intra-session by contract: a window must never import the
+    # overnight gap from the previous close.  The concatenated series below
+    # keeps the chronology of valid bars while inserting an explicit zero at
+    # each session boundary.
+    session_group = df["_d"]
     for k in (1, 3, 6, 12):
-        out[f"logret_{k}"] = logc.diff(k)
+        out[f"logret_{k}"] = logc.groupby(session_group).diff(k)
     # Acumulado DENTRO de la sesion: se reinicia cada dia por definicion.
     session_open = c.groupby(df["_d"]).transform("first")
     out["ret_sesion_acum"] = c / session_open - 1.0
@@ -231,7 +236,7 @@ def build_market_features(m5: pd.DataFrame, valid_sessions=None) -> pd.DataFrame
     out["close_pos_rango"] = ((c - lo_sofar) / rng).fillna(0.5)
 
     # --- volatilidad y rango ---------------------------------------------
-    r1 = logc.diff(1)
+    r1 = logc.groupby(session_group).diff(1).fillna(0.0)
     out["rv_12"] = r1.rolling(12, min_periods=2).std()
     out["rv_78"] = r1.rolling(78, min_periods=10).std()
     out["rv_ratio"] = out["rv_12"] / out["rv_78"].replace(0.0, np.nan)

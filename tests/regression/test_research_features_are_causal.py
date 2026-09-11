@@ -253,3 +253,19 @@ def test_atr_uses_wilder_rma_with_explicit_seed():
     assert got.iloc[2] == pytest.approx(seed)
     assert got.iloc[3] == pytest.approx(expected)
     assert got.iloc[3] != pytest.approx(tr[1:4].mean())
+
+
+def test_intra_session_returns_exclude_overnight_gap():
+    base = synthetic_m5(n_sessions=3, seed=19)
+    dates = pd.to_datetime(base["time"]).dt.date.unique()
+    first_next = dates[1]
+    original = build_market_features(base)
+    altered = base.copy()
+    prior = pd.to_datetime(altered["time"]).dt.date == dates[0]
+    altered.loc[prior, ["open", "high", "low", "close"]] *= 1.05
+    changed = build_market_features(altered)
+    b0 = pd.to_datetime(changed["time"]).dt.date == first_next
+    assert (changed.loc[b0, "logret_1"] == 0.0).all()
+    assert changed.loc[b0, "rv_12"].iloc[0] == pytest.approx(
+        original.loc[b0, "rv_12"].iloc[0]
+    )
