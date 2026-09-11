@@ -156,3 +156,26 @@ def test_an_incomplete_session_is_refused(artifacts_exist):
 
     with pytest.raises(ValueError, match="barras"):
         build_live_spec(target, m5=truncated)
+
+
+def test_partial_live_spec_is_prefix_causal(artifacts_exist):
+    """Las observaciones disponibles no cambian al agregar barras posteriores."""
+    import pandas as pd
+
+    from src.research.dataset import SEED_M5
+    from src.research.evaluation_mask import build_mask
+    from src.research.live_spec import build_live_spec, build_live_spec_partial
+
+    if not SEED_M5.is_file():
+        pytest.skip("falta el seed de 5 minutos")
+    target = sorted(build_mask().valid)[-1]
+    m5 = pd.read_parquet(SEED_M5)
+    day = m5[pd.to_datetime(m5["time"]).dt.date == target]
+    assert len(day) == 60
+    full = build_live_spec(target, m5=m5)
+    for n in (1, 11, 59):
+        partial = build_live_spec_partial(target, day.iloc[:n])
+        assert partial.bars_received == n
+        np.testing.assert_allclose(partial.market, full.market[:n], atol=1e-5)
+        np.testing.assert_allclose(partial.context, full.context, atol=1e-5)
+        np.testing.assert_array_equal(partial.closes, full.close[:n])

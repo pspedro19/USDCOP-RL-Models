@@ -92,6 +92,27 @@ class FrozenScaler:
                 "features": list(self.features)}
 
 
+@dataclass(frozen=True)
+class PartialLiveSpec:
+    """Observaciones disponibles hasta una barra cerrada, sin inventar el resto.
+
+    No es un ``SessionSpec`` entrenable: deliberadamente no satisface el contrato de 60
+    cierres. El carril forward debe acumular estos prefijos y solo liquidar cuando la sesión
+    esté completa; exponer este tipo evita que una sesión parcial se cuele como confirmatoria.
+    """
+
+    date: date
+    bars_received: int
+    market: np.ndarray
+    context: np.ndarray
+    closes: np.ndarray
+    spread_pips: float
+
+    @property
+    def sealed_before_next_bar(self) -> bool:
+        return self.bars_received > 0
+
+
 def export_scaler(data, path: Path = SCALER_PATH) -> Path:
     """Vuelca el escalador de un `ResearchData` al formato congelado. Se corre UNA vez."""
     scaler = FrozenScaler(mean=np.asarray(data.scaler_mean, dtype=float),
@@ -229,3 +250,66 @@ def session_spread(session_date: str | date, m5: pd.DataFrame | None = None,
         )
     probs = regime.filtered_posterior(obs.to_numpy(dtype=float))
     return float(np.dot(probs, _levels_for_k(regime.k)))
+
+
+def build_live_spec_partial(session_date: str | date, bars: pd.DataFrame,
+                            scaler: FrozenScaler | None = None,
+                            regime: PortableRegimeModel | None = None) -> PartialLiveSpec:
+    """Construye únicamente el prefijo causal de una sesión.
+
+    ``bars`` debe contener las barras cerradas recibidas hasta el instante de sellado. Se
+    rechazan filas futuras, duplicadas y sesiones distintas. Las ventanas se calculan sobre
+    la serie truncada, por lo que agregar barras posteriores no puede reescribir el prefijo.
+    """
+    target = pd.Timestamp(session_date).date() if not isinstance(session_date, date) else session_date
+    if bars is None or bars.empty:
+        raise ValueError(f"{target}: se necesita al menos una barra cerrada")
+    required = {"time", "close"}
+    missing = required - set(bars.columns)
+    if missing:
+        raise ValueError(f"faltan columnas de barras: {sorted(missing)}")
+    frame = bars.copy()
+    frame["time"] = pd.to_datetime(frame["time"])
+    dates = frame["time"].dt.date
+    if (dates != target).any():
+        raise ValueError("bars debe contener únicamente la sesión objetivo")
+    frame = frame.sort_values("time")
+    if frame["time"].duplicated().any():
+        raise ValueError("bars contiene timestamps duplicados")
+    if len(frame) > BARS_PER_SESSION:
+        raise ValueError(f"{target}: {len(frame)} barras, máximo {BARS_PER_SESSION}")
+
+    # El histórico para features contiene solo pasado y el prefijo recibido de hoy. Nunca se
+    # consulta el parquet completo ni se llama a build_live_spec, que exige las 60 barras.
+    full = pd.read_parquet(SEED_M5)
+    t = pd.to_datetime(full["time"])
+    hist = full[t.dt.date < target]
+    hist = pd.concat([hist, frame], ignore_index=True)
+    valid = {d for d in build_mask().valid if d <= target}
+    scaler = scaler or FrozenScaler.load()
+    regime = regime or PortableRegimeModel.load()
+    feats = build_market_features(hist, valid_sessions=valid)
+    day = feats[feats["_session"] == target]
+    if len(day) != len(frame):
+        raise ValueError(f"{target}: prefijo de features inconsistente ({len(day)} != {len(frame)})")
+
+    obs = build_regime_observations(hist, valid_sessions=valid).dropna()
+    obs.index = [x.date() if hasattr(x, "date") else x for x in obs.index]
+    prior = obs[[d < target for d in obs.index]]
+    if len(prior) < MIN_CONTEXT_SESSIONS:
+        raise ValueError(f"{target}: contexto insuficiente para posterior filtrado")
+    probs = regime.filtered_posterior(prior.to_numpy(dtype=float))
+    spread = float(np.dot(probs, _levels_for_k(regime.k)))
+    if len(probs) < N_REGIMES:
+        probs = np.pad(probs, (0, N_REGIMES - len(probs)))
+    macro = attach_macro_features([target])
+    macro_row = macro.loc[pd.Timestamp(target), MACRO_FEATURES].to_numpy(dtype=float)
+    if not np.isfinite(macro_row).all():
+        raise ValueError(f"{target}: macro ausente o stale; prefijo no sellable")
+    ctx = np.concatenate([macro_row, probs[:N_REGIMES]])
+    X = scaler.transform(day[MARKET_FEATURES].to_numpy(dtype=float))
+    return PartialLiveSpec(date=target, bars_received=len(frame),
+                           market=np.clip(X, -CLIP, CLIP).astype(np.float32),
+                           context=np.clip(ctx, -CLIP, CLIP).astype(np.float32),
+                           closes=frame["close"].to_numpy(dtype=float),
+                           spread_pips=spread)
