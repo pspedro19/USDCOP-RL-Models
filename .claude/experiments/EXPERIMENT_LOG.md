@@ -623,6 +623,7 @@ descartada en cuanto acumula dos semillas que operan, porque ya no puede llegar 
 | `norm_reward = False` | 0/2 | 0,976 · 0,963 | descartada |
 | `γ = 1.0` | 0/2 | 0,603 · 0,618 | descartada |
 | `κ_turn = 1.0` | 1/3 | **0,052** · 0,499 · 0,580 | descartada |
+| `κ_turn = 1.0` + `ent_coef = 0` | 0/1 | 0,732 | descartada |
 
 **Ninguna receta del protocolo pasa S1.** Quitar el suelo de entropía o la normalización del
 reward lo empeora (de 0,53 a ~0,97): no eran la causa. La única que produjo una semilla plana
@@ -635,11 +636,43 @@ tal cual**: reentrenar v2 con una receta que no encuentra el flat sobre ruido pr
 conclusión confundida entre optimizador y mercado. Lo que corresponde es buscar la receta en
 el terreno sintético —donde no se gasta ni un trial de mercado— hasta que una pase S1-S4.
 
-**Direcciones que el propio experimento sugiere**, ninguna ejecutada aún: `κ_turn` por encima
-de 1 (el único eje que movió la aguja), presupuesto de pasos mayor (100.000 ≈ 3,4 pasadas sobre
-500 sesiones sintéticas, quizá insuficiente para converger a una política degenerada), y
-revisar si la escala del reward ×100 con `clip_reward=10` está recortando justo la señal de
-costo. Cada una es una variable y se declara antes de mirarla.
+### Por qué fallan: el mecanismo, medido
+
+Tres comprobaciones, en orden, cada una descartando la explicación anterior.
+
+**1. No es que falte señal de costo.** Por barra, el costo mediano es **2,5 veces** la
+desviación del retorno (0,000515 frente a 0,000206); por sesión, una política que rotara
+pagaría 0,0258 contra un bruto con desviación 0,0022. La señal domina. Descartada la hipótesis
+de que el reward ×100 con `clip_reward=10` la esté enterrando.
+
+**2. No es churn.** Contados los cambios: **2,0 y 2,3 por sesión** de 59 posibles, con costo
+0,0008. El agente entra, mantiene y cierra.
+
+**3. Es compromiso temprano, y la penalización de turnover lo agrava.** Se declaró y ejecutó
+una quinta receta, `κ_turn = 1` **con** `ent_coef = 0`, razonando que el bono de entropía
+empujaba a muestrear acciones distintas. **Salió al revés** (semilla 42: exposición 0,732
+frente a 0,052 con entropía), y eso destapa el mecanismo:
+
+| Receta | Exposición | Cambios/sesión | Primera barra con posición |
+|---|---:|---:|---|
+| `κ_turn = 1` (con entropía) | 0,088 | 0,3 | **nunca toma posición** |
+| `κ_turn = 1` + `ent_coef = 0` | 0,737 | 2,5 | **barra 0** |
+
+Sin exploración, la política **se compromete en la primera barra** con la acción que favorezca
+su inicialización, y entonces la penalización de turnover la **encierra ahí**: volver a flat
+cuesta lo mismo que haber salido. `κ_turn` castiga el **cambio**, no la **exposición**, así que
+enseña «no te muevas», no «quédate fuera». Con entropía, la política no se compromete antes de
+aprender y sí encuentra el flat — en la semilla 42, no en la 123 ni en la 456.
+
+**El contrato económico tiene la misma forma**: el costo se cobra sobre `|Δw|`, así que un
+agente que se desvía de flat está desincentivado a volver. Es una propiedad del entorno, no un
+defecto del optimizador, y explica por qué las corridas de mercado mantienen posición.
+
+**Recomendación para la siguiente iteración**, declarada aquí y no ejecutada: la receta
+candidata es `κ_turn` **con** entropía, y lo que falta resolver es la varianza entre semillas
+que produce el compromiso temprano — inicializar la política sesgada hacia flat, o recocer
+`κ_turn` desde cero, atacan la causa medida. Subir `κ_turn` por encima de 1 **no** es una de
+ellas: con 1 la penalización ya es dos mil veces el neto económico por barra.
 
 **Reproducir.** `outputs/thesis-repair/sanity_S1_protocol.json` trae las cinco recetas con sus
 semillas, hash del runner y commit base.

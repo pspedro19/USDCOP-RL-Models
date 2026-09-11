@@ -40,7 +40,16 @@ PPO_KWARGS = {
 # hacia que la evidencia de sanidad no fuera comparable por semilla con las corridas de
 # mercado de `thesis_train_ppo.py`, que si usa las cinco correctas.
 SEEDS = (42, 123, 456, 789, 1337)
-PROBES = ("baseline", "ent_coef_zero", "norm_reward_off", "gamma_one", "kappa_turn_one")
+PROBES = ("baseline", "ent_coef_zero", "norm_reward_off", "gamma_one", "kappa_turn_one",
+          "kappa_turn_one_ent_zero")
+# `kappa_turn_one_ent_zero` se declara el 2026-09-11, despues de agotar las cuatro sondas
+# originales y de MEDIR por que fallaron. No es una quinta prueba a ciegas: con kappa_turn=1 un
+# cambio de posicion cuesta 1,0 en unidades de reward mientras el neto economico por barra es
+# ~0,0005 -- una penalizacion dos mil veces mayor. Que aun asi dos de tres semillas operaran
+# descarta que falte senal y deja como sospechoso al bono de entropia, que empuja la politica
+# hacia la uniforme sobre las cinco acciones. Las dos piezas nunca se habian combinado: la
+# sonda de entropia se probo SIN penalizacion de turnover, donde quitarla solo dejaba al agente
+# apostar una direccion gratis.
 
 
 def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
@@ -61,6 +70,12 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
         norm.gamma = 1.0
     elif probe == "kappa_turn_one":
         # A positive turn penalty is an environment parameter, not a PPO knob.
+        vec = DummyVecEnv([lambda: SessionTradingEnv(
+            sessions, seed=seed, shuffle=True, kappa_turn=1.0)])
+        norm = VecNormalize(vec, norm_obs=False, norm_reward=True, clip_reward=10.0,
+                            gamma=kwargs["gamma"])
+    elif probe == "kappa_turn_one_ent_zero":
+        kwargs["ent_coef"] = 0.0
         vec = DummyVecEnv([lambda: SessionTradingEnv(
             sessions, seed=seed, shuffle=True, kappa_turn=1.0)])
         norm = VecNormalize(vec, norm_obs=False, norm_reward=True, clip_reward=10.0,
@@ -184,7 +199,7 @@ def main() -> int:
     parser.add_argument("--resume", type=Path,
                         help="reanuda un checkpoint de una sola semilla")
     parser.add_argument("--probe", choices=("baseline", "ent_coef_zero", "norm_reward_off",
-                                              "gamma_one", "kappa_turn_one"), default="baseline")
+                                              "gamma_one", "kappa_turn_one", "kappa_turn_one_ent_zero"), default="baseline")
     parser.add_argument("--protocol", action="store_true",
                         help="ejecuta S1-S4 y detiene las sondas en la primera receta válida")
     parser.add_argument("--output", type=Path)

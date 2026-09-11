@@ -122,9 +122,20 @@ mercado.
 > **Qué hace exactamente, contado y no supuesto:** estas políticas dan **2,0 y 2,3 cambios de
 > posición por sesión** de 59 posibles y pagan 0,0008 por sesión; una que rotara de verdad
 > pagaría 0,0258. **No hacen churn: entran, mantienen y cierran.** El fallo es que sobre ruido
-> puro la receta apuesta una dirección constante en vez de quedarse fuera — valor esperado
-> cero más el costo de un viaje de ida y vuelta. Y el mismo patrón está en las corridas de
-> mercado publicadas: 1.682 a 2.314 cambios en 584 sesiones, ~3 por sesión.
+> puro la receta apuesta una dirección constante en vez de quedarse fuera. Y el mismo patrón
+> está en las corridas de mercado publicadas: 1.682 a 2.314 cambios en 584 sesiones, ~3 por
+> sesión — lo que **deja sin base la lectura «el alfa vive en la alta frecuencia»** por una
+> segunda vía, independiente de la descomposición del punto 7.
+>
+> **El mecanismo, medido:** el costo no está enterrado (por barra es 2,5× la desviación del
+> retorno), así que no es falta de señal. Es **compromiso temprano**: sin bono de entropía la
+> política elige una acción en la barra 0 y la penalización de turnover la **encierra ahí**,
+> porque `κ_turn` castiga el *cambio* y no la *exposición* — volver a flat cuesta lo mismo que
+> haber salido. Con entropía, la misma receta sí encuentra el flat en la semilla 42 (exposición
+> 0,088, nunca toma posición) y no en la 123 ni la 456. **El contrato económico de la tesis
+> tiene esa misma forma** —el costo se cobra sobre `|Δw|`—, así que desincentiva volver a
+> plano: es una propiedad del entorno, no un defecto del optimizador, y explica por qué las
+> corridas de mercado mantienen posición en vez de rotar.
 >
 > Se probaron además las cuatro sondas pre-registradas, una variable cada una: `ent_coef = 0`
 > (0,958 · 0,965), `norm_reward = False` (0,976 · 0,963), `γ = 1.0` (0,603 · 0,618) y
