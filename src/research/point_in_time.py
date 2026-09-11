@@ -76,7 +76,7 @@ def read_point_in_time(
     just as invalid as a screening run, so the reader is always bounded and the
     materialized result is always re-checked.
     """
-    env = ResearchEnvironment(environment)
+    ResearchEnvironment(environment)  # validate the workflow label; it never bypasses PIT
     boundary = normalize_utc(cutoff)
     reader_kwargs["cutoff"] = boundary
     reader_kwargs["available_at_field"] = available_at_field
@@ -92,7 +92,7 @@ async def read_point_in_time_async(
     available_at_field: str = "available_at",
     **reader_kwargs: Any,
 ) -> list[Mapping[str, Any]]:
-    env = ResearchEnvironment(environment)
+    ResearchEnvironment(environment)  # validate the workflow label; it never bypasses PIT
     boundary = normalize_utc(cutoff)
     reader_kwargs["cutoff"] = boundary
     reader_kwargs["available_at_field"] = available_at_field
