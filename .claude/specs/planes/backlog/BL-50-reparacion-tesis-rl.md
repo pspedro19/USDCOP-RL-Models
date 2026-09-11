@@ -181,6 +181,33 @@ que las estadísticas de normalización del reward se reinicien a mitad. Con eso
 cabe en dos llamadas de ~5 min. **Ojo con la semántica**: al reanudar, `--timesteps` es el
 total acumulado, no el incremento.
 
+## Segundo bloqueo de la Etapa 4: la identidad macro declarada no se cumple (2026-09-11)
+
+`config/research/macro_availability.yaml` nombra una fuente por serie con `fallback: forbidden`,
+y el pre-registro v3 congela esa identidad. **Los datos no la honran.** Medido contra la fuente
+declarada con `scripts/diagnostics/verify_macro_declared_identity.py`:
+
+| Serie | Fuente declarada | Coincide | Diferencia media |
+|---|---|---:|---:|
+| `brent` | `FRED_DCOILBRENTEU` (spot) | **1,8 %** | 0,87 USD |
+| `dgs2` | `FRED_DGS2` | 94,0 % | 0,0017 |
+| `dxy` | `ICE_DXY` | no comprobable sin el proveedor | — |
+| `ibr` | `BANREP_IBR` | no comprobable sin el proveedor | — |
+
+El Brent del fichero son **futuros** con un parche spot de 59 filas, no la serie spot que la
+declaración nombra. El DGS2 viene de Investing, no de FRED, y se le parece sin ser igual.
+
+Esto **no se arregla extendiendo el fichero**: hacerlo con FRED mezclaría un tercer instrumento
+sobre los dos que ya conviven, que es el defecto original ampliado. Lo que corresponde es
+**re-obtener cada serie de su fuente declarada de punta a punta**, con procedencia por fila, y
+recongelar el schema. Es requisito de la Etapa 4, independiente de la compuerta de sanidad:
+entrenar v2 sobre datos cuya identidad contradice su propio pre-registro reproduciría el
+defecto que este programa existe para corregir.
+
+Las dos series no comprobables se reportan como tales y **no** como correctas: ICE DXY y BanRep
+IBR exigen su proveedor, y la diferencia entre "verificado" y "no mirado" es justamente lo que
+esta auditoría vino a instaurar.
+
 ## Siguiente acción del operador, en orden
 
 1. `git push origin HEAD:refs/heads/main` — hay commits locales sin publicar y el push falla
