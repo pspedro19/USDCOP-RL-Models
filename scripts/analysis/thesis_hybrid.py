@@ -37,7 +37,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.research.dataset import load_portable  # noqa: E402
-from src.research.session_env import run_session  # noqa: E402
+from src.research.session_env import run_session, simple_returns  # noqa: E402
 
 BARS = 59
 
@@ -138,6 +138,19 @@ def build(ppo_weights: Path, ledger: Path, block: str, portable: Path) -> dict:
     ppo_active = sum(int(np.count_nonzero(ppo[d])) for d in common)
     llm_active = sum(int(np.count_nonzero(llm[d])) for d in common)
 
+    # Descomposicion del bruto del PPO segun lo que el LLM avala. Es la medicion que convierte
+    # "el hibrido pierde" en una afirmacion sobre el LLM: si el subconjunto avalado tuviera el
+    # mismo signo que el total, el veto seria solo una muestra mas pequena. Medido el
+    # 2026-09-12 sobre seleccion: total +9,90 % = avalado -12,35 % + no avalado +22,25 %. El
+    # acuerdo del LLM no es ruido, selecciona las posiciones perdedoras del PPO.
+    gross_all = gross_agreed = 0.0
+    for d in common:
+        wp, wl = ppo[d], llm[d]
+        r = np.asarray(simple_returns(specs[d].close), dtype=float)
+        keep = combine(wp, wl) != 0.0
+        gross_all += float((wp * r).sum())
+        gross_agreed += float((wp[keep] * r[keep]).sum())
+
     results = _score({d: specs[d] for d in common}, hybrid)
     # Los componentes se puntuan sobre EXACTAMENTE las mismas sesiones, o la comparacion
     # mediria tambien la diferencia de muestra.
@@ -166,6 +179,13 @@ def build(ppo_weights: Path, ledger: Path, block: str, portable: Path) -> dict:
             "bars_llm_active": llm_active,
             "bars_surviving_veto": agreed,
             "share_of_ppo_positions_kept": (agreed / ppo_active) if ppo_active else 0.0,
+        },
+        "ppo_gross_split_by_llm_agreement": {
+            "all_bars": gross_all,
+            "bars_the_llm_endorses": gross_agreed,
+            "bars_the_llm_rejects": gross_all - gross_agreed,
+            "note": ("si el tramo avalado tiene signo contrario al total, el acuerdo del LLM "
+                     "no es una muestra menor: es anti-informativo"),
         },
         "sessions": results,
         "hybrid": _summary(results),
