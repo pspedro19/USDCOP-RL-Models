@@ -127,6 +127,40 @@ liquidación mirada.
 USD/COP— pero se declara aquí porque es una búsqueda, no un prior económico, y quien lea los
 resultados tiene derecho a saberlo.
 
+## Regla del híbrido — congelada 2026-09-11, antes de ver ningún ledger
+
+El pre-registro nombraba el híbrido (**PPO + LLM**) pero no decía **cómo se combinan**. Un
+híbrido sin regla no es una hipótesis: es una licencia para probar combinaciones hasta que una
+salga positiva. Se cierra aquí, con los dos ledgers **incompletos** (DeepSeek 917/13 334, Azure
+353/13 334) y por tanto sin que nadie haya podido ver el resultado que la regla produce.
+
+**Componente PPO**: exposición por barra de `ppo_regime_v2`, política determinista (sin
+muestreo), **mediana de las cinco semillas** barra a barra, ajustada a la rejilla congelada
+`{-1, -0.5, 0, +0.5, +1}`. Se usa la mediana y no la mejor semilla: elegir semilla sería
+selección.
+
+**Componente LLM**: peso por barra del ledger de **DeepSeek** (proveedor primario declarado).
+
+**Regla de combinación — acuerdo de signo obligatorio**:
+
+    w_hib(b) = w_ppo(b)   si signo(w_ppo(b)) == signo(w_llm(b)) y ambos ≠ 0
+    w_hib(b) = 0          en cualquier otro caso
+
+**Por qué esta regla y no otra, declarado ex-ante**: el fallo medido del PPO v2 no es falta de
+bruto — la mediana del bruto es **+13,50 %** — sino exceso de operación: **4,13 cambios por
+sesión** y un coste mediano del **47,17 %** que se come el bruto dos veces y media. Un veto que
+exige confirmación independiente **sólo puede reducir rotación; no puede inventar bruto**. Eso
+hace la hipótesis falsable y estrecha: si el híbrido sigue perdiendo, el problema no es el
+filtro de entrada, y la familia se cierra.
+
+**Brazo de robustez**: la **misma** regla sustituyendo DeepSeek por Azure `gpt-4o-mini`. Se
+reporta siempre; **no se elige el proveedor que salga mejor** — esa comparación mide robustez,
+no rendimiento.
+
+**Prohibido sin cobrar trial nuevo**: promediar exposiciones, ponderar por confianza del LLM,
+usar el LLM sólo para dimensionar, invertir el papel de veto, o cualquier otra regla de
+combinación. Cada una es una hipótesis distinta y se registra antes de mirarla.
+
 ## Cómo se aplicó esta firma
 
 `status: SIGNED` lo escribió Claude el 2026-09-11 **por instrucción explícita del operador en

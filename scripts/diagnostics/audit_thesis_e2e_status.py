@@ -24,6 +24,10 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
+# 226 sesiones de seleccion x 59 barras operables.
+EXPECTED_LLM_DECISIONS = 13_334
+
+
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -44,7 +48,66 @@ def load_json(path: Path) -> dict | None:
 
 def _prereg_signed(path: Path) -> bool:
     text = path.read_text(encoding="utf-8") if path.is_file() else ""
-    return bool(re.search(r"^status:\s*SIGNED\s*$", text, re.MULTILINE))
+    return bool(re.search(r"^operator_signature:\s*SIGNED\s*$", text, re.MULTILINE))
+
+
+def _context_artifact(path: Path) -> dict:
+    """Summarize a diagnostic context export without treating it as a ledger."""
+    if not path.is_file():
+        return {"status": "NOT_GENERATED", "artifact": str(path)}
+    count = 0
+    dataset_sha256 = None
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                count += 1
+                if dataset_sha256 is None:
+                    row = json.loads(line)
+                    dataset_sha256 = row.get("dataset_sha256")
+    except (OSError, json.JSONDecodeError):
+        return {"status": "INVALID", "artifact": str(path)}
+    return {
+        "status": "DIAGNOSTIC_ONLY",
+        "artifact": str(path),
+        "contexts": count,
+        "dataset_sha256": dataset_sha256,
+    }
+
+
+def _ledger_status(llm_dir: Path, provider: str) -> dict:
+    """Estado real de un brazo LLM: presente, cuantas decisiones y cuantas invalidas.
+
+    Antes buscaba un unico nombre fijo (`decisions_deepseek.jsonl`) y devolvia NOT_EXECUTED
+    mientras el brazo estaba corriendo de verdad sobre `decisions_deepseek_selection_diagnostic.jsonl`.
+    Un informe que dice "no ejecutado" sobre algo que si se ejecuto es peor que no tenerlo: se
+    toma decisiones con el. Ahora acepta cualquier ledger del proveedor y distingue PARCIAL de
+    COMPLETO, porque un brazo a medias tampoco es evidencia.
+    """
+    candidates = sorted(llm_dir.glob(f"decisions_{provider}*.jsonl")) if llm_dir.is_dir() else []
+    candidates = [c for c in candidates if not c.name.startswith("_")]
+    if not candidates:
+        return {"status": "NOT_EXECUTED", "artifact": str(llm_dir / f"decisions_{provider}*.jsonl")}
+    path = max(candidates, key=lambda c: c.stat().st_size)
+    sealed = invalid = 0
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                sealed += 1
+                if json.loads(line).get("valid_json") is False:
+                    invalid += 1
+    except (OSError, json.JSONDecodeError):
+        return {"status": "INVALID", "artifact": str(path)}
+    return {
+        "status": "PASS" if sealed >= EXPECTED_LLM_DECISIONS else "PARTIAL",
+        "artifact": str(path),
+        "decisions_sealed": sealed,
+        "decisions_expected": EXPECTED_LLM_DECISIONS,
+        "invalid_json": invalid,
+    }
 
 
 def audit(root: Path = ROOT) -> dict:
@@ -60,17 +123,25 @@ def audit(root: Path = ROOT) -> dict:
     contract = load_json(repair / "research_data_contract_frequency_v2_latest.json")
     portable_path = root / "data" / "thesis" / "research_data_portable_v2.pkl"
     ppo_full = repair / "ppo_v2_full"
+    ppo_diagnostic = repair / "ppo_v2_diagnostic_full"
     smoke = repair / "ppo_smoke_v2_20k" / "ppo_regime_seed42.json"
     llm_dir = root / "data" / "thesis" / "llm"
+    diagnostic_contexts = repair / "llm_selection_contexts_v2.jsonl"
     figures_v2 = repair / "results_v2" / "figuras"
     prereg = root / ".claude" / "specs" / "planes" / "06-PRE-REGISTRATION-v3.md"
 
     ppo_files = sorted(ppo_full.glob("*.json")) if ppo_full.is_dir() else []
+    diagnostic_files = sorted(ppo_diagnostic.glob("*.json")) if ppo_diagnostic.is_dir() else []
     ppo_runs = []
     for path in ppo_files:
         payload = load_json(path)
         if payload and {"config", "seed", "timesteps"} <= payload.keys():
             ppo_runs.append(payload)
+    diagnostic_runs = []
+    for path in diagnostic_files:
+        payload = load_json(path)
+        if payload and {"config", "seed", "timesteps"} <= payload.keys():
+            diagnostic_runs.append(payload)
     portable_identity = None
     portable_identity_matches = False
     if portable_path.is_file():
@@ -119,19 +190,22 @@ def audit(root: Path = ROOT) -> dict:
             "count": len(ppo_runs),
             "artifact_dir": str(ppo_full),
         },
+        "ppo_10_diagnostic_runs": {
+            "status": "PASS" if len(diagnostic_runs) == 10 and all(
+                int(row.get("timesteps", 0)) >= 300_000 for row in diagnostic_runs
+            ) else "INCOMPLETE",
+            "count": len(diagnostic_runs),
+            "artifact_dir": str(ppo_diagnostic),
+            "confirmatory": False,
+        },
         "ppo_smoke": {
             "status": "DIAGNOSTIC_ONLY" if smoke.is_file() else "MISSING",
             "timesteps": (load_json(smoke) or {}).get("timesteps"),
             "artifact": str(smoke),
         },
-        "deepseek_ledger": {
-            "status": "PASS" if (llm_dir / "decisions_deepseek.jsonl").is_file() else "NOT_EXECUTED",
-            "artifact": str(llm_dir / "decisions_deepseek.jsonl"),
-        },
-        "azure_ledger": {
-            "status": "PASS" if (llm_dir / "decisions_azure.jsonl").is_file() else "NOT_EXECUTED",
-            "artifact": str(llm_dir / "decisions_azure.jsonl"),
-        },
+        "llm_diagnostic_contexts": _context_artifact(diagnostic_contexts),
+        "deepseek_ledger": _ledger_status(llm_dir, "deepseek"),
+        "azure_ledger": _ledger_status(llm_dir, "azure"),
         "hybrid": {"status": "NOT_EXECUTED"},
         "figures_v2": {
             "status": "PASS" if figures_v2.is_dir() and any(figures_v2.glob("*.png")) else "NOT_EXECUTED",
