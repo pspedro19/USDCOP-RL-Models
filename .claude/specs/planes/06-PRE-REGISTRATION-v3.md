@@ -153,6 +153,20 @@ exige confirmación independiente **sólo puede reducir rotación; no puede inve
 hace la hipótesis falsable y estrecha: si el híbrido sigue perdiendo, el problema no es el
 filtro de entrada, y la familia se cierra.
 
+**Corrección de la justificación, 2026-09-11 (la regla NO cambia).** La frase anterior dice
+que «un veto sólo puede reducir rotación». **La primera mitad es falsa y se midió en cuanto hubo
+datos**: sobre 33 sesiones el híbrido hizo **11,58 cambios por sesión contra 5,85 del PPO solo**.
+Un veto no recorta una posición, la **interrumpe**: donde el PPO mantenía +0,5 durante veinte
+barras seguidas, el veto la corta cada vez que el LLM discrepa y la restaura al volver a
+coincidir, convirtiendo un tramo continuo en una alternancia. Reduce el *tiempo* en posición y
+aumenta el *número de cambios* — y lo que cuesta dinero son los cambios.
+
+La otra mitad sí se sostiene y está fijada con test: el híbrido nunca toma una posición que el
+PPO no tomara (`test_hybrid_rule_is_frozen.py`). **La regla se mantiene exactamente como se
+congeló**: sustituirla ahora que se ve lo que hace sería la selección que este documento existe
+para impedir. Lo que se corrige es el argumento, no la hipótesis — y el resultado del híbrido se
+publicará sabiendo que su mecanismo previsto no era el que opera.
+
 **Brazo de robustez**: la **misma** regla sustituyendo DeepSeek por Azure `gpt-4o-mini`. Se
 reporta siempre; **no se elige el proveedor que salga mejor** — esa comparación mide robustez,
 no rendimiento.

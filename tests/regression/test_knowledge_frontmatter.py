@@ -23,6 +23,14 @@ KINDS = {"rule", "as-built", "roadmap", "adr", "audit", "historical"}
 STATUSES = {
     "IMPLEMENTED", "PARTIAL", "PLANNED", "PAUSED",
     "DEPRECATED", "SUPERSEDED", "HISTORICAL", "ARCHIVED",
+    # `SIGNED` es el estado propio de un PRE-REGISTRO, y el codigo ya lo trata como tal en
+    # cuatro sitios antes que este vocabulario: `run_thesis_llm.py` y `thesis_train_ppo.py` se
+    # niegan a ejecutar sin el, `audit_thesis_e2e_status.py` lo busca con un regex anclado y
+    # `thesis_statistics.py` acepta `IMPLEMENTED|SIGNED`. Faltaba aqui, asi que firmar un
+    # pre-registro -- la accion que esos tres ejecutables exigen -- ponia el gate en rojo.
+    # No es un estado mas del ciclo de vida de una spec: solo lo llevan los pre-registros, y
+    # significa que el documento quedo congelado antes de mirar ningun resultado.
+    "SIGNED",
 }
 REQUIRED = {"kind", "status", "version", "last_verified", "supersedes", "code_anchors"}
 STALE_AFTER_DAYS = 90
