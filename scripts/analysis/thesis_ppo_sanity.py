@@ -93,7 +93,8 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
         norm = VecNormalize(vec, norm_obs=False, norm_reward=True, clip_reward=10.0,
                             gamma=kwargs["gamma"])
     elif probe in ("flat_init", "flat_init_no_turn"):
-        # Mismo entorno que `kappa_turn_one`; lo unico que cambia es donde arranca la politica.
+        # Ambas sondas sesgan el arranque hacia flat; `flat_init` conserva el contrato de
+        # `kappa_turn_one`, mientras `flat_init_no_turn` aisla el efecto del turnover.
         # `flat_init_no_turn` es una sonda estructural separada: conserva el sesgo inicial hacia
         # flat, pero elimina la penalizacion de turnover que en S2 domina el alfa plantado. No
         # reemplaza a `flat_init`; se ejecuta solo despues de que la receta anterior falle S2.
@@ -117,8 +118,12 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
         restored = _VN.load(str(norm_state), vec)
         restored.training, restored.norm_reward = True, norm.norm_reward
         norm = restored
+    # `device="cpu"` en AMBAS ramas. Sin el, una semilla reanudada entrenaba en CPU y una
+    # fresca en GPU: dos recetas distintas dentro de la misma compuerta, y la comparacion por
+    # semilla dejaba de ser valida. Ademas `experiment-protocol.md` regla 6 lo exige para
+    # MlpPolicy (la RTX 3050 hace throttling) y SB3 emite un UserWarning al ignorarlo.
     model = (PPO.load(str(resume), env=norm, device="cpu") if resume is not None
-             else PPO("MlpPolicy", norm, seed=seed, verbose=0, **kwargs))
+             else PPO("MlpPolicy", norm, seed=seed, verbose=0, device="cpu", **kwargs))
     if probe in ("flat_init", "flat_init_no_turn") and resume is None:
         # Candidata ESTRUCTURAL, no un hiperparametro: se ataca la causa medida en vez de
         # compensarla. Las siete recetas anteriores fallan porque la politica se compromete con
@@ -135,7 +140,7 @@ def _train_one(fixture: Fixture, seed: int, timesteps: int, probe: str,
         with torch.no_grad():
             bias = model.policy.action_net.bias
             bias.zero_()
-            bias[flat_index] = 3.0        # ~95 % de masa inicial en "no operar"
+            bias[flat_index] = 3.0        # 83,4 % de masa inicial en "no operar" (e^3/(e^3+4))
     callback = None
     if checkpoint_dir is not None:
         from stable_baselines3.common.callbacks import CheckpointCallback
