@@ -29,7 +29,11 @@ import pytest
 
 pytest.importorskip("pandas")
 
-from src.research.synthetic_sessions import Fixture, make_sessions  # noqa: E402
+from src.research.synthetic_sessions import (
+    Fixture,
+    make_sessions,
+    oracle_result,
+)
 
 
 def _fingerprint(fixture: Fixture, seed: int = 42, n: int = 6):
@@ -64,9 +68,38 @@ def test_s2_is_free_of_cost_and_s3_is_not() -> None:
     assert all(s.spread_pips > 0.0 for s in above), "S3 debe cobrar coste"
 
     # Mismo proceso generador: la senal y los precios son los mismos, cambia el peaje.
-    for left, right in zip(planted, above):
+    for left, right in zip(planted, above, strict=False):
         np.testing.assert_array_equal(left.close, right.close)
         np.testing.assert_array_equal(left.market, right.market)
+
+
+def test_s3_oracle_strictly_pays_the_declared_cost() -> None:
+    """The same known-good actions must have lower net return under S3's toll."""
+    free = make_sessions(Fixture.SIGNAL_PLANTED, n=4, seed=19)
+    charged = make_sessions(Fixture.SIGNAL_ABOVE_COST, n=4, seed=19)
+    free_net = np.mean([oracle_result(Fixture.SIGNAL_PLANTED, s).daily_return for s in free])
+    charged_net = np.mean([oracle_result(Fixture.SIGNAL_ABOVE_COST, s).daily_return for s in charged])
+    assert charged_net < free_net
+
+
+def test_s2_still_pays_commission_and_slippage() -> None:
+    """En S2, `sin coste` significa **sin spread**, no coste cero. Se dice, no se supone.
+
+    El contrato de costes cobra ademas comision por lado y slippage proporcional a la
+    volatilidad, asi que el oraculo de S2 paga ~0,021 pese a tener spread 0 (medido con
+    semilla 19: bruto 0,119056 identico en ambas, coste 0,020778 en S2 contra 0,044740 en S3).
+
+    Importa para leer un fallo de S2: la pregunta que aisla es "¿aprende la senal siquiera?",
+    y con comision distinta de cero un fallo conserva un resto de ambiguedad. Queda escrito
+    aqui en vez de en la cabeza de quien lo interprete.
+    """
+    sessions = make_sessions(Fixture.SIGNAL_PLANTED, n=3, seed=5)
+    results = [oracle_result(Fixture.SIGNAL_PLANTED, s) for s in sessions]
+    assert all(s.spread_pips == 0.0 for s in sessions), "S2 no debe cobrar spread"
+    assert np.mean([r.total_cost for r in results]) > 0.0, (
+        "si S2 llegara a coste exactamente cero, actualizar esta nota y el diseno: dejaria de "
+        "haber ambiguedad al interpretar un fallo suyo"
+    )
 
 
 def test_every_fixture_declares_a_spread() -> None:
