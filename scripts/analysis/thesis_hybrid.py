@@ -56,14 +56,20 @@ def _llm_weights(ledger: Path, valid_dates: set[str]) -> tuple[dict, dict]:
             row = json.loads(line)
             date, bar = str(row.get("session_date", "")), row.get("bar")
             if date in valid_dates and isinstance(bar, int) and 0 <= bar < BARS:
-                grouped.setdefault(date, {})[bar] = float(row["weight"])
+                grouped.setdefault(date, {})[bar] = row
     weights: dict[str, np.ndarray] = {}
     excluded: dict[str, str] = {}
     for date, bars in grouped.items():
         if set(bars) != set(range(BARS)):
             excluded[date] = "incomplete_59_decisions"
             continue
-        path = np.asarray([bars[i] for i in range(BARS)], dtype=float)
+        # Misma regla que la liquidacion: si el proveedor no respondio, esa sesion no contiene
+        # decisiones del modelo sino huecos de red, y no puede entrar en un veto.
+        n_unavailable = sum(bool(bars[i].get("unavailable")) for i in range(BARS))
+        if n_unavailable:
+            excluded[date] = f"provider_unavailable_{n_unavailable}_bars"
+            continue
+        path = np.asarray([float(bars[i]["weight"]) for i in range(BARS)], dtype=float)
         if not np.isfinite(path).all() or (np.abs(path) > 1.0).any():
             excluded[date] = "invalid_weight"
             continue

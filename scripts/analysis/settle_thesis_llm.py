@@ -61,6 +61,19 @@ def settle(ledger: Path, block: str, portable: Path = PORTABLE,
         if set(bars) != set(range(59)):
             excluded[session_date] = "incomplete_59_decisions"
             continue
+        # `unavailable` = el proveedor NO respondio (APIConnectionError/APITimeoutError). La
+        # politica congelada `retain_previous_weight` existe para un modelo que responde MAL,
+        # que es comportamiento medible del modelo. Un modelo al que no se llego no decidio
+        # nada: liquidar esa sesion registraria una caida de red como si fuera una decision de
+        # mantener la posicion, y el brazo mediria la conexion ademas del modelo.
+        #
+        # Medido el 2026-09-12: una caida local tumbo 882 barras en DeepSeek y 882 en Azure a la
+        # vez -- 14 sesiones completas por brazo. Con la regla anterior habrian entrado como
+        # jornadas enteras de "mantener", indistinguibles de una conviccion del modelo.
+        n_unavailable = sum(bool(bars[i].get("unavailable")) for i in range(59))
+        if n_unavailable:
+            excluded[session_date] = f"provider_unavailable_{n_unavailable}_bars"
+            continue
         weights = np.asarray([float(bars[i]["weight"]) for i in range(59)], dtype=float)
         if not np.isfinite(weights).all() or (np.abs(weights) > 1.0).any():
             excluded[session_date] = "invalid_weight"
