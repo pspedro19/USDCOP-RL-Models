@@ -76,6 +76,26 @@ def _context_artifact(path: Path) -> dict:
     }
 
 
+def _hybrid_status(repair: Path) -> dict:
+    """El hibrido existia y el informe seguia diciendo NOT_EXECUTED por estar cableado a mano."""
+    found = sorted(repair.glob("hybrid_*_selection_v2.json"))
+    if not found:
+        return {"status": "NOT_EXECUTED", "artifact_glob": str(repair / "hybrid_*_selection_v2.json")}
+    arms = {}
+    for path in found:
+        payload = load_json(path) or {}
+        split = payload.get("ppo_gross_split_by_llm_agreement") or {}
+        arms[path.stem] = {
+            "rule": payload.get("rule"),
+            "sessions": payload.get("n_sessions_common"),
+            "share_of_ppo_positions_kept": (payload.get("agreement") or {}).get(
+                "share_of_ppo_positions_kept"),
+            "ppo_gross_on_bars_the_llm_endorses": split.get("bars_the_llm_endorses"),
+            "ppo_gross_all_bars": split.get("all_bars"),
+        }
+    return {"status": "PASS", "scope": "retrospective_diagnostic", "arms": arms}
+
+
 def _ledger_status(llm_dir: Path, provider: str) -> dict:
     """Estado real de un brazo LLM: presente, cuantas decisiones y cuantas invalidas.
 
@@ -206,7 +226,7 @@ def audit(root: Path = ROOT) -> dict:
         "llm_diagnostic_contexts": _context_artifact(diagnostic_contexts),
         "deepseek_ledger": _ledger_status(llm_dir, "deepseek"),
         "azure_ledger": _ledger_status(llm_dir, "azure"),
-        "hybrid": {"status": "NOT_EXECUTED"},
+        "hybrid": _hybrid_status(repair),
         "figures_v2": {
             "status": "PASS" if figures_v2.is_dir() and any(figures_v2.glob("*.png")) else "NOT_EXECUTED",
             "artifact_dir": str(figures_v2),

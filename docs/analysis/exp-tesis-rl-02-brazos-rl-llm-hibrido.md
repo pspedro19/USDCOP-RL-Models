@@ -59,8 +59,12 @@ y 0 inválidas**.
 | `ppo_regime_mean5` | 226 | −35,52 | −6,82 | [−9,31, −4,71] | −35,94 |
 | supervisado (LogReg) | 226 | −55,08 | −9,73 | — | — |
 | híbrido PPO+DeepSeek | 226 | −69,24 | −14,33 | [−16,00, −12,95] | −69,14 |
+| híbrido PPO+Azure | 226 | −70,59 | −11,01 | — | −70,57 |
 | DeepSeek `deepseek-chat` | 226 | −78,93 | −22,78 | [−25,45, −20,66] | −78,82 |
-| Azure `gpt-4o-mini` | — | *(recuperando caídas)* | | | |
+| Azure `gpt-4o-mini` | 226 | −82,89 | −14,84 | — | −82,82 |
+
+Los dos ledgers cierran **13.334/13.334 decisiones, 0 no respondidas, 0 inválidas**, y las dos
+liquidaciones dan **226 de 226 sesiones sin una exclusión**.
 
 **Ninguno bate a no operar.** Contra `always_flat`, todos con **p = 0,0002** — que es el suelo de
 resolución de 10.000 réplicas Monte Carlo, no un p-valor diminuto, y así se reporta.
@@ -104,6 +108,20 @@ pequeña. Con el signo **invertido**, el acuerdo del LLM no es ruido: **seleccio
 posiciones perdedoras del PPO**. Como filtro no es inútil, es anti-informativo — tomar el 27 % que
 aprueba es peor que tomarlas todas.
 
+**Y se replica en un proveedor independiente, más fuerte todavía.** Azure `gpt-4o-mini` avala el
+30,5 % de las posiciones y su descomposición es:
+
+```
+bruto PPO sobre TODAS sus barras : +9,90 %
+  en las que Azure avala         : -23,41 %
+  en las que Azure rechaza       : +33,31 %
+```
+
+Dos modelos de vendedores distintos, con prompts idénticos y sin contacto entre sí, seleccionan
+el mismo subconjunto perdedor. Eso saca el hallazgo del terreno de la casualidad: no es que *un*
+modelo fallara, es que la clase de señal que un LLM extrae de este contexto está sistemáticamente
+invertida respecto de lo que conviene operar.
+
 Verificado por una vía independiente, recomputando `w_ppo · r` barra a barra desde el portable y
 el ledger, antes de escribirlo aquí.
 
@@ -119,7 +137,7 @@ coincidir, convirtiendo un tramo continuo en una alternancia. Reduce el *tiempo*
 aumenta el *número de cambios* — y lo que cuesta dinero son los cambios.
 
 **La regla no se tocó.** Sustituirla al ver lo que hace sería la selección que el pre-registro
-existe para impedir. Se corrigió el argumento y se fijó con un contraexemplo mínimo en
+existe para impedir. Se corrigió el argumento y se fijó con un contraejemplo mínimo en
 `test_hybrid_rule_is_frozen.py`: seis barras planas del PPO son 1 cambio y 6 bajo el veto.
 
 ## Qué queda cerrado y qué no
