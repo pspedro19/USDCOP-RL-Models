@@ -69,3 +69,72 @@ congelación, con la mirada única declarada en v3.
    conservadurismo).
 3. Identidad macro definitiva para el carril de investigación: Brent spot FRED de punta a
    punta, DGS2 desde FRED, DXY sin fallback a Fed Broad.
+
+---
+
+## ADENDA 2026-09-13 — lo que se ejecutó de verdad
+
+> La tabla de arriba era una **previsión** escrita antes de ejecutar. Esto es el devengo real.
+> Lo redacta Claude; **lo aplica el operador**. `n_trials_total` sigue hoy en **115** y el
+> gate está verde (`check_trial_ledger.py` → OK, 243 globales, FT 55 / AT 188).
+
+### Devengado (se miró el resultado)
+
+| Ítem | Cargo | Estado |
+|---|---|---|
+| `ppo_regime_v2` + `ppo_backbone_v2` evaluados en selección (5 semillas c/u, 300k pasos) | **+2 AT** | **devengado** — la tabla está publicada |
+| Reglas intradía miradas en selección: `momentum_3bar`, `mean_reversion_12bar`, `opening_range_6bar`, `regime_two_rules` | **+4 AT** | **devengado** — `baselines_selection_v2.json` |
+| Brazo supervisado (LogReg) evaluado en selección | **+1 AT** | **devengado** — `supervised_v2_selection.json` |
+
+### No devengado, y por qué
+
+| Ítem | Cargo | Motivo |
+|---|---|---|
+| `B1_pasivo`, `B1_sesion_1x`, `NULL_A_corto_1x`, `always_flat`, `B1_prime` | **0** | comparadores **obligatorios** de la constitución §3, no hipótesis: no se eligen, se exigen |
+| Fixtures sintéticas S1–S4 y las **ocho sondas** de receta | **0** | no tocan datos de mercado |
+| Reparaciones de datos/entorno, re-mediciones contables | **0** | no miran resultados nuevos |
+| Control shuffle sobre desarrollo | **0** | **nunca se ejecutó** — la previsión lo cargaba; retirarlo del total |
+| Brazos forward v2 | **0 hoy** | el carril forward no ha sellado ni una sesión |
+
+### La decisión que el operador tiene que tomar, y no tomo yo
+
+**Los brazos LLM y los híbridos sobre selección: ¿0 o +4 AT?**
+
+- **Argumento para 0** (el que firmé en el prereg v3): se declararon `--allow-retrospective`
+  y `scope: retrospective_diagnostic` **antes** de ejecutarse. No abren juez confirmatorio.
+- **Argumento para +4 AT** (el que me parece más honesto): la constitución §2 dice «cada
+  versión, cada grid, **cada gate mirado** = 1 trial». Yo miré cuatro resultados —DeepSeek,
+  Azure, híbrido-DS, híbrido-Azure— sobre un bloque de mercado, y de esa mirada salieron
+  afirmaciones publicadas. Que estén etiquetados como retrospectivos limita lo que puedo
+  **concluir**, no borra que se miraron.
+
+**Mi recomendación: cargarlos (+4 AT).** El coste de cargarlos de más es un DSR algo más
+exigente; el de cargarlos de menos es un denominador inflado a nuestro favor, que es la fuga
+exacta que la constitución existe para impedir. En la duda, el sesgo debe ir contra nosotros.
+
+### Totales según la decisión
+
+| Escenario | usdcop |
+|---|---:|
+| Hoy | 115 |
+| Devengado sin los LLM | **122** |
+| Devengado **con** los LLM/híbridos (recomendado) | **126** |
+
+Con 126, el DSR de las configuraciones PPO **no cambia de veredicto**: ya es 0,0000 con 115.
+La contabilidad no está en disputa por su efecto en la conclusión —no lo tiene— sino porque el
+registro tiene que ser fiel aunque dé igual.
+
+### Defecto de gobernanza que hay que corregir ANTES de cargar nada
+
+`registries/families/usdcop_rl_intraday_v2.yaml` está **sin trackear** y declara
+`deflation_scope: family` con un `hypothesis_key` **distinto** del de v1. Tal como está, en
+cuanto entre el primer AT, v2 **estrena contador limpio** — exactamente la fuga que la
+constitución §2 prohíbe. Debe llevar la clave heredada, `sibling_families` en ambos sentidos y
+`deflation_scope: cluster` antes de la primera línea.
+
+### Estado de la firma
+
+El pre-registro v3 está **`SIGNED`** desde el 2026-09-11: lo escribió Claude **por instrucción
+explícita del operador en sesión**, y el propio documento deja constancia de quién aplicó la
+firma y por qué. El punto 1 de «qué necesita decidir el operador» queda cumplido; el 2 decae
+(el shuffle no se ejecutó); el 3 sigue abierto (identidad DXY).

@@ -83,8 +83,11 @@ bate a flat» perdería lo único interesante del experimento.
 | híbrido PPO+DeepSeek | −12,35 % | 104,90 % | 9,91 |
 | DeepSeek | **−15,73 %** | 139,26 % | 18,86 |
 
-**El PPO tiene un problema de coste de transacción.** Genera alfa bruta positiva y opera
-demasiado para conservarla. La política encuentra algo; el peaje se lo come.
+**El PPO tiene un problema de coste de transacción.** Su bruto es positivo y el peaje se lo
+come. **No es «alfa demostrada»** —Codex objetó esa palabra y con razón—: el bruto de este bloque
+está concentrado en el lado corto (+9,22 % de los cortos contra +0,68 % de los largos) en un año
+en que el par cayó un 20,2 %. Un bruto que vive del lado que coincide con la tendencia del bloque
+no está distinguido de exposición direccional afortunada, y un solo bloque no puede separarlos.
 
 **El LLM tiene un problema de señal.** Sus decisiones pierden dinero **antes de pagar nada**.
 Ninguna reducción de costes lo salva.
@@ -96,52 +99,57 @@ Ninguna reducción de costes lo salva.
 > híbrido los reporta por separado (`ppo_median_same_sessions`). Lo señaló Codex; una versión
 > anterior de este capítulo los ponía en la misma columna sin decirlo.
 
-## El hallazgo del híbrido: el acuerdo del LLM es anti-informativo
+## El híbrido y el sesgo direccional — corregido 2026-09-13
 
-La regla del híbrido se congeló en el pre-registro con los ledgers al 7 % y al 3 %, sin poder ver
-lo que produce: se conserva la exposición del PPO sólo cuando el LLM coincide en signo. Se queda
-con **3.048 de 11.315 posiciones (26,9 %)** y aun así empeora.
+> **Retractación.** La primera versión de esta sección afirmaba que el acuerdo del LLM era
+> «anti-informativo», que el hallazgo se «replicaba en un proveedor independiente» y que eso
+> «descartaba la casualidad». **Las tres cosas son overreach y las retiro.** Lo señaló Codex con
+> los conteos que aparecen abajo, y al verificarlos aparece una explicación más simple que la mía.
 
-La descomposición dice por qué, y es un resultado **sobre el LLM**, no sobre el veto:
+La regla se congeló en el pre-registro con los ledgers al 7 % y al 3 %: se conserva la exposición
+del PPO sólo cuando el LLM coincide en signo. El resultado medido:
 
-```
-bruto PPO sobre TODAS sus barras : +9,90 %
-  en las que el LLM avala        : -12,35 %   (3.048 barras)
-  en las que el LLM rechaza      : +22,25 %
-```
+| | avala | de ellas largas | bruto avalado | bruto total PPO |
+|---|---:|---:|---:|---:|
+| DeepSeek | 3.048 barras (26,9 %) | 62 % | **−12,35 %** | +9,90 % |
+| Azure | 3.455 barras (30,5 %) | **99 %** | **−23,41 %** | +9,90 % |
 
-Si el tramo avalado tuviera el mismo signo que el total, el veto sería sólo una muestra más
-pequeña. Con el signo **invertido**, el acuerdo del LLM no es ruido: **selecciona justamente las
-posiciones perdedoras del PPO**. Como filtro no es inútil, es anti-informativo — tomar el 27 % que
-aprueba es peor que tomarlas todas.
-
-**Y se replica en un proveedor independiente, más fuerte todavía.** Azure `gpt-4o-mini` avala el
-30,5 % de las posiciones y su descomposición es:
+El tramo avalado tiene el signo contrario al total, y eso es real. Pero **la causa no es que el
+LLM extraiga señal invertida**. Es más mundana:
 
 ```
-bruto PPO sobre TODAS sus barras : +9,90 %
-  en las que Azure avala         : -23,41 %
-  en las que Azure rechaza       : +33,31 %
+USD/COP en selección (2023): 4862 -> 3882   (-20,2 %)
+bruto PPO en posiciones CORTAS: +9,22 %  (3.208 barras)
+bruto PPO en posiciones LARGAS: +0,68 %  (8.107 barras)
 ```
 
-Dos modelos de vendedores distintos, con prompts idénticos y sin contacto entre sí, seleccionan
-el mismo subconjunto perdedor. Eso saca el hallazgo del terreno de la casualidad: no es que *un*
-modelo fallara, es que la clase de señal que un LLM extrae de este contexto está sistemáticamente
-invertida respecto de lo que conviene operar.
+**Todo el alfa del PPO está en el lado corto**, porque el peso se apreció un 20 % ese año. Y los
+dos LLM tienen **sesgo largo**: Azure decide largo en el 98 % de sus posiciones (4.399 largas
+contra 90 cortas), DeepSeek en el 42 %. Avalar sesgado a largo equivale a **vetar el lado donde
+está el alfa**, y el bruto avalado sale negativo por el lado largo en ambos casos (−17,01 % y
+−22,42 %).
 
-Verificado por una vía independiente, recomputando `w_ppo · r` barra a barra desde el portable y
-el ledger, antes de escribirlo aquí.
+Dicho de otro modo: el veto no descubrió las posiciones perdedoras del PPO, **descartó sus
+posiciones ganadoras** porque apuntaban en la dirección que el LLM no quería tomar.
 
-**Limitación que acota este hallazgo, señalada por Codex.** El prompt entrega las features
-**normalizadas y sin unidades**. Un modelo que recibe z-scores no puede razonar sobre magnitudes,
-así que la medición no distingue «el LLM extrae señal invertida» de «el LLM no tiene con qué
-razonar». La acota, pero no la explica: un modelo sin información elegiría al azar, no
-sistemáticamente las perdedoras, y menos dos veces en la misma dirección con dos vendedores
-distintos.
+**Por qué «replicación independiente» era falso**, y es la parte que más me equivoqué:
 
-**No se corrige ni se re-corre.** El prompt está congelado por hash en el pre-registro; cambiarlo
-ahora, viendo el resultado, sería exactamente la selección que el documento existe para impedir. Un
-prompt con unidades es una **hipótesis nueva** y cobra su trial.
+- Comparten **los mismos datos y el mismo prompt**. No son dos experimentos, son dos lecturas
+  del mismo estímulo.
+- No avalan el mismo subconjunto: intersección **1.842** barras sobre 3.048 y 3.455 (unión 4.661).
+  La correlación de sus pesos es **0,626**, lejos de la coincidencia que yo describí.
+- Lo que sí comparten es el **sesgo largo**, que es la causa común y no una confirmación mutua.
+
+**Qué queda en pie, con el alcance correcto**: el brazo LLM pierde, y pierde por una razón
+identificable —un prior direccional equivocado para este bloque— y no por costes. Eso es
+suficiente para rechazarlo aquí y **no es suficiente** para afirmar nada general sobre si un LLM
+puede extraer señal de este contexto. Un año en el que el par hubiera subido produciría el
+resultado contrario por el mismo mecanismo, y este diseño no puede distinguirlos.
+
+**Confundido adicional declarado** (también de Codex): el prompt entrega las features
+**normalizadas y sin unidades**, así que un modelo que recibe z-scores no puede razonar sobre
+magnitudes. No se corrige ni se re-corre: el prompt está congelado por hash y cambiarlo viendo
+el resultado sería selección. Un prompt con unidades es una hipótesis nueva y cobra su trial.
 
 ## Una corrección a nuestro propio pre-registro
 
@@ -159,6 +167,13 @@ existe para impedir. Se corrigió el argumento y se fijó con un contraejemplo m
 `test_hybrid_rule_is_frozen.py`: seis barras planas del PPO son 1 cambio y 6 bajo el veto.
 
 ## Qué queda cerrado y qué no
+
+**Reproducibilidad, declarada.** Estas cifras se midieron contra el portable
+`7f332df17a2492a0…` (fichero inalterado). El **código** cambió después —Codex reconstruyó las
+fixtures sintéticas y el modelo de costes—, así que `dataset_identity()` en HEAD ya no coincide
+(`1fa989d2…` esperado contra `7f042564…` grabado) y `load_portable` **se niega a cargarlo sin
+`allow_stale`**. Los números son los medidos; **no son reproducibles contra HEAD** hasta que se
+reconcilie la identidad. Se dice aquí en vez de dejar que alguien lo descubra.
 
 **Cerrado**: la objeción de que el PPO perdía por una receta rota. La misma receta que se abstiene
 sobre ruido puro (S1, 5/5 semillas) opera cuatro veces por sesión sobre USD/COP y pierde en las
