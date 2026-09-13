@@ -92,6 +92,26 @@ no está distinguido de exposición direccional afortunada, y un solo bloque no 
 **El LLM tiene un problema de señal.** Sus decisiones pierden dinero **antes de pagar nada**.
 Ninguna reducción de costes lo salva.
 
+**La prueba más limpia de que son dos fracasos distintos no es mía, es del bundle de Codex**
+(`research_grade_20260912_v1/cost_stress.json`, 24/24 artefactos verificados por hash). Apagando
+el peaje **por completo**:
+
+| brazo | coste cero | ×1 | ×2 | ×3 |
+|---|---:|---:|---:|---:|
+| PPO (mediana de exposiciones) | **+10,08 %** | −36,67 % | −63,63 % | −79,15 % |
+| DeepSeek | **−14,67 %** | −78,93 % | −94,85 % | −98,75 % |
+| Azure | **−28,98 %** | −82,89 % | −95,93 % | −99,04 % |
+| híbrido PPO+DeepSeek | −11,73 % | −69,24 % | −89,36 % | — |
+
+Sin coste alguno, el PPO sigue en positivo y los dos LLM siguen en negativo. Eso separa «problema
+de coste» de «problema de señal» sin depender de ninguna suma de brutos, y lo produjo una
+implementación independiente de la mía: sus cifras a ×1 coinciden con las publicadas aquí hasta
+la segunda decimal.
+
+*(La cifra canónica del bruto del PPO es la suya, **+10,08 %**, que sale de re-liquidar con los
+costes a cero. Mi suma de `w·r` daba +9,90 %; la diferencia de 0,18 pp es el coste terminal, que
+la re-liquidación incluye y la suma no.)*
+
 > **Dos agregaciones distintas, y no son intercambiables.** La fila `ppo_regime_mean5` de la tabla
 > anterior es la **media de retornos de cinco semillas** (−35,52 %). La fila «PPO» de esta tabla es
 > la **mediana de exposiciones barra a barra** (−36,67 % sobre las mismas sesiones), que es la que
