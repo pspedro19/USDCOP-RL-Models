@@ -225,6 +225,26 @@ fixtures sintéticas y el modelo de costes—, así que `dataset_identity()` en 
 `allow_stale`**. Los números son los medidos; **no son reproducibles contra HEAD** hasta que se
 reconcilie la identidad. Se dice aquí en vez de dejar que alguien lo descubra.
 
+**Identidad macro verificada, disponibilidad NO.** El artefacto
+`research_grade_macro_20260912/identity_live_network.json`
+(SHA `400ba9a5833f4829f91a471c644e0409cd185910d9dc95ded31867c3762e716e`, verificado por mí)
+confirma que las cuatro series coinciden **exactamente** con su fuente declarada: Brent
+`FRED_DCOILBRENTEU` 9.973 filas, DGS2 `FRED_DGS2` 12.566, DXY `INVESTING_DXY` 1.747, IBR
+`BANREP_IBR` 4.558 — **0 discrepancias y `max_abs_diff` 0,0 en las cuatro**.
+
+Y declara por sí mismo lo que **no** verifica: `historical_availability_verified: **false**` y
+`source_independence_verified: **false**`.
+
+Eso segundo importa más de lo que parece en una tesis cuyo defecto central fue el look-ahead.
+Que la serie de hoy coincida con la fuente de hoy **no demuestra que ese valor estuviera
+disponible en la fecha que el dataset le atribuye**. Las revisiones y los *vintages* quedan
+fuera del alcance de esta comprobación. El gate de causalidad (`macro_causality_t_minus_1`,
+PASS) verifica la regla de desplazamiento del pipeline, que es otra cosa: comprueba que **no
+usamos** el valor del mismo día, no que el valor de hace tres años fuera el que hoy leemos.
+
+Es la brecha abierta más relevante que queda, y el artefacto tiene el mérito de nombrarla en vez
+de dejarla implícita en un `True` global.
+
 **Cerrado**: la objeción de que el PPO perdía por una receta rota. La misma receta que se abstiene
 sobre ruido puro (S1, 5/5 semillas) opera cuatro veces por sesión sobre USD/COP y pierde en las
 diez. El rechazo pasa de «resultado de una implementación con fuga macro y receta sin validar» a
