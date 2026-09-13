@@ -225,35 +225,39 @@ fixtures sintéticas y el modelo de costes—, así que `dataset_identity()` en 
 `allow_stale`**. Los números son los medidos; **no son reproducibles contra HEAD** hasta que se
 reconcilie la identidad. Se dice aquí en vez de dejar que alguien lo descubra.
 
-**El posterior de régimen llegó truncado — también en v2, también en mis diez corridas.**
-Descubierto el 2026-09-12 a partir del guard que Codex añadió en `dataset.py`.
+**El posterior de régimen se entregó truncado — reparametrizado, no mutilado.**
+Hallazgo abierto por el guard que Codex añadió en `dataset.py`, y acotado por él mismo después.
 
-`regime_hmm.py:78` deja que el BIC elija K entre 2 y 5. El esquema congela **cuatro** huecos
-(`p_regime_0..3`). Y `dataset.py:199-205` hace `probs[:N_REGIMES]`: **con K=5 el quinto posterior
-se descarta en silencio**, sin error ni registro.
+`regime_hmm.py:78` deja que el BIC elija K entre 2 y 5; el esquema congela **cuatro** huecos; y
+`dataset.py:199-205` hace `probs[:N_REGIMES]`. Con K=5, la quinta coordenada no se escribe. Los
+dos portables lo llevan grabado dentro —`regime_meta: k=5`, etiquetas
+`['calmo','intermedio','intermedio','intermedio','shock']`— y el BIC prefiere 5 en ambos.
 
-Los dos portables lo llevan grabado dentro, así que no es inferencia sobre un fichero mutable:
+**Lo que esto NO es, y lo dije mal antes.** Escribí que la política entrenó «con cuatro quintos
+del estado, sin el shock». **Falso, y la corrección es de Codex**: cuatro coordenadas de un
+símplex de cinco **determinan la quinta**, `p₄ = 1 − Σp₀..₃`. La información está presente; una
+capa lineal puede recuperarla. No hubo pérdida inevitable, hubo **reparametrización no
+declarada**: el vector deja de ser una distribución y pasa a ser cuatro de sus cinco coordenadas,
+sin que nada en el contrato lo diga.
 
-```
-v1: k=5  labels=['calmo','intermedio','intermedio','intermedio','shock']  bic_by_k={2:9818.9, 3:5805.7, 4:5794.7, 5:5644.1}
-v2: k=5  labels=['calmo','intermedio','intermedio','intermedio','shock']  bic_by_k={2:9820.4, 3:5806.1, 4:5785.5, 5:5710.4}
-```
+**Lo que sí es, medido por Codex sobre el portable archivado** (`SHA 7f332df1…`, K=5, HMM
+`0a4b9ec5…`, verificado por un revisor independiente con *unpickling* restringido), en float64
+sobre las 226 sesiones de selección:
 
-El BIC prefiere K=5 en ambos. **El estado descartado es el índice 4: `shock`** — precisamente el
-régimen que una política consciente del régimen más necesitaría. El brazo `ppo_regime` de esta
-tesis, v1 y v2, entrenó sin la probabilidad de shock, con cuatro números que **no suman 1** y cuyo
-déficit varía sesión a sesión con la probabilidad del estado que falta.
+- **78 sesiones** con déficit `> 1e-6` —es decir, donde la quinta coordenada no era despreciable—;
+- **19 sesiones** en las que, al reconstruir `p₄`, **el régimen más probable cambia**;
+- reparto por estado `[14, 27, 106, 60, 19]`;
+- el spread reconstruido coincide con el original a `1,15e-7`, así que la contabilidad no se movió.
 
-**Qué cambia y qué no.** El titular no se mueve: ningún método bate a la abstención, y eso no
-depende de las features de régimen. Lo que queda tocado es cualquier lectura de la ablación H2
-—ya retractada por otro motivo— y la descripción misma del brazo: `ppo_regime` no es «PPO con
-estado de régimen», es **«PPO con cuatro quintos del estado de régimen, sin el shock»**.
+O sea: en **19 de 226 sesiones (8,4 %)** el estado dominante real era uno que el vector entregado
+no señalaba como dominante. El contrato y la clasificación descriptiva son erróneos; los pesos y
+el P&L, no.
 
-*(Corrección a una versión anterior de esta sección, que decía que v2 no estaba afectado: sí lo
-está. Lo afirmé leyendo `regime_hmm_frozen_v2.json`, que declara `k: 4`, sin comprobar el portable
-que realmente se usó, que declara `k: 5`. Los dos artefactos no concuerdan entre sí y esa
-discrepancia sigue abierta. Codex exigió el vínculo con el artefacto archivado antes de aceptar mi
-afirmación; tenía razón, y al buscarlo el hallazgo salió más grande.)*
+**V1 NO ESTÁ DEMOSTRADO, y también es corrección suya.** El portable sin sufijo (`SHA 8483…`)
+tiene bloques de **488/226/520** sesiones, no los **499/234/584** del EXP-TESIS-RL-01 publicado:
+es una reconstrucción, no el artefacto original. **Nada de lo anterior prueba con qué K entrenó la
+tesis publicada**; haría falta el linaje histórico. Aquí se afirma sólo de v2, que es lo que está
+verificado.
 
 **Identidad macro verificada, disponibilidad NO.** El artefacto
 `research_grade_macro_20260912/identity_live_network.json`
@@ -274,6 +278,21 @@ usamos** el valor del mismo día, no que el valor de hace tres años fuera el qu
 
 Es la brecha abierta más relevante que queda, y el artefacto tiene el mérito de nombrarla en vez
 de dejarla implícita en un `True` global.
+
+**Vintages capturados (2026-09-12).** Codex capturó ALFRED para las dos series que lo publican:
+**452 capturas, cero errores**, manifiesto `SHA f1b903ae5e9716d444ea8c11e691987746e320bf5f9ba584996c6430be031c66`.
+Resultado: **226 `NOT_IN_PRIOR_DATE_VINTAGE` por serie**, en DGS2 y en Brent — el valor que el
+pipeline usa como T−1 no aparece en el vintage del día anterior en **ninguna** de las 226 sesiones.
+
+**Lo que eso significa y lo que no**, con la acotación que puso él mismo: **no** autoriza a decir
+«226 sesiones usaron datos no publicados a las 08:00». Que el valor no estuviera en el vintage de
+ayer no excluye que se publicara hoy antes de la apertura, ni que estuviera disponible por otra
+fuente. Lo que sí establece es que **la disponibilidad en el momento de decidir nunca se
+verificó**, y que hay una vía concreta —ALFRED— para verificarla en dos de las cuatro series.
+
+Si al cerrar el replay resultara que el valor no estaba disponible antes de la apertura, sería
+una fuga por **latencia de publicación**: distinta de la fuga de mismo día que este programa
+corrigió, invisible para el gate de causalidad, y viva en todos los resultados de esta tesis.
 
 **Cerrado**: la objeción de que el PPO perdía por una receta rota. La misma receta que se abstiene
 sobre ruido puro (S1, 5/5 semillas) opera cuatro veces por sesión sobre USD/COP y pierde en las
