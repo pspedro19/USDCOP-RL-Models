@@ -66,8 +66,25 @@ y 0 inválidas**.
 Los dos ledgers cierran **13.334/13.334 decisiones, 0 no respondidas, 0 inválidas**, y las dos
 liquidaciones dan **226 de 226 sesiones sin una exclusión**.
 
-**Ninguno bate a no operar.** Contra `always_flat`, todos con **p = 0,0002** — que es el suelo de
-resolución de 10.000 réplicas Monte Carlo, no un p-valor diminuto, y así se reporta.
+**Ninguno bate a no operar**, y el contraste correcto no es el que publiqué primero.
+
+> **Corrección 2026-09-13.** Una versión anterior decía «todos con **p = 0,0002**». **Falso en dos
+> sentidos.** Ese número salía de las colas percentiles del bootstrap, que sirven para describir
+> pero no para contrastar. Recomputado con la media diaria **centrada bajo H0**, bilateral, con
+> corrección de continuidad (Codex, `results.json::paired_primary_mean_return_tests`):
+>
+> - **Nueve de diez brazos**: `p = 1/10001 = 0,00009999`, **Holm** `0,0009999`.
+> - **`NULL_A_corto_1x`: `p = 0,1794`** (1.793 excedencias) — **NO significativo**. El corto 1×
+>   pierde 11,97 % y aun así **no es distinguible de no operar**: su varianza se come la
+>   diferencia.
+> - **`B1_pasivo` queda fuera** del contraste de Sharpe: tiene **1 operación**, y la regla de
+>   N < 20 de la constitución §6 lo prohíbe.
+>
+> La cola percentil `0,00019998` sigue existiendo en los artefactos, etiquetada **DESCRIPTIVO**.
+> No debe citarse como p-valor.
+
+Los brazos con modelo —PPO, supervisado, LLM e híbridos— pierden contra la abstención con
+`p_Holm ≈ 0,001`. El único que no se distingue de no operar es el baseline tonto.
 
 El orden es lo llamativo: cuanto más sofisticado el método, peor el resultado. No operar gana a
 una regla tonta, que gana al RL, que gana al supervisado, que gana al LLM.
