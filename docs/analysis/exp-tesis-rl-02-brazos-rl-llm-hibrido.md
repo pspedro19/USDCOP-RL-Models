@@ -250,11 +250,35 @@ otro denominador). Aplanar mueve poco porque casi no hay rango que quitar: **el 
 el efecto donde es estructuralmente menor**. El artefacto lo declara con
 `not_evaluated_cohorts: ["holdout", "2026", "forward"]`.
 
-En 2026 el **0 %** de las barras son planas. El efecto sobre el posterior allí **no está medido**
-—por nadie— y **sí es medible**: el hold-out archivado contiene **150 sesiones de 2026** con
-contexto guardado, así que la misma paridad es ejecutable sobre ellas. *(Una versión anterior de
-este capítulo afirmaba que no existía posterior archivado para 2026; es falso y lo verifiqué.)*
-Mientras no se haga, **«5 de 226» no puede citarse como el efecto en 2026**.
+**Y en 2026 ya está medido — con el resultado contrario al que yo predije.** Codex lo ejecutó
+sobre las **150 sesiones de 2026** del hold-out archivado (`hmm_2026_20260913/v1`), con paridad
+previa 150/150 y error máximo `2,97e-8`:
+
+| medición pareada | selección 2023 | hold-out 2026 |
+|---|---:|---:|
+| barras planas en la cohorte | 89,60 % | **0,00 %** |
+| estado dominante distinto | 5 / 226 (2,21 %) | **2 / 150 (1,33 %)** |
+| TV mediana | 0,000000 | 0,0000013 |
+| TV p95 | 0,0030 | **0,1236** |
+| TV máximo | 0,8995 | 0,7001 |
+| sesiones con TV > 0,1 | 6 | 9 |
+
+Recomputado por mí desde las filas; las cuatro cifras coinciden al décimo decimal y los dos
+cambios de estado (`2026-01-14`, `2026-08-13`) se reproducen.
+
+**Yo esperaba lo contrario.** Argumenté que en un período con 0 % de barras planas el régimen se
+movería mucho más. Se mueve **menos** en la métrica que decide —1,33 % de sesiones cambian de
+estado dominante frente al 2,21 % de 2023— aunque **más probabilidad se desplace**: p95 cuarenta
+veces mayor y 9 sesiones por encima de 0,1 TV. La representación mueve masa de probabilidad y
+**rara vez le hace cruzar una frontera de decisión**.
+
+Eso **desactiva la alarma que yo había escrito** sobre el carril forward: el cambio de proveedor
+no produce un desplazamiento sistemático de régimen. Lo que no desactiva es el resto —
+disponibilidad point-in-time, identidad del modelo LLM, K/esquema— ni autoriza a llamar correctas
+a las velas de 2026 ni óptima a la representación.
+
+El artefacto declara además `claim_preserves_unseen_holdout: false`: mirar aquí **no** deja el
+hold-out intacto, y cualquier decisión motivada por estas cifras necesita un período posterior.
 
 **El posterior de régimen se entregó truncado — reparametrizado, no mutilado.**
 Hallazgo abierto por el guard que Codex añadió en `dataset.py`, y acotado por él mismo después.
