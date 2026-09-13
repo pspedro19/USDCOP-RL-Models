@@ -254,7 +254,26 @@ como negativo.
 Era la única comparación que salía a favor de algo en todo el experimento, lo que la hacía
 exactamente la que más escrutinio merecía.
 
-**Cobertura real de la compuerta sintética.** Los artefactos S2 y S3 que abrieron la compuerta se
+**Compuerta sintética: cerrada 2026-09-12.** Codex ejecutó S1–S4 completas sobre la fixture
+definitiva —la que desactiva comisión y slippage en S2, no sólo el spread— con **5/5 semillas en
+train y en unseen**, protocolo `SHA 33873c610252bb674879bb89e89272875d4d67b24062f8b9d4e62edac8fc21e9`.
+**La receta sigue siendo exactamente `flat_init_no_turn`**: no hubo búsqueda de cuál pasa primero,
+fue la comprobación de una receta pre-congelada en 20 corridas únicas. Añadió además un replay de
+20 checkpoints, 2.000 sesiones y 118.000 decisiones con **diferencia 0**.
+
+Eso **cierra** el párrafo siguiente, que se conserva porque describe un estado real del programa
+y porque la corrección vino de fuera, no de mí.
+
+**Caveat de runtime, que sí sigue abierto.** Misma receta nominal no certifica automáticamente
+las diez corridas de mercado: se ejecutaron con otro intérprete y **mis artefactos no graban las
+versiones de librería**. Lo que sí consta: el proceso de entrenamiento fue
+`…\Programs\Python\Python312\python.exe`, que hoy reporta Python 3.12.2 · SB3 2.9.0 ·
+torch 2.14.0 · gymnasium 1.3.0 — el mismo entorno que declara el bundle de Codex. Es una
+**observación del proceso en vivo, no un dato grabado**, y las versiones pueden haber cambiado
+desde entonces. El manifiesto por corrida de Codex (`library_versions`) cierra esta brecha para
+lo que venga; mis diez corridas no la tienen.
+
+**Cobertura real de la compuerta sintética (histórico, ya resuelto).** Los artefactos S2 y S3 que abrieron la compuerta se
 produjeron el 2026-09-11 a las 10:54 y 11:27, **siete horas antes** del commit `989da5d7` que
 corrigió que ambas fixtures fueran byte a byte idénticas. La compuerta verificó por tanto **tres
 condiciones, no cuatro**: S2 («¿aprende la señal siquiera, sin coste?») nunca se probó de verdad,
