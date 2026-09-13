@@ -77,7 +77,10 @@ una regla tonta, que gana al RL, que gana al supervisado, que gana al LLM.
 Descompuesto en bruto y coste, los brazos fallan por razones distintas y fundirlos en «ninguno
 bate a flat» perdería lo único interesante del experimento.
 
-| brazo | bruto | coste | cambios/sesión |
+Bruto y coste de esta tabla son **sumas aritméticas** (ver la corrección de arriba); el bruto
+compuesto del PPO es **+10,0769 %**.
+
+| brazo | bruto (suma) | coste (suma) | cambios/sesión |
 |---|---:|---:|---:|
 | PPO (mediana de exposiciones) | **+9,90 %** | 55,16 % | 5,94 |
 | híbrido PPO+DeepSeek | −12,35 % | 104,90 % | 9,91 |
@@ -98,9 +101,9 @@ el peaje **por completo**:
 
 | brazo | coste cero | ×1 | ×2 | ×3 |
 |---|---:|---:|---:|---:|
-| PPO (mediana de exposiciones) | **+10,08 %** | −36,67 % | −63,63 % | −79,15 % |
-| DeepSeek | **−14,67 %** | −78,93 % | −94,85 % | −98,75 % |
-| Azure | **−28,98 %** | −82,89 % | −95,93 % | −99,04 % |
+| PPO (mediana de exposiciones) | **+10,0769 %** | −36,67 % | −63,63 % | −79,15 % |
+| DeepSeek | **−14,6664 %** | −78,93 % | −94,85 % | −98,75 % |
+| Azure | **−28,9768 %** | −82,89 % | −95,93 % | −99,04 % |
 | híbrido PPO+DeepSeek | −11,73 % | −69,24 % | −89,36 % | — |
 
 Sin coste alguno, el PPO sigue en positivo y los dos LLM siguen en negativo. Eso separa «problema
@@ -108,9 +111,19 @@ de coste» de «problema de señal» sin depender de ninguna suma de brutos, y l
 implementación independiente de la mía: sus cifras a ×1 coinciden con las publicadas aquí hasta
 la segunda decimal.
 
-*(La cifra canónica del bruto del PPO es la suya, **+10,08 %**, que sale de re-liquidar con los
-costes a cero. Mi suma de `w·r` daba +9,90 %; la diferencia de 0,18 pp es el coste terminal, que
-la re-liquidación incluye y la suma no.)*
+> **Corrección 2026-09-13 — y es el error que esta misma tesis ya había retirado una vez.**
+> Escribí que la diferencia entre **+10,0769 %** (Codex) y **+9,9007 %** (mío) era el coste
+> terminal. **Falso.** Lo midió Codex y lo confirmé recomputando: `+9,9007` es la **suma
+> aritmética** de `w·r` sesión a sesión y `+10,0769` es el **compuesto** de las mismas sesiones.
+> Los 0,1761 pp son el interés compuesto, nada más.
+>
+> Es exactamente la confusión que el CORRIGENDUM de `06-RESULTADOS.md` retiró en v1.1.0 —el
+> «bruto +27,95 %» que era suma presentado junto a un neto compuesto—, cometida otra vez por mí
+> en el capítulo que la documenta. La cifra canónica es la **compuesta**: **+10,0769 %**.
+>
+> **Todas las descomposiciones de bruto de esta sección son sumas aritméticas**, y sólo así
+> cuadran: `+9,9007 = −12,35 + 22,25` se sostiene porque la suma es aditiva y el compuesto no lo
+> es. Se etiquetan como sumas a propósito; **no deben compararse contra cifras compuestas**.
 
 > **Dos agregaciones distintas, y no son intercambiables.** La fila `ppo_regime_mean5` de la tabla
 > anterior es la **media de retornos de cinco semillas** (−35,52 %). La fila «PPO» de esta tabla es
