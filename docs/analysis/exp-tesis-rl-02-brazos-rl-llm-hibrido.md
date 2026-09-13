@@ -259,6 +259,20 @@ es una reconstrucción, no el artefacto original. **Nada de lo anterior prueba c
 tesis publicada**; haría falta el linaje histórico. Aquí se afirma sólo de v2, que es lo que está
 verificado.
 
+**La identidad del modelo LLM tampoco está fijada.** El ledger graba `model_id: "deepseek-chat"`
+y `gpt-4o-mini`, que son **alias de despliegue, no versiones**. No hay `served_model`,
+`model_snapshot`, `system_fingerprint` ni `model_version` en ninguna de las 13.334 filas de
+ninguno de los dos brazos.
+
+Codex verificó además (2026-09-12) que la página oficial describe hoy `deepseek-chat` como alias
+compatible de V4-Flash *non-thinking*, con deprecación anunciada para 2026-07-24. **No acredita
+qué versión respondió** durante la corrida, y el propio alias puede haber cambiado de destino.
+
+Consecuencia: los brazos LLM **no son reproducibles a nivel de modelo**. Sus números son los que
+se obtuvieron, con el prompt y el muestreo congelados y hasheados, pero nadie puede volver a
+pedirle lo mismo *al mismo modelo* y esperar lo mismo. Para el brazo de robustez, que existe para
+comparar proveedores, la limitación es mayor: compara dos alias, no dos modelos.
+
 **Identidad macro verificada, disponibilidad NO.** El artefacto
 `research_grade_macro_20260912/identity_live_network.json`
 (SHA `400ba9a5833f4829f91a471c644e0409cd185910d9dc95ded31867c3762e716e`, verificado por mí)
