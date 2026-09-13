@@ -264,9 +264,19 @@ y `gpt-4o-mini`, que son **alias de despliegue, no versiones**. No hay `served_m
 `model_snapshot`, `system_fingerprint` ni `model_version` en ninguna de las 13.334 filas de
 ninguno de los dos brazos.
 
-Codex verificó además (2026-09-12) que la página oficial describe hoy `deepseek-chat` como alias
-compatible de V4-Flash *non-thinking*, con deprecación anunciada para 2026-07-24. **No acredita
-qué versión respondió** durante la corrida, y el propio alias puede haber cambiado de destino.
+Codex comprobó la página oficial de precios el 2026-09-13 y **`deepseek-chat` no aparece en la
+tabla vigente**: figuran `deepseek-flash` (DeepSeek-V4.1-Flash) y `deepseek-v4-pro`
+(DeepSeek-V4-Pro-0813).
+
+*(Errata: una versión anterior de este párrafo decía, citando a Codex, que la página describía
+`deepseek-chat` como alias de V4-Flash *non-thinking* con deprecación el 2026-07-24. **Codex
+retiró esa afirmación**: procedía de un resultado de búsqueda indexado meses antes, no del cuerpo
+actual de la página. Se retira aquí también. Ni la versión cacheada ni la viva acreditan qué
+modelo respondió a las llamadas históricas.)*
+
+El identificador con el que se llamó **ya no existe en la tabla de precios del proveedor**, y no
+hay forma, desde la evidencia archivada, de establecer qué versión sirvió cada una de las 13.334
+respuestas.
 
 Consecuencia: los brazos LLM **no son reproducibles a nivel de modelo**. Sus números son los que
 se obtuvieron, con el prompt y el muestreo congelados y hasheados, pero nadie puede volver a
