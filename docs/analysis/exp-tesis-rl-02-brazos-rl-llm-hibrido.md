@@ -79,7 +79,7 @@ bate a flat» perdería lo único interesante del experimento.
 
 | brazo | bruto | coste | cambios/sesión |
 |---|---:|---:|---:|
-| PPO (mediana de semillas) | **+9,90 %** | 55,16 % | 5,94 |
+| PPO (mediana de exposiciones) | **+9,90 %** | 55,16 % | 5,94 |
 | híbrido PPO+DeepSeek | −12,35 % | 104,90 % | 9,91 |
 | DeepSeek | **−15,73 %** | 139,26 % | 18,86 |
 
@@ -88,6 +88,13 @@ demasiado para conservarla. La política encuentra algo; el peaje se lo come.
 
 **El LLM tiene un problema de señal.** Sus decisiones pierden dinero **antes de pagar nada**.
 Ninguna reducción de costes lo salva.
+
+> **Dos agregaciones distintas, y no son intercambiables.** La fila `ppo_regime_mean5` de la tabla
+> anterior es la **media de retornos de cinco semillas** (−35,52 %). La fila «PPO» de esta tabla es
+> la **mediana de exposiciones barra a barra** (−36,67 % sobre las mismas sesiones), que es la que
+> entra en el híbrido porque el veto opera barra a barra. Son objetos distintos y el artefacto del
+> híbrido los reporta por separado (`ppo_median_same_sessions`). Lo señaló Codex; una versión
+> anterior de este capítulo los ponía en la misma columna sin decirlo.
 
 ## El hallazgo del híbrido: el acuerdo del LLM es anti-informativo
 
@@ -125,6 +132,17 @@ invertida respecto de lo que conviene operar.
 Verificado por una vía independiente, recomputando `w_ppo · r` barra a barra desde el portable y
 el ledger, antes de escribirlo aquí.
 
+**Limitación que acota este hallazgo, señalada por Codex.** El prompt entrega las features
+**normalizadas y sin unidades**. Un modelo que recibe z-scores no puede razonar sobre magnitudes,
+así que la medición no distingue «el LLM extrae señal invertida» de «el LLM no tiene con qué
+razonar». La acota, pero no la explica: un modelo sin información elegiría al azar, no
+sistemáticamente las perdedoras, y menos dos veces en la misma dirección con dos vendedores
+distintos.
+
+**No se corrige ni se re-corre.** El prompt está congelado por hash en el pre-registro; cambiarlo
+ahora, viendo el resultado, sería exactamente la selección que el documento existe para impedir. Un
+prompt con unidades es una **hipótesis nueva** y cobra su trial.
+
 ## Una corrección a nuestro propio pre-registro
 
 Al congelar la regla escribimos que *«un veto sólo puede reducir rotación; no puede inventar
@@ -148,9 +166,37 @@ diez. El rechazo pasa de «resultado de una implementación con fuga macro y rec
 «resultado de un dataset sin fuga con una receta que supera los controles de solución conocida».
 
 **No cerrado**: nada de esto es confirmatorio. El DSR trial-aware de ambas configuraciones PPO es
-**0,0000 con n_trials = 115**, y el stress de costes las mata a ×2 y ×3. La única comparación que
-salió a favor de algo es la ablación H2 — `ppo_regime` supera a `ppo_backbone` (ΔSharpe +1,745,
-p = 0,0406): los posteriores de régimen aportan, pero aportan para perder menos.
+**0,0000 con n_trials = 115**, y el stress de costes las mata a ×2 y ×3.
+
+**Retractación (2026-09-12).** Una versión anterior de este capítulo decía que la ablación H2 salía
+a favor de `ppo_regime` (ΔSharpe +1,745, p = 0,0406). **Esa afirmación no se sostiene** y la retiro.
+El contraste se hizo sobre la *serie media de las cinco semillas*, que trata la media como si fuera
+una observación y descarta la varianza entre semillas — justo la fuente de incertidumbre que
+domina aquí. Tomando la semilla como unidad aleatoria:
+
+```
+Sharpe por semilla  regime  : -2,43  -6,76  -4,65  -3,42  -5,26
+Sharpe por semilla  backbone: -4,83  -3,91  -6,97  -4,60  -3,49
+diferencia media +0,253 · sd entre semillas 2,421
+IC 95 % bootstrap sobre semillas: [-1,62, +2,12]  -> INCLUYE CERO
+```
+
+Codex lo señaló de forma independiente con un modelo jerárquico, IC `[-2,08, +4,46]`: distinto
+método, mismo veredicto. **No hay evidencia de que los posteriores de régimen aporten nada**, y
+con cinco semillas y esta dispersión no la habría aunque aportaran. Queda como indecidible, no
+como negativo.
+
+Era la única comparación que salía a favor de algo en todo el experimento, lo que la hacía
+exactamente la que más escrutinio merecía.
+
+**Cobertura real de la compuerta sintética.** Los artefactos S2 y S3 que abrieron la compuerta se
+produjeron el 2026-09-11 a las 10:54 y 11:27, **siete horas antes** del commit `989da5d7` que
+corrigió que ambas fixtures fueran byte a byte idénticas. La compuerta verificó por tanto **tres
+condiciones, no cuatro**: S2 («¿aprende la señal siquiera, sin coste?») nunca se probó de verdad,
+fue S3 corrido dos veces. La pregunta de S2 queda respondida *implícitamente* por S3 —no se puede
+operar cuando el alfa supera el coste sin haber aprendido la señal— pero la afirmación de cobertura
+era falsa. S2 se está re-corriendo con la fixture corregida; el resultado se añadirá aquí tal como
+salga. Lo detectó Codex en su réplica.
 
 **Declaración de búsqueda**: la receta `flat_init_no_turn` se eligió tras probar **ocho sondas**
 sobre fixtures sintéticas. No cobra trial de mercado —las fixtures no son USD/COP— pero es una
