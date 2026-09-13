@@ -225,6 +225,37 @@ fixtures sintéticas y el modelo de costes—, así que `dataset_identity()` en 
 `allow_stale`**. Los números son los medidos; **no son reproducibles contra HEAD** hasta que se
 reconcilie la identidad. Se dice aquí en vez de dejar que alguien lo descubra.
 
+**El efecto de la representación sobre el régimen: medido en 2023, pequeño; en 2026, sin medir.**
+Codex ejecutó el diagnóstico que yo había pedido (`hmm_representation_20260913/diagnostic_v3.json`,
+SHA `c50bf861614c0ba26af29482ab37efe72a5d08cb235ac6e89d8c63077e884930`, verificado), y con el
+orden correcto: **primero paridad**, y el contrafactual **sólo porque la paridad pasó**.
+
+La paridad reproduce las cuatro coordenadas archivadas en **226/226 sesiones** con error máximo
+`2,97e-8` contra una tolerancia de `1e-6` — treinta y tres veces por debajo. Sólo entonces, el
+contrafactual `O=H=L=C` con los mismos parámetros:
+
+| medición pareada en selección | valor |
+|---|---:|
+| estado dominante distinto | **5 de 226 (2,21 %)** |
+| distancia de variación total, mediana | **0,000** |
+| p95 / máximo | 0,0030 / 0,8995 |
+
+**Mi alarma previa queda rebajada**: escribí que el posterior «se movería» y en selección la
+mediana del cambio es exactamente cero. Un revisor independiente reprodujo los 226 posteriores
+con una recursión forward propia en dominio logarítmico, discrepancia máxima `2,8e-15`.
+
+**Pero la cohorte es 2023, donde el 89,60 % de las barras ya son planas** (medido sobre las
+13.560 barras de la cohorte exacta; no confundir con el 89,98 % del año de calendario, que tiene
+otro denominador). Aplanar mueve poco porque casi no hay rango que quitar: **el diagnóstico mide
+el efecto donde es estructuralmente menor**. El artefacto lo declara con
+`not_evaluated_cohorts: ["holdout", "2026", "forward"]`.
+
+En 2026 el **0 %** de las barras son planas. El efecto sobre el posterior allí **no está medido**
+—por nadie— y **sí es medible**: el hold-out archivado contiene **150 sesiones de 2026** con
+contexto guardado, así que la misma paridad es ejecutable sobre ellas. *(Una versión anterior de
+este capítulo afirmaba que no existía posterior archivado para 2026; es falso y lo verifiqué.)*
+Mientras no se haga, **«5 de 226» no puede citarse como el efecto en 2026**.
+
 **El posterior de régimen se entregó truncado — reparametrizado, no mutilado.**
 Hallazgo abierto por el guard que Codex añadió en `dataset.py`, y acotado por él mismo después.
 
