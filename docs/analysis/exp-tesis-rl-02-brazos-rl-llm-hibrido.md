@@ -225,6 +225,36 @@ fixtures sintéticas y el modelo de costes—, así que `dataset_identity()` en 
 `allow_stale`**. Los números son los medidos; **no son reproducibles contra HEAD** hasta que se
 reconcilie la identidad. Se dice aquí en vez de dejar que alguien lo descubra.
 
+**El posterior de régimen llegó truncado — también en v2, también en mis diez corridas.**
+Descubierto el 2026-09-12 a partir del guard que Codex añadió en `dataset.py`.
+
+`regime_hmm.py:78` deja que el BIC elija K entre 2 y 5. El esquema congela **cuatro** huecos
+(`p_regime_0..3`). Y `dataset.py:199-205` hace `probs[:N_REGIMES]`: **con K=5 el quinto posterior
+se descarta en silencio**, sin error ni registro.
+
+Los dos portables lo llevan grabado dentro, así que no es inferencia sobre un fichero mutable:
+
+```
+v1: k=5  labels=['calmo','intermedio','intermedio','intermedio','shock']  bic_by_k={2:9818.9, 3:5805.7, 4:5794.7, 5:5644.1}
+v2: k=5  labels=['calmo','intermedio','intermedio','intermedio','shock']  bic_by_k={2:9820.4, 3:5806.1, 4:5785.5, 5:5710.4}
+```
+
+El BIC prefiere K=5 en ambos. **El estado descartado es el índice 4: `shock`** — precisamente el
+régimen que una política consciente del régimen más necesitaría. El brazo `ppo_regime` de esta
+tesis, v1 y v2, entrenó sin la probabilidad de shock, con cuatro números que **no suman 1** y cuyo
+déficit varía sesión a sesión con la probabilidad del estado que falta.
+
+**Qué cambia y qué no.** El titular no se mueve: ningún método bate a la abstención, y eso no
+depende de las features de régimen. Lo que queda tocado es cualquier lectura de la ablación H2
+—ya retractada por otro motivo— y la descripción misma del brazo: `ppo_regime` no es «PPO con
+estado de régimen», es **«PPO con cuatro quintos del estado de régimen, sin el shock»**.
+
+*(Corrección a una versión anterior de esta sección, que decía que v2 no estaba afectado: sí lo
+está. Lo afirmé leyendo `regime_hmm_frozen_v2.json`, que declara `k: 4`, sin comprobar el portable
+que realmente se usó, que declara `k: 5`. Los dos artefactos no concuerdan entre sí y esa
+discrepancia sigue abierta. Codex exigió el vínculo con el artefacto archivado antes de aceptar mi
+afirmación; tenía razón, y al buscarlo el hallazgo salió más grande.)*
+
 **Identidad macro verificada, disponibilidad NO.** El artefacto
 `research_grade_macro_20260912/identity_live_network.json`
 (SHA `400ba9a5833f4829f91a471c644e0409cd185910d9dc95ded31867c3762e716e`, verificado por mí)
