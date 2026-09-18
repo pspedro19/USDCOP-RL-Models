@@ -26,7 +26,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 SEED = "seeds/latest/usdcop_m5_ohlcv.parquet"
-MACRO = "data/pipeline/04_cleaning/output/MACRO_DAILY_CLEAN.parquet"
+MACRO = "data/pipeline/04_cleaning/output/MACRO_RESEARCH_v2.parquet"
 PORTABLE = "data/thesis/research_data_portable.pkl"
 BLOCKS = ("development", "selection", "holdout")
 CONFIGS = ("ppo_regime", "ppo_backbone")
@@ -161,7 +161,9 @@ def main() -> int:
     # can compare legacy v1 portable sessions even when mask v2 excludes them.
     # This is retrospective evidence only; training/evaluation still consumes
     # the v2 mask.
-    features = feats_mod.build_market_features(seed)
+    # Match the dataset builder's valid-session contract; otherwise excluded
+    # bars contaminate the independently recomputed development scaler.
+    features = feats_mod.build_market_features(seed, valid_sessions=set(valid))
     market_names = [f for group in ("precio", "volatilidad", "tendencia", "temporal")
                     for f in feats_mod.GROUPS[group]]
     frozen = read_json("config/research/feature_scaler_frozen.json")
@@ -248,8 +250,13 @@ def main() -> int:
     }
     first_bars = features.groupby("_session").head(1)
     feature_audit["opening_logret_nonzero_sessions"] = int(first_bars.logret_1.ne(0).sum())
-    dev_dates = set(mask.in_block(part["blocks"]["development"]["start"],
-                                part["blocks"]["development"]["end"]))
+    # ``build_research_data`` fits on train-valid sessions, excluding the
+    # invalid/outlier categories. Reuse that exact set for an apples-to-apples
+    # frozen-scaler audit.
+    dev_block = part["blocks"]["development"]
+    dev_lo = pd.Timestamp(dev_block["start"]).date()
+    dev_hi = pd.Timestamp(dev_block["end"]).date()
+    dev_dates = {d for d in mask.train_valid if dev_lo <= d <= dev_hi}
     dev_rows = features[features._session.isin(dev_dates)][market_names]
     recalculated_scale = dev_rows.std(ddof=0).to_numpy()
     recalculated_scale[recalculated_scale == 0] = 1

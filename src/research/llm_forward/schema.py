@@ -3,21 +3,19 @@
 Two record types, deliberately kept in separate files and written by separate
 jobs:
 
-* ``DecisionRecord`` — sealed *before* the session opens. Contains what the model
-  saw and what it emitted. Never modified afterwards.
+* ``DecisionRecord`` — captures inputs/output under its declared schedule:
+  pre-open legacy, per-bar stream or explicit first-bar hold. Never modified afterwards.
 * ``SettlementRecord`` — written *after* the session closes. References a decision
   by id and adds the realized outcome.
 
-Keeping them apart is not tidiness. If one process could write both, a bug (or a
-tired operator) could backfill an outcome into a decision row, and the whole
-forward guarantee would evaporate with no trace. Separation makes that class of
-mistake structurally impossible rather than merely discouraged.
+Separate records make outcome backfills easier to detect. This is not access
+control, an external durable timestamp or a guarantee of executable prices.
 """
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 Direction = Literal["long", "short", "flat"]
@@ -68,7 +66,7 @@ class Decision:
 
 @dataclass
 class DecisionRecord:
-    """A sealed pre-session decision."""
+    """A decision captured under an explicitly validated observation schedule."""
 
     seq: int
     decision_id: str
@@ -76,7 +74,7 @@ class DecisionRecord:
     emitted_at_utc: str          # when this process ran
     cutoff_utc: str              # no document published at/after this was shown
     session_open_utc: str        # first bar of the session
-    sealed_before_open: bool     # False => excluded from analysis, not deleted
+    sealed_before_open: bool     # False requires a valid explicit intraday schedule
     preregistration_sha256: str
     prompt_sha256: str
     model: str
@@ -115,6 +113,10 @@ class DecisionRecord:
     prev_hash: str = ""
     record_hash: str = ""
 
+    # C049: exactly one post-close(0) decision held for all 59 paper returns.
+    # None/absent preserves legacy; never infer this mode or migrate old rows.
+    decision_schedule: str | None = None
+
     def hashable_payload(self) -> dict[str, Any]:
         """The record minus its own hash fields.
 
@@ -138,10 +140,14 @@ class SettlementRecord:
     open_price: float
     close_price: float
     realized_return: float       # (close - open) / open, sign convention documented
-    signed_return: float         # realized_return * position sign, gross of costs
+    signed_return: float         # gross strategy return, NEVER net of costs
     bars_observed: int
     prev_hash: str = ""
     record_hash: str = ""
+
+    # C048 additive: old signed_return remains GROSS, rounded to eight decimals.
+    # Missing/None means net accounting UNKNOWN, never zero. Original rows are immutable.
+    accounting: dict[str, Any] | None = None
 
     def hashable_payload(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -156,6 +162,5 @@ def utc_now_iso() -> str:
     Naive datetimes are banned throughout this package. A timestamp without a
     zone is exactly the ambiguity the whole design exists to eliminate.
     """
-    from datetime import timezone
 
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")

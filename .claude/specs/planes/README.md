@@ -24,7 +24,7 @@ code_anchors:
 | [CTR-QLAB-FABRIC-004](04-CTR-QLAB-FABRIC-004.md) | PLANNED |
 | [Institutional readiness matrix](04b-readiness-matrix.md) | PARTIAL |
 | [Estrategias basadas en reglas como componentes de primera clase](05-rule-based-strategies.md) | PLANNED |
-| [Pre-registro v3 — EXP-TESIS-RL-02](06-PRE-REGISTRATION-v3.md) | PARTIAL |
+| [Pre-registro v3 — EXP-TESIS-RL-02](06-PRE-REGISTRATION-v3.md) | SIGNED |
 | [PRE-REGISTRO DEL HOLD-OUT — tesis USD/COP (RL / LLM / Híbrido)](06-PRE-REGISTRATION.md) | IMPLEMENTED |
 | [RESULTADOS Y CONCLUSIONES — tesis USD/COP (brazo PPO)](06-RESULTADOS.md) | PARTIAL |
 | [Propuesta definitiva — Sistema de trading algorítmico USD/COP (RL / LLM / Híbrido)](06-tesis-rl-llm-hibrido.md) | PARTIAL |

@@ -11,14 +11,13 @@ cinco correctas -- y a `thesis_train_ppo.py`, que si las usaba. El efecto practi
 evidencia de sanidad del optimizador no era comparable por semilla con las corridas de
 mercado que pretendia justificar, y nada lo senalaba.
 
-Se comprueba por AST y no por texto: una lista de semillas escrita como `range`, importada o
-recompuesta seguiria siendo una desviacion, y un `grep` de los cinco numeros la daria por
-buena.
+Se comprueba el valor efectivo del runner. Importar la lista desde un SSOT no es
+una desviacion: la igualdad exacta protege contra sustituir o reordenar semillas.
 """
 
 from __future__ import annotations
 
-import ast
+import importlib
 from pathlib import Path
 
 import pytest
@@ -32,33 +31,13 @@ RUNNERS = (
 )
 
 
-def _seeds_literal(path: Path) -> tuple[int, ...] | None:
-    """Devuelve la tupla asignada a SEEDS a nivel de modulo, o None si no es literal."""
-    tree = ast.parse(path.read_text(encoding="utf-8"))
-    for node in tree.body:
-        if not isinstance(node, ast.Assign):
-            continue
-        names = [t.id for t in node.targets if isinstance(t, ast.Name)]
-        if "SEEDS" not in names:
-            continue
-        try:
-            value = ast.literal_eval(node.value)
-        except ValueError:
-            return None
-        return tuple(value) if isinstance(value, (tuple, list)) else None
-    return None
-
-
 @pytest.mark.parametrize("relative", RUNNERS)
 def test_runner_declares_the_protocol_seeds(relative: str) -> None:
     path = ROOT / relative
     if not path.is_file():
         pytest.skip(f"{relative} no existe en este checkout")
-    seeds = _seeds_literal(path)
-    assert seeds is not None, (
-        f"{relative} no asigna SEEDS a un literal evaluable; la regla exige una lista "
-        "declarada, no construida en tiempo de ejecucion."
-    )
+    module = importlib.import_module(relative[:-3].replace('/', '.'))
+    seeds = tuple(module.SEEDS)
     assert seeds == PROTOCOL_SEEDS, (
         f"{relative} declara {seeds} y el protocolo fija {PROTOCOL_SEEDS} sin excepciones "
         "(`.claude/rules/experiment-protocol.md` regla 2). Cambiar una semilla rompe la "

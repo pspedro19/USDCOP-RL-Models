@@ -58,6 +58,7 @@ PPO_DIR = Path(os.environ.get("THESIS_PPO_OUT", REPO / "outputs" / "thesis" / "p
 OUT = REPO / "outputs" / "thesis"
 FIGS = OUT / "figuras"
 TABLES = OUT / "tablas"
+REPORTS = OUT
 
 SEEDS = (42, 123, 456, 789, 1337)
 CONFIGS = ("ppo_regime", "ppo_backbone")
@@ -99,12 +100,13 @@ def series_from_runs(runs: dict) -> dict[str, np.ndarray]:
     return out
 
 
-def rebuild_baselines(block: str) -> dict[str, np.ndarray]:
+def rebuild_baselines(block: str, *, allow_stale_artifact: bool = False) -> dict[str, np.ndarray]:
     """Recalcula los baselines sobre los mismos specs: alineación por construcción."""
     from src.research.dataset import PORTABLE, load_or_build, load_portable
     from src.research.session_env import daily_series, run_session
 
-    data = load_portable() if PORTABLE.is_file() else load_or_build(verbose=False)
+    data = (load_portable(allow_stale=allow_stale_artifact) if PORTABLE.is_file()
+            else load_or_build(verbose=False))
     specs = data.block(block)
 
     def const(level):
@@ -248,7 +250,7 @@ def fig_action_distribution(exposures: dict, regimes: np.ndarray, labels: list, 
     levels = (-1.0, -0.5, 0.0, 0.5, 1.0)
     n = len(exposures)
     fig, axes = plt.subplots(1, max(n, 1), figsize=(5.5 * max(n, 1), 4.2), squeeze=False)
-    for ax, (cfg, exp) in zip(axes[0], exposures.items()):
+    for ax, (cfg, exp) in zip(axes[0], exposures.items(), strict=False):
         width = 0.8 / max(len(labels), 1)
         for j, lab in enumerate(labels):
             m = regimes == j
@@ -500,12 +502,37 @@ def main() -> int:
                     choices=["development", "selection", "holdout"])
     ap.add_argument("--no-replay", action="store_true",
                     help="salta las figuras que exigen recargar los modelos")
+    ap.add_argument("--allow-stale-artifact", action="store_true",
+                    help="permite cargar el portable histórico; solo diagnóstico retrospectivo")
+    ap.add_argument("--output-dir", type=Path,
+                    help="directorio de salida; obligatorio con --allow-stale-artifact")
+    ap.add_argument("--ppo-dir", type=Path,
+                    help="directorio de artefactos PPO; por defecto outputs/thesis/ppo")
+    ap.add_argument("--portable-path", type=Path,
+                    help="portable explícito; evita mezclar v1 y v2")
     args = ap.parse_args()
+
+    global FIGS, TABLES, REPORTS, OUT, PPO_DIR
+    if args.allow_stale_artifact and args.output_dir is None:
+        raise SystemExit(
+            "--allow-stale-artifact requiere --output-dir separado "
+            "(diagnóstico retrospectivo)"
+        )
+    if args.output_dir is not None:
+        REPORTS = args.output_dir.resolve()
+        OUT = REPORTS
+        FIGS = REPORTS / "figuras"
+        TABLES = REPORTS / "tablas"
+    if args.ppo_dir is not None:
+        PPO_DIR = args.ppo_dir.resolve()
+    if args.portable_path is not None:
+        os.environ["THESIS_PORTABLE"] = str(args.portable_path.resolve())
 
     enable_deterministic_png()
     stats = load_stats(args.block)
     runs = load_runs(args.block)
-    baselines, specs, data = rebuild_baselines(args.block)
+    baselines, specs, data = rebuild_baselines(
+        args.block, allow_stale_artifact=args.allow_stale_artifact)
     ppo = series_from_runs(runs)
 
     series = {**baselines, **ppo}
@@ -696,10 +723,11 @@ def main() -> int:
                 rows_fr))
 
     # --- coherencia -------------------------------------------------------
-    checks = coherence_report(stats, series, runs, specs, decomp)
-    report = OUT / f"coherencia_{args.block}.json"
+    checks = ([] if args.no_replay else coherence_report(stats, series, runs, specs, decomp))
+    report = REPORTS / f"coherencia_{args.block}.json"
     report.write_text(json.dumps({"block": args.block, "checks": checks,
-                                  "all_ok": all(c["ok"] for c in checks)},
+                                  "all_ok": None if args.no_replay else all(c["ok"] for c in checks),
+                                  "mode": "retrospective_no_replay" if args.no_replay else "full"},
                                  indent=2, ensure_ascii=False), encoding="utf-8")
 
     print(f"\nFiguras ({len(produced)}):")
@@ -711,7 +739,9 @@ def main() -> int:
     print(f"\nReporte de coherencia (§19.4) -> {report.relative_to(REPO)}")
     for c in checks:
         print(f"  [{'OK ' if c['ok'] else 'FALLA'}] {c['check']}: {c['detail']}")
-    return 0 if all(c["ok"] for c in checks) else 1
+    # `--no-replay` intentionally omits model-dependent checks; the explicit mode in the
+    # report prevents this diagnostic regeneration from being mistaken for a full gate.
+    return 0 if args.no_replay or all(c["ok"] for c in checks) else 1
 
 
 if __name__ == "__main__":

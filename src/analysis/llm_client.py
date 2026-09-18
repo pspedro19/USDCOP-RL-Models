@@ -48,13 +48,16 @@ class AzureOpenAIProvider(LLMProvider):
         self,
         api_key: str | None = None,
         endpoint: str | None = None,
-        deployment: str = "gpt-4o-mini",
-        api_version: str = "2024-12-01-preview",
+        deployment: str | None = None,
+        api_version: str | None = None,
     ):
         self.api_key = api_key or os.environ.get("USDCOP_AZURE_OPENAI_API_KEY", "")
         self.endpoint = endpoint or os.environ.get("USDCOP_AZURE_OPENAI_ENDPOINT", "")
-        self.deployment = deployment
-        self.api_version = api_version
+        self.deployment = deployment or os.environ.get("USDCOP_AZURE_OPENAI_DEPLOYMENT", "")
+        self.api_version = api_version or os.environ.get(
+            "USDCOP_AZURE_OPENAI_API_VERSION", "2024-12-01-preview"
+        )
+        self.top_p = float(os.environ.get("USDCOP_AZURE_OPENAI_TOP_P", "0.9"))
 
     def generate(
         self,
@@ -85,6 +88,7 @@ class AzureOpenAIProvider(LLMProvider):
             ],
             max_tokens=max_tokens,
             temperature=temperature,
+            top_p=self.top_p,
         )
 
         usage = response.usage
@@ -100,6 +104,64 @@ class AzureOpenAIProvider(LLMProvider):
 
     def health_check(self) -> bool:
         return bool(self.api_key and self.endpoint)
+
+
+class DeepSeekProvider(LLMProvider):
+    """DeepSeek chat provider through its OpenAI-compatible API.
+
+    The key is read only from ``DEEPSEEK_API_KEY`` (or an explicitly injected value for
+    tests).  It is never included in logs, cache keys, or returned metadata.  Prices are
+    intentionally not guessed: callers receive ``cost_known=False`` until the frozen
+    provider tariff is recorded in the experiment contract.
+    """
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
+    ):
+        self.api_key = api_key if api_key is not None else os.environ.get("DEEPSEEK_API_KEY", "")
+        self.model = model or os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+        self.base_url = base_url or os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+        self.top_p = float(os.environ.get("DEEPSEEK_TOP_P", "0.9"))
+
+    def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        max_tokens: int = 2000,
+        temperature: float = 0.7,
+    ) -> dict:
+        if not self.api_key:
+            raise ValueError("DeepSeek API key not configured")
+        try:
+            from openai import OpenAI
+        except ImportError as exc:
+            raise ImportError("openai package required: pip install openai") from exc
+        client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        response = client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_p=self.top_p,
+        )
+        usage = response.usage
+        total_tokens = int(getattr(usage, "total_tokens", 0) or 0)
+        return {
+            "content": response.choices[0].message.content,
+            "tokens_used": total_tokens,
+            "model": f"deepseek/{self.model}",
+            "cost_usd": 0.0,
+            "cost_known": False,
+        }
+
+    def health_check(self) -> bool:
+        return bool(self.api_key and self.model and self.base_url)
 
 
 class AnthropicProvider(LLMProvider):

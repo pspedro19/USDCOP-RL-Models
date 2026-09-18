@@ -13,7 +13,9 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -53,6 +55,10 @@ def main() -> int:
     ap.add_argument("--year", type=int, default=2026, help="bundle label year")
     ap.add_argument("--version", default="1.0.0")
     ap.add_argument("--no-publish", action="store_true")
+    ap.add_argument(
+        "--diagnostic-output", type=Path,
+        help="guarda métricas reproducibles sin publicar; no habilita un contrato de ejecución",
+    )
     ap.add_argument("--target-vol", type=float, default=0.10)
     a = ap.parse_args()
 
@@ -166,6 +172,47 @@ def main() -> int:
                 res["summary"]["backtest_recommendation"] = res["recommendation"]
                 res["summary"]["verdict_notes"] = reasons
                 print(f"    -> verdict degraded to {res['recommendation']}: {'; '.join(reasons)}")
+
+    if a.diagnostic_output:
+        # This artifact is intentionally separate from strategy bundles.  It records real-data
+        # diagnostics while the venue contract is pending, and cannot be consumed as promotion
+        # evidence by the publisher.
+        manifest = REPO / "data" / "snapshots" / "public_daily" / "xauusd_manifest.json"
+        summary = {}
+        for sid, (res, ptype, name) in results.items():
+            summary[sid] = {
+                "name": name,
+                "pipeline_type": ptype,
+                "recommendation": res.get("recommendation"),
+                "metrics": res.get("metrics", {}),
+                "oos": res.get("summary", {}).get("oos"),
+                "statistical_tests": res.get("summary", {}).get("statistical_tests", {}),
+                "attribution": res.get("attribution", {}),
+                "honest_gate": res.get("summary", {}).get("honest_gate", {}),
+            }
+        artifact = {
+            "contract": "CTR-RESEARCH-XAUUSD-DIAGNOSTIC-001",
+            "status": "diagnostic_no_venue",
+            "promotion_eligible": False,
+            "venue_cost_contract": "PENDING_VENUE",
+            "source_manifest": str(manifest.relative_to(REPO)),
+            "source_manifest_sha256": hashlib.sha256(manifest.read_bytes()).hexdigest(),
+            "seed": str(Path(a.seed)),
+            "warmup": a.warmup,
+            "year": a.year,
+            "n_strategies": len(results),
+            "trials_charged": 0,
+            "results": summary,
+            "interpretation": (
+                "Resultados sobre datos reales para diagnóstico de metodología; sin bid/ask, "
+                "fills, tick y swaps verificados no son retornos ejecutables."
+            ),
+        }
+        out = a.diagnostic_output if a.diagnostic_output.is_absolute() else REPO / a.diagnostic_output
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(artifact, indent=2, default=str, ensure_ascii=False) + "\n",
+                       encoding="utf-8")
+        print(f"[diagnostic] escrito {out.relative_to(REPO)}")
 
     # honest baseline verdict (STRATEGY §6): does the regime strategy beat BOTH baselines?
     b1 = results["gold_long_only_b1"][0]["metrics"]["sharpe"]

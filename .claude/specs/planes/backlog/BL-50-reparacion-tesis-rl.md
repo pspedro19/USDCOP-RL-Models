@@ -40,8 +40,8 @@ ejecución pasiva queda suspendida hasta tener un venue con libro de órdenes).
 |---|---|---|
 | 1. Fuentes y costos | `macro_availability.yaml` (regla de disponibilidad), `cost_contract.yaml` con unidad declarada, máscara v2 con reglas §6.3 y festivos de EE. UU., schema v2 (39 → 37 features) | HECHO |
 | 2. Entorno | Fuga macro cerrada, costo terminal en el reward y valorado en la barra 59, ventanas intra-sesión, identidad del dataset por sha256, tests HMM no tautológicos, specs parciales para el carril live | HECHO |
-| 3. Sanidad del optimizador | 7 recetas de hiperparámetros fallan; la 8ª, **estructural (`flat_init`), PASA S1 con 5/5**. Faltan S2-S4 antes de congelar receta | S1 HECHA |
-| 4. Reentreno sin fugas y juez forward | **BLOQUEADA por la compuerta de sanidad**, no por falta de tiempo: el v3 exige congelar una receta que pase S1 y no hay ninguna | BLOQUEADA |
+| 3. Sanidad del optimizador | `flat_init_no_turn` pasa S1-S4 con 5/5 semillas a 100k pasos; protocolo agregado y hashes publicados. Es control sintético, no evidencia de mercado | HECHA |
+| 4. Reentreno sin fugas y juez forward | **BLOQUEADA por identidad macro no reconciliada** (`all_declared_identities_honoured=false`); no se autoriza entrenar/evaluar mercado v2 | BLOQUEADA |
 | 5. Corrigendum | Correcciones de §0-§7 con cifras de la evidencia | HECHO |
 | 6. Gobernanza | Brief de contabilidad redactado para el operador; ledger y registro sin tocar desde este carril | PARCIAL |
 
@@ -179,7 +179,7 @@ no operar, de modo que tenga que *aprender* a salir. Entorno idéntico a `kappa_
 | Semilla | 42 | 123 | 456 | 789 | 1337 |
 |---|---:|---:|---:|---:|---:|
 | baseline | 0,527 | 0,966 | 0,485 | 0,985 | 0,968 |
-| **`flat_init`** | **0,019** | **0,021** | **0,041** | **0,018** | **0,014** |
+| **`flat_init`** | **0,019** | **0,021** | **0,041** | **0,018** | **0,024** |
 
 El fallo era **de arranque, no de capacidad**: misma red, mismo entorno, mismo presupuesto y
 mismos hiperparámetros encuentran la política óptima en cuanto empiezan en el sitio correcto.
@@ -202,6 +202,19 @@ asimetría que crea la trampa.
 0,966 / 0,485 / 0,985 / 0,968 sobre una serie de ruido iid con costo, donde la política óptima
 es no operar. La regla pre-registrada exigía ≥4/5 planas. Evidencia en
 `outputs/thesis-repair/sanity_S1_protocol.json`; lectura en el corrigendum §6.
+
+**Sonda estructural adicional declarada el 2026-09-11.** `flat_init` acoplaba `kappa_turn=1`,
+que domina el alfa de S2 aunque resuelva S1. Se añadió `flat_init_no_turn`: mismo sesgo inicial
+hacia exposición cero, pero `kappa_turn=0`; se ejecuta como receta nueva solo después del fallo
+de S2 con `flat_init`. La primera corrida S2 (semilla 42, 100k pasos) obtuvo retorno neto medio
+0,0739 frente a un oráculo 0,0772; es evidencia sintética preliminar y no abre la compuerta
+hasta completar 5 semillas y S3-S4.
+
+**S1-S4 cerrados como control sintético (2026-09-11).** La receta única `flat_init_no_turn`
+pasó 5/5 semillas en cada fixture a 100k pasos. El veredicto reproducible, con hashes de los
+cuatro agregados, está en `outputs/thesis-repair/sanity_protocol_v2.json`. S1 y S4 controlan
+abstención bajo ruido/costo; S2 y S3 controlan aprendizaje de una señal conocida. Ninguno de
+estos pases autoriza una afirmación sobre USD/COP u oro.
 
 Se resolvió el problema de entorno que lo bloqueaba: `thesis_ppo_sanity.py` ahora **guarda y
 restaura `VecNormalize` junto al checkpoint**, así que el entrenamiento se parte en tramos sin
@@ -255,6 +268,18 @@ esta auditoría vino a instaurar.
 2. Levantar el stack y correr el pipeline macro L0 hasta hoy. Desbloquea el sellado del
    carril live y el ledger de paper, en ese orden.
 3. Firmar el pre-registro v3 (hoy `PARTIAL`) antes de la primera corrida v2.
+
+## Corrección de estado posterior (2026-09-11)
+
+La evidencia más reciente supersede el diagnóstico histórico de la sección macro anterior:
+`MACRO_RESEARCH_v2.parquet` coincide al 100 % con FRED Brent, FRED DGS2 y BanRep IBR. DXY
+continúa `honoured=false` porque su archivo ICE no está disponible en el checkout. El gate
+sigue cerrado y no se entrena v2 con una sustitución.
+
+La compuerta sintética está superada por `flat_init_no_turn` en S1–S4 (5/5 semillas, cero
+trials de mercado), como confirma `outputs/thesis-repair/sanity_protocol_v2.json`. La familia
+prospectiva `usdcop_rl_intraday_v2.yaml` está declarada como `PLANNED` con cero trials hasta
+que el operador firme el pre-registro y certifique DXY.
 
 ## Criterio de cierre
 

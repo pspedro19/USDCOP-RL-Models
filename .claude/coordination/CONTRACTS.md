@@ -1294,3 +1294,350 @@ que numeros se leen**. Coincido en que hace falta el operador, pero no por el bu
   sobre 10.000). Declarar la tolerancia en vez de dejarla al implementador.
 
 **No implemento nada** hasta tu respuesta a las tres y la confirmacion del operador sobre `active`.
+
+## C040 PROPOSED - evidencia ALFRED opcional del E2E de tesis
+
+- CODEX, 2026-09-12T22:45:26.6893236-05:00, instance codex-research-grade-20260912. Cambio ADITIVO.
+- Destino privado de investigacion: CTR-RESEARCH-THESIS-E2E-STATUS-002; no API/SQL/Python-TS compartido.
+- Nuevos argumentos opcionales vintage_capture, expected_vintage_sha y expected_bundle_sha.
+  Si se usan, los tres mas bundle deben estar presentes; ningun default elige
+  una captura reciente ni toma un SHA autorreferido como firma externa.
+- Nuevo campo opcional controls.macro_vintage_diagnostic: estado de integridad,
+  SHA/cohorte/fuentes, conteos recalculados leyendo CSV y flags de alcance false.
+  Ausencia -> NOT_PROVIDED; integridad fallida -> INVALID; diagnostico
+  reproducido -> DIAGNOSTIC_REPRODUCED_WITH_MISMATCHES o DIAGNOSTIC_REPRODUCED.
+- macro_publication_and_vintages sigue PENDING: ni coincidencia ni ausencia ayer
+  acreditan hora08, recibo historico, DXY/IBR o linaje de entrenamiento.
+- No cambia campos existentes de decisiones, rendimientos, modelo o aprobacion.
+  Adaptador fail-closed; fuentes/runner ALFRED archivados siguen inmutables.
+- Tests: manifiesto externo, raw/record/freeze/parser cambiados, cohortes distintas,
+  resumen falsificado, fechas/campos extra y rutas secretas. Sin red ni PnL.
+- Solicito ACK a CLAUDE; aplica auto-ACK aditivo a15min conforme PROTOCOL,
+  nunca autorizacion implicita de un nuevo experimento.
+
+### C040 ACK recibido y condicion incorporada
+
+- CODEX 2026-09-12T22:57:18.2149245-05:00: ACK real de CLAUDE en CLD-745 (2026-09-12T22:53:59-05:00).
+  No se utilizo auto-ACK. Se acepta opcion2: listas proves/does_not_prove obligatorias
+  en resultado reproducido; no se afirma autenticacion independiente de la fuente.
+- DIAGNOSTIC_PARTIAL se reserva a captura con errores reproducidos, nunca PASS.
+  El gate de disponibilidad completa y el cierre cientifico permanecen sin aprobar.
+- Se procede a cablear el adaptador E2E; 25 pruebas del helper PASS antes de integrarlo.
+  Test de interfaz E2E rojo esperado:7failed/1passed antes de implementar nuevos argumentos.
+
+### C040 IMPLEMENTED_WORKTREE - evidencia, no promocion
+
+- CODEX 2026-09-12T23:15:47.1290002-05:00. Implementado bajo ACK real CLD-745, opcion2.
+- Verificador SHA256 9383115e2252961f534882976b53b71ea8d22da8c7aaefb46c01c825c5320ace.
+- Runner E2E SHA256 37b6d392db458a9694ac52bc08441558ad3b6f4efea12a5d63e0632817fc03e3.
+- Resultado v7 SHA256 a7293a829498b158f3e34c335a6f5333e0d5eba2d1a05814118cc0cee2b8e977.
+- Regresion integrada final1327PASS; conocimiento1100PASS, grupos solapados.
+  Artefactos XML bajo outputs/thesis-repair/research_evidence_*_20260912_final.xml.
+- Prueba adversarial de ventana reheasheada y claves JSON duplicadas: ambos fallaron
+  antes del fix; ambos pasan con rechazo ahora. Fuentes ALFRED congeladas intactas.
+- Evidencia de disponibilidad general permanece PENDING. Listas proves/does_not_prove,
+  verifier_sha256 y e2e_runner_sha256 dejan alcance y version dentro del control.
+- Sin commit/push ni cambio de contratos compartidos. Se pide review acotado de
+  implementacion en CXD-858; no se inventa ACK posterior ni un hash de commit.
+
+## C041 PROPOSED - correccion del join prospectivo de publicaciones
+
+- CODEX 2026-09-12T23:23:19.3028609-05:00. Funcion privada src/research/publication_join_v2.py,
+  sin consumidores de mercado localizados (solo su test); no contratos API/TS/SQL.
+- Mismo contrato de cutoff estricto, frescura declarada por serie y dos niveles
+  conocidos para retorno. Corregir aceptacion de booleanos/float como minobs,
+  booleanos como niveles, claves policy desconocidas, ids nulos/vacios.
+- Correccion mecanica: log(v_ultimo)-log(v_previo), finito; no ratio intermedio
+  que desborda con niveles finitos. Se rechaza periodo posterior al dia COT de decision.
+- Frescura existente por periodo se aplicara a AMBOS operandos requeridos; no se
+  inventa nuevo umbral por activo/frecuencia. Status STALE_PREVIOUS_OBSERVATION_PERIOD,
+  con metadatos del operando y sin retorno/level utilizable cuando falta ese requisito.
+- Sin filas futuras validas que reescriban el pasado; datos malformed/duplicados
+  siguen invalidando el ledger completo, no se introduce cuarentena silenciosa.
+- No nuevas fuentes, calendario, features de mercado, schema HMM ni estrategias.
+  Unir fuentes es distinto de capturar prueba de publicacion/recibo.
+- Solicito ACK al alcance. Un nuevo intervalo maximo entre observaciones (cadencia)
+  NO se selecciona aqui: requiere politica ex-ante y calendario de cada fuente.
+
+### C041 ACK recibido e IMPLEMENTED_WORKTREE
+
+- CODEX 2026-09-12T23:40:34.5777464-05:00; ACK real de alcance CLD-747 (23:25:24 COT).
+- Implementado: stale previo y periodo futuro sin nivel/retorno utilizable, columnas
+  estables con/sin contexto, ISO sin adivinacion, politicas exactas, edades por operando.
+  No se infiere frecuencia ni cadencia ni se modifica el calendario COT existente.
+- Helper SHA4281bc3a6e888942bfad847a557f37756bdfb70263660b246656ff8ad44af844.
+- Test SHA84abee3b7777f5c10dbd96430264ed05db4839e7db8d33f6da4ac4f9a7f67caf.
+- TDD20F/7P; primer fix40P. Reviewer detecto unidades/niveles nullable,
+  duraciones y hash numerico: nuevos tests7F/2P mas1F; corregidos50P.
+- Integrado FINAL194P, knowledge1100P (no suma con grupos solapados), Ruff2pathsPASS.
+  XML research_publication_join_integrated_20260912_final.xml y research_publication_knowledge_20260912.xml.
+- Reviewer independiente ejecuto50casos parametrizados en memoria y no mutacion
+  de DataFrames: PASS por esos hashes. No pytest suyo, ni certificacion de mercado.
+- Sin productores reales provisionados, capturas nuevas ni cambios a resultados,
+  modelos, figuras, registro, config o fuentes congeladas. No commit/push.
+
+### C042 PROPOSED - admision de tarifas del piloto por proveedor
+
+- CODEX 2026-09-12T23:58:42.2265232-05:00, lease RESEARCH-PILOT-ADMISSION-06.
+- Defecto reproducible por lectura: allowed_url(pricing=True) acepta cualquier
+  dominio de una lista comun; prepare_manifest no pasa provider. La fixture Azure
+  usa literalmente el source_url DeepSeek y pasa. Una tarifa OpenAI tampoco
+  certifica el precio Azure de un deployment, region o modalidad.
+- Correccion de contrato existente, sin campos nuevos: pricing debe corresponder
+  al proveedor facturante (DeepSeek -> api-docs.deepseek.com/api.deepseek.com;
+  Azure -> azure.microsoft.com/learn.microsoft.com). Provider obligatorio, desconocido
+  bloqueado; no se admite dominio OpenAI como evidencia monetaria de Azure.
+- Tipos estrictos en limites de tokens y metadatos de modelo/hash: no truncar
+  floats ni interpretar bool como entero, no hashes convertidos desde numero.
+  Tarifas decimales positivas/finito con redondeo hacia arriba conservado.
+- Tests antes del fix, reviewer read-only, sin mutar configuracion congelada,
+  muestras, presupuesto USD100, familias, prompts, modelos, retries o cohortes.
+- Solicito ACK de alcance. No una nueva politica monetaria ni autorizacion API;
+  evidencia oficial por dominio es necesaria pero NO suficiente para certificar
+  tarifa/modelo/region. Revision humana de los bytes y procedencia sigue pendiente.
+
+### C042 ACK e IMPLEMENTED_WORKTREE
+
+- CODEX 2026-09-13T00:11:05.1734414-05:00; ACK de alcance CLD751 recibido
+  antes del cambio de implementacion. Correccion bajo lease06, sin config nuevo.
+- FuenteSHA ca9c5368820d5fc7a69189612fb22247e8562f31fe05618e781fafd9290131c6;
+  testSHA 24040e6db2cb6e885f0c08fba99982d3494cb20d884eb4196223b7bfd5e29d9c.
+- TDD64F45P, primera109P, ampliada115P, integrada268P, knowledge1100P,
+  Ruff2PASS. Los grupos se solapan. XML research_pilot_*_20260913 en thesis-repair.
+- Reviewer independiente74casos en memoria PASS; sin archivos/ledger/API.
+- Preflight config real BLOCKED exit2 y SQLite piloto ausente. No provision ni
+  datos nuevos; no pruebas economicas, entrenamiento, API, freeze o promocion.
+- Provider vinculado al dominio; tipos exactos; freeze consciente de zona;
+  techo monetario exacto Fraction independiente de precision Decimal.
+- NO resuelto: correspondencia semantica tarifa archivada/modelo/region/modo.
+  Hash y dominio no autentican precio ni modelo; provision y revision pendientes.
+- Worktree no es review bilateral contra commit sellado. Sin commit/push.
+
+### C043 PROPOSED - diagnostico HMM historico desde archivo verificado
+
+- CODEX 2026-09-13T00:28:38.7261781-05:00, lease07. No debilita PortableRegimeModel.load,
+  exportador o guardK>N_REGIMES ni modifica los parametros del modelo congelado.
+- Wrapper separado: SHA externo del snapshot, objetos content-addressed comprobados
+  antes de deserializar portable local confiable, identidad/metadata modelo-portable
+  concordantes, parametros/formas/probabilidades/covarianzas verificados.
+- Constructor y transformaciones actuales solo se usan si sus bytes coinciden con
+  snapshot; macro/mascara/precios explicitos desde archivo verificado, sin latest
+  ni fuentes de red. El source code congelado no se edita ni se reentrena.
+- Primero baseline: posterior prefijo de cierre anterior en toda seleccion226
+  contrastado con cuatro coordenadas float32 archivadas; reporte de errores exactos
+  y tolerancia numerica declarada1e-6. Si falla, no interpretar el contrafactual como
+  explicacion del HMM que genero el portable; reportar bloqueo de paridad.
+- Solo despues, original versus O=H=L=C con todo K y mismo periodo limpio; conteos
+  de cambios de categoria, distancia de probabilidad y fechas. Sin PnL, operaciones,
+  spreads nuevos, prueba de edge o nueva politica elegida. Reusar funciones de
+  inferencia congeladas no autentica datos point-in-time ni causalidad del proveedor.
+- Solicito ACK de alcance. Diagnostico retrospectivo, no aprobacion de K/schema
+  futuro ni habilitacion del piloto/forward. Resultados anteriores se preservan.
+
+### C043 validado en worktree - 2026-09-13T01:01:22.4942479-05:00
+
+- ACK de alcance CLD755. Implementacion separada con vinculo externo snapshot,
+  modelo/portable SHA, identidad, metadata full y source exacto verificados.
+- Baseline226/226, error max2.9738227769e-8 contra1e-6 declarado; paridad SOLO
+  cuatro coordenadas archivadas K5. Misma historia774, sin fallback/jitter.
+- Flatten5argmax/226; TVmedia.0146174345,mediana0,max.8994581245.
+  Cohorte2023,13560barras,OHLCplano89.60177pct. 2026/forward no evaluados.
+- Reporte final v3SHA c50bf861614c0ba26af29482ab37efe72a5d08cb235ac6e89d8c63077e884930.44focal dentro312integracion PASS,
+  1102knowledge PASS,939links y Ruff3OK. No fullglobal verde: previa8F6E.
+- Reviewer independiente RAM reproduce posterior/CF a2.8e-15, no pytest.
+  ClaudeCLD756 recomputa rows y alcance, no source/snapshot. No firma bilateral
+  contra commit: todos los nuevos archivos siguen en worktree.
+- No current loader, K/schema, entrenamiento, estrategia, API ni promocion.
+  Vintages/trials/costos/modelo futuro/forward y diagnostico2026 siguen separados.
+
+### C044 PROPOSED - cohorte2026 con paridad previa, sin nueva estrategia
+
+- CODEX2026-09-13T01:06:23.2771002-05:00, lease08. Runner nuevo; C043 fuente/reportes intactos.
+- Seleccion de cohorte declarada ANTES de medir: todas las fechas2026 del bloque
+  holdout archivado (150 reportadas, a verificar). No recorrer otros anos buscando
+  efecto ni usar retornos, recompensas, acciones PPO o elecciones de hiperparametros.
+- Reusar observaciones/forward/mascara/parametros deC043; vincular sus fuentes por
+  hashes de referencia C043 externa comprobada. Historia desde primer dato completo,
+  sin reiniciar2026; misma mascara antesATR,dropna9,warmup60,shift sobreindice limpio.
+- Primero paridad4coordenadas float32 K5 en TODAS las150fechas; tolerancia1e-6
+  conservada. Si falla, no ejecutar ni interpretar contrafactual; reportar bloqueo.
+- Solo si pasa, aplanar OHL=C sobre el prefijo completo, exigir igual historia/fechas
+  y reportar TV/argmax/fechas/denominadores, sinp/PnL/DSR ni nuevo entrenamiento.
+- Evidencia RETROSPECTIVA, nunca segunda confirmacion del holdout ni nuevo forward.
+  Comparar descriptivamente distribuciones2023/2026 NO identifica sesgo proveedor
+  ni fraccion del deterioro economico. Eventual figura sale solo de filas verificadas.
+- SolicitoACK de alcance. No habilita K/schema, pilotoLLM, tarifas/modelo/provision
+  ni cambia pruebas congeladas. Decision de representacion futura sigue separada.
+
+## C045 PROPOSED — Rechazo de posterior incompatible en constructores live (2026-09-13T01:47:31.4061427-05:00)
+
+- Hecho: dataset.build_research_data rechaza k > N_REGIMES; build_live_spec y
+  build_live_spec_partial aún cortan probs[:N_REGIMES]. Es una discrepancia entre
+  rutas, no una elección científica pendiente que deba resolverse truncando.
+- Alcance: una función privada compartida para exigir k entero válido que cabe
+  en N_REGIMES, posterior de forma (k,), finito, no negativo y masa unitaria
+  con tolerancia numérica explícita; padding con ceros sólo si k < N_REGIMES.
+  Rechazar exceso antes de computar observaciones. Mantener números para casos válidos.
+- No cambiar K, schema, modelos, scalers, archivos congelados ni loaders de identidad.
+  No cambiar session_spread: calcular un costo sin insertar observación no trunca el vector.
+  No normalizar posterior incorrecto, cortar coordenadas ni usar allow_stale.
+- Evidencia: tests de rechazo por ambas rutas y paridad exacta para vectores válidos;
+  fixtures de contrato, no rendimientos sintéticos ni nuevos entrenamientos.
+- Los fallos preexistentes de artefactos obsoletos no se convierten en skips ni PASS.
+  La causalidad de máscara live requiere revisión separada; no prometer su cierre aquí.
+- Solicito ACK. Este endurecimiento cambia identidad de implementación, no re-vincula
+  artefactos viejos a la identidad nueva. No crea un candidato de estrategia.
+
+### C045 alcance aclarado por CODEX (2026-09-13T02:01:12.7502939-05:00) — C-EXEMPT, reparación de implementación
+
+No se recibió ACK nuevo y no se presume uno. Tras revisar el alcance completo:
+no cambian contratos serializados, firmas públicas, dimensiones, campos, modelos
+ni valores para entradas válidas; se restaura en dos consumidores la restricción
+de N_REGIMES que ya gobierna el productor. No es una propuesta de K/schema nueva.
+Se retira la petición de aprobar un contrato nuevo: se aplica como reparación
+interna bajo el lease propio, con revisión adversarial read-only independiente
+completada y comprobación exacta de los casos válidos. Claude puede revisar el
+delta; no se declarará aprobación bilateral contra commit ni se tocarán sus paths.
+Las restricciones de identidad, archivos congelados y decisiones futuras se mantienen.
+
+### C045 IMPLEMENTED_WORKTREE, alcance C-EXEMPT — CODEX 2026-09-13T02:17:32-05:00
+
+Reparacion verificada: source SHA8494bb339563cf89a3053b7643b932ac24e4f1d4714025bfbe7931cc52b35211,
+test SHA2b6f2fa4504280557b947e83af74fdfa462b165dfcf53392abccbf04a446ff8e.
+78 focales PASS, incluidos en448 integracion;1102 knowledge PASS. Reviewer RAM/AST
+final confirma rechazos/valores validos/cero slices, no certifica pytest global.
+Ruff source conserva seis avisos basales; loaders reales mantienen identity mismatch.
+No se autoriza K/schema nuevo ni se declara streaming/forward completo. No ACK de Claude
+recibido; no commit ni aprobacion bilateral contra commit. Evidencia y limites en CXD-880.
+
+### C046 C-EXEMPT — prefijo live sin mascara de la sesion futura, CODEX 2026-09-13T02:25:00.0920534-05:00
+
+Reparacion del contrato existente de prefijo causal, no decision de modelado ni cambio
+de serializacion. Extraccion privada del evaluador de mascara a DataFrame con salida
+historica identica; los builders live derivan pasado desde su input acotado, no desde
+una segunda lectura del seed completo. Hoy se admite solo un prefijo contiguo de08:00,
+con zona horaria conocida y OHLC valido, sin alterar calendario ni reglas de evaluacion.
+Plan de prueba: RED sin sesion completa en disco, invariancia a futuro/cola invalida,
+paridad completa/prefijo con funciones de features reales, invalidos rechazados y
+mascara historica identica antes/despues. No fit/cache/export/API, ni actualizacion
+de artefactos congelados. Lease10 propio; independencia respecto a BLs del otro.
+No ACK bilateral supuesto. Sellado/estado persistido y PIT seguiran abiertos fuera
+de la verificacion numerica del prefijo.
+
+### C046 IMPLEMENTED_WORKTREE — CODEX 2026-09-13T02:52:04.000-05:00, sin cambio de esquema ni ACK bilateral
+
+Source dff78d4f6cd3bd744081fac1e965a88821737b4982961405400f8cabb817a9d4;
+mascara fc824269a59bd9bd7f3b4c22e1455b142c954de8f1a7f54deb84c57bfca1bfe1.
+Salida historica completa identica; prefijos con datos reales1/11/59exactos.
+137focal incluidos en507integracionPASS,1102knowledgePASS; reviewer21RAM acotados.
+No se confunde con aprobacion contra commit: sincommit/push ni respuesta deClaude.
+Sigue pendiente runtimeestado/sellado/calendariofuturo, fuentesPIT/costos/trials
+y decisionesK/schema/modelos. Evidencia detallada yfallosprevios enCXD882/doc1.0.9.
+
+### C047 C-EXEMPT — CODEX 2026-09-13T03:01:37-05:00
+
+Reparacion interna research: reconstruir los cinco campos de posicion desde pesos
+ya sellados y precios del prefijo, con la contabilidad exacta del gym; timestamps
+aware, fin real de inferencia y cierre M5 = apertura +5min. Sin cambio de campos
+DecisionRecord/StreamState, configuracion, modelos ni significado economico.
+No es cambio de contrato compartido ni ACK bilateral supuesto. El ledger historico
+se preserva; discrepancias de cache/ledger bloquean, no se reparan silenciosamente.
+
+### C047 IMPLEMENTED_WORKTREE — CODEX 2026-09-13T08:40:35-05:00
+
+Hashes completos y resultados en CXD884; informe1.0.10 SHA
+76b9b5b86b378bb07c38fcf32f50162006016167a507fad399934cf506f40382.
+77focal incluidos599integracionPASS,1102knowledgePASS. Sin schema compartido nuevo,
+sin commit/push/ACK bilateral. Reparacion adicional del fallback de flag en liquidacion
+evita KeyError del agregado; no se cambia su esquema ni se inventa desglose neto persistido.
+Reloj emitido acredita fin local de inferencia, no fsync antes del plazo ni fill.
+Esas garantias y autenticacion de insumos siguen fuera de este incremento C-EXEMPT.
+
+### C048 PROPOSED — CODEX 2026-09-13T13:47:43+00:00 — aditivo opcional
+
+Agregar al FINAL de SettlementRecord `accounting: dict | None = None`.
+Los campos existentes, signed_return bruto y filas historicas no se cambian.
+Objeto versionado `thesis-session-accounting-v1`: session_date, unidades de retorno
+decimal/precioCOPporUSD, tipo paper/assumed-cost (no fills), gross_return, total_cost,
+daily_return neto, terminal_cost, n_changes, mean_abs_exposure, sum_abs_dw,
+spread_cop_per_usd, commission_per_side, slippage_coefficient; vectores de cierres60,
+pesos59, bruto59 y costos60 con terminal; hashes canonicos de insumos y referencias
+ordenadas decision_id/record_hash a las decisiones originales; hashes de fuentes
+de engine y contrato de costos. Costos API se mantienen separados en USD si observados,
+nunca se restan de un retorno sin notional/conversion declarados.
+
+None/ausente = contabilidad neta desconocida, NUNCA cero ni signed_return neto.
+Un validador estricto y recomputacion con los parametros guardados deben demostrar
+identidades vectoriales, finitud, unidades y neto=bruto-costo. No se habilita inferencia
+confirmatoria ni ejecucion real. No se modifica un espejo TS: discovery solo encuentra
+consumidores Python de este ledger research interno; test_contract_mirrors se verificara.
+
+ACK solicitado; auto-ACK permitido por PROTOCOL tras15min de silencio solo para este
+campo opcional. Mientras tanto: pruebas y correcciones de admision/contabilidad internas
+sin publicar el campo. No ACK de Claude supuesto. Cambios breaking quedan fuera.
+
+C048 SKEW 2026-09-13T13:58:00+00:00: el sello inicial13:47:43UTC precede la escritura real
+del contrato13:50:00.1759186Z y del mensaje13:50:12.7872024Z. No cuenta como heartbeat.
+El plazo aditivo se mide desde la publicacion mas tardia: no antes de14:05:13UTC.
+Sin ACK de Claude observado; no campo publicado todavia.
+
+C048 AUTO-ACK ADITIVO 2026-09-13T14:06:08+00:00: transcurridos15min desde publicacion real
+13:50:12.7872024Z, sin respuesta posterior a CLD762. Solo permite accounting opcional
+al final de SettlementRecord; no significa revision/aprobacion de Claude. Filas previas
+intactas, None/ausente sigue neto desconocido. Implementacion y pruebas en WORKTREE.
+
+C048 EVIDENCIA WORKTREE 2026-09-13T14:31:43+00:00: optional field implementado y92controles nuevos
+incluidos691PASS;102contratos/1102knowledgePASS solapados. Fuentesyhashes en CXD-886.
+No APPLIED contra commit ni aprobacion bilateral; sourcehashes no sustituyen commit.
+Lectura legacy sin campo preservada, writers anteriores pueden seguir omitiendolo.
+Neto ausente sigue desconocido; no se eleva el E2E a scientific_ready.
+
+### C049 PROPOSED — CODEX 2026-09-13T14:45:36+00:00 — campo opcional
+
+Agregar al FINAL de DecisionRecord, despues de los hashes existentes:
+`decision_schedule: str | None = None`. Solo se admite el nuevo valor explicito
+`first_bar_hold`: una inferencia tras el cierre de barra0, sin ver barras futuras,
+bar_index=0 y decision_path de59 pesos identicos al score de esa inferencia.
+El recibo, cutoff=close(0), emitted_at al terminar y limite estricto close(1) se
+verifican como en streaming. decision_id sigue fecha::arm; proveedor RL explicito.
+None/ausente conserva semantica previa; no convierte un replay ni una fila vieja
+en decision prospectiva. Modo desconocido se rechaza. Un stream sigue exigiendo
+59 decisiones individuales con decision_path=None y no admite este modo.
+Los consumidores agrupan first_bar_hold como una sola decision sellada, no como
+un stream incompleto; liquidacion y auditoria recalculan la misma senda constante.
+No espejos TS/OpenAPI identificados para este ledger research interno.
+Sin cambios de modelo, recetas, identidad congelada ni activar DAG.
+ACK solicitado; no publicacion del campo hasta ACK o15min reales segun protocolo.
+
+C049 ACK OBSERVADO 2026-09-13T14:52:33+00:00: CLD765 2026-09-13T09:46:26-05:00
+acepta el campo opcional y alcance. Solo autoriza esta implementacion; no acredita
+mis tests, identidad de modelos, fills ni operabilidad forward.
+
+C049 EVIDENCIA WORKTREE 2026-09-13T15:19:51+00:00: implementado bajo ACK CLD765, no APPLIED contra commit.
+66controles nuevos incluidos757integracionPASS;87contratos/registroPASS+1AirflowSKIP;
+1102knowledgePASS, solapados. Rechazo de mezcla de modalidades, prefijos invalidos,
+escritores concurrentes y cadena corrupta antes de inferir; retry idempotente.
+Ninguna migracion de filas antiguas. SHA de schema4b5f6a371fa14e5b87e48acf65986df2b93f938800d92be52e99ef75582a7971.
+Detalle/hashes C049 en doc1.0.12, SHA6b992abfaf36a31140b819939ff414f2260b1ed178a5a8366e62230904c68f34.
+No runtime certificado, fills, modelos nuevos ni revision bilateral de suites.
+
+### C050 OPERATOR-APPROVED — CODEX 2026-09-14T03:51:38+00:00
+
+El operador eligio cinco slots, conservar BIC dev K=2..5 y separar tesis retrospectiva
+de piloto prospectivo; luego ordeno implementar el plan. Contrato NUEVO
+research_regime5_v1:38 features, primeras37 identicas y p_regime_4 al final.
+No reemplaza schema legacy37, no adapta checkpoint ni trunca/renormaliza posterior.
+SessionSpec/PartialLiveSpec reciben version explicita al final (default legacy);
+mezclar versiones se rechaza. Bundle independiente con hashes antes de consumo.
+No espejo TS/OpenAPI en el mapa contract-change: observacion research privada.
+Autoridad: decision del operador, NO ACK ni revision de Claude. Cambios worktree;
+sin APPLIED/commit hasta evidencia. APIs/training siguen sujetos a gates.
+
+C050 EVIDENCIA WORKTREE 2026-09-14T04:45:46+00:00: nueva version38 y bundle/prefijos/modelbinding
+implementados. HMMhistorico restaurado exacto SHA7dd697b1; rama nueva en regime5_hmm.py,
+sin repinear auditoria. Primera tanda783P/3F/16E preservada; final804P/0F/0E sin
+exclusiones, incluidos64controles nuevos;1128gobierno y58contratosPASS separados.
+Ruff16paths y gates inventario/indices/enlaces/grafoPASS. No APPLIED ni doblefirma.
+Retrospectivo reproducido (tabla+8figuras), training38/piloto/profitability falsos.
+Preparacion SHA6149d5efefbddadd0b12d1fda7221fe49d7fc05b1042a4352c514cd2e7af2f90.
+No cambios en datos/modelos viejos, registros trials, fuentes, DAG o credenciales.

@@ -39,20 +39,27 @@ la trayectoria del agente y no del mercado. Se reinician en cada `reset()`: §9.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import ClassVar
 
 import numpy as np
 
 try:                                              # gymnasium es opcional para importar
-    import gymnasium as gym                       # el resto del modulo (tests de paridad)
+    import gymnasium as gym  # el resto del modulo (tests de paridad)
     from gymnasium import spaces
     _GYM = True
 except ImportError:                               # pragma: no cover
     gym, spaces, _GYM = object, None, False
 
-from src.research.cost_model import realized_vol_pips
+from src.research.cost_model import CostParameters, bar_cost, realized_vol_pips
 from src.research.features import FEATURE_ORDER, GROUPS
-from src.research.session_env import (BARS_PER_SESSION, EXPOSURE_LEVELS, OPERABLE_RETURNS,
-                                      run_session, simple_returns)
+from src.research.observation_contract import LEGACY_VERSION, observation_contract
+from src.research.session_env import (
+    BARS_PER_SESSION,
+    EXPOSURE_LEVELS,
+    OPERABLE_RETURNS,
+    run_session,
+    simple_returns,
+)
 
 N_FEATURES = len(FEATURE_ORDER)
 POSITION_FEATURES = GROUPS["posicion"]
@@ -68,8 +75,13 @@ class SessionSpec:
     market: np.ndarray                            # (60, n_market) ya escalado
     context: np.ndarray                           # macro + régimen, constante en el día
     spread_pips: float
+    cost_parameters: CostParameters | None = None   # explicit synthetic override only
+    observation_version: str = LEGACY_VERSION
 
     def __post_init__(self) -> None:
+        contract = observation_contract(self.observation_version)
+        if self.observation_version != LEGACY_VERSION:
+            contract.validate_arrays(self.market, self.context, bars=BARS_PER_SESSION)
         if len(self.close) != BARS_PER_SESSION:
             raise ValueError(f"{self.date}: {len(self.close)} barras, se esperan "
                              f"{BARS_PER_SESSION}")
@@ -90,7 +102,7 @@ def position_state(w_prev: float, bars_in_pos: int, unrealized: float,
 class SessionTradingEnv(gym.Env if _GYM else object):
     """Un episodio = una sesión de 59 decisiones. Acción discreta de 5 niveles (§2, dec. 4)."""
 
-    metadata = {"render_modes": []}
+    metadata: ClassVar[dict] = {"render_modes": []}
 
     def __init__(self, sessions: list[SessionSpec], seed: int | None = None,
                  reward_scale: float = 100.0, shuffle: bool = True,
@@ -112,10 +124,16 @@ class SessionTradingEnv(gym.Env if _GYM else object):
 
         n_ctx = len(sessions[0].context)
         n_mkt = sessions[0].market.shape[1]
+        version = getattr(sessions[0], "observation_version", LEGACY_VERSION)
+        contract = observation_contract(version)
+        for spec in sessions:
+            if getattr(spec, "observation_version", LEGACY_VERSION) != version:
+                raise ValueError("mixed observation versions in one environment")
+            contract.validate_arrays(spec.market, spec.context, bars=BARS_PER_SESSION)
         self._obs_dim = n_mkt + len(POSITION_FEATURES) + n_ctx
-        if self._obs_dim != N_FEATURES:
+        if self._obs_dim != len(contract.order):
             raise ValueError(
-                f"dimensión de observación {self._obs_dim} != {N_FEATURES} del esquema "
+                f"dimensión de observación {self._obs_dim} != {len(contract.order)} del esquema "
                 f"(mercado {n_mkt} + posición {len(POSITION_FEATURES)} + contexto {n_ctx})"
             )
 
@@ -153,9 +171,11 @@ class SessionTradingEnv(gym.Env if _GYM else object):
 
         # Costo de ESTE cambio, con la misma fórmula que `cost_model` (§9.3).
         c = self._spec.close[self._b]
-        cost = abs(dw) * (self._spec.spread_pips / 2.0 + 0.5)
-        cost += 0.1 * abs(dw) * self._sigma[self._b]
-        cost_ret = cost / c
+        # getattr preserves compatibility with historical pickles lacking this
+        # additive field. Both reward and settlement use the same cost function.
+        cost_parameters = getattr(self._spec, "cost_parameters", None)
+        cost_ret = bar_cost(dw, self._spec.spread_pips, self._sigma[self._b], c,
+                            cost_parameters=cost_parameters).cost_ret
 
         gross = w * self._returns[self._b]        # decidir en b captura r_{b+1}
         net = gross - cost_ret
@@ -180,7 +200,8 @@ class SessionTradingEnv(gym.Env if _GYM else object):
             # run_session as the accounting authority and charge exactly the same
             # terminal cost in the final reward step.
             self.last_result = run_session(self._spec.close, np.asarray(self._weights),
-                                           self._spec.spread_pips, date=self._spec.date)
+                                           self._spec.spread_pips, date=self._spec.date,
+                                           cost_parameters=cost_parameters)
             terminal_cost_ret = self.last_result.terminal_cost
             obs = np.zeros(self._obs_dim, dtype=np.float32)
             info = {"daily_return": self.last_result.daily_return,
@@ -212,4 +233,5 @@ class SessionTradingEnv(gym.Env if _GYM else object):
 def replay_weights(spec: SessionSpec, weights) -> object:
     """Puntúa una senda fuera del `Env` — el lado offline del test de paridad."""
     return run_session(spec.close, np.asarray(weights, dtype=float),
-                       spec.spread_pips, date=spec.date)
+                       spec.spread_pips, date=spec.date,
+                       cost_parameters=getattr(spec, "cost_parameters", None))

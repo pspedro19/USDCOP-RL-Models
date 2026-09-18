@@ -25,8 +25,8 @@ recomputan aquí y no se leen del JSON de la Fase E — que guarda resúmenes, n
 - **Bootstrap estacionario pareado** de diferencias de Sharpe (10.000 réplicas, bloques 5-20).
 - **PBO** por CSCV sobre la matriz de las 10 corridas.
 - **DSR** deflactado con `n_trials` del ACTIVO (111 heredados + los de esta tesis).
-- **Stress de costos** ×1/×2/×3 (constitución §3.4: morir al doble ⇒ REJECT).
-- **B1′**, exposición constante igual a la exposición media realizada.
+- **Stress de costos** x1/x2/x3 (constitución §3.4: morir al doble => REJECT).
+- **B1-prime**, exposición constante igual a la exposición media realizada.
 - **White RC / SPA: NO se computan.** Universo de dos candidatos; ver `WHITE_SPA_OMISSION`.
 
 Uso:
@@ -54,17 +54,23 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
-from services.common.metrics import (cost_stress, paired_exposure_baseline,  # noqa: E402
-                                     pbo_cscv)
+from services.common.metrics import cost_stress, paired_exposure_baseline, pbo_cscv  # noqa: E402
 from src.research.dataset import PORTABLE, load_or_build, load_portable  # noqa: E402
-from src.research.inference import (ANN_SESSIONS, WHITE_SPA_OMISSION,  # noqa: E402
-                                    bootstrap_sharpe_ci, dsr_with_inherited_trials,
-                                    paired_sharpe_test)
+from src.research.inference import (  # noqa: E402
+    ANN_SESSIONS,
+    WHITE_SPA_OMISSION,
+    bootstrap_sharpe_ci,
+    dsr_with_inherited_trials,
+    paired_sharpe_test,
+)
 from src.research.session_env import daily_series, run_session  # noqa: E402
 
 PPO_DIR = Path(os.environ.get("THESIS_PPO_OUT", REPO / "outputs" / "thesis" / "ppo"))
-OUT_DIR = REPO / "outputs" / "thesis"
-PREREG = REPO / ".claude" / "specs" / "planes" / "06-PRE-REGISTRATION.md"
+OUT_DIR = Path(os.environ.get("THESIS_RESULTS_OUT", REPO / "outputs" / "thesis"))
+PREREG = Path(os.environ.get(
+    "THESIS_PREREG_PATH",
+    REPO / ".claude" / "specs" / "planes" / "06-PRE-REGISTRATION.md",
+))
 PARTITION = REPO / "config" / "research" / "partition.yaml"
 
 SEEDS = (42, 123, 456, 789, 1337)
@@ -82,7 +88,7 @@ def preregistration_is_signed() -> tuple[bool, str]:
     for line in head.splitlines():
         if line.strip().startswith("status:"):
             st = line.split(":", 1)[1].strip().strip("\"'")
-            return st.upper() == "IMPLEMENTED", st
+            return st.upper() in {"IMPLEMENTED", "SIGNED"}, st
     return False, "sin campo `status` en el front-matter"
 
 
@@ -100,7 +106,7 @@ def baseline_series(specs, level: float) -> tuple[np.ndarray, np.ndarray]:
 def passive_series(specs) -> np.ndarray:
     """B1 pasivo: comprar el primer día y no tocar nada. Sin costo por sesión.
 
-    Es el B1 de la constitución, distinto del "1× intradía" que paga 584 round-trips porque
+    Es el B1 de la constitución, distinto del "1x intradía" que paga 584 round-trips porque
     §9.1 fuerza plano al cierre. Los dos se reportan: presentar solo el segundo pondría un
     listón artificialmente bajo.
     """
@@ -135,6 +141,43 @@ def ppo_series(config: str, block: str) -> dict[int, dict]:
 # Informe
 # ---------------------------------------------------------------------------
 
+def extra_series(path: Path, specs) -> tuple[np.ndarray, np.ndarray, dict]:
+    """Serie diaria de un brazo que NO es PPO, alineada por fecha contra los mismos specs.
+
+    Hasta ahora este informe solo sabia leer `{config}_seed{n}.json`, asi que un brazo LLM o el
+    hibrido no podian entrar mas que disfrazados de PPO -- lo que ademas los habria colado en el
+    PBO, que barre cualquier clave con `_seed`. Aqui entran por la puerta.
+
+    Devuelve `(valores, mascara, meta)` en vez de un vector a secas porque una liquidacion puede
+    cubrir MENOS sesiones que el bloque (una sesion sin sus 59 barras se excluye, no se rellena
+    con cero). El bootstrap pareado exige indices comunes: comparar 33 sesiones de un brazo
+    contra 226 del otro no es un contraste, es un error de alineacion con aspecto de resultado.
+    """
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    sessions = payload.get("sessions")
+    if not isinstance(sessions, list) or not sessions:
+        raise ValueError(f"{path.name}: no trae `sessions[]`")
+    by_date = {str(row["session_date"]): float(row["daily_return"]) for row in sessions}
+    values = np.zeros(len(specs), dtype=float)
+    mask = np.zeros(len(specs), dtype=bool)
+    for i, spec in enumerate(specs):
+        key = spec.date.isoformat()
+        if key in by_date:
+            values[i] = by_date[key]
+            mask[i] = True
+    meta = {
+        "source": str(path),
+        "sessions_covered": int(mask.sum()),
+        "sessions_in_block": len(specs),
+        "coverage": round(float(mask.mean()), 4),
+        "scope": payload.get("scope", "retrospective_diagnostic"),
+        "confirmatory": bool(payload.get("confirmatory", False)),
+    }
+    if not mask.any():
+        raise ValueError(f"{path.name}: ninguna de sus fechas cae en el bloque evaluado")
+    return values, mask, meta
+
+
 def describe(name: str, r: np.ndarray, extra: dict | None = None) -> dict:
     ci = bootstrap_sharpe_ci(r)
     equity = float(np.prod(1.0 + r))
@@ -164,7 +207,19 @@ def main() -> int:
                                                              "holdout"])
     ap.add_argument("--force-holdout", action="store_true",
                     help="ignora la Regla B (solo para depurar; queda registrado)")
+    ap.add_argument("--dataset-version", choices=("v1", "v2"), default="v1")
+    ap.add_argument("--extra-series", action="append", default=[], metavar="NOMBRE=RUTA",
+                    help=("anade un brazo que no es PPO (liquidacion LLM, hibrido) leyendo "
+                          "`sessions[*].{session_date,daily_return}`. Repetible. Se alinea por "
+                          "fecha y NO entra en el PBO ni en el agregado de semillas."))
     args = ap.parse_args()
+
+    if args.dataset_version == "v2":
+        os.environ.setdefault("THESIS_PORTABLE", str(
+            REPO / "data" / "thesis" / "research_data_portable_v2.pkl"
+        ))
+        if "THESIS_PREREG_PATH" not in os.environ:
+            globals()["PREREG"] = REPO / ".claude" / "specs" / "planes" / "06-PRE-REGISTRATION-v3.md"
 
     if args.block == "holdout":
         signed, status = preregistration_is_signed()
@@ -177,7 +232,10 @@ def main() -> int:
             print("AVISO: --force-holdout con el pre-registro SIN firmar. Queda registrado "
                   "en el JSON de salida como apertura no valida.")
 
-    data = load_portable() if PORTABLE.is_file() else load_or_build(verbose=False)
+    portable_path = PORTABLE
+    if args.dataset_version == "v2":
+        portable_path = REPO / "data" / "thesis" / "research_data_portable_v2.pkl"
+    data = load_portable(portable_path) if portable_path.is_file() else load_or_build(verbose=False)
     specs = data.block(args.block)
     print(f"bloque {args.block}: {len(specs)} sesiones "
           f"({specs[0].date} -> {specs[-1].date})\n")
@@ -235,6 +293,21 @@ def main() -> int:
                               "seeds_positive": int(sum(
                                   np.prod(1 + runs[s]["returns"]) > 1 for s in runs))}))
 
+    # --- brazos extra (LLM, hibrido): fuera del PBO y del agregado de semillas ---------
+    extras: dict[str, tuple] = {}
+    for item in args.extra_series:
+        if "=" not in item:
+            ap.error(f"--extra-series espera NOMBRE=RUTA, recibido {item!r}")
+        name, _, raw_path = item.partition("=")
+        name = name.strip()
+        if name in series:
+            ap.error(f"--extra-series {name!r} choca con un brazo que ya existe")
+        values, mask, meta = extra_series(Path(raw_path.strip()), specs)
+        extras[name] = (values, mask, meta)
+        # Se describe sobre SUS sesiones, no sobre el bloque entero: promediar ceros por las
+        # sesiones que no cubre convertiria "no decidio" en "decidio no operar".
+        rows.append(describe(name, values[mask], meta))
+
     print(f"{'estrategia':<26} {'n':>4} {'ret%':>8} {'Sharpe':>7} {'IC 95%':>18} {'DD%':>8}")
     for r in rows:
         sh = f"{r['sharpe']:+.2f}" if r["sharpe"] is not None else "  n/a"
@@ -255,6 +328,17 @@ def main() -> int:
                       paired_sharpe_test(r, flat, config, "always_flat")))
         tests.append((f"{config}_vs_B1_pasivo",
                       paired_sharpe_test(r, b1_pass, config, "B1_pasivo")))
+
+    # Cada brazo extra se contrasta SOLO sobre las sesiones que cubre, y el comparador se
+    # recorta a las mismas: es la unica forma de que el test sea pareado de verdad.
+    for name, (values, mask, meta) in extras.items():
+        tests.append((f"{name}_vs_always_flat",
+                      paired_sharpe_test(values[mask], flat[mask], name, "always_flat")))
+        tests.append((f"{name}_vs_B1_pasivo",
+                      paired_sharpe_test(values[mask], b1_pass[mask], name, "B1_pasivo")))
+        for config, r in agg.items():
+            tests.append((f"{name}_vs_{config}",
+                          paired_sharpe_test(values[mask], r[mask], name, config)))
 
     print("\nContrastes pareados (bootstrap estacionario, 10.000 réplicas, bloques 5-20):")
     for name, t in tests:
@@ -288,7 +372,7 @@ def main() -> int:
                               "reason": "artefacto legacy sin costos realizados por sesión"}
             print("  stress de costos: NO DISPONIBLE (faltan costos diarios)")
             continue
-        # Re-price the realized gross P&L and realized costs, not an exposure×asset proxy.
+        # Re-price the realized gross P&L and realized costs, not an exposure-by-asset proxy.
         gross = np.mean([runs[s]["gross_returns"] for s in runs], axis=0)
         realized_cost = np.mean([runs[s]["daily_costs"] for s in runs], axis=0)
         stress[config] = cost_stress(np.ones(len(gross)), gross, realized_cost,
@@ -298,7 +382,7 @@ def main() -> int:
 
     # --- B1' --------------------------------------------------------------
     b1p = {}
-    for config, r in agg.items():
+    for config, _r in agg.items():
         runs = ppo_series(config, args.block)
         mean_exp = float(np.mean([runs[s]["mean_abs_exposure"] for s in runs]))
         asset = passive_series(specs)
@@ -320,6 +404,7 @@ def main() -> int:
         "inherited_trials": inherited,
         "n_trials_for_dsr": n_trials,
         "rows": rows,
+        "extra_series": {n: m for n, (_, _, m) in extras.items()},
         "paired_tests": {n: t.to_dict() for n, t in tests},
         "pbo": pbo, "dsr": dsr, "cost_stress": stress, "b1_prime": b1p,
         "white_spa": WHITE_SPA_OMISSION,
@@ -327,7 +412,13 @@ def main() -> int:
         "forced_holdout": bool(args.block == "holdout" and args.force_holdout
                                and not preregistration_is_signed()[0]),
     }, indent=2, default=str), encoding="utf-8")
-    print(f"\n-> {out.relative_to(REPO)}")
+    # `THESIS_RESULTS_OUT` puede ser relativa, y entonces `relative_to(REPO)` revienta DESPUES
+    # de escribir el informe: el trabajo estaba hecho y el script salia con traza igualmente.
+    try:
+        shown = out.resolve().relative_to(REPO)
+    except ValueError:
+        shown = out
+    print(f"\n-> {shown}")
     return 0
 
 

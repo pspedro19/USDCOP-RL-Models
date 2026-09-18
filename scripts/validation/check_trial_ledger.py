@@ -350,7 +350,15 @@ def check_family_declaration_coverage(records: list[dict],
                 f"pero NO existe registries/families/{family_id}.yaml — la exención legacy "
                 "quedó derogada (BL-11-r2): sin YAML no hay bar pre-firmado ni gate DSR"
             )
+    families = load_families(families_dir)
     for family_id in sorted(declared - set(ledger_families)):
+        family = families[family_id]
+        # A prospective family may be declared before its first trial, but only as
+        # an explicit empty PLANNED declaration. This preserves pre-registration
+        # without creating a charged or phantom family.
+        if (family.get("status") == "PLANNED" and family.get("label") == "planned"
+                and family.get("trials_charged") == 0 and not family.get("cells")):
+            continue
         errors.append(
             f"familia '{family_id}' declarada en YAML pero sin líneas en el ledger "
             "(familia fantasma: o se cobra o se borra)"

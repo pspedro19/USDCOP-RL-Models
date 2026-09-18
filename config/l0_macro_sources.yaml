@@ -50,7 +50,7 @@ multi_source_indicators:
   fxrt_index_dxy_usa_d_dxy:
     primary_source: investing
     primary_url: https://www.investing.com/indices/usdollar-historical-data
-    primary_pair_id: 8827
+    primary_instrument_id: 942611
     fallback_source: fred
     fallback_series_id: DTWEXBGS
 
@@ -252,8 +252,8 @@ sources:
       - url: https://www.investing.com/indices/usdollar-historical-data
         column: fxrt_index_dxy_usa_d_dxy
         name: Dollar Index (DXY)
-        method: ajax
-        pair_id: 8827
+        method: api
+        instrument_id: 942611
         expected_range: [80, 130]
       - url: https://www.investing.com/indices/volatility-s-p-500-historical-data
         column: volt_vix_usa_d_vix

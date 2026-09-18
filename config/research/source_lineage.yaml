@@ -1,0 +1,106 @@
+contract: CTR-RESEARCH-SOURCE-LINEAGE-001
+version: "1.0.0"
+policy:
+  primary_required_for_confirmatory: true
+  secondary_is_validation_only: true
+  silent_fallback: forbidden
+  synthetic_data_isolation: diagnostics_only
+  decision_timezone: America/Bogota
+
+# A provider may be operational without being the canonical identity of an
+# instrument.  ``status: pending`` is intentionally fail-closed for
+# confirmatory work; it is not a claim that the provider is incorrect.
+sources:
+  twelvedata:
+    role: market_data_provider
+    access: api
+    provenance_required: true
+  investing:
+    role: secondary_market_data_and_news_provider
+    access: scraper
+    provenance_required: true
+  fred:
+    role: official_public_reference
+    access: api
+    provenance_required: true
+  banrep:
+    role: official_public_reference
+    access: sdmx_or_official_document
+    provenance_required: true
+  ice_dxy:
+    role: licensed_instrument_reference
+    access: operator_supplied_export
+    provenance_required: true
+
+series:
+  usdcop_m5:
+    canonical_column: close
+    artifact: seeds/latest/usdcop_m5_ohlcv.parquet
+    frequency: 5min
+    instrument: USD/COP
+    unit: COP_per_USD
+    primary_source: twelvedata
+    validators: [investing_daily_aggregation]
+    crosscheck_report: outputs/thesis-repair/usdcop_daily_cross_source_v2.json
+    status: verified_by_daily_crosscheck
+    availability: provider_timestamp
+  usdcop_daily:
+    canonical_column: close
+    artifact: null
+    frequency: daily
+    instrument: USD/COP
+    unit: COP_per_USD
+    primary_source: investing
+    validators: [twelvedata_daily_aggregation]
+    crosscheck_report: outputs/thesis-repair/usdcop_daily_cross_source_v2.json
+    status: verified_by_daily_crosscheck
+    availability: provider_timestamp
+  brent:
+    canonical_column: COMM_OIL_BRENT_GLB_D_BRENT
+    artifact: data/pipeline/04_cleaning/output/MACRO_RESEARCH_v2.parquet
+    frequency: daily
+    instrument: Brent spot reference
+    unit: USD_per_barrel
+    primary_source: fred
+    primary_series_id: DCOILBRENTEU
+    validators: [investing, twelvedata_symbol_if_exact]
+    status: verified_when_provenance_matches
+    availability: observation_plus_declared_lag
+  dgs2:
+    canonical_column: FINC_BOND_YIELD2Y_USA_D_DGS2
+    artifact: data/pipeline/04_cleaning/output/MACRO_RESEARCH_v2.parquet
+    frequency: daily
+    instrument: US 2Y Treasury constant maturity
+    unit: percent
+    primary_source: fred
+    primary_series_id: DGS2
+    validators: [investing]
+    status: verified_when_provenance_matches
+    availability: observation_plus_declared_lag
+  ibr:
+    canonical_column: FINC_RATE_IBR_OVERNIGHT_COL_D_IBR
+    artifact: data/pipeline/04_cleaning/output/MACRO_RESEARCH_v2.parquet
+    frequency: daily
+    instrument: IBR overnight nominal
+    unit: percent
+    primary_source: banrep
+    primary_series_id: IRIBRM00/NR
+    validators: [banrep_official_bulletin]
+    status: verified_when_provenance_matches
+    availability: official_publication_timestamp
+  dxy:
+    canonical_column: FXRT_INDEX_DXY_USA_D_DXY
+    artifact: data/pipeline/04_cleaning/output/MACRO_RESEARCH_v2.parquet
+    frequency: daily
+    instrument: Investing Dollar Index (instrument 942611)
+    unit: index_points
+    primary_source: investing
+    primary_series_id: 942611
+    validators: [fred_proxy_dtwexbgs]
+    status: verified_when_live_manifest_matches
+    availability: provider_timestamp
+
+artifacts:
+  macro_provenance: data/pipeline/04_cleaning/output/MACRO_RESEARCH_v2.provenance.json
+  macro_availability: config/research/macro_availability.yaml
+  data_contract_audit: outputs/thesis-repair/research_data_contract_frequency_v2.json

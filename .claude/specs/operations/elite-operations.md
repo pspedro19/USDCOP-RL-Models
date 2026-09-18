@@ -2,8 +2,8 @@
 kind: as-built
 status: IMPLEMENTED
 contract: CTR-OPS-001
-version: 2.0.0
-last_verified: 2026-07-20
+version: 2.0.1
+last_verified: 2026-09-13
 supersedes: []
 code_anchors:
   - airflow/dags/utils/data_quality.py
@@ -25,6 +25,15 @@ code_anchors:
 ---
 
 ## Operational Priorities
+
+Research-forward safety amendment (C049): the existing research DAG is **not an
+operable prospective cohort**. Its single-call dispatcher now refuses a configured
+59-decision RL arm before any LLM/model call, and propagates nonzero settlement or
+ledger-audit verdicts as task failures. No schedule, DAG id, activation state or
+production pipeline is changed. Wiring real per-bar dispatch, a timely bar source,
+the first-bar close at 08:05 COT (not its 08:00 open stamp), frozen-model parity and
+validation inside the actual scheduler remain prerequisites. This amendment does
+not recertify the historical operating claims below.
 
 ```
 1. DATA INTEGRITY    — Never train on stale data, never trade on stale signals

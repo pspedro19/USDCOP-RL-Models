@@ -9,7 +9,9 @@ series:
   dxy:
     column: FXRT_INDEX_DXY_USA_D_DXY
     frequency: daily
-    source: ICE_DXY
+    source: INVESTING_DXY
+    instrument_id: 942611
+    url: https://www.investing.com/indices/usdollar-historical-data
     unit: index_points
     publication_lag_business_days: 1
     fallback: forbidden

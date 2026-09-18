@@ -60,7 +60,7 @@ from typing import Callable, Sequence
 
 import numpy as np
 
-from src.research.cost_model import session_costs
+from src.research.cost_model import CostParameters, session_costs
 
 # §2, decisión 4: espacio de acción congelado.
 EXPOSURE_LEVELS: tuple[float, ...] = (-1.0, -0.5, 0.0, 0.5, 1.0)
@@ -97,7 +97,7 @@ def simple_returns(close: np.ndarray) -> np.ndarray:
 
 
 def run_session(close: np.ndarray, weights: Sequence[float], spread_pips: float,
-                date=None) -> SessionResult:
+                date=None, *, cost_parameters: CostParameters | None = None) -> SessionResult:
     """Ejecuta una sesión con una senda de exposición dada.
 
     `weights` son las 59 decisiones operables `w_0..w_58`. El cierre terminal lo añade el
@@ -113,7 +113,7 @@ def run_session(close: np.ndarray, weights: Sequence[float], spread_pips: float,
 
     r = simple_returns(c)                         # r_1 .. r_59, longitud 59
     costs, breakdown = session_costs(w, c, spread_pips,
-                                     include_terminal=True)
+                                     include_terminal=True, cost_parameters=cost_parameters)
 
     gross = float(np.sum(w * r))
     total_cost = float(np.sum(costs))

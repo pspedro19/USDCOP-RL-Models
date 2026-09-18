@@ -1,0 +1,29 @@
+# Familia prospectiva declarada antes de cualquier corrida de mercado v2.
+# La ausencia de celdas y trials cargados es intencional: la firma del pre-registro,
+# la identidad macro y el portable v2 son prerrequisitos antes de asignar AT-####.
+family_id: usdcop_rl_intraday_v2
+kind: action
+cluster_id: rl_intraday_v2
+hypothesis_key: usdcop_intraday_ppo_session_bounded_v2
+sibling_families: [usdcop_rl_intraday]
+deflation_scope: family
+declared_at: "2026-09-11"
+declared_by: claude-tesis
+question: "Tras corregir disponibilidad macro, representación y reward, PPO v2 supera always_flat neto de costos?"
+bar: >-
+  Solo se reclama edge si el resultado por semilla, la mediana, el DSR con N del ledger,
+  los baselines, el stress x2 y el retraso de una barra son favorables.
+label: planned
+status: PLANNED
+governance:
+  gate: "pre-registro v3 firmado; identidad macro completa; portable v2 coincidente; DSR_family recomputado"
+  claims_edge: false
+  claims_edge_note: "Familia declarada, no ejecutada; no hay resultados ni trials cargados."
+  candidates: []
+cells: []
+trials_charged: 0
+provenance:
+  crosses_wall: false
+  note: "Nueva receta v2; no hereda resultados ni selección de la familia v1."
+closed: false
+closure_note: null

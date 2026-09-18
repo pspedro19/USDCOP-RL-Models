@@ -200,3 +200,5 @@ tracks/news-analysis/ (13)
 **Subdirectorios:** [`codex/`](codex/README.md) · [`experiments/`](experiments/README.md) · [`rules/`](rules/00-INDEX.md) · [`specs/`](specs/README.md) · [`templates/`](templates/README.md)
 
 <!-- /idx -->
+
+Carril tesis activo: [`coordination/CLAUDE-STATUS-TESIS.md`](coordination/CLAUDE-STATUS-TESIS.md).

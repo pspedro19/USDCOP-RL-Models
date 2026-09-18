@@ -16,10 +16,10 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from src.research.dataset import MACRO_FEATURES, SEED_M5
-from src.research.features import MACRO_CLEAN
+from src.research.dataset import SEED_M5
 
 ROOT = Path(__file__).resolve().parents[2]
+MACRO_RESEARCH_V2 = ROOT / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_RESEARCH_v2.parquet"
 AVAILABILITY = ROOT / "config" / "research" / "macro_availability.yaml"
 SESSION_BARS = 60
 FIVE_MINUTES = pd.Timedelta(minutes=5)
@@ -49,7 +49,7 @@ def audit_frequency_file(path: Path, *, expected_frequency: str | None = None) -
     mode = delta.mode().iloc[0] if not delta.empty else pd.NaT
     nonpositive = int((delta <= pd.Timedelta(0)).sum())
     result = {
-        "path": str(path), "status": "ok", "rows": int(len(frame)),
+        "path": str(path), "status": "ok", "rows": len(frame),
         "timestamp_column": time_col, "timezone_present": bool(timezone_present),
         "invalid_timestamps": invalid, "duplicate_timestamps": int(ordered.duplicated().sum()),
         "nonpositive_deltas": nonpositive,
@@ -65,6 +65,12 @@ def audit_frequency_file(path: Path, *, expected_frequency: str | None = None) -
         result["expected_frequency"] = expected_frequency
         result["expected_delta"] = str(expected)
         result["delta_mismatch_count"] = int((delta != expected).sum())
+        # Keep raw gaps visible, but decompose them so an overnight/session
+        # boundary is not mistaken for an intraday frequency defect.
+        result["delta_equal_expected_count"] = int((delta == expected).sum())
+        result["delta_shorter_than_expected_count"] = int((delta < expected).sum())
+        result["delta_longer_than_expected_count"] = int((delta > expected).sum())
+        result["max_delta"] = str(delta.max()) if len(delta) else None
     return result
 
 
@@ -76,7 +82,14 @@ def _digest(path: Path) -> str:
     return h.hexdigest()
 
 
-def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
+def audit(m5_path: Path = SEED_M5, macro_path: Path | None = None) -> dict:
+    """Audit the thesis v2 macro artifact by default.
+
+    The legacy cleaned macro file remains available only through an explicit
+    ``macro_path`` argument; silently auditing it would make the v2 readiness
+    gate report evidence for the wrong dataset identity.
+    """
+    macro_path = macro_path or MACRO_RESEARCH_V2
     m5 = pd.read_parquet(m5_path)
     m5["time"] = pd.to_datetime(m5["time"], utc=True)
     m5 = m5.sort_values("time")
@@ -90,7 +103,7 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
     ohlc_cols = [c for c in ("open", "high", "low", "close") if c in m5.columns]
     ohlc_numeric_invalid = int(
         m5[ohlc_cols].apply(pd.to_numeric, errors="coerce").isna().any(axis=1).sum()
-    ) if len(ohlc_cols) == 4 else int(len(m5))
+    ) if len(ohlc_cols) == 4 else len(m5)
 
     macro = pd.read_parquet(macro_path)
     availability = yaml.safe_load(AVAILABILITY.read_text(encoding="utf-8"))
@@ -102,6 +115,13 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
     macro_dates = pd.DatetimeIndex(macro_dates).tz_localize(None).normalize()
     macro_dup = int(macro_dates.duplicated().sum())
     macro_gap = macro_dates.to_series().sort_values().diff().dropna()
+    market_last_date = m5["time"].dt.tz_convert("America/Bogota").dt.date.max()
+    # A union index is not a freshness guarantee: one recently updated series can
+    # hide a stale required series (the DXY/Investing gap exposed this on 2026-09-11).
+    # Compute freshness independently for every declared macro input and require all
+    # of them to satisfy the SSOT limit.
+    macro_last_date = macro_dates.max().date()
+    macro_business_lag = int(np.busday_count(macro_last_date, market_last_date))
     # The clean parquet carries observation dates, not publication timestamps. Therefore a
     # future-publication count cannot be inferred honestly here; the PIT merge tests are the
     # authoritative guard. Keep this field explicit rather than pretending dates are releases.
@@ -113,6 +133,18 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
         "ibr": "FINC_RATE_IBR_OVERNIGHT_COL_D_IBR",
         "dgs2": "FINC_BOND_YIELD2Y_USA_D_DGS2",
     }
+    series_last_dates = {}
+    series_business_lag = {}
+    max_staleness = int(availability.get("max_staleness_business_days", 5))
+    for name, col in raw_macro.items():
+        if col not in macro.columns:
+            continue
+        valid_dates = macro.index[pd.to_numeric(macro[col], errors="coerce").notna()]
+        if len(valid_dates) == 0:
+            continue
+        last = pd.to_datetime(valid_dates).normalize().max().date()
+        series_last_dates[name] = str(last)
+        series_business_lag[name] = int(np.busday_count(last, market_last_date))
     available = [name for name, col in raw_macro.items()
                  if col in macro.columns and name in declared]
     macro_numeric_invalid = {}
@@ -143,21 +175,31 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
         "contract": "CTR-RESEARCH-DATA-AUDIT-001",
         "inputs": {"m5": str(m5_path), "m5_sha256": _digest(m5_path),
                    "macro": str(macro_path), "macro_sha256": _digest(macro_path)},
-        "m5": {"rows": int(len(m5)), "symbols": sorted(m5.get("symbol", pd.Series()).astype(str).unique().tolist()),
+        "m5": {"rows": len(m5), "symbols": sorted(m5.get("symbol", pd.Series()).astype(str).unique().tolist()),
                "duplicate_symbol_time": dup, "off_five_minute_grid": off_grid,
                "ohlc_numeric_invalid": ohlc_numeric_invalid,
-               "session_count": int(len(counts)), "sessions_not_60_bars": bad_counts,
+               "session_count": len(counts), "sessions_not_60_bars": bad_counts,
                "complete_60_bar_sessions": int((counts == SESSION_BARS).sum()),
                "intraday_diffs_not_5m": int((diffs != FIVE_MINUTES).sum()),
                "min_time_utc": m5["time"].min().isoformat(),
                "max_time_utc": m5["time"].max().isoformat()},
-        "macro": {"rows": int(len(macro)), "duplicate_dates": macro_dup,
+        "macro": {"rows": len(macro), "duplicate_dates": macro_dup,
                   "features_present": available,
                   "features_missing": [name for name in raw_macro if name not in available],
                   "numeric_invalid_by_series": macro_numeric_invalid,
                   "availability_errors": availability_errors,
                   "date_min": str(macro_dates.min().date()),
                   "date_max": str(macro_dates.max().date()),
+                  "market_last_date": str(market_last_date),
+                  "business_day_lag_to_market": macro_business_lag,
+                  "series_last_dates": series_last_dates,
+                  "series_business_lag_to_market": series_business_lag,
+                  "max_staleness_business_days": max_staleness,
+                  "fresh_enough_for_forward": bool(
+                      series_business_lag
+                      and all(lag <= max_staleness for lag in series_business_lag.values())
+                      and len(series_business_lag) == len(raw_macro)
+                  ),
                   "max_calendar_gap_days": float(macro_gap.dt.days.max()) if len(macro_gap) else 0.0,
                   "same_day_values_usable": False,
                   "future_observation_count": macro_future,
@@ -175,11 +217,16 @@ def audit(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
                     "macro_numeric_clean": len(macro_numeric_invalid) == len(raw_macro)
                     and all(v == 0 for v in macro_numeric_invalid.values()),
                     "macro_availability_declared": not availability_errors,
+                    "macro_fresh_enough_for_forward": bool(
+                        series_business_lag
+                        and all(lag <= max_staleness for lag in series_business_lag.values())
+                        and len(series_business_lag) == len(raw_macro)
+                    ),
                     "requires_pit_merge": True},
     }
 
 
-def require_contract(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) -> dict:
+def require_contract(m5_path: Path = SEED_M5, macro_path: Path | None = None) -> dict:
     """Fail-closed gate for research jobs; returns evidence when the contract passes."""
     report = audit(m5_path, macro_path)
     verdict = report["verdict"]
@@ -195,8 +242,10 @@ def require_contract(m5_path: Path = SEED_M5, macro_path: Path = MACRO_CLEAN) ->
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--output", type=Path, required=True)
+    ap.add_argument("--m5-path", type=Path, default=SEED_M5)
+    ap.add_argument("--macro-path", type=Path, default=MACRO_RESEARCH_V2)
     args = ap.parse_args()
-    report = audit()
+    report = audit(args.m5_path.resolve(), args.macro_path.resolve())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8")
     print(json.dumps(report["verdict"], indent=2))

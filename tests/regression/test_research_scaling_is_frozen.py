@@ -34,7 +34,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.research.dataset import CLIP, MARKET_FEATURES, fit_dev_scaler  # noqa: E402
+from src.research.dataset import (CLIP, MACRO_FEATURES, MARKET_FEATURES,
+                                  fit_dev_macro_scaler, fit_dev_scaler)  # noqa: E402
 
 
 def fake_features(n_sessions: int = 30, seed: int = 0) -> pd.DataFrame:
@@ -115,6 +116,19 @@ def test_constant_features_do_not_produce_infinities():
     _, scale = fit_dev_scaler(df, dev)
     assert scale[0] == 1.0, "una feature constante debe escalarse por 1, no por 0"
     assert np.isfinite(scale).all()
+
+
+def test_macro_scaler_is_blind_to_evaluation_data():
+    dates = pd.to_datetime(["2020-01-02", "2020-01-03", "2023-01-03"])
+    frame = pd.DataFrame({name: [1.0, 3.0, 999.0] for name in MACRO_FEATURES}, index=dates)
+    dev = {dates[0].date(), dates[1].date()}
+    mean_a, scale_a = fit_dev_macro_scaler(frame, dev)
+    tampered = frame.copy()
+    tampered.loc[dates[2], :] = -999.0
+    mean_b, scale_b = fit_dev_macro_scaler(tampered, dev)
+    assert np.array_equal(mean_a, mean_b)
+    assert np.array_equal(scale_a, scale_b)
+    assert np.allclose(mean_a, 2.0)
 
 
 # ---------------------------------------------------------------------------

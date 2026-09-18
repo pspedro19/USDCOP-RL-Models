@@ -709,7 +709,15 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
 
             # Legacy profiles may retain Investing as a best-effort cross-check.
             if inv_id:
-                inv = _investing_daily(int(inv_id), symbol, floor, date.today())
+                crosscheck_required = bool(raw_source.get("daily_crosscheck_required", False))
+                inv = _investing_daily(
+                    int(inv_id), symbol, floor, date.today(),
+                    referer=raw_source.get(
+                        "investing_referer",
+                        "https://www.investing.com/currencies/usd-cop-historical-data",
+                    ),
+                    fail_closed=crosscheck_required,
+                )
                 if not inv.empty:
                     inv = _daily_to_nyclose(_clean(inv))
                     ov = pd.merge(dly[["time", "close"]].rename(columns={"close": "td"}),
@@ -727,6 +735,10 @@ def run(asset_id: str, *, use_db: bool, skip_intraday: bool, skip_daily: bool,
                         log.info("  investing filled %d daily bars TD lacked", added)
                     dly = merged.sort_values("time").reset_index(drop=True)
                     summary["investing_crosscheck_rows"] = len(inv)
+                elif crosscheck_required:
+                    raise RuntimeError(
+                        f"Investing cross-check required but returned no daily rows for {symbol}"
+                    )
 
         rep = _audit(dly, profile, "daily")
         log.info("  audit daily: %s", rep)

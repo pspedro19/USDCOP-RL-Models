@@ -79,9 +79,9 @@ INDICATOR_CONFIG: Dict[str, IndicatorConfig] = {
         column='fxrt_index_dxy_usa_d_dxy',
         url='https://www.investing.com/indices/usdollar-historical-data',
         name='DXY (Dollar Index)',
-        method=FetchMethod.AJAX,
-        pair_id=8827,
-        instrument_id=8827,
+        method=FetchMethod.API,
+        pair_id=None,
+        instrument_id=942611,
         expected_range=(80, 130),
     ),
     'volt_vix_usa_d_vix': IndicatorConfig(
@@ -1326,7 +1326,7 @@ if __name__ == '__main__':
     end = datetime.now()
     start = end - timedelta(days=7)
     df = fetch_historical_ajax(
-        pair_id=8827,  # DXY
+        pair_id=942611,  # DXY REST instrument id; retained for legacy test helper
         start_date=start.strftime('%m/%d/%Y'),
         end_date=end.strftime('%m/%d/%Y')
     )

@@ -38,14 +38,19 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from src.research.macro_asof import strict_asof
 
 REPO = Path(__file__).resolve().parents[2]
-MACRO_CLEAN = REPO / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_DAILY_CLEAN.parquet"
+MACRO_CLEAN = Path(os.environ.get(
+    "THESIS_MACRO_CLEAN",
+    str(REPO / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_RESEARCH_v2.parquet"),
+))
 SCHEMA_PATH = REPO / "config" / "research" / "feature_schema.json"
 
 BARS_PER_SESSION = 60
@@ -323,36 +328,23 @@ def attach_macro_features(per_session_index) -> pd.DataFrame:
         raise FileNotFoundError(f"macro artifact missing: {MACRO_CLEAN}")
     macro = pd.read_parquet(MACRO_CLEAN).sort_index()
 
-    def asof(series: pd.Series, name: str) -> pd.Series:
-        s = series.dropna()
-        left = pd.DataFrame({"d": idx})
-        right = pd.DataFrame({"d": pd.to_datetime(s.index), name: s.to_numpy(),
-                              "_source": pd.to_datetime(s.index)})
-        merged = pd.merge_asof(
-            left.sort_values("d"), right.sort_values("d"), on="d",
-            direction="backward", allow_exact_matches=False,
-        )
-        values = merged[name].to_numpy(dtype=float)
-        sources = pd.to_datetime(merged["_source"])
-        # A stale observation is missing information, not a neutral signal.
-        # np.busday_count counts business days strictly after source and before
-        # target, so Monday can use Friday while a six-day-old release cannot.
-        stale = np.array([
-            bool(pd.isna(src)) or np.busday_count(src.date(), target.date()) > 5
-            for src, target in zip(sources, merged["d"], strict=True)
-        ])
-        values[stale] = np.nan
-        return pd.Series(values, index=idx)
-
     if "COMM_OIL_BRENT_GLB_D_BRENT" in macro:
         b = macro["COMM_OIL_BRENT_GLB_D_BRENT"].dropna()
-        out["brent_ret_prev"] = asof(np.log(b / b.shift(1)).dropna(), "brent_ret_prev")
+        out["brent_ret_prev"] = strict_asof(
+            idx, np.log(b / b.shift(1)).dropna(), name="brent_ret_prev"
+        )
     if "FXRT_INDEX_DXY_USA_D_DXY" in macro:
         d = macro["FXRT_INDEX_DXY_USA_D_DXY"].dropna()
-        out["dxy_ret_prev"] = asof(np.log(d / d.shift(1)).dropna(), "dxy_ret_prev")
+        out["dxy_ret_prev"] = strict_asof(
+            idx, np.log(d / d.shift(1)).dropna(), name="dxy_ret_prev"
+        )
     if {"FINC_RATE_IBR_OVERNIGHT_COL_D_IBR", "FINC_BOND_YIELD2Y_USA_D_DGS2"} <= set(macro):
-        ibr = asof(macro["FINC_RATE_IBR_OVERNIGHT_COL_D_IBR"], "x")
-        dgs = asof(macro["FINC_BOND_YIELD2Y_USA_D_DGS2"], "x")
+        ibr = strict_asof(
+            idx, macro["FINC_RATE_IBR_OVERNIGHT_COL_D_IBR"], name="ibr"
+        )
+        dgs = strict_asof(
+            idx, macro["FINC_BOND_YIELD2Y_USA_D_DGS2"], name="dgs2"
+        )
         out["spread_ibr_dgs2"] = (ibr - dgs) / 100.0
     return out
 

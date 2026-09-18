@@ -38,7 +38,30 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.research.regime_portable import (DEFAULT_PATH,  # noqa: E402
-                                          PortableRegimeModel)
+                                          PortableRegimeModel, _parameter_digest,
+                                          _stable_cholesky)
+
+
+def test_stable_cholesky_handles_near_singular_exported_covariance():
+    covariance = np.array([[1.0, 1.0], [1.0, 1.0]], dtype=float)
+    chol = _stable_cholesky(covariance)
+    assert np.all(np.isfinite(chol))
+    assert np.all(np.linalg.eigvalsh(chol @ chol.T) > 0)
+
+
+def test_parameter_digest_rejects_changed_hmm_payload():
+    payload = {"k": 2, "means": [[0.0], [1.0]], "labels": ["calmo", "shock"]}
+    digest = _parameter_digest(payload)
+    assert len(digest) == 64
+    tampered = {**payload, "means": [[0.0], [2.0]], "parameter_sha256": digest}
+    assert _parameter_digest(tampered) != digest
+
+
+def test_from_dict_rejects_tampered_export(portable):
+    payload = portable.to_dict()
+    payload["means"][0][0] = float(payload["means"][0][0]) + 1.0
+    with pytest.raises(ValueError, match="parameter hash"):
+        PortableRegimeModel.from_dict(payload)
 
 
 @pytest.fixture(scope="module")

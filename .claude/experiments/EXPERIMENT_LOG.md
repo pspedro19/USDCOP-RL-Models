@@ -893,3 +893,44 @@ factibilidad**, no un test. Va dicho en la primera línea del pre-registro, no e
 **Compuerta pendiente**: inventario de fuentes de 5 días hábiles. Día 1 dio 52 documentos
 pre-apertura, pero los tres feeds viables son del mismo medio — riesgo de concentración
 declarado. Dos de las tres URL que traía el arnés estaban muertas (404).
+
+## EXP-RESEARCH-GRADE-20260912-001: controles actuales y cierre retrospectivo versionado
+
+- Registro de ejecucion: 2026-09-12T20:17:33.2008318-05:00. No altera entradas ni prerregistros previos.
+- Alcance: controles sinteticos aislados + re-medicion contable retrospectiva; no entrenamiento de mercado ni llamadas LLM nuevas.
+- Congelacion efectiva: manifiestos por semilla creados ANTES de entrenar en outputs/thesis-repair/sanity_research_grade_20260912/protocol_runs. Este append al log es posterior al comienzo, no se presenta como preregistro fechado antes.
+- Receta: flat_init_no_turn, una sola receta, sin busqueda ni reintentos. S1-S4, semillas42/123/456/789/1337; 100000 pasos solicitados, pasos efectivos registrados.
+- Cambio aislado del contraste S2/S3: misma senal/precios, S2 spread/comision/slippage cero; S3 contrato de costos completo. Nueva version de controles y evidencia, no reinterpretacion de la fixture anterior.
+- Evaluacion: train100 de500 sesiones +100unseen por semilla con RNGdisjunto. Criterios congelados en manifest: ambos conjuntos,4/5 porfixture; S2>=70%oraculo y costo0; S1/S4 cerca de flat en tolerancia, no cero perdida exacta.
+- Estado a este registro: S1 y S2 5/5 pasan ambos conjuntos; S3/S4 EN CURSO. No se declara protocolo completo aprobado.
+- Advertencia: runtimeactual registrado en los manifests, no certifica version de librerias historica. Worktree con cambios existentes, no commit aislado publicado; identidad del codigo queda fijada por SHA en el manifiesto, no se afirma reproducibilidad desde un commit limpio.
+- Evidencia retrospectiva: outputs/thesis-repair/research_grade_20260912_v2/manifest.json SHA169fbe22f455483ae7b7863a32d414882844fb1b363d886bc336a72d1fb7923e. Reproduce226sesiones seleccion y8figuras; no abre holdout.
+- Hipotesis de mercado: NO EVALUADA por sinteticos. Registros FT/AT anteriores pendientes de reconciliacion del operador; retrospectivo no exime variantes miradas. Sin nuevo claim de edge/DSR.
+- Continuacion aprobada: reevaluacion independiente de los20checkpoints sobre unseen al terminar; pilotoLLML0/L1/L2 futuro20sesiones, DeepSeekprimario/Azurerobustez, USD100conjunto, aun no ejecutado.
+- Informe: [cierre research-grade](../../docs/analysis/exp-tesis-research-grade-20260912.md).
+
+### Adenda de cierre de controles, 2026-09-12T20:48:30.4771342-05:00
+
+- S1, S2, S3 y S4: 5/5 semillas pasan en train y unseen. Las 20 corridas solicitaron 100.000 pasos y ejecutaron 102.400; receta unica sin busqueda ni reentreno de mercado.
+- Protocolo SHA256: `33873c610252bb674879bb89e89272875d4d67b24062f8b9d4e62edac8fc21e9`. Ruta: outputs/thesis-repair/sanity_research_grade_20260912/protocol.json.
+- Reevaluacion independiente desde 20 checkpoints y normalizadores congelados: 2.000 sesiones unseen, 118.000 decisiones; diferencia maxima diaria 0,0. Evaluador distinto, motor contable compartido; no se describe como replica de un mercado independiente.
+- Replay SHA256: `9332ecbf2ca0c2ae6e264bc3c66fb091eea2427a7cc6d75d8b1a7a558ca1186a`. Ruta: outputs/thesis-repair/sanity_research_grade_20260912/policy_replay.json.
+- S2: 98,999% a 99,343% del oraculo en unseen. S1/S4 mantienen exposiciones residuales y pequenas perdidas: PASS de umbral congelado no significa flat exacto.
+- Se preserva el primer intento fallido de referencias macro por red. Retry escalado completo: Investing DXY 1.747, FRED Brent 9.973, FRED DGS2 12.566 y BanRep IBR 4.558 observaciones comunes, cero discrepancias en las cuatro. Capturas crudas archivadas. Esto mide reproduccion numerica de la fuente declarada; disponibilidad historica e independencia NO certificadas.
+- Sin llamadas LLM nuevas (USD 0), sin operaciones, sin apertura confirmatoria y sin cambiar el registro de trials. Cierre cientifico sigue PARTIAL.
+
+### Adenda de regresion y candidato incompatible, 2026-09-12T21:12:48.8118376-05:00
+
+- Reproduccion final de resultados, SHA `d8c317592323f5cbad46e8b34eff1e72d5e2904b7c234e948bd1908268024a21`: seis archivos de datos y ocho PNG identicos byte por byte a v2. Ninguna mejora de resultados por la limpieza de estilo.
+- Regresion global con safe.directory de proceso: 2352 passed, 8 failed, 6 errors, 88 skipped, 1 deselected por prohibicion de abrir .env.example, 1 xfailed. No es un PASS global. XML: outputs/thesis-repair/research_grade_full_regression_20260912.xml.
+- La fixture de integracion reconstruyo la cache mutable de datos/HMM. No hubo entrenamiento nuevo de politicas de mercado. Export nuevo desde cache SHA `7fbe35cc651ce96506230c80255f9ad94f669105f7e8e951b532104f6bc49a35`: candidato research_dataset_bundle_v3_20260912 con manifest SHA `10596c4d2c7f391377f122156585ef9ec1952a9a300866d7a541d45de3c79d91`.
+- Auditoria posterior rechazo promocion: HMM K=5 frente a cuatro slots, posterior recortado en dataset.py. Masa incompleta en 103/488 dev, 80/226 seleccion, 160/570 holdout. Se inspeccionaron features, NO nuevos retornos de estrategias. Candidato conservado, nunca usado para entrenar o operar; INCOMPATIBLE_WITH_FROZEN_SCHEMA.json explica el hallazgo.
+- Exportador/loader ahora rechazan K mayor que slots y posteriores incompletos. No se eligio otro K ni se altero el esquema para aprobar. Corregir la representacion y su pre-registro queda antes del siguiente entrenamiento.
+- Suite nueva integrada final: 177 passed; piloto41tests y export31tests incluidos. Lint final solo con --no-fix; fuentes de sanidad y parser macro no formateadas. Constructor real tambien medido en Python3.12.2/SB3 2.9.0: masas iniciales flat0.833925306797, kappa_one0.20000000298, control0.20000000298; cero learn.
+
+### Adenda de guard directo y verificacion, 2026-09-12T21:27:36.1969187-05:00
+
+- `build_research_data` ahora rechaza K mayor que los slots inmediatamente despues de ajustar HMM, antes de spreads/features. Cierra la ruta alternativa que reconstruia cache para entrenar sin pasar por el exportador. No fija K nuevo ni modifica el esquema.
+- Suite focal posterior al cambio: 178 passed, un warning asyncio_mode, 14,86 segundos. XML: outputs/thesis-repair/research_grade_tests_20260912_final2.xml. La regresion global 2352P/8F/6E anterior no se presenta como ejecucion posterior a este ultimo guard.
+- E2E final: outputs/thesis-repair/research_grade_e2e_20260912_final.json; retrospective_results_reproduced=true, engineering_ready=false, scientific_closure_ready=false. El exit 0 del script significa informe generado, no aprobacion global.
+- Siguen pendientes representacion HMM/pre-registro, disponibilidad historica macro, reconciliacion trials, costos ejecutables y aprovisionamiento/observacion prospectiva. Sin llamadas LLM nuevas, sin entrenamiento de mercado, sin promocion.

@@ -1,148 +1,181 @@
 #!/usr/bin/env python
-"""Comprueba que las series macro que lee la investigacion SON las que declara su SSOT.
+"""Reconcile macro identity numerically from archived original source responses.
 
-`config/research/macro_availability.yaml` nombra una fuente por serie y pone
-`fallback: forbidden`. Eso es una afirmacion sobre el instrumento, no una preferencia: decir
-"brent = FRED_DCOILBRENTEU" y leer un futuro es exactamente el defecto que la auditoria del
-2026-09-10 encontro, y que la declaracion se escribio para cerrar.
-
-Medido el 2026-09-11 sobre `MACRO_DAILY_CLEAN.parquet`:
-
-    COMM_OIL_BRENT_GLB_D_BRENT  vs FRED DCOILBRENTEU : coincide el  1,8 %  (dif. media 0,87 USD)
-    FINC_BOND_YIELD2Y_USA_D_DGS2 vs FRED DGS2        : coincide el 94,1 %  (dif. media 0,0017)
-
-O sea que la declaracion **no se cumple** para Brent y solo aproximadamente para DGS2. Una
-declaracion que el dato no honra es peor que ninguna: crea confianza donde no la hay, y el
-pre-registro v3 congela esa identidad como si fuera cierta.
-
-Este script no repara nada: mide y reporta. Repararlo es re-obtener la serie de su fuente
-declarada, y es requisito de la Etapa 4 de BL-50.
-
-Uso:
-    python scripts/diagnostics/verify_macro_declared_identity.py [--output ruta.json]
-
-Necesita red (FRED). Las series cuya fuente declarada no es FRED (ICE DXY, BanRep IBR) se
-reportan como NO COMPROBABLES aqui, no como correctas: la diferencia importa.
+Default execution fetches and archives references, but never repairs the parquet.
+--reference-manifest replays a builder/verifier manifest without network access.
+This verifies reproducibility, not source independence or historical availability.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import io
 import json
 import sys
-import urllib.request
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-AVAILABILITY = ROOT / "config" / "research" / "macro_availability.yaml"
-CLEAN = ROOT / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_DAILY_CLEAN.parquet"
+from scripts.data.build_research_macro import _banrep_ibr, _fred, _investing_dxy
+from src.research.macro_evidence import (
+    SCHEMA_VERSION, canonical_json, compare_series, immutable_write,
+    replay_payloads, require_macro_evidence, sha256_file,
+)
 
-# Solo las fuentes que este script sabe comprobar. El resto se reporta como no comprobable.
+AVAILABILITY = ROOT / "config/research/macro_availability.yaml"
+CLEAN = ROOT / "data/pipeline/04_cleaning/output/MACRO_RESEARCH_v2.parquet"
+PROVENANCE = CLEAN.with_suffix(".provenance.json")
 FRED_SOURCES = {"FRED_DCOILBRENTEU": "DCOILBRENTEU", "FRED_DGS2": "DGS2"}
 TOLERANCE = 0.01
+_digest = sha256_file
 
 
-def _digest(path: Path) -> str:
-    import hashlib
+def _load_local_provenance(clean_path: Path) -> dict:
+    """Provenance alone cannot satisfy the numerical verification gate."""
+    path = clean_path.with_suffix(".provenance.json")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return value if isinstance(value, dict) and value.get("artifact_sha256") == _digest(clean_path) else {}
 
-    h = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
-            h.update(chunk)
-    return h.hexdigest()
 
-
-def _fred(series_id: str):
+def _local_reference_with_column(path, value_column):
+    """Legacy explicit CSV diagnostic; not an automatic identity certificate."""
     import pandas as pd
 
-    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
-    with urllib.request.urlopen(url, timeout=60) as resp:
-        frame = pd.read_csv(io.BytesIO(resp.read()))
-    frame.columns = ["date", "value"]
-    frame["date"] = pd.to_datetime(frame["date"])
-    frame["value"] = pd.to_numeric(frame["value"], errors="coerce")
-    return frame.dropna().set_index("date")["value"]
+    raw = Path(path).read_bytes()
+    frame = pd.read_csv(io.BytesIO(raw))
+    date_col = next((c for c in frame if str(c).lower() in
+                     {"date", "datetime", "time", "fecha"}), None)
+    if date_col is None or value_column not in frame or date_col == value_column:
+        raise ValueError("referencia local DXY: fecha/columna numérica inexistente")
+    dates = pd.to_datetime(frame[date_col], errors="raise")
+    values = pd.to_numeric(frame[value_column], errors="raise")
+    result = pd.Series(values.to_numpy(dtype=float), index=dates).dropna()
+    if result.empty or result.index.has_duplicates:
+        raise ValueError("referencia local DXY: vacía o fechas duplicadas")
+    return result.sort_index(), hashlib.sha256(raw).hexdigest()
 
 
-def main() -> int:
+def _local_reference(path):
+    import pandas as pd
+
+    frame = pd.read_csv(path)
+    date_col = next((c for c in frame if str(c).lower() in
+                     {"date", "datetime", "time", "fecha"}), None)
+    numeric = [c for c in frame if c != date_col and
+               pd.to_numeric(frame[c], errors="coerce").notna().any()]
+    if len(numeric) != 1:
+        raise ValueError("referencia local DXY: se esperaba exactamente una columna numérica")
+    return _local_reference_with_column(path, numeric[0])
+
+
+def build_report(*, clean_path: Path, availability: Path, evidence_dir: Path,
+                 reference_manifest: Path | None = None) -> dict:
+    """Produce measured statistics and preserve failed sources explicitly."""
     import pandas as pd
     import yaml
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path)
-    args = parser.parse_args()
-
-    if not (AVAILABILITY.is_file() and CLEAN.is_file()):
-        print("faltan el SSOT de disponibilidad o el macro limpio", file=sys.stderr)
-        return 2
-
-    declared = yaml.safe_load(AVAILABILITY.read_text(encoding="utf-8"))["series"]
-    clean = pd.read_parquet(CLEAN)
-    report, honoured = {}, True
-
+    clean_raw, availability_raw = clean_path.read_bytes(), availability.read_bytes()
+    clean = pd.read_parquet(io.BytesIO(clean_raw))
+    declared = yaml.safe_load(availability_raw)["series"]
+    reference_meta = None
+    if reference_manifest is not None:
+        reference_meta = json.loads(reference_manifest.read_text(encoding="utf-8"))
+        evidence_dir = Path(reference_meta["evidence_root"]).resolve()
+    report = {}
     for name, spec in declared.items():
-        column, source = spec["column"], spec["source"]
-        entry = {"column": column, "declared_source": source,
-                 "fallback": spec.get("fallback")}
-        if column not in clean.columns:
-            entry.update(status="COLUMNA AUSENTE", honoured=False)
-            honoured = False
-            report[name] = entry
-            continue
-        ours = clean[column].dropna()
-        entry["our_last"] = str(ours.index.max().date())
-        if source not in FRED_SOURCES:
-            entry.update(status="NO COMPROBABLE AQUI",
-                         note="la fuente declarada no es FRED; comprobarla exige su proveedor")
-            report[name] = entry
-            continue
+        source, column = spec["source"], spec["column"]
+        entry = {"column": column, "declared_source": source, "unit": spec["unit"],
+                 "fallback": spec.get("fallback"), "honoured": False,
+                 "reference_relationship": "declared_source_reproduction_not_independent"}
         try:
-            reference = _fred(FRED_SOURCES[source])
-        except Exception as exc:                     # red caida: no se finge un verde
-            entry.update(status=f"NO VERIFICADO ({type(exc).__name__})")
-            report[name] = entry
-            continue
-        common = ours.index.intersection(reference.index)
-        if len(common) == 0:
-            entry.update(status="SIN FECHAS COMUNES", honoured=False)
-            honoured = False
-            report[name] = entry
-            continue
-        diff = (ours.loc[common] - reference.loc[common]).abs()
-        match = float((diff < TOLERANCE).mean())
-        entry.update(status="COINCIDE" if match > 0.99 else "NO COINCIDE",
-                     honoured=match > 0.99, n_common=int(len(common)),
-                     match_fraction=round(match, 4),
-                     mean_abs_diff=round(float(diff.mean()), 6),
-                     max_abs_diff=round(float(diff.max()), 6),
-                     reference_last=str(reference.index.max().date()))
-        honoured &= entry["honoured"]
+            ours = clean[column]
+            nonnull = ours.dropna()
+            if nonnull.empty:
+                raise ValueError("empty local source column")
+            records = []
+            if reference_meta is not None:
+                original = reference_meta["series"][name]
+                if original.get("declared_source") != source:
+                    raise ValueError("offline source declaration mismatch")
+                records = original["reference_payloads"]
+                reference = replay_payloads(records, source=source, evidence_root=evidence_dir)
+            else:
+                kwargs = {"evidence_dir": evidence_dir, "records": records}
+                if source in FRED_SOURCES:
+                    reference, _ = _fred(FRED_SOURCES[source], **kwargs)
+                elif source == "BANREP_IBR":
+                    reference, _ = _banrep_ibr(**kwargs)
+                elif source == "INVESTING_DXY":
+                    reference, _ = _investing_dxy(nonnull.index.min().date(),
+                                                nonnull.index.max().date(), **kwargs)
+                else:
+                    raise ValueError("source has no archived parser; not certifiable here")
+            entry["reference_payloads"] = records
+            entry.update(compare_series(ours, reference, tolerance=TOLERANCE))
+            entry["honoured"] = (entry["n_missing_reference"] == 0 and entry["n_missing_local"] == 0
+                                  and entry["n_discrepancies"] == 0)
+            entry["status"] = "COINCIDE" if entry["honoured"] else "NO COINCIDE"
+        except Exception as exc:
+            # No exception text: provider URLs can contain credentials.
+            entry.update(status=f"NO VERIFICADO ({type(exc).__name__})", honoured=False)
         report[name] = entry
+    output = {
+        "schema_version": SCHEMA_VERSION,
+        "contract": "CTR-RESEARCH-MACRO-AVAILABILITY-001",
+        "measured_at_utc": datetime.now(UTC).isoformat(),
+        "inputs": {"availability_sha256": hashlib.sha256(availability_raw).hexdigest(),
+                   "clean_sha256": hashlib.sha256(clean_raw).hexdigest(),
+                   "availability_path": str(availability.resolve()),
+                   "clean_path": str(clean_path.resolve())},
+        "verifier_sha256": _digest(Path(__file__)),
+        "evidence_root": str(evidence_dir.resolve()), "tolerance": TOLERANCE,
+        "tolerance_note": "absolute source units; all common observations must match; no >99% shortcut",
+        "series": report,
+        "all_declared_identities_honoured": bool(report) and all(e["honoured"] for e in report.values()),
+        "source_independence_verified": False, "historical_availability_verified": False,
+        "mode": "offline_raw_replay" if reference_manifest else "fresh_capture_and_replay",
+    }
+    try:
+        output["strict_verification"] = require_macro_evidence(
+            output, clean=clean_path, availability=availability)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        output["all_declared_identities_honoured"] = False
+        output["strict_verification"] = {"numerical_identity_verified": False,
+                                         "failure_type": type(exc).__name__}
+    return output
 
-    out = {"contract": "CTR-RESEARCH-MACRO-AVAILABILITY-001",
-           "measured_at_utc": datetime.now(timezone.utc).isoformat(),
-           "inputs": {
-               "availability_sha256": _digest(AVAILABILITY),
-               "clean_sha256": _digest(CLEAN),
-               "availability_path": str(AVAILABILITY),
-               "clean_path": str(CLEAN),
-           },
-           "tolerance": TOLERANCE, "series": report,
-           "all_declared_identities_honoured": honoured}
-    text = json.dumps(out, indent=2, ensure_ascii=False) + "\n"
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(text, encoding="utf-8")
-    for name, entry in report.items():
-        extra = (f" coincide {100 * entry['match_fraction']:.1f}%"
-                 if "match_fraction" in entry else "")
-        print(f"  {name:6s} {entry['declared_source']:22s} {entry['status']}{extra}")
-    print(f"\n  identidades declaradas honradas: {out['all_declared_identities_honoured']}")
-    return 0
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=Path, required=True,
+                        help="new report path; existing output is rejected")
+    parser.add_argument("--clean-path", type=Path, default=CLEAN)
+    parser.add_argument("--availability", type=Path, default=AVAILABILITY)
+    parser.add_argument("--evidence-dir", type=Path)
+    parser.add_argument("--reference-manifest", type=Path,
+                        help="offline builder provenance or report with archived reference payloads")
+    args = parser.parse_args()
+    if args.output.exists():
+        print("ABORTA: report output already exists; choose a new path", file=sys.stderr)
+        return 2
+    evidence_dir = args.evidence_dir or args.output.parent / "macro_evidence"
+    report = build_report(clean_path=args.clean_path.resolve(),
+                          availability=args.availability.resolve(),
+                          evidence_dir=evidence_dir.resolve(),
+                          reference_manifest=args.reference_manifest)
+    raw = canonical_json(report)
+    immutable_write(args.output, raw)
+    immutable_write(evidence_dir / "reports" / f"{hashlib.sha256(raw).hexdigest()}.json", raw)
+    for name, entry in report["series"].items():
+        print(f"{name}: {entry['status']} n_common={entry.get('n_common', 0)}")
+    print(f"numerical_identity_verified={report['all_declared_identities_honoured']}")
+    return 0 if report["all_declared_identities_honoured"] else 2
 
 
 if __name__ == "__main__":

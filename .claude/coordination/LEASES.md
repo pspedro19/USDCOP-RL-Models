@@ -2368,3 +2368,400 @@ NO se despausan: `forecast_h5_l7_multiday_executor` ni `forecast_h1_l7_smart_exe
 - usdcop-trading-dashboard/public/data/strategies/spx500_daily_ma200_v1/
 - usdcop-trading-dashboard/public/data/strategies/spx500_regime_gated_v1/
 - tests/unit/test_replay_contract.py
+
+# CODEX 2026-09-12T19:32:27.8306502-05:00 LEASE RESEARCH-GRADE-01, instance codex-research-grade-20260912.
+# Expires 2026-09-12T20:45:00-05:00. Other observed leases expired; WIP preserved.
+# Root owns reporting/gates; helpers own disjoint macro, LLM v2, and sanity paths.
+- src/research/ | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- scripts/analysis/thesis_ppo_sanity.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- scripts/analysis/thesis_train_ppo.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- scripts/diagnostics/audit_thesis_e2e_status.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- scripts/diagnostics/verify_macro_declared_identity.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- scripts/data/build_research_macro.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- scripts/diagnostics/freeze_thesis_evidence.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- scripts/presentation/build_research_grade_thesis.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- tests/regression/test_research_grade_*.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- config/research/llm_pilot_v2.yaml | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- scripts/analysis/run_thesis_llm_pilot_v2.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- tests/regression/test_sanity_gate.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- tests/regression/test_sanity_fixtures_are_distinct.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00 | CLD-730 cede ajuste
+- tests/regression/test_thesis_e2e_status.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- tests/regression/test_ppo_sanity_fixtures.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- tests/regression/test_trainer_applies_sanity_recipe.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- scripts/diagnostics/verify_sanity_policy_replay.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+- .claude/experiments/EXPERIMENT_LOG.md | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00 | append-only new controls and evidence
+- docs/INDEX.md | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00 | generator only
+- docs/analysis/README.md | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00 | generator only
+- tests/regression/test_thesis_runners_use_protocol_seeds.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T20:45:00-05:00
+
+# CODEX 2026-09-12T20:48:30.4771342-05:00 RENEW RESEARCH-GRADE-01.
+# Todos los paths del bloque anterior se renuevan hasta 2026-09-12T21:30:00-05:00.
+# La aprobacion de red retuvo la herramienta y el heartbeat; renovacion posterior al vencimiento,
+# no se finge continuidad temporal. No se editaron paths ajenos. Adiciones acotadas:
+- scripts/data/export_research_bundle_v3.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T21:30:00-05:00
+- tests/regression/test_research_grade_dataset_export.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T21:30:00-05:00
+
+# CODEX 2026-09-12T21:27:36.1969187-05:00 RENEW RESEARCH-GRADE-01.
+# Todos los paths de RESEARCH-GRADE-01 se renuevan hasta 2026-09-12T22:10:00-05:00.
+# Solo cierre documental, gates y traspaso; no nueva corrida, API ni decision HMM.
+
+# CODEX 2026-09-12T21:37:16.8728242-05:00 RELEASE RESEARCH-GRADE-01 append-only.
+# Se liberan todos los paths del lease y sus ampliaciones. Artefactos preservados.
+# No hay promocion, entrenamiento, llamadas LLM ni monitor activo.
+# Goal cientifico permanece PARTIAL; espera decision de representacion y gates pendientes.
+
+# CODEX 2026-09-12T21:41:35.5152711-05:00 LEASE RESEARCH-PIT-02, instance codex-research-grade-20260912.
+# Expires 2026-09-12T22:25:00-05:00. Solo diagnostico ALFRED y evidencia de disponibilidad;
+# ninguna fuente congelada, schema, HMM, entrenamiento o retorno de estrategia cambia.
+- src/research/alfred_vintages.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T22:25:00-05:00
+- scripts/diagnostics/audit_research_macro_vintages.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T22:25:00-05:00
+- tests/regression/test_research_macro_vintages.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T22:25:00-05:00
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires 2026-09-12T22:25:00-05:00
+
+# CODEX 2026-09-12T22:18:59-05:00 RENEW RESEARCH-PIT-02 hasta 2026-09-12T23:00:00-05:00.
+# Parser y runner ALFRED congelados: no se editan; replay y cierre documental solamente.
+# LEASE RESEARCH-REGIME-FIG-03: correccion descriptiva de figura, sin modelos/PNL/schema.
+- scripts/presentation/build_research_grade_thesis.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:00:00-05:00
+- src/research/retrospective_regime.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:00:00-05:00
+- tests/regression/test_research_retrospective_regime.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:00:00-05:00
+
+# CODEX 2026-09-12T22:35:49-05:00 RELEASE RESEARCH-PIT-02 y RESEARCH-REGIME-FIG-03.
+# Se liberan todos sus paths. Incremento cerrado: ALFRED captura+replay y figura05 v5.
+# Sin entrenamiento, llamadas LLM, procesos auxiliares ni monitor activo. Goal PARTIAL.
+# Nuevo esquema/experimento requiere decision del operador; no inferida ni implementada.
+
+# CODEX 2026-09-12T22:38:43-05:00 LEASE RESEARCH-EVIDENCE-GATE-04, expires 2026-09-12T23:20:00-05:00.
+# Integra la evidencia ALFRED en el auditor E2E; no altera fuentes congeladas ni politica.
+- src/research/vintage_evidence_gate.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:20:00-05:00
+- scripts/diagnostics/audit_thesis_e2e_status.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:20:00-05:00
+- tests/regression/test_research_vintage_evidence_gate.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:20:00-05:00
+- tests/regression/test_thesis_e2e_status.py | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:20:00-05:00
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:20:00-05:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:20:00-05:00 | runtime append only
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires 2026-09-12T23:20:00-05:00 | runtime owned process
+
+# CODEX 2026-09-12T22:42:54.6203903-05:00: SKEW del encabezado RESEARCH-EVIDENCE-GATE-04.
+# 22:38:43 fue reloj del bootstrap; escritura posterior a22:40:18. No sello retroactivo.
+# Lease confirmado ahora, mismo vencimiento23:20; no implementacion editada antes de reclamarlo.
+
+# CODEX 2026-09-12T23:17:25.0971123-05:00 RELEASE RESEARCH-EVIDENCE-GATE-04 append-only.
+# Todos sus paths quedan liberados. C040 implementado y verificado en worktree,
+# no commit/push ni promocion. Final1327PASS; conocimiento1100PASS se solapa.
+# Monitor propio PID25724 termino23:12:48 COT, session4767 exit0; Get-Process sin PID.
+# Sin procesos de entrenamiento/LLM propios ni monitor restante. Artefactos intactos.
+# Goal PARTIAL: decision de representacion y gates PIT/trials/costos/forward pendientes.
+
+# CODEX 2026-09-12T23:22:03.5486765-05:00 LEASE RESEARCH-PUBLICATION-JOIN-05, expires 2026-09-13T00:05:00-05:00.
+# Correcciones de validador prospectivo aislado, sin dataset historico ni nueva politica.
+- src/research/publication_join_v2.py | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:05:00-05:00
+- tests/regression/test_research_grade_publication_join.py | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:05:00-05:00
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:05:00-05:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:05:00-05:00 | runtime append only
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:05:00-05:00 | runtime owned process
+
+# CODEX 2026-09-12T23:49:34.2171306-05:00 RELEASE RESEARCH-PUBLICATION-JOIN-05.
+# Todos sus paths quedan liberados. C041 scope ACK CLD747; codigo revisado por
+# helper hashes4281bc3a/84abee3b,194PASS integracion y1100knowledge solapados.
+# ClaudeCLD749 distingue lectura del reporte de reejecucion: no doble firma global.
+# Monitor24376 detenido deliberadamente tras validar inicio, session87016 exit1.
+# PID ausente, pidfile temporal limpiado; logs/datos/modelos intactos.
+# Sin workers propios pendientes, training, API, commit/push ni nueva aprobacion.
+# Goal PARTIAL; este turno PROGRESO, no cierre del objetivo completo.
+
+# CODEX 2026-09-12T23:56:52.8679116-05:00 LEASE RESEARCH-PILOT-ADMISSION-06, expires 2026-09-13T00:35:00-05:00.
+# Corrige admision de evidencia de precios por proveedor; no nuevo modelo, tarifa,
+# politica, dataset, registro, freeze ni gasto. Tests primero y C042 antes de codigo.
+- src/research/llm_experiment_v2.py | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:35:00-05:00
+- tests/regression/test_research_grade_llm_pilot.py | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:35:00-05:00
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:35:00-05:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:35:00-05:00 | runtime append only
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:35:00-05:00 | runtime owned process
+# 2026-09-13T00:00:06.5187507-05:00: SKEW reconocido en timestamp de reclamo
+# previo por latencia del apply_patch; confirmado ahora, antes de tocar codigo/tests.
+# CODEX 2026-09-13T00:14:12.2125378-05:00 ampliacion de salida diagnostica06,
+# solo revalidacion offline del mismo snapshot; no evaluacion de estrategia nueva.
+- outputs/thesis-repair/research_grade_e2e_20260913.json | CODEX | codex-research-grade-20260912 | expires 2026-09-13T00:35:00-05:00
+
+# CODEX 2026-09-13T00:19:35.2939323-05:00 RELEASE RESEARCH-PILOT-ADMISSION-06.
+# Todos sus paths liberados. Worktree verificado115focal/268integracion/1100knowledge,
+# grupos solapados; reviewer74RAM. Config/figuras/datos/experimentos intactos.
+# Nuevo auditor offline SHA a7293a829498b158f3e34c335a6f5333e0d5eba2d1a05814118cc0cee2b8e977
+# identico a v7; reproduce resultados, NO declara cierre cientifico.
+# Monitor30788 detenido deliberadamente tras validacion UTC; session61283 exit-1.
+# PID ausente y archivo PID runtime propio eliminado, logs preservados. Sin otros workers.
+# Sin API/training, commit/push, promocion ni nueva aprobacion. Goal PARTIAL, turnoPROGRESO.
+
+# CODEX 2026-09-13T00:28:38.7261781-05:00 LEASE RESEARCH-HMM-DIAGNOSTIC-07, expires 2026-09-13T01:08:38.7261781-05:00.
+# Wrapper historico por snapshot verificado y diagnostico de representacion.
+# No current loader, K/schema, reentreno, politica, registry ni fuentes congeladas.
+- src/research/historical_hmm_audit.py | CODEX | codex-research-grade-20260912 | expires 2026-09-13T01:08:38.7261781-05:00
+- scripts/diagnostics/audit_hmm_representation.py | CODEX | codex-research-grade-20260912 | expires 2026-09-13T01:08:38.7261781-05:00
+- tests/regression/test_historical_hmm_audit.py | CODEX | codex-research-grade-20260912 | expires 2026-09-13T01:08:38.7261781-05:00
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires 2026-09-13T01:08:38.7261781-05:00
+- outputs/thesis-repair/hmm_representation_20260913 | CODEX | codex-research-grade-20260912 | expires 2026-09-13T01:08:38.7261781-05:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires 2026-09-13T01:08:38.7261781-05:00 | runtime append only
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires 2026-09-13T01:08:38.7261781-05:00 | runtime owned process
+
+# CODEX 2026-09-13T01:01:22.4942479-05:00 RELEASE RESEARCH-HMM-DIAGNOSTIC-07.
+# Todos sus paths liberados. C04344focal dentro312integracion y1102knowledge PASS;
+# grupos solapados, no sumarlos. Ruff3,939links,inventory/index/graph/diffcheckOK.
+# Final v3 SHA c50bf861614c0ba26af29482ab37efe72a5d08cb235ac6e89d8c63077e884930. Fuentes/modelos/datos previos intactos.
+# Monitor18992 parado01:01:06 tras verificar inicio UTC05:30:12.6620396Z;
+# session78817 exit-1 por terminacion solicitada. PID/pidfile ausentes; logs preservados.
+# No training/API/commit/push ni nuevos workers. Goal PARTIAL, turno PROGRESO.
+
+# CODEX 2026-09-13T01:06:23.2771002-05:00 LEASE RESEARCH-HMM-2026-08, expires2026-09-13T01:46:23.2771002-05:00.
+# Diagnostico C044 separado; preserva archivos C043 y parametros/inputs congelados.
+- scripts/diagnostics/audit_hmm_2026_representation.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T01:46:23.2771002-05:00
+- tests/regression/test_historical_hmm_2026.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T01:46:23.2771002-05:00
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires2026-09-13T01:46:23.2771002-05:00
+- outputs/thesis-repair/hmm_2026_20260913 | CODEX | codex-research-grade-20260912 | expires2026-09-13T01:46:23.2771002-05:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires2026-09-13T01:46:23.2771002-05:00 | runtime append only
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires2026-09-13T01:46:23.2771002-05:00 | runtime owned
+
+# CODEX 2026-09-13T01:42:43.7097964-05:00 RELEASE RESEARCH-HMM-2026-08: todos sus paths liberados.
+# C044 v4: paridad150/150, contrafactual2 cambios, figura real con ampliacion sin recorte.
+# 357 integracion PASS; v4 final1166 PASS =1102 knowledge/layout/contratos/registro +64 focales.
+# Grupos solapados. Ruff2, inventario/indices/947links/grafo y diffcheck acotado PASS.
+# Git global fallo por permisos/LFS fuera del slice; no se certifica arbol/suite global.
+# Monitor12672 detenido01:41:38 tras verificar inicioUTC06:08:43.8422592Z;
+# session94812 exit1, pidfile propio retirado, logs preservados.
+# Sin training/API/commit/push ni cambios al modelo. Goal PARTIAL, incremento PROGRESO.
+
+# CODEX 2026-09-13T01:47:31.4061427-05:00 LEASE RESEARCH-LIVE-CONTRACT-09; expires 2026-09-13T02:27:31.4061427-05:00.
+# Source pendiente ACK C045. No afecta datasets/modelos ni tests historicos.
+- src/research/live_spec.py | CODEX | codex-research-grade-20260912 | expires 2026-09-13T02:27:31.4061427-05:00
+- tests/regression/test_live_regime_contract.py | CODEX | codex-research-grade-20260912 | expires 2026-09-13T02:27:31.4061427-05:00
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires 2026-09-13T02:27:31.4061427-05:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires 2026-09-13T02:27:31.4061427-05:00 | runtime append
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires 2026-09-13T02:27:31.4061427-05:00 | runtime owned
+
+# CODEX 2026-09-13T02:20:07-05:00 RELEASE RESEARCH-LIVE-CONTRACT-09.
+# Fuente, test y documento C045 verificados; 78focal incluidos en448integracion PASS,
+# 1102knowledge PASS, inventario/indices/954links/grafo/diffcheck acotado PASS.
+# Ruff fuente6avisos basales, testPASS; no suite global verde ni forward habilitado.
+# Monitor propio26144 parado tras comparar inicioUTC06:48:58.2110799Z;
+# solo PIDfile26144 retirado, logs preservados. No modelos/datos eliminados.
+# Sin fit/API/cache/export/commit/push. Goal PARTIAL, incremento PROGRESO.
+
+# CODEX 2026-09-13T02:25:00.0920534-05:00 LEASE RESEARCH-LIVE-PREFIX-10; expires2026-09-13T03:05:00.0920534-05:00.
+# C046 C-EXEMPT: separar evaluacion historica de admision de prefijo sin cambiar reglas congeladas.
+- src/research/live_spec.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:05:00.0920534-05:00
+- src/research/evaluation_mask.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:05:00.0920534-05:00
+- tests/regression/test_live_regime_contract.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:05:00.0920534-05:00
+- tests/regression/test_live_prefix_causality.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:05:00.0920534-05:00
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:05:00.0920534-05:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:05:00.0920534-05:00 | runtime append
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:05:00.0920534-05:00 | runtime owned
+
+# CODEX 2026-09-13T02:54:17.000-05:00 RELEASE RESEARCH-LIVE-PREFIX-10.
+# C046 137focal incluidos en507integracionPASS,1102knowledgePASS; maskto_dict completo identico.
+# Doc1.0.9 SHA47819fe29a21a7e00028a4179bda548887b810e85aaff81f827b77edd9cd403a.
+# Inventario/indices/963links/grafo/diffcheck acotadoPASS; linttestsPASS, source11basales.
+# E2E artifacta7293a82 revalida retrospectivos, engineering/scientificfalse.
+# Monitor26904 parado02:53:20 con inicioUTC07:26:10.2380768Z verificado; session53264exit1.
+# Solo PIDfile propio retirado, logs/modelos/datos preservados. Sinfit/API/commit/push.
+# GoalPARTIAL; incrementoPROGRESO. No habilita forward ni cambiaK/schema ni resultados.
+
+# CODEX 2026-09-13T03:01:37-05:00 CLAIM RESEARCH-STREAM-STATE-11; expires 03:41:37 COT.
+# C047: restaurar paridad de estado y tiempos en el adaptador research, 0 trials.
+- tests/regression/test_ppo_stream_runner.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00
+- src/research/llm_forward/stream_runner.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00
+- src/research/llm_forward/arms/ppo_stream.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00
+- scripts/analysis/run_ppo_stream_bar.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00
+- tests/regression/test_stream_state_parity.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00
+- tests/regression/test_live_session_runner.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00
+- tests/regression/test_ppo_arm_per_bar_sealing.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00
+- outputs/thesis-repair/stream_*20260913* | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00 | nuevos artefactos
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00 | runtime append
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires2026-09-13T03:41:37-05:00 | runtime owned
+
+# CODEX 2026-09-13T08:25:09-05:00 RENEW RESEARCH-STREAM-STATE-11 (mismos paths) hasta09:05:09 COT.
+# Intervalo anterior expirado durante espera de herramienta/escalacion, sin nuevo lease ajeno.
+# Monitor27860 termino08:38:46UTC por su deadline; PIDfile ya ausente. No worker activo.
+- src/research/llm_forward/settle_thesis.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T09:05:09-05:00 | C047: fallback explicito del flag para agregados streaming, sin schema
+
+# CODEX 2026-09-13T08:42:33-05:00 RELEASE RESEARCH-STREAM-STATE-11 todos sus paths y ampliacion settlement.
+# C047: 77focal incluidos599integracionPASS/1deselected conocido,1102knowledgePASS; gates inventario/indices/980links/grafo/diffcheck PASS.
+# Ruff7pathsPASS;4avisos settlement basales reproducidos contra archivo869e01bc. Doc1.0.10 SHA76b9b5b86b378bb07c38fcf32f50162006016167a507fad399934cf506f40382.
+# Monitor32720 parado verificando inicioUTC13:29:28.1065857Z; session48551exit1 por terminacion propia. PIDfile propio retirado, logs preservados.
+# Monitoranterior27860 habia terminado por deadline08:38:46UTC (23829exit0). No workers ni API/fit/commit/push.
+# GoalPARTIAL, incrementoPROGRESO; sin ACKClaude/confirmacionforward ni cambios en resultados, modelos o fuentes.
+
+# CODEX 2026-09-13T13:47:43+00:00 CLAIM RESEARCH-SETTLEMENT-12; expires14:32:43UTC.
+# No leases ajenos vigentes en estos paths; ownership research ledger/metrics perASSIGNMENTS.
+- src/research/llm_forward/schema.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00 | C048 campo opcional, esperarACK/15min
+- src/research/llm_forward/settlement_accounting.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00
+- src/research/llm_forward/settle_thesis.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00
+- src/research/llm_forward/verify.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00
+- tests/regression/test_forward_settlement_accounting.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00
+- tests/regression/test_forward_arms_parity.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00
+- tests/regression/test_stream_state_parity.py | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00
+- outputs/thesis-repair/settlement_*20260913* | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00 | nuevos outputs
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00 | runtimeappend
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires2026-09-13T14:32:43+00:00 | runtimeowned
+
+# RENEW RESEARCH-SETTLEMENT-12 2026-09-13T14:22:02+00:00; solo paths enumerados arriba
+# Todos los paths del lease12 renovados hasta2026-09-13T15:03:00+00:00 (<45min).
+# Sin leases ajenos observados en estos paths; no incluye datos/modelos/registries.
+
+# RELEASE RESEARCH-SETTLEMENT-12 2026-09-13T14:33:20+00:00
+# Todos los paths del lease12 liberados; no ediciones fuente/test en curso.
+# Monitor20420 finalizo14:30:44UTC, PIDtemporal20420 retirado; logs/evidencia preservados.
+
+# CLAIM RESEARCH-FORWARD-13 2026-09-13T14:36:54+00:00; monitor propio, expires2026-09-13T15:20:00+00:00
+- .claude/coordination/monitor/CODEX-MESSAGES.log | CODEX | codex-research-grade-20260912 | expires2026-09-13T15:20:00+00:00
+- .claude/coordination/monitor/CODEX-MESSAGES.pid | CODEX | codex-research-grade-20260912 | expires2026-09-13T15:20:00+00:00
+
+# EXTEND PATHS RESEARCH-FORWARD-13 2026-09-13T14:45:36+00:00; expires2026-09-13T15:20:00+00:00
+- src/research/llm_forward/arms/ppo_arm.py | CODEX | codex-research-grade-20260912
+- src/research/llm_forward/schema.py | CODEX | codex-research-grade-20260912 | C049 pendiente ACK
+- src/research/llm_forward/settlement_accounting.py | CODEX | codex-research-grade-20260912
+- src/research/llm_forward/settle_thesis.py | CODEX | codex-research-grade-20260912
+- src/research/llm_forward/verify.py | CODEX | codex-research-grade-20260912
+- airflow/dags/research_forward_arms.py | CODEX | codex-research-grade-20260912
+- tests/regression/test_forward_first_bar_hold.py | CODEX | codex-research-grade-20260912 | nuevo
+- tests/regression/test_forward_dag_safety.py | CODEX | codex-research-grade-20260912 | nuevo
+- outputs/thesis-repair/first_bar_*20260913* | CODEX | codex-research-grade-20260912 | nuevos outputs
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | codex-research-grade-20260912
+- .claude/specs/operations/elite-operations.md | CODEX | codex-research-grade-20260912 | solo nota research si cambia DAG
+
+# RENEW RESEARCH-FORWARD-13 2026-09-13T15:03:28+00:00; todos y solo los paths arriba hasta2026-09-13T15:44:00+00:00
+# Duracion menor45min; sin modelos/datos/registries ni activacion de infraestructura.
+
+# RELEASE RESEARCH-FORWARD-13 2026-09-13T15:19:51+00:00
+# Todos los paths del lease13 liberados; no ediciones o tests en vuelo.
+# Monitor18380 termino15:17:33.9017427Z, proceso ausente y PIDfile ausente verificados.
+# Logs y todas las evidencias retenidos; sin reapertura de monitor por presupuesto.
+
+# CLAIM RESEARCH-SCHEMA-14 2026-09-14T03:51:38+00:00; expires 2026-09-14T04:35:38.000Z
+# CODEX codex-research-grade-20260912. Nueva version aprobada por operador; sin lease ajeno activo observado.
+- src/research/observation_contract.py | CODEX | nuevo SSOT research privado
+- src/research/regime5_bundle.py | CODEX | nuevo bundle independiente
+- src/research/research_readiness.py | CODEX | nuevo gate
+- src/research/session_gym.py | CODEX | compatibilidad explicita legacy/nuevo
+- src/research/live_spec.py | CODEX | prefijo con contrato explicito
+- src/research/regime_hmm.py | CODEX | macro inyectada y evidencia BIC
+- src/research/llm_forward/arms/ppo_stream.py | CODEX | identidad observacional
+- src/research/llm_forward/stream_runner.py | CODEX | propagacion identidad
+- scripts/analysis/thesis_train_ppo.py | CODEX | admision versionada
+- scripts/data/build_research_regime5.py | CODEX | nuevo entrypoint
+- scripts/diagnostics/research_readiness.py | CODEX | nuevo entrypoint
+- config/research/observation_regime5_v1.json | CODEX | nuevo schema
+- config/research/research_regime5_v1.yaml | CODEX | nuevo plan ejecutable
+- tests/regression/test_regime5_*.py | CODEX | nuevos
+- tests/regression/test_forward_arms_parity.py | CODEX | nombre/alcance real
+- docs/analysis/exp-tesis-research-grade-20260912.md | CODEX | addendum
+- outputs/thesis-repair/regime5_20260914* | CODEX | nueva evidencia
+# Sin .env, APIs, modelos antiguos, datos fuente, registries, DAG ni artefactos congelados.
+
+# EXTEND PATHS RESEARCH-SCHEMA-14 2026-09-14T04:03:26+00:00; mismo vencimiento, no renovacion implicita
+- src/research/publication_join_v2.py | CODEX | opcion T-1 explicita, default previo intacto
+
+# RENEW RESEARCH-SCHEMA-14 2026-09-14T04:28:21+00:00; todos los paths previos hasta 2026-09-14T05:12:21.000Z
+- src/research/regime5_hmm.py | CODEX | nuevo modulo aislado; legacy HMM restaurado sin cambiar pins
+
+# RELEASE RESEARCH-SCHEMA-14 2026-09-14T04:49:53+00:00
+# Todos los paths de CLAIM/EXTEND/RENEW liberados. Sin pruebas/ediciones/worker/monitor en vuelo.
+# Datos, modelos, fuentes y evidencias historicas retenidos; sin eliminaciones materiales.
+
+# CLAIM THESIS-WRITING-15 2026-09-14T12:52:00+00:00; expires 2026-09-14T13:32:00+00:00
+# CODEX codex-research-grade-20260912. Entrega documental solicitada por operador; rutas nuevas, sin lease ajeno vigente observado.
+- docs/thesis/** | CODEX | manuscrito nuevo y fuentes de escritura
+- docs/INDEX.md | CODEX | solo regenerador
+- scripts/presentation/build_thesis_manuscript.py | CODEX | generador documental nuevo
+- tests/regression/test_thesis_manuscript.py | CODEX | controles nuevos
+- outputs/thesis-delivery/** | CODEX | nueva entrega y evidencia; no sobrescribir bundles previos
+# Sin entrenamientos, API, secretos, cambios de estrategia, datos fuente ni registro de trials. Coordinacion degradada sin receptor vigente; no se solicita revision adicional a Claude.
+
+# RENEW THESIS-WRITING-15 2026-09-14T13:26:00+00:00; mismos paths hasta 2026-09-14T14:06:00+00:00
+# Subagente de redaccion limitado a docs/thesis/chapters_1_2_5.md; raiz integra/genera/testea. Sin recursos de Claude ni consumidores compartidos.
+
+# RENEW THESIS-WRITING-15 2026-09-14T14:00:00+00:00; mismos paths hasta 2026-09-14T14:40:00+00:00
+# Documentos v1/v2 generados. Correccion de enlaces de plantilla antes de sellar entrega v3; datos/modelos intactos.
+
+# RELEASE THESIS-WRITING-15 2026-09-14T14:31:06+00:00
+# Todos los paths de CLAIM/RENEW liberados. Entrega en outputs/thesis-delivery/20260914_entrega y ZIP lateral; borradores previos preservados.
+# No workers, monitores, API o entrenamiento en vuelo. Revision del director pendiente; no doblefirma ni cierre cientifico.
+
+# CLAIM THESIS-CONFIRMATORY-16 2026-09-14T14:38:00+00:00; expires 2026-09-14T15:38:00+00:00
+# CODEX codex-research-grade-20260912. Contrato nuevo de particion confirmatoria y validator; no se toca partition.yaml historico ni se abren trials.
+- config/research/thesis_confirmatory_v4.yaml | CODEX | nuevo preregistro de particiones y alcance
+- scripts/diagnostics/validate_thesis_confirmatory_protocol.py | CODEX | gate fail-closed
+- tests/regression/test_thesis_confirmatory_protocol.py | CODEX | invariantes del contrato
+- docs/thesis/confirmatory_protocol_v4.md | CODEX | documentacion del protocolo
+
+# RELEASE THESIS-CONFIRMATORY-16 2026-09-14T23:09:22+00:00
+# Contrato, validador, tests y documentacion completados. El protocolo sigue PENDING_OPERATOR_SIGNATURE; no se entrenaron modelos ni se abrio hold-out.
+
+# CLAIM THESIS-SIGNATURE-17 2026-09-14T23:12:00+00:00; expires 2026-09-14T23:42:00+00:00
+# CODEX codex-research-grade-20260912. Registrar autorizacion explicita del operador en el contrato v4 y adaptar el validator/tests; sin entrenamiento ni proveedor.
+- config/research/thesis_confirmatory_v4.yaml | CODEX | firma y fecha declaradas
+- scripts/diagnostics/validate_thesis_confirmatory_protocol.py | CODEX | admision de firma verificable
+- tests/regression/test_thesis_confirmatory_protocol.py | CODEX | contrato firmado y gate
+
+# RELEASE THESIS-SIGNATURE-17 2026-09-14T23:16:00+00:00
+# Firma conversacional registrada en v4; validator PASS signed, 4 tests PASS, Ruff/gates PASS. Sin entrenamiento, APIs o apertura de hold-out.
+
+| THESIS-V4-PORTABLE-18 | Codex | src/research/dataset.py | 2026-09-14T23:30Z | dynamic v4 artifact validation |
+| THESIS-V4-PORTABLE-18 | Codex | RELEASED | portable v4 identity/export fixes and validation | 2026-09-14T23:58Z |
+| THESIS-V4-EVAL-19 | Codex | scripts/analysis/evaluate_confirmatory_ppo.py | 2026-09-15T00:10Z | holdout evaluation and aggregate metrics |
+| THESIS-V4-EVAL-19 | Codex | RELEASED | holdout evaluation completed; artifacts inspected | 2026-09-15T05:10Z |
+| THESIS-V4-REPORT-20 | Codex | scripts/analysis/check_confirmatory_artifacts.py; docs/thesis/confirmatory_results_v4.md | 2026-09-15T05:10Z | artifact gate and results report |
+# RELEASE THESIS-V4-REPORT-20 2026-09-15T05:18:00Z
+# Artifact gate, report, figures and targeted protocol tests completed. LLM/hybrid remain outside v4 PPO evidence.
+| THESIS-LLM-RETRO-21 | Codex | scripts/analysis/settle_thesis_llm.py; tests/regression/test_settle_thesis_llm.py | 2026-09-15T05:25Z | explicit stale-artifact retrospective settlement switch |
+| THESIS-LLM-RETRO-21 | Codex | scripts/analysis/thesis_hybrid.py; docs/thesis/llm_hybrid_diagnostic_results_v2.md | 2026-09-15T05:25Z | historical LLM settlement and hybrid diagnostic outputs |
+# RELEASE THESIS-LLM-RETRO-21 2026-09-15T05:40:00Z
+# Historical LLM ledgers validated, explicitly stale-settled, hybrid diagnostics and figures generated. No confirmatory claim.
+| THESIS-DOCS-22 | Codex | docs/thesis/README.md; docs/thesis/confirmatory_results_v4.md; docs/thesis/llm_hybrid_diagnostic_results_v2.md | 2026-09-15T05:42Z | link and index consistency |
+# RELEASE THESIS-DOCS-22 2026-09-15T05:44:00Z
+# README links added; document indexes, links and graph pass.
+| THESIS-DOCS-23 | Codex | docs/thesis/llm_hybrid_diagnostic_results_v2.md | 2026-09-15T05:50Z | fill validated hybrid metrics |
+# RELEASE THESIS-DOCS-23 2026-09-15T05:51:00Z
+# Hybrid table now reflects the executed settlement JSON.
+| THESIS-LLM-CONTEXT-24 | Codex | scripts/analysis/verify_llm_context_bundle.py | 2026-09-15T06:00Z | v4 context hash/count gate |
+# RELEASE THESIS-LLM-CONTEXT-24 2026-09-15T06:05:00Z
+# Selection (13,334) and retrospective holdout (24,780) contexts bound to portable v4; gate PASS.
+| THESIS-LLM-LABEL-25 | Codex | scripts/analysis/export_thesis_llm_contexts.py; scripts/analysis/verify_llm_context_bundle.py | 2026-09-15T06:15Z | explicit retrospective label for observed selection |
+# RELEASE THESIS-LLM-LABEL-25 2026-09-15T06:22:00Z
+# Selection and holdout contexts explicitly labeled retrospective; bundle gate and tests pass.
+| THESIS-IDENTITY-STABLE-28 | Codex | scripts/analysis/check_confirmatory_artifacts.py; docs/thesis/confirmatory_results_v4.md; docs/thesis/chapters_3_4_v4_addendum.md | 2026-09-15T07:10Z | stable portable v4.1 evidence and hash update |
+# RELEASE THESIS-IDENTITY-STABLE-28 2026-09-15T07:35:00Z
+# Stable portable rebuilt; session arrays identical; PPO re-evaluation identical; context bundle regenerated and tests pass.
+# RELEASE THESIS-V4-DELIVERY-34 2026-09-15T10:05:00Z
+# Rendered signed v4 chapters 3-5 into separate DOCX/PDF; document, script-layout and knowledge gates pass.
+# RELEASE THESIS-LLM-FORWARD-PREP-35 2026-09-15T10:40:00Z
+# Forward LLM contexts (9,558, 162 sessions) exported and fail-closed artifact gate extended; no provider calls made.
+# RELEASE THESIS-LLM-FORWARD-SETTLEMENT-36 2026-09-15T11:20:00Z
+# Forward settlement and hybrid runners accept frozen specs/actions; preflight excludes incomplete ledgers; gates/tests pass.
+# RELEASE THESIS-COMPLETION-AUDIT-37 2026-09-15T11:55:00Z
+# Machine-readable audit reports READY_WITH_EXTERNAL_LLM_PENDING; protocol/data/PPO/forward evidence PASS and missing provider ledgers explicit.
+# RELEASE THESIS-LLM-LEDGER-CONTRACT-38 2026-09-15T12:20:00Z
+# Forward ledger validation now binds dataset block/hash and rejects retrospective rows; runner persists those fields; tests and gates pass.
+# RELEASE THESIS-LLM-E2E-ORCHESTRATOR-39 2026-09-15T12:45:00Z
+# Added fail-closed dual-provider orchestrator with check-only mode, resume, validation, settlement and hybrid outputs; 28 tests and knowledge gates pass.
+# RELEASE THESIS-FIGURE-PACK-40 2026-09-15T13:15:00Z
+# Regenerated six full-page v4 figures from frozen holdout/forward artifacts and embedded them in a 14-page DOCX/PDF; QA and gates pass.
+| THESIS-IDENTITY-STABLE-29 | Codex | scripts/analysis/check_confirmatory_artifacts.py | 2026-09-15T07:38Z | correct stable statistics filename in gate output |
+# RELEASE THESIS-IDENTITY-STABLE-29 2026-09-15T07:39:00Z
+# Stable artifact gate output now names the supplied statistics file.
+| THESIS-FORWARD-30 | Codex | scripts/analysis/build_confirmatory_forward_specs.py; scripts/analysis/evaluate_confirmatory_forward_ppo.py | 2026-09-15T08:00Z | frozen-model forward 2026 lane |
+| THESIS-FORWARD-REPORT-31 | Codex | docs/thesis/forward_results_2026_v4.md; docs/thesis/chapter_5_conclusions_v4.md; docs/thesis/README.md | 2026-09-15T08:30Z | forward metrics and figures documentation |
+# RELEASE THESIS-FORWARD-30 2026-09-15T08:45:00Z
+# 162-session forward bundle built with frozen HMM/scaler; ten checkpoints evaluated.
+# RELEASE THESIS-FORWARD-REPORT-31 2026-09-15T08:46:00Z
+# Forward report, figures and chapter links added; documentation gates pass.
+| THESIS-FORWARD-LABEL-32 | Codex | scripts/analysis/report_confirmatory_ppo.py; scripts/analysis/check_confirmatory_artifacts.py | 2026-09-15T08:55Z | accurate forward figure labels and forward gate |
+# RELEASE THESIS-FORWARD-LABEL-32 2026-09-15T08:57:00Z
+# Forward figures relabeled with period; artifact gate and doc links pass.
+| THESIS-FORWARD-BASELINES-33 | Codex | scripts/analysis/evaluate_confirmatory_forward_baselines.py | 2026-09-15T09:00Z | same-engine forward baseline comparison |
+# RELEASE THESIS-FORWARD-BASELINES-33 2026-09-15T09:20:00Z
+# Eight same-engine baselines evaluated; artifact gate, regression tests and documentation gates pass.
+| THESIS-WRITING-V4-26 | Codex | docs/thesis/chapters_3_4_v4_addendum.md; docs/thesis/chapter_5_conclusions_v4.md; docs/thesis/README.md | 2026-09-15T06:30Z | align thesis narrative to executed v4 evidence |
+# RELEASE THESIS-WRITING-V4-26 2026-09-15T06:42:00Z
+# Addendum chapters 3-4 and chapter 5 v4 added; docs gates pass.
+| THESIS-IDENTITY-STABILITY-27 | Codex | src/research/dataset.py; tests/regression/test_research_grade_macro_identity.py | 2026-09-15T06:50Z | stable frozen-artifact identity keys across Windows path forms |
