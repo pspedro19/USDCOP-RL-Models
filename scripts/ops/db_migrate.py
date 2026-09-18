@@ -75,6 +75,24 @@ MIGRATION_PLANS = {
     "lineage-verification-v1": (
         PROJECT_ROOT / "database" / "migrations" / "086_lineage_last_verified_at.sql",
     ),
+    # Annual billing + the second settlement currency. Widens the currency allowlist and
+    # adds `checkout_orders.billing_interval`; deliberately does NOT redefine 059's
+    # lifecycle trigger, which the billing test suite parses as the SSOT for legal order
+    # transitions.
+    # Secondary webhook idempotency ledger. It belongs to the commerce stack but was in no
+    # plan, so a fresh database had `checkout_orders` and `billing_events` without it and
+    # every webhook died with `relation "billing_webhook_events" does not exist`.
+    "billing-idempotency-v1": (
+        PROJECT_ROOT / "database" / "migrations" / "058_billing_webhook_idempotency.sql",
+    ),
+    "billing-interval-v1": (
+        PROJECT_ROOT / "database" / "migrations" / "090_billing_interval_and_currency.sql",
+    ),
+    # Expiring permission grants: the NDA data room. A research grant that closes itself
+    # is the control; a calendar reminder is not.
+    "rbac-override-expiry-v1": (
+        PROJECT_ROOT / "database" / "migrations" / "091_rbac_override_expiry.sql",
+    ),
     # Fresh-clone platform schema.  This deliberately uses the consolidated H5
     # migration (050) instead of replaying its superseded 043/044 path, and
     # keeps optional extensions such as pgvector (047) out of the baseline.
@@ -117,6 +135,9 @@ REVIEW_GATED_PLANS = frozenset(
         "h5-identity-v1",
         "identity-admin-v1",
         "lineage-verification-v1",
+        "billing-idempotency-v1",
+        "billing-interval-v1",
+        "rbac-override-expiry-v1",
         "platform-bootstrap-v1",
         "fabric-v1",
     }
@@ -158,6 +179,22 @@ PINNED_PLAN_DIGESTS = {
     ),
     "feature-status-provenance-v1": (
         "sha256:29b3f7dc2dcff3c558057567a4033de30797058f361f801dae357e0ae185fb0b"
+    ),
+    # Reviewed 2026-09-11: widens the currency allowlist to COP|USD and adds
+    # checkout_orders.billing_interval with its own immutability trigger. 059's lifecycle
+    # function is intentionally left untouched.
+    "billing-interval-v1": (
+        "sha256:e534e296d2c30961ed81e465b95f459d4a9c736631426fafa678e2ca991b3f91"
+    ),
+    # Reviewed 2026-09-11: the commerce stack's secondary webhook ledger (migration 058),
+    # which no plan carried — a fresh database could seal quotes but never process a webhook.
+    "billing-idempotency-v1": (
+        "sha256:8d3cf451676dd330cf6802975441b1b17f51745cdaaf7f47a82388096a273805"
+    ),
+    # Reviewed 2026-09-11: adds expires_at + nda_reference to rbac_user_overrides, with a
+    # CHECK keeping expiry on grants only (an expiring deny would reopen a retired permission).
+    "rbac-override-expiry-v1": (
+        "sha256:ad5abf84d17120c26631bd4f7cfc5e0022c8d52828824168a1cb844f8b131f03"
     ),
     "platform-bootstrap-v1": (
         "sha256:9d6e2d40fa974aca3474c70336b5e0912c04f5b75c7474e62ea172a01388c06d"
@@ -263,6 +300,15 @@ REQUIRED_TABLES_BY_PLAN = {
     "commerce-v1": {
         "public.checkout_orders": "Immutable sealed checkout quotes",
         "public.billing_events": "Provider-event idempotency ledger",
+    },
+    "billing-idempotency-v1": {
+        "public.billing_webhook_events": "Secondary (reference, event_type) webhook ledger",
+    },
+    "billing-interval-v1": {
+        "public.checkout_orders": "Sealed quotes, now carrying billing_interval + USD",
+    },
+    "rbac-override-expiry-v1": {
+        "public.rbac_user_overrides": "Per-user grants, now expiring (data room)",
     },
     "commerce-surface-v1": {
         "public.user_watchlist": "Per-user catalog watchlist",
