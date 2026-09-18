@@ -18,8 +18,22 @@ import {
 } from 'lucide-react';
 import { GM } from '@/lib/ui/gm-tokens';
 
-export function MethodologySection() {
-  const [expandedSection, setExpandedSection] = useState<string | null>('drivers');
+/**
+ * Methodology panel.
+ *
+ * The macro-driver accordion is SPECIFIC to USD/COP — Brent, DXY, VIX, the EMBI Colombia
+ * spread, BanRep and Fed rates. It used to render on every asset, so the Gold page
+ * explained what moves the Colombian peso: wrong content, and exactly the kind of detail a
+ * reader notices before anything else. It is now shown only for the asset it describes;
+ * other assets get the sections that are genuinely asset-neutral (how the report is built,
+ * which indicators are used, how to read it) plus a pointer to the macro panel already on
+ * the page, rather than a driver list nobody has written for them.
+ */
+export function MethodologySection({ assetId = 'usdcop' }: { assetId?: string }) {
+  const isUsdCop = assetId === 'usdcop';
+  const [expandedSection, setExpandedSection] = useState<string | null>(
+    isUsdCop ? 'drivers' : 'indicators',
+  );
 
   const toggle = (key: string) =>
     setExpandedSection(prev => (prev === key ? null : key));
@@ -35,11 +49,15 @@ export function MethodologySection() {
         Metodologia e Interpretabilidad del Analisis
       </h2>
       <p className={`text-xs ${GM.textMuted} mb-5`}>
-        Como funciona este reporte, que impulsa el USD/COP, y como interpretar cada seccion.
+        {isUsdCop
+          ? 'Como funciona este reporte, que impulsa el USD/COP, y como interpretar cada seccion.'
+          : 'Como se construye este reporte y como interpretar cada seccion.'}
       </p>
 
       <div className="space-y-2">
-        {/* SECTION 1: USD/COP Macro Drivers */}
+        {/* SECTION 1 — USD/COP ONLY. These drivers describe the peso, not every
+            asset; rendering them elsewhere stated something false. */}
+        {isUsdCop && (<>
         <AccordionItem
           id="drivers"
           icon={<DollarSign className="w-4 h-4" />}
@@ -118,6 +136,16 @@ export function MethodologySection() {
             </div>
           </div>
         </AccordionItem>
+        </>)}
+
+        {!isUsdCop && (
+          <div className={`${GM.panelInner} p-4 text-xs ${GM.textSec} leading-relaxed`}>
+            Los factores macro que sigue este activo se muestran arriba, en el panel de
+            indicadores y sus series historicas. No publicamos una lista de drivers para
+            este activo porque todavia no hay una escrita y verificada: preferimos no
+            afirmar nada a afirmar algo que no hemos medido.
+          </div>
+        )}
 
         {/* SECTION 2: Technical Indicators */}
         <AccordionItem

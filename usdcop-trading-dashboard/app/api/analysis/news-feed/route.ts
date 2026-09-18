@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { readAnalysisJson } from '@/lib/analysis-paths';
 import { ANALYSIS_ASSETS, getAnalysisAsset } from '@/lib/contracts/analysis-assets';
+import { getEntitlements } from '@/lib/auth/entitlements';
 import type {
   AnalysisIndex,
   NewsArticleRef,
@@ -44,9 +45,13 @@ export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
   const limit = Math.min(Math.max(Number(sp.get('limit')) || 12, 1), 50);
   const assetFilter = sp.get('asset');
-  const assets = assetFilter
-    ? [getAnalysisAsset(assetFilter)]
-    : ANALYSIS_ASSETS;
+
+  // Cross-asset surface: narrow to what the PLAN covers rather than refusing the whole
+  // feed, so a free reader still gets their own asset's headlines instead of an error.
+  // Without this the global news bell leaked every paid asset's intelligence to everyone.
+  const ent = await getEntitlements(request.headers.get('x-user-id'));
+  const requested = assetFilter ? [getAnalysisAsset(assetFilter)] : ANALYSIS_ASSETS;
+  const assets = requested.filter((a) => ent.assets.includes(a.asset_id));
 
   const items: NewsFeedItem[] = [];
   const byAsset: NewsFeedAssetSummary[] = [];

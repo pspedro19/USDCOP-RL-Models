@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useAnalysisIndex, useWeeklyView, useUpcomingEvents, useAnalysisAssets, getCurrentISOWeek } from '@/hooks/useWeeklyAnalysis';
-import { DEFAULT_ANALYSIS_ASSET } from '@/lib/contracts/analysis-assets';
+import { ANALYSIS_ASSETS, DEFAULT_ANALYSIS_ASSET } from '@/lib/contracts/analysis-assets';
 import { normalizeNewsClusters } from '@/lib/analysis/normalize-news';
 import { useAnalysisChatStore } from '@/stores/useAnalysisChatStore';
 import { useGmT } from '@/lib/i18n/gm-core';
@@ -35,9 +35,24 @@ import { BiasDistributionCard } from './BiasDistributionCard';
 import { ReferencesSection } from './ReferencesSection';
 import { MethodologySection } from './MethodologySection';
 
+/**
+ * Resolve the asset to open on, honouring `?asset=` so a specific pair can be linked to
+ * directly. Without this the page always opened on the default and the only way to reach,
+ * say, Gold was to click the selector — which makes a shared link or a demo bookmark land
+ * on the wrong asset. Unknown values fall back to the default rather than rendering an
+ * empty page for a pair that does not exist.
+ */
+function initialAsset(): string {
+  if (typeof window === 'undefined') return DEFAULT_ANALYSIS_ASSET;
+  const raw = new URLSearchParams(window.location.search).get('asset');
+  if (!raw) return DEFAULT_ANALYSIS_ASSET;
+  const v = raw.toLowerCase();
+  return ANALYSIS_ASSETS.some((a) => a.asset_id === v) ? v : DEFAULT_ANALYSIS_ASSET;
+}
+
 export function AnalysisPage() {
   const t = useGmT(ANALYSIS_DICT);
-  const [selectedAsset, setSelectedAsset] = useState<string>(DEFAULT_ANALYSIS_ASSET);
+  const [selectedAsset, setSelectedAsset] = useState<string>(initialAsset);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [detailVariable, setDetailVariable] = useState<string | null>(null);
@@ -260,7 +275,7 @@ export function AnalysisPage() {
             </div>
 
             {/* 8. Methodology & Explainability */}
-            <MethodologySection />
+            <MethodologySection assetId={selectedAsset} />
 
             {/* 9. References & Data Sources */}
             <ReferencesSection weekData={weekData} />
