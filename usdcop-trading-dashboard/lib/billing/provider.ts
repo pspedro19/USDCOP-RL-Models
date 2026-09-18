@@ -5,7 +5,7 @@
  * Dependency-inversion: routes depend on THIS interface; concrete providers (Wompi,
  * PayU, MercadoPago, Stripe) implement it. Swap via env `BILLING_PROVIDER`.
  */
-import type { PlanId } from '@/lib/contracts/rbac.contract';
+import { PLAN_DEFAULTS, type PlanId } from '@/lib/contracts/rbac.contract';
 
 export interface CheckoutRequest {
   userId: string;
@@ -140,9 +140,24 @@ export function encodeReference(userId: string, plan: PlanId, addOns: string[] =
   return reference;
 }
 
+/**
+ * Plan ids the reference codec understands, DERIVED from the contract instead of retyped.
+ *
+ * A hand-written alternation is a second source of truth for which plans exist: adding
+ * `desk` to `PLAN_DEFAULTS` while this regex still said `free|signals|auto` made
+ * `encodeReference` throw its own round-trip assertion, so the new plan could not be sold
+ * at all. Deriving it means a plan added to the contract is sellable by construction.
+ */
+const PLAN_ALTERNATION = Object.keys(PLAN_DEFAULTS)
+  .map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  .join('|');
+const REFERENCE_RE = new RegExp(
+  `^sub_(${PLAN_ALTERNATION})_([0-9a-f-]{36})_([^_]*)_\\d+$`, 'i',
+);
+
 export function decodeReference(reference: string):
     { plan: PlanId; userId: string; addOns: string[] } | null {
-  const m = reference.match(/^sub_(free|signals|auto)_([0-9a-f-]{36})_([^_]*)_\d+$/i);
+  const m = reference.match(REFERENCE_RE);
   if (!m) return null;
   return {
     plan: m[1] as PlanId,

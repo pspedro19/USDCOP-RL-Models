@@ -158,14 +158,16 @@ describe('P0-3(a) the webhook credits the SEALED quote, not the current price', 
       email: 'u@example.com', role: 'free',
       entitlements: { plan: 'free', assets: ['usdcop'], expires_at: null },
     });
-    const ref = `sub_signals_${USER}_xauusd_1700000000000`;
+    // An asset that is still SOLD as an add-on; Gold now ships with every plan and so has
+    // no add-on price to seal into a quote.
+    const ref = `sub_signals_${USER}_btcusdt_1700000000000`;
     pg.state.orders.set(ref, {
-      user_id: USER, plan: 'signals', addon_assets: ['xauusd'],
+      user_id: USER, plan: 'signals', addon_assets: ['btcusdt'],
       amount_cents: 9_900_000 + 3_900_000, currency: 'COP', reference: ref, status: 'pending',
     });
     const res = await post(signedEvent({ reference: ref, amountInCents: 9_900_000 + 3_900_000 }));
     expect(res.status).toBe(200);
-    expect((pg.state.users.get(USER)!.entitlements as { assets: string[] }).assets).toContain('xauusd');
+    expect((pg.state.users.get(USER)!.entitlements as { assets: string[] }).assets).toContain('btcusdt');
   });
 });
 

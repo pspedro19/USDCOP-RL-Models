@@ -256,8 +256,10 @@ describe('P0-B an approval never destroys rights the user already paid for (CODE
 
   it('serializes concurrent approvals with a row lock (SELECT ... FOR UPDATE)', async () => {
     seedUser(USER_A, { ...freeEnt });
-    const ref = refFor(USER_A, ['xauusd']);
-    seedOrder(ref, USER_A, { addOns: ['xauusd'], amount: PLAN_PRICE + 3_900_000 });
+    // `spx500`, not Gold: Gold is bundled into every plan now, so it can no longer stand in
+    // for "an asset that only exists in this row because it was bought".
+    const ref = refFor(USER_A, ['spx500']);
+    seedOrder(ref, USER_A, { addOns: ['spx500'], amount: PLAN_PRICE + 3_900_000 });
     await post(signedEvent({ reference: ref, amountInCents: PLAN_PRICE + 3_900_000 }));
 
     const locked = pg.state.log.filter(
@@ -279,15 +281,21 @@ describe('P0-B an approval never destroys rights the user already paid for (CODE
   });
 
   it('does not carry over rights that already EXPIRED', async () => {
+    // `btcusdt` is the expired PURCHASE. Gold cannot play this role any more: every plan
+    // includes it, so finding it afterwards would prove nothing about expiry.
     seedUser(USER_A, {
-      plan: 'signals', assets: ['usdcop', 'xauusd'],
+      plan: 'signals', assets: ['usdcop', 'btcusdt'],
       expires_at: new Date(Date.now() - 86_400_000).toISOString(),
     });
     const ref = refFor(USER_A);
     seedOrder(ref, USER_A);
 
     await post(signedEvent({ reference: ref }));
-    expect(ent(USER_A).assets).not.toContain('xauusd');
+    expect(ent(USER_A).assets, 'an expired add-on must NOT be restored by a new payment')
+      .not.toContain('btcusdt');
+    // ...while what the plan itself grants is present because the PLAN grants it, not
+    // because a lapsed right leaked through.
+    expect(ent(USER_A).assets).toContain('xauusd');
   });
 });
 

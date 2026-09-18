@@ -63,8 +63,8 @@ import type {
 } from '@/lib/billing';
 import { classifyLedgerConflict, type LedgerRow } from '@/lib/billing/event-ledger';
 import { confirmAgainstProvider, type ConfirmationVerdict } from '@/lib/billing/confirmation';
-import { PLAN_DEFAULTS, effectiveEntitlements } from '@/lib/contracts/rbac.contract';
-import type { Entitlements } from '@/lib/contracts/rbac.contract';
+import { INTERVAL_DAYS, PLAN_DEFAULTS, effectiveEntitlements } from '@/lib/contracts/rbac.contract';
+import type { BillingInterval, Entitlements } from '@/lib/contracts/rbac.contract';
 import { addonPricesCop } from '@/lib/billing/prices';
 import { logServerError } from '@/lib/api/envelope';
 
@@ -149,7 +149,7 @@ const shortLivedConnection: Queryable = {
 class WebhookDuplicate extends Error {}
 
 interface OrderRow {
-  user_id: string; plan: string; addon_assets: unknown;
+  user_id: string; plan: string; addon_assets: unknown; billing_interval?: string | null;
   amount_cents: string | number; currency: string; status: string;
 }
 
@@ -251,7 +251,7 @@ export async function POST(req: Request) {
 
     // The sealed quote is the only economic authority. Locked for the transaction.
     const orderRes = await client.query<OrderRow>(
-      `SELECT user_id, plan, addon_assets, amount_cents, currency, status
+      `SELECT user_id, plan, addon_assets, amount_cents, currency, status, billing_interval
          FROM checkout_orders WHERE reference = $1 FOR UPDATE`,
       [event.reference],
     );
@@ -456,7 +456,13 @@ async function applyApproval(
   const current = effectiveEntitlements(parseEntitlements(currentRow.rows[0].entitlements));
 
   // Time already paid for is a purchased right too: never shorten it.
-  const grantedUntil = Date.now() + 30 * 86_400_000;
+  //
+  // The window comes from the SEALED QUOTE's interval, not from a constant: every purchase
+  // used to grant exactly 30 days, so an annual plan would have been charged for a year and
+  // credited for a month. Falling back to 'month' keeps every pre-migration order (whose
+  // column defaults to 'month') meaning exactly what it meant before.
+  const interval: BillingInterval = order.billing_interval === 'year' ? 'year' : 'month';
+  const grantedUntil = Date.now() + INTERVAL_DAYS[interval] * 86_400_000;
   const ownedUntil = current.expires_at ? Date.parse(current.expires_at) : NaN;
   const expiresAt = new Date(
     Number.isFinite(ownedUntil) && ownedUntil > grantedUntil ? ownedUntil : grantedUntil,
@@ -471,9 +477,23 @@ async function applyApproval(
     'UPDATE sb_users SET entitlements = $1::jsonb WHERE id = $2',
     [JSON.stringify(entitlements), order.user_id],
   );
+
+  // Clear what was just paid for out of the cart, inside the SAME transaction as the grant
+  // (the route comments already promised "deferred until the webhook confirms" — the clear
+  // itself was never written, so a purchased asset sat in the cart forever). Scoped to this
+  // order's add-ons: anything the buyer added afterwards is untouched. Cosmetic, but a cart
+  // that still shows what you own reads as a failed purchase.
+  if (addOns.length) {
+    await client.query(
+      'DELETE FROM user_cart WHERE user_id = $1 AND asset_id = ANY($2::text[])',
+      [order.user_id, addOns],
+    );
+  }
+
   await audit(client, order.user_id, 'plan_change', {
     provider: providerName, plan: order.plan, addOns, reference: event.reference,
-    amount_cents: sealedAmount, currency: order.currency,
+    amount_cents: sealedAmount, currency: order.currency, billing_interval: interval,
+    granted_days: INTERVAL_DAYS[interval],
     provider_event_id: event.providerEventId,
     // The state the order was paid FROM, read under the same `FOR UPDATE` as the
     // sealed quote. `failed` here means this credit RECOVERED a retried payment
