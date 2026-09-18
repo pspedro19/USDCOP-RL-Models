@@ -55,11 +55,14 @@ export default function MetodologiaPage() {
           <h2 className="text-xl font-semibold">Qué significa cada etiqueta</h2>
           <div className={`${UI_TOKENS.card} p-6 space-y-4 text-sm`}>
             <div className="flex items-start gap-3">
-              <MetricBadge phase="live" />
+              <MetricBadge phase="paper" />
               <p className={UI_TOKENS.textSecondary}>
-                <strong className={UI_TOKENS.textPrimary}>Producción forward.</strong>{' '}
-                Señales publicadas antes del hecho, con reglas congeladas. Es el único
-                número que usamos como titular. No se puede editar retroactivamente.
+                <strong className={UI_TOKENS.textPrimary}>Producción forward, en papel.</strong>{' '}
+                Señales publicadas antes del hecho, con reglas congeladas, y liquidadas en
+                simulación con costos y slippage modelados. Es el único número que usamos
+                como titular y no se puede editar retroactivamente. Es también la antesala
+                obligatoria de producción y el modo inicial de toda cuenta automática;
+                jamás se mezcla con cifras reales.
               </p>
             </div>
             <div className="flex items-start gap-3">
@@ -72,11 +75,13 @@ export default function MetodologiaPage() {
               </p>
             </div>
             <div className="flex items-start gap-3">
-              <MetricBadge phase="paper" />
+              <MetricBadge phase="live" />
               <p className={UI_TOKENS.textSecondary}>
-                <strong className={UI_TOKENS.textPrimary}>Simulado en tiempo real.</strong>{' '}
-                La antesala obligatoria de producción — y el modo inicial de toda cuenta de
-                ejecución automática. Jamás se mezcla con cifras reales.
+                <strong className={UI_TOKENS.textPrimary}>Dinero real.</strong>{' '}
+                Reservada para ejecución con capital efectivamente en riesgo.{' '}
+                <strong className={UI_TOKENS.textPrimary}>Hoy no hay ninguna cifra con
+                esta etiqueta</strong>: la operación con capital de terceros está sujeta al
+                gate legal (SFC Colombia) y hasta entonces el sistema es paper-only.
               </p>
             </div>
           </div>

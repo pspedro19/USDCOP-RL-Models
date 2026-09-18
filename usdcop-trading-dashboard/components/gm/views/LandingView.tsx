@@ -7,7 +7,8 @@
  * Public page: PublicChrome header (NOT TerminalShell). Live numbers come from
  * GET /api/public/live-stats (published bundle, forward-production only — marketing
  * policy audit I-8/B.2). The terminal demo card's ticker/signal rows are STATIC
- * ILLUSTRATIVE content and are labeled as such; only the KPI tiles show live data.
+ * ILLUSTRATIVE content and are labeled as such; only the KPI tiles show bundle data
+ * (paper/forward — simulated fills, never live money).
  * Disclaimer persistente: rbac.md §9 via PublicFooter.
  */
 import { useState } from 'react';
@@ -70,7 +71,7 @@ function GuestButton({ testid, onError }: { testid: string; onError: (msg: strin
 }
 
 interface LiveStats {
-  phase: 'live';
+  phase: 'paper';
   unavailable?: boolean;
   strategy_name?: string;
   year?: number;
@@ -217,14 +218,14 @@ export function LandingView() {
                 <span className="text-[12px] font-extrabold">SHORT USD/COP</span>
                 <span className={`ml-auto ${GMT.micro} ${GM.textSec}`}>señal de ejemplo</span>
               </div>
-              {/* KPI tiles — LIVE forward numbers from the published bundle */}
+              {/* KPI tiles — PAPER forward numbers from the published bundle */}
               <div className="flex gap-2.5">
                 <div className={`flex-1 p-3 ${GM.panelInner} rounded-[11px]`}>
                   <div className={`text-[20px] font-extrabold font-mono tabular-nums ${GM_TONE_TEXT[toneOf(stats?.return_ytd_pct)]}`}>
                     {fmtPct(stats?.return_ytd_pct)}
                   </div>
                   <div className={`${GMT.micro} ${GM.textMuted} mt-0.5`}>
-                    Retorno {stats?.year ?? 'YTD'} · en vivo
+                    Retorno {stats?.year ?? 'YTD'} · papel (simulado)
                   </div>
                 </div>
                 <div className={`flex-1 p-3 ${GM.panelInner} rounded-[11px]`}>
@@ -295,11 +296,11 @@ export function LandingView() {
           </div>
         </section>
 
-        {/* ── live metrics band (forward production only) ──────── */}
+        {/* ── paper metrics band (forward production, simulated fills) ──────── */}
         {stats && (
           <section className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-11" data-testid="landing-live-metrics">
             {[
-              { v: fmtPct(stats.return_ytd_pct), l: `Retorno ${stats.year ?? ''} · en vivo`, tone: toneOf(stats.return_ytd_pct) },
+              { v: fmtPct(stats.return_ytd_pct), l: `Retorno ${stats.year ?? ''} · papel (simulado)`, tone: toneOf(stats.return_ytd_pct) },
               { v: stats.max_dd_pct != null ? `${stats.max_dd_pct.toFixed(2)}%` : '—', l: 'Máx. drawdown', tone: 'neutral' as const },
               { v: String(stats.weeks_live ?? '—'), l: 'Semanas en forward', tone: 'accent' as const },
               { v: String(ASSETS.length), l: 'Activos disponibles', tone: 'neutral' as const },

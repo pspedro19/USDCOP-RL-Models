@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * S5 · Track record — tabs ● LIVE (producción forward, el titular) / ◆ BACKTEST (OOS,
+ * S5 · Track record — tabs ○ PAPER (producción forward simulada, el titular) / ◆ BACKTEST (OOS,
  * visible pero nunca líder). Data: /api/public/live-stats (bundle-derived aggregates).
  * S7 · Methodology mini-cards live below the tabs (the moat, translated for clients).
  */
@@ -44,7 +44,8 @@ export default function TrackRecord() {
       <div className="w-full max-w-4xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-bold text-center text-white">Track record</h2>
         <p className="mt-2 text-center text-sm text-slate-300 max-w-xl mx-auto">
-          LIVE = señales publicadas antes del hecho, sin edición retroactiva.{' '}
+          PAPER = señales publicadas antes del hecho y ejecutadas en simulación, sin edición
+          retroactiva. Aún no operamos capital de terceros.{' '}
           <a href="/metodologia" className="text-cyan-400 hover:underline">Por qué mostramos ambos →</a>
         </p>
 
@@ -59,7 +60,7 @@ export default function TrackRecord() {
                 : 'border-slate-700 text-slate-400 hover:text-slate-200'
             }`}
           >
-            ● Producción {live?.year ?? ''} (LIVE)
+            ○ Producción {live?.year ?? ''} (PAPER)
           </button>
           <button
             role="tab" aria-selected={tab === 'backtest'}
@@ -79,7 +80,7 @@ export default function TrackRecord() {
           {tab === 'live' ? (
             live ? (
               <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
-                <MetricBadge phase="live" provenance={{
+                <MetricBadge phase="paper" provenance={{
                   strategyId: live.strategy_name ?? '', bundleDate: live.bundle_date ?? undefined }} />
                 <Metric label={`Retorno ${live.year} YTD`}
                         value={fmtPct(live.return_ytd_pct)} strong />

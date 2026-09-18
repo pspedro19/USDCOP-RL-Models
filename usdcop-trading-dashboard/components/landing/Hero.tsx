@@ -106,8 +106,8 @@ function TerminalAnimation() {
             <span className="text-xs text-gray-500 font-mono">usdcop-trading-agent.log</span>
           </div>
           <div className="ml-auto flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-xs text-emerald-500 font-mono">LIVE</span>
+            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <span className="text-xs text-amber-500 font-mono">CICLO TIPO</span>
           </div>
         </div>
 

@@ -1,6 +1,10 @@
 /**
- * GET /api/public/live-stats — marketing-approved LIVE aggregates for the landing
- * (ux-navigation S3: trust bar shows ONLY ● LIVE numbers, never backtest).
+ * GET /api/public/live-stats — marketing-approved FORWARD aggregates for the landing
+ * (ux-navigation S3: trust bar shows ONLY forward numbers, never backtest).
+ *
+ * Phase is `paper`, not `live`: the system runs TRADING_MODE=PAPER and rbac.md §9 keeps
+ * it paper-only until the SFC legal gate clears. Labelling simulated fills as LIVE to a
+ * prospective investor misstates the track record, so the badge says ○ PAPER.
  *
  * Contract safety: reads the PUBLISHED bundle (`summary.json` = production forward, P1
  * "un solo número") server-side; exposes only aggregate marketing figures — no signals,
@@ -13,7 +17,7 @@ import path from 'path';
 const PROD_DIR = path.join(process.cwd(), 'public', 'data', 'production');
 
 interface LiveStats {
-  phase: 'live';
+  phase: 'paper';
   strategy_name: string;
   year: number;
   return_ytd_pct: number | null;
@@ -47,7 +51,7 @@ export async function GET() {
     } catch { /* backtest summary optional */ }
 
     const body: LiveStats = {
-      phase: 'live',
+      phase: 'paper',
       strategy_name: summary.strategy_name ?? 'Smart Simple',
       year: summary.year ?? new Date().getFullYear(),
       return_ytd_pct: s.total_return_pct ?? null,
@@ -63,6 +67,6 @@ export async function GET() {
     });
   } catch {
     // Fail soft: the landing renders without the trust bar rather than erroring.
-    return NextResponse.json({ phase: 'live', unavailable: true }, { status: 200 });
+    return NextResponse.json({ phase: 'paper', unavailable: true }, { status: 200 });
   }
 }
