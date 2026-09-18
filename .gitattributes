@@ -97,3 +97,8 @@ data/experiments/**/*.parquet filter=lfs diff=lfs merge=lfs -text
 # =============================================================================
 data/thesis/**/*.zip filter=lfs diff=lfs merge=lfs -text
 data/thesis/**/*.pkl filter=lfs diff=lfs merge=lfs -text
+
+# Ledgers de decisiones LLM de la tesis (~19 MB, una linea por decision sellada:
+# hashes de prompt/respuesta, sin secretos). Son evidencia no regenerable (llamadas
+# pagadas), asi que se versionan por LFS igual que los checkpoints.
+data/thesis/**/*.jsonl filter=lfs diff=lfs merge=lfs -text

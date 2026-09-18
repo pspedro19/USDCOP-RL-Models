@@ -204,6 +204,12 @@ sandbox/
 research/
 !src/research/
 !src/research/*.py
+# Keep the governed thesis LLM contract visible while generated research artifacts remain ignored.
+!config/
+!config/research/
+config/research/*
+!config/research/llm_thesis.yaml
+!config/research/source_lineage.yaml
 
 # Claude Code project config (rules, experiments, specs) — MUST be tracked
 !.claude/
@@ -446,3 +452,8 @@ usdcop_dataset_*.zip
 
 # Checkpoints intermedios de la sanidad sintetica (regenerables, ~50 MB por semilla)
 outputs/thesis-repair/ckpt/
+
+# Temporales de pytest (salidas de fixtures tmp_path dirigidas); no son evidencia.
+.pytest-tmp/
+# Snapshots previos a la cuarentena de ledgers LLM: duplican el fichero vigente.
+data/thesis/**/*.before_quarantine
