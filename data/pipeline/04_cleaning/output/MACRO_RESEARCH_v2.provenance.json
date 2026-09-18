@@ -1,21 +1,22 @@
 {
   "contract": "CTR-RESEARCH-MACRO-AVAILABILITY-001",
-  "built_at_utc": "2026-09-11T12:36:04.997242+00:00",
+  "built_at_utc": "2026-09-12T00:34:59.826819+00:00",
   "artifact": "data/pipeline/04_cleaning/output/MACRO_RESEARCH_v2.parquet",
-  "artifact_sha256": "3186f5d3268fb216b96ca0ab5589a00c908450ac11d63d792311b92a0186783c",
-  "rows": 12891,
+  "artifact_sha256": "8a4c70bfa8771c457dc4a4747e824f072334cc4758e10e28d73bc0b798ac932c",
+  "rows": 12882,
   "first": "1976-06-01",
-  "last": "2026-09-09",
+  "last": "2026-09-11",
   "series": {
     "dxy": {
       "column": "FXRT_INDEX_DXY_USA_D_DXY",
-      "declared_source": "ICE_DXY",
-      "source_verified": false,
-      "copied_from": "MACRO_DAILY_CLEAN.parquet",
-      "warning": "la fuente declarada no es alcanzable desde este script; la columna se copia TAL CUAL y NO se certifica que sea el instrumento declarado",
-      "rows": 10319,
-      "first": "1986-01-02",
-      "last": "2026-08-24"
+      "declared_source": "INVESTING_DXY",
+      "source_verified": true,
+      "instrument_id": 942611,
+      "fetched_from": "https://api.investing.com/api/financialdata/historical/942611",
+      "payload_sha256": "538efc91e18c27faed0e8f6a5af28a3a07c120f444b65def4f3ac4dea7d5eac2",
+      "rows": 1747,
+      "first": "2019-12-18",
+      "last": "2026-09-10"
     },
     "brent": {
       "column": "COMM_OIL_BRENT_GLB_D_BRENT",
@@ -30,28 +31,32 @@
     "ibr": {
       "column": "FINC_RATE_IBR_OVERNIGHT_COL_D_IBR",
       "declared_source": "BANREP_IBR",
-      "source_verified": false,
-      "copied_from": "MACRO_DAILY_CLEAN.parquet",
-      "warning": "la fuente declarada no es alcanzable desde este script; la columna se copia TAL CUAL y NO se certifica que sea el instrumento declarado",
-      "rows": 4438,
+      "source_verified": true,
+      "fetched_from": "https://totoro.banrep.gov.co/nsi-jax-ws/rest/data/ESTAT,DF_IBR_DAILY_HIST,1.0/all/ALL/?startPeriod=2008&endPeriod=2027&dimensionAtObservation=TIME_PERIOD&detail=full",
+      "selection": "SUBJECT=IRIBRM00, UNIT_MEASURE=NR",
+      "payload_sha256": "9afc2fe2a86af1506b8adaa06f6dfc2b2607c75a74c17bb2cf40ad64143b19e1",
+      "rows": 4558,
       "first": "2008-01-02",
-      "last": "2026-08-24"
+      "last": "2026-09-11"
     },
     "dgs2": {
       "column": "FINC_BOND_YIELD2Y_USA_D_DGS2",
       "declared_source": "FRED_DGS2",
       "source_verified": true,
       "fetched_from": "fredgraph.csv?id=DGS2",
-      "payload_sha256": "e899b2cfa4b417c72199e8c998be600471798851d984ded55b3eb0dbbab9f2ab",
-      "rows": 12565,
+      "payload_sha256": "5594fe6fc64ea03222351f3e3e41ae52841f357b874275f4ae34e73f5bdb62ec",
+      "rows": 12566,
       "first": "1976-06-01",
-      "last": "2026-09-09"
+      "last": "2026-09-10"
     }
   },
   "series_verified_against_declared_source": [
     "brent",
-    "dgs2"
+    "dgs2",
+    "dxy",
+    "ibr"
   ],
-  "all_series_verified": false,
+  "all_series_verified": true,
+  "write_mode": "strict_verified",
   "note": "Artefacto SEPARADO a proposito: MACRO_DAILY_CLEAN no se parchea. Las series no verificadas se copian y se marcan, nunca se presentan como correctas."
 }

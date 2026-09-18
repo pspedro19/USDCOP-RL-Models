@@ -209,5 +209,7 @@ docker inspect --format='{{.State.Health.Status}}' usdcop-<name>
 | Documento | Estado |
 |---|---|
 | [Execution service runbook](execution-service.md) | — |
+| [Atestación de DXY de ICE para EXP-TESIS-RL-01](ice-dxy-attestation.md) | — |
+| [Ejecución reproducible del brazo LLM de la tesis](thesis-llm-execution.md) | — |
 
 <!-- /idx -->

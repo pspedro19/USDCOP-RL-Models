@@ -1,0 +1,13 @@
+{
+  "contract": "THESIS-MANUSCRIPT-DIAGNOSTICS-1",
+  "scope": "retrospective_descriptive_reporting_no_new_strategy",
+  "source_manifest": "outputs/thesis-repair/research_grade_20260912_v5/manifest.json",
+  "source_manifest_sha256": "00fc276e22b62ffac144bca1abb6c468f15e272225c46743304c67fe120ae2da",
+  "bootstrap": {"replications": 10000, "seed": 20260912, "expected_block_lengths": [5, 10, 15, 20], "ci": "percentile_95", "unit": "session", "estimands": ["sum_gross_pct", "compounded_gross_pct"]},
+  "diagnostics": ["reconcile_all_daily_returns", "all_arm_compounded_gross_and_net", "ppo_median_compounded_gross_interval", "fixed_position_cost_multiplier_break_even", "all_seed_metrics", "descriptive_quarter_contributions"],
+  "primary_example": "ppo_median_weights",
+  "example_reason": "exact base policy of the two existing hybrids; chosen in the accepted writing plan, not by best return",
+  "break_even": {"domain": [0, 1], "fixed_policy": true, "criterion": "sum(log(1+gross-k*cost))=0", "no_nonnegative_root": null},
+  "prohibited": ["new_training", "new_provider_calls", "choosing_best_subperiod", "tuning_policy", "claiming_confirmatory_alpha", "altering_trial_registry"],
+  "trial_note": "Reporting on frozen policies, not a new candidate. Historical trial reconciliation remains unresolved; no new edge claim or updated DSR certificate."
+}
