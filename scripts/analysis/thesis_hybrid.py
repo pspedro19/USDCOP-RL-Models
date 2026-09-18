@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import pickle
 import sys
 from pathlib import Path
 
@@ -117,15 +118,35 @@ def _summary(results: list[dict]) -> dict:
     }
 
 
-def build(ppo_weights: Path, ledger: Path, block: str, portable: Path) -> dict:
-    data = load_portable(portable)
-    specs = {s.date.isoformat(): s for s in data.block(block)}
+def build(ppo_weights: Path, ledger: Path, block: str, portable: Path,
+          *, allow_retrospective: bool = False,
+          forward_specs: Path | None = None,
+          ppo_config: str = "ppo_regime") -> dict:
+    if block == "forward":
+        if forward_specs is None:
+            raise ValueError("forward hybrid requires --forward-specs")
+        with forward_specs.open("rb") as handle:
+            bundle = pickle.load(handle)
+        manifest = bundle.get("manifest", {})
+        if manifest.get("portable_sha256") != hashlib.sha256(portable.read_bytes()).hexdigest():
+            raise ValueError("forward specs and portable hash differ")
+        specs = {s.date.isoformat(): s for s in bundle.get("sessions", [])}
+    else:
+        data = load_portable(portable, allow_stale=allow_retrospective)
+        specs = {s.date.isoformat(): s for s in data.block(block)}
 
     ppo_payload = json.loads(ppo_weights.read_text(encoding="utf-8"))
-    if ppo_payload.get("block") != block:
+    payload_block = ppo_payload.get("block")
+    forward_actions = ppo_payload.get("schema_version") == "confirmatory-ppo-forward-actions-v1"
+    if not ((block == "forward" and forward_actions) or payload_block == block):
         raise ValueError("las exposiciones PPO son de otro bloque: "
-                         f"{ppo_payload.get('block')} en vez de {block}")
-    ppo = {d: np.asarray(p, dtype=float) for d, p in ppo_payload["median"].items()}
+                         f"{payload_block} en vez de {block}")
+    median = ppo_payload["median"]
+    if forward_actions:
+        median = median.get(ppo_config, {})
+        if not median:
+            raise ValueError(f"forward PPO actions lack config {ppo_config}")
+    ppo = {d: np.asarray(p, dtype=float) for d, p in median.items()}
 
     llm, llm_excluded = _llm_weights(ledger, set(specs))
 
@@ -164,7 +185,8 @@ def build(ppo_weights: Path, ledger: Path, block: str, portable: Path) -> dict:
         "rule_source": ".claude/specs/planes/06-PRE-REGISTRATION-v3.md",
         "block": block,
         "confirmatory": False,
-        "scope": "retrospective_diagnostic",
+        "scope": "post_freeze_forward_partial" if block == "forward" else "retrospective_diagnostic",
+        "retrospective_artifact_override": bool(allow_retrospective),
         "portable_path": str(portable),
         "portable_sha256": hashlib.sha256(portable.read_bytes()).hexdigest(),
         "ledger_path": str(ledger),
@@ -201,17 +223,26 @@ def main() -> int:
     ap.add_argument("--ppo-weights", type=Path, required=True)
     ap.add_argument("--ledger", type=Path, required=True)
     ap.add_argument("--block", default="selection",
-                    choices=("development", "selection", "holdout"))
+                    choices=("development", "selection", "holdout", "forward"))
     ap.add_argument("--portable", type=Path)
     ap.add_argument("--dataset-version", choices=("v1", "v2"))
     ap.add_argument("--output", type=Path, required=True)
+    ap.add_argument("--allow-retrospective", action="store_true",
+                    help="permit a historical portable artifact; never confirmatory")
+    ap.add_argument("--forward-specs", type=Path,
+                    help="post-freeze specs pickle required for --block forward")
+    ap.add_argument("--ppo-config", choices=("ppo_regime", "ppo_backbone"),
+                    default="ppo_regime", help="configuration when using forward PPO actions")
     args = ap.parse_args()
     if (args.portable is None) == (args.dataset_version is None):
         ap.error("da exactamente uno: --portable o --dataset-version")
     portable = args.portable or (
         ROOT / "data" / "thesis" / ("research_data_portable_v2.pkl" if args.dataset_version == "v2"
                                     else "research_data_portable.pkl"))
-    report = build(args.ppo_weights, args.ledger, args.block, portable)
+    report = build(args.ppo_weights, args.ledger, args.block, portable,
+                   allow_retrospective=args.allow_retrospective,
+                   forward_specs=args.forward_specs,
+                   ppo_config=args.ppo_config)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
                            encoding="utf-8")

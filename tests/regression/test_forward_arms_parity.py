@@ -1,5 +1,5 @@
 """
-Regression: el carril forward puntúa igual que la tesis.
+Regression: paridad entre dos rutas del motor CONTEMPORANEO.
 
 Contract: CTR-RESEARCH-FORWARD-001 · Date: 2026-08-25
 
@@ -9,9 +9,10 @@ La rama forward compara un brazo LLM contra la política RL congelada. Esa compa
 significa algo si los dos se puntúan con **la misma aritmética que produjo el resultado del
 hold-out** — si no, son dos experimentos yuxtapuestos, no una comparación.
 
-El test ancla: se sella la decisión del brazo RL para una sesión del hold-out, se liquida con
-`settle_thesis`, y el resultado tiene que coincidir **exactamente** con lo que
-`decomposition_holdout.json` registró para esa misma sesión. Bruto, costo, neto y turnover.
+El test usa fechas/pesos archivados, pero compara settle_session con run_session
+del codigo ACTUAL. NO reproduce los escalares publicados de la tesis y no requiere
+inferir un HMM ni construir features. La reproduccion de cifras publicadas tiene
+una prueba distinta, con manifiesto historico fijado por SHA.
 
 Si divergiera, el carril forward estaría midiendo con otra regla y ninguna tabla lo diría: los
 números seguirían siendo plausibles.
@@ -19,7 +20,7 @@ números seguirían siendo plausibles.
 ## Y la otra garantía: el contrato de costos se sella ANTES
 
 `settle_session` **se niega a liquidar** un registro sin `spread_pips`. El spread sale del
-posterior de régimen del cierre de `d−1`, así que se conoce antes de la apertura y no hay
+posterior de régimen del cierre de `d-1`, así que se conoce antes de la apertura y no hay
 excusa para calcularlo después de conocer el resultado. Nadie lo manipularía a propósito; el
 diseño entero de este carril consiste en no tener que confiar en eso.
 """
@@ -28,6 +29,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -38,9 +40,12 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.research.llm_forward.settle_thesis import (settle_session,  # noqa: E402
-                                                    snap_to_action_space,
-                                                    weights_from_record)
+from src.research.llm_forward.settle_thesis import (  # noqa: E402
+    aggregate_bar_records,
+    settle_session,
+    snap_to_action_space,
+    weights_from_record,
+)
 from src.research.session_env import EXPOSURE_LEVELS, OPERABLE_RETURNS  # noqa: E402
 
 DECOMP = ROOT / "outputs" / "thesis" / "decomposition_holdout.json"
@@ -82,6 +87,54 @@ def test_a_sealed_path_is_used_verbatim():
     assert np.array_equal(weights_from_record(record), np.asarray(path))
 
 
+def test_stream_bar_records_aggregate_to_one_complete_session_path():
+    rows = [
+        {
+            "decision_id": f"2026-08-24::ppo_stream_v1::b{i:02d}",
+            "session_date": "2026-08-24",
+            "bar_index": i,
+            "decision": {"score": 0.5 if i % 2 else 0.0},
+            "spread_pips": 3.0,
+            "sealed_before_next_bar": True,
+            "abstained": False,
+        }
+        for i in range(OPERABLE_RETURNS)
+    ]
+    opening = datetime(2026, 8, 24, 13, tzinfo=UTC)
+    for i, row in enumerate(rows):
+        close = opening + timedelta(minutes=5 * (i + 1))
+        row["decision"].update(direction="long" if i % 2 else "flat", confidence=1.0,
+                               rationale="unit control")
+        row.update(
+            corpus=[],
+            provider="rl_frozen", model="unit-fixture", preregistration_sha256="a" * 64,
+            prompt_sha256="b" * 64, record_hash=f"{i + 1:064x}",
+            session_open_utc=opening.isoformat(), cutoff_utc=close.isoformat(),
+            bar_received_at_utc=(close + timedelta(seconds=1)).isoformat(),
+            emitted_at_utc=(close + timedelta(seconds=2)).isoformat(),
+        )
+    aggregate = aggregate_bar_records(rows)
+    assert aggregate is not None
+    assert aggregate["decision_id"] == "2026-08-24::ppo_stream_v1::stream"
+    assert len(aggregate["decision_path"]) == OPERABLE_RETURNS
+    assert np.asarray(weights_from_record(aggregate)).shape == (OPERABLE_RETURNS,)
+    scored = settle_session(aggregate, np.full(60, 4000.0))
+    assert scored["n_changes"] >= 0
+
+
+def test_incomplete_stream_is_not_settled_as_flat():
+    rows = [{
+        "decision_id": "2026-08-24::ppo_stream_v1::b00",
+        "session_date": "2026-08-24",
+        "bar_index": 0,
+        "decision": {"score": 1.0},
+        "spread_pips": 3.0,
+        "sealed_before_next_bar": True,
+        "abstained": False,
+    }]
+    assert aggregate_bar_records(rows) is None
+
+
 # ---------------------------------------------------------------------------
 # El contrato de costos se sella antes del resultado
 # ---------------------------------------------------------------------------
@@ -98,8 +151,8 @@ def test_settlement_refuses_a_record_without_a_sealed_spread():
 # ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("seed", [42])
-def test_forward_settlement_reproduces_the_thesis_numbers(seed):
-    """Liquidar una senda del hold-out da lo mismo que registró la descomposición."""
+def test_current_settlement_matches_current_engine_on_archived_weights(seed):
+    """Dos rutas contables actuales, no un golden test de cifras historicas."""
     if not DECOMP.is_file():
         pytest.skip("falta decomposition_holdout.json")
 
@@ -108,15 +161,20 @@ def test_forward_settlement_reproduces_the_thesis_numbers(seed):
     if not run:
         pytest.skip(f"sin corrida ppo_regime_seed{seed}")
 
-    from src.research.live_spec import SCALER_PATH, build_live_spec
-    from src.research.regime_portable import DEFAULT_PATH
+    import pandas as pd
 
-    if not (SCALER_PATH.is_file() and DEFAULT_PATH.is_file()):
-        pytest.skip("faltan los artefactos congelados del carril forward")
+    from src.research.dataset import SEED_M5
+    if not SEED_M5.is_file():
+        pytest.skip("falta seed real para paridad del motor actual")
+    frame = pd.read_parquet(SEED_M5)
+    dates = pd.to_datetime(frame.time).dt.tz_convert("America/Bogota").dt.date
+    if "symbol" in frame:
+        frame = frame[frame.symbol.str.upper().str.replace("/", "", regex=False) == "USDCOP"]
 
     checked = 0
     for session in run["sessions"][-3:]:          # las tres ultimas del hold-out
-        spec = build_live_spec(session["date"])
+        close = frame[dates == pd.Timestamp(session["date"]).date()].sort_values("time").close.to_numpy()
+        assert len(close) == 60, "paridad no evaluada: faltan cierres de la sesion"
 
         record = {
             "decision_id": f"{session['date']}::ppo_regime_fwd_k1",
@@ -125,10 +183,10 @@ def test_forward_settlement_reproduces_the_thesis_numbers(seed):
             "decision_path": session["weights"],
             "spread_pips": session["spread_pips"],
         }
-        got = settle_session(record, spec.close)
+        got = settle_session(record, close)
         from src.research.session_env import run_session
         expected = run_session(
-            spec.close, np.asarray(session["weights"], dtype=float),
+            close, np.asarray(session["weights"], dtype=float),
             float(session["spread_pips"]), date=session["date"]
         )
 

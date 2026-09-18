@@ -11,12 +11,11 @@ import json
 import os
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from src.analysis.llm_client import AzureOpenAIProvider, DeepSeekProvider, LLMProvider
-
 
 PROMPT_VERSION = "thesis-llm-trader-v1"
 ALLOWED_DIRECTIONS = {"short", "flat", "long"}
@@ -123,6 +122,7 @@ class ThesisLLMRunner:
     def decide(self, *, session_date: str, bar: int, system_prompt: str, user_prompt: str,
                previous_weight: float, max_tokens: int = 256, temperature: float = 0.10,
                attempt: int = 1, dataset_block: str | None = None,
+               dataset_sha256: str | None = None, retrospective: bool | None = None,
                top_p: float = 0.90, max_retries_invalid_json: int = 1) -> LLMDecision:
         if not 0 <= bar <= 58:
             raise ValueError("bar must be in [0, 58]")
@@ -160,6 +160,8 @@ class ThesisLLMRunner:
             "decision_id": decision_id,
             "session_date": session_date,
             "dataset_block": dataset_block,
+            "dataset_sha256": dataset_sha256,
+            "retrospective": retrospective,
             "bar": bar,
             "provider": self.provider_name,
             "model_id": self.model_id,
@@ -182,7 +184,7 @@ class ThesisLLMRunner:
             "attempt": actual_attempt,
             "latency_ms": elapsed_ms,
             "tokens_used": int(response.get("tokens_used", 0) or 0),
-            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "timestamp_utc": datetime.now(UTC).isoformat(),
             "cost_known": bool(response.get("cost_known", False)),
         }
         with self.ledger_path.open("a", encoding="utf-8", newline="\n") as handle:

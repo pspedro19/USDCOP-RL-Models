@@ -36,6 +36,9 @@ data_source:
   seed_file: "seeds/latest/usdcop_m5_ohlcv.parquet"
   daily_provider: twelvedata
   daily_seed_file: "seeds/latest/usdcop_daily_ohlcv.parquet"
+  investing_pair_id: 2112
+  investing_referer: "https://www.investing.com/currencies/usd-cop-historical-data"
+  daily_crosscheck_required: true
 
 # --- COP-specific macro drivers (EMBI/IBR/TPM/oil-as-export) — do NOT reuse for other assets ---
 macro_drivers:

@@ -1,0 +1,40 @@
+# SSOT for the optional thesis LLM arm. Secrets are never stored here.
+contract: CTR-RESEARCH-LLM-THESIS-001
+version: 1
+status: PREPARED_NOT_EXECUTED
+provider_selection:
+  primary:
+    id: deepseek
+    api_key_env: DEEPSEEK_API_KEY
+    base_url_env: DEEPSEEK_BASE_URL
+    base_url_default: https://api.deepseek.com
+    model_env: DEEPSEEK_MODEL
+    model_default: deepseek-chat
+  robustness:
+    id: azure_openai
+    api_key_env: USDCOP_AZURE_OPENAI_API_KEY
+    endpoint_env: USDCOP_AZURE_OPENAI_ENDPOINT
+    deployment_env: USDCOP_AZURE_OPENAI_DEPLOYMENT
+    api_version_env: USDCOP_AZURE_OPENAI_API_VERSION
+    api_version_default: 2024-12-01-preview
+protocol:
+  prompt_version: thesis-llm-trader-v1
+  temperature: 0.1
+  top_p: 0.9
+  max_tokens: 256
+  decisions_per_session: 59
+  max_retries_invalid_json: 1
+  invalid_response_policy: retain_previous_weight
+  input_cutoff: close_of_previous_bar
+  pre_open_news_cutoff: 08:00 America/Bogota
+  max_news_documents: 8
+ledger:
+  path: data/thesis/llm/decisions.jsonl
+  required_hashes: [prompt_hash, raw_response_sha256]
+  required_runtime_fields: [model_id, prompt_version, max_tokens, temperature, top_p]
+  forbid_raw_secret_fields: true
+  provider_fallback: forbidden
+inference_policy:
+  status: exploratory_until_preregistered
+  no_market_trial_until_signed_preregistration: true
+  no_holdout_open_until_freeze: true

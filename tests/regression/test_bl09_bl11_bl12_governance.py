@@ -92,10 +92,18 @@ def test_dsr_gate_script_is_green():
 
 def test_every_ledger_family_has_a_declared_yaml(records):
     """BL-11-r2: CERO exenciones legacy (antes 8/10 familias no tenían YAML)."""
-    declared = set(ledger.load_families())
+    families = ledger.load_families()
+    declared = set(families)
+    planned_empty = {
+        family_id for family_id, family in families.items()
+        if family.get("status") == "PLANNED"
+        and family.get("label") == "planned"
+        and family.get("trials_charged") == 0
+        and not family.get("cells")
+    }
     ledger_families = set(record["family"] for record in records)
-    assert ledger_families == declared
-    assert len(declared) == 12   # +usdcop_rl_intraday, +usdcop_llm_forward
+    assert ledger_families == declared - planned_empty
+    assert len(declared) == 13   # +usdcop_rl_intraday_v2 prospectiva
 
 
 def test_no_ledger_row_has_an_unclassified_null_cutoff(records):

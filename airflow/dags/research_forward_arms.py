@@ -1,36 +1,12 @@
-"""DAG del carril forward: RL congelado frente a LLM, sobre las mismas sesiones.
+"""Legacy research cohort orchestrator; NOT ready for prospective activation.
 
-Contract: CTR-RESEARCH-FORWARD-001 · Date: 2026-08-25
-
-## Por qué dos ventanas y no una
-
-El arnés exige que el job que **sella** y el que **liquida** no se toquen. No es purismo: si el
-mismo proceso puede escribir la decisión y conocer el resultado, la garantía entera —«la
-decisión existió antes del desenlace»— pasa a depender de que nadie se equivoque de orden.
-Separarlos la hace estructural.
-
-    12:15 UTC (07:15 COT)  sella el LLM      <- solo documentos anteriores al cutoff
-    13:00 UTC (08:00 COT)  sella los RL      <- necesitan la barra 0
-    18:30 UTC (13:30 COT)  liquida           <- despues del cierre de 12:55
-
-## La asimetría de las 45 minutos
-
-El LLM sella a las 07:15 con documentos estrictamente anteriores a las 08:00. El RL sella a las
-08:00 porque su observación necesita la primera barra. **Los dos sellan antes de que exista
-`r_1`**, que nace al cierre de la barra 1 — así que los dos son causalmente limpios, pero el RL
-ve una barra que el LLM no ve.
-
-Va en `information_edge` de cada registro RL y en el pre-registro. No es una nota al pie: es la
-diferencia que un revisor buscaría primero.
-
-## Un job tarde no se descarta
-
-Si el sellado corre tarde, el arnés escribe igual con `sealed_before_open: false` y la
-liquidación la excluye. Una fila excluida y visible es auditable; una fila ausente parece un día
-que nunca existió.
-
-`schedule` de lunes a viernes: la sesión de USD/COP no abre en fin de semana y un registro de
-sábado sería una sesión inventada.
+Its configured native RL arm needs 59 per-bar calls, but this DAG dispatches once.
+C049 rejects that mismatch before provider calls and propagates audit failures.
+The old08:00 wait also precedes the first M5 close at08:05; changing that wait alone
+would not supply a live feed or the missing59-call controller. Calendar and actual
+scheduler validation also remain blocking. The frozen cohort and schedule are not
+silently modified here. Missing decisions are not zero returns. Separate jobs and
+hash chains do not authenticate fills or timestamps.
 """
 
 from __future__ import annotations
@@ -41,7 +17,6 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-
 from utils.run_status import fail_if_upstream_failed
 
 REPO = "/opt/airflow"
@@ -70,19 +45,17 @@ def _prepare_env() -> None:
 def _session_date(context) -> str:
     """La sesión COT que corresponde a esta corrida.
 
-    Se toma de la fecha lógica del DagRun convertida a America/Bogota, no de
+    Se prefiere data_interval_end del DagRun convertido a America/Bogota, no
     `datetime.now()`: un reintento a medianoche UTC sellaria la sesion equivocada, y ese
     fallo no deja rastro — el registro parece correcto.
     """
-    from datetime import timezone as _tz
-
-    logical = context.get("logical_date") or context.get("execution_date")
-    cot = logical.astimezone(_tz(timedelta(hours=-5)))
-    return cot.date().isoformat()
+    from src.research.llm_forward.session_date import session_date_from_context
+    return session_date_from_context(context)
 
 
 def seal_llm(**context):
     _prepare_env()
+    _require_single_call_dispatch()
     from src.research.llm_forward import decide
 
     session = _session_date(context)
@@ -94,8 +67,29 @@ def seal_llm(**context):
         raise RuntimeError("el sellado del brazo LLM devolvio error")
 
 
+def _require_single_call_dispatch():
+    """Do not spend on a partial cohort while native RL has no per-bar dispatch.
+
+    This legacy DAG calls each arm once. It cannot run a 59-decision treatment;
+    the streaming controller must be wired and validated before that cohort can
+    start. Removing an arm from the frozen cohort is not an operational repair.
+    """
+    from src.research.llm_forward.decide import arm_spec, load_preregistration
+    from src.research.llm_forward.paths import PREREG_PATH
+
+    spec, _ = load_preregistration(PREREG_PATH)
+    for arm_id in ARMS_RL:
+        arm = arm_spec(spec, arm_id)
+        count = arm.get("decisions_per_session")
+        if arm.get("kind") != "rl_frozen" or type(count) is not int or count != 1:
+            raise RuntimeError(
+                f"{arm_id}: single-call DAG cannot execute native 59-decision per-bar cohort"
+            )
+
+
 def seal_rl(**context):
     _prepare_env()
+    _require_single_call_dispatch()
     import torch
 
     torch.set_num_threads(2)
@@ -132,16 +126,20 @@ def settle(**context):
 
     closes = day["close"].to_numpy(dtype=float)
     print(f"{session}: {len(closes)} barras disponibles")
-    settle_thesis.run({session: closes})
+    rc = settle_thesis.run({session: closes})
+    if type(rc) is not int or rc != 0:
+        raise RuntimeError("forward settlement returned an error")
     fail_if_upstream_failed(context, task_name="settle_forward_arms")
 
 
 def audit(**context):
-    """Auditoria de la cadena. Barata, y es lo unico que prueba que el ledger vale."""
+    """Propagate ledger rejection; a valid chain is not scientific readiness."""
     _prepare_env()
     from src.research.llm_forward import verify
 
-    verify.main()
+    rc = verify.main()
+    if type(rc) is not int or rc != 0:
+        raise RuntimeError("forward ledger verification failed")
     fail_if_upstream_failed(context, task_name="audit_forward_ledger")
 
 
@@ -162,7 +160,7 @@ with DAG(
 
     t_llm = PythonOperator(task_id="seal_llm_arm", python_callable=seal_llm)
 
-    # Espera hasta las 08:00 COT (13:00 UTC) para que exista la barra 0.
+    # Legacy wait08:00, NOT first-bar close08:05. Cohort remains blocked by preflight.
     from airflow.sensors.time_delta import TimeDeltaSensor
 
     wait_open = TimeDeltaSensor(

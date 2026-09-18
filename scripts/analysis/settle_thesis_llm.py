@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import pickle
 import sys
 from pathlib import Path
 
@@ -19,8 +20,8 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.research.dataset import PORTABLE, load_portable
-from src.research.session_env import run_session
+from src.research.dataset import PORTABLE, load_portable  # noqa: E402
+from src.research.session_env import run_session  # noqa: E402
 
 
 def _read(path: Path) -> list[dict]:
@@ -36,15 +37,39 @@ def _read(path: Path) -> list[dict]:
     return rows
 
 
+def _forward_by_date(path: Path) -> dict:
+    with path.open("rb") as handle:
+        bundle = pickle.load(handle)
+    manifest = bundle.get("manifest", {})
+    sessions = bundle.get("sessions", [])
+    if manifest.get("portable_sha256") is None or not sessions:
+        raise ValueError("invalid forward specs bundle")
+    return {s.date.isoformat(): s for s in sessions}
+
+
 def settle(ledger: Path, block: str, portable: Path = PORTABLE,
-           *, strict_ledger: bool = False) -> dict:
+           *, strict_ledger: bool = False,
+           allow_retrospective: bool = False,
+           forward_specs: Path | None = None) -> dict:
     if strict_ledger:
-        from scripts.validation.validate_thesis_llm_ledger import validate
         import hashlib
+
+        from scripts.validation.validate_thesis_llm_ledger import validate
         digest = hashlib.sha256(portable.read_bytes()).hexdigest()
-        validate(ledger, require_complete_sessions=False, expected_dataset_sha256=digest)
-    data = load_portable(portable)
-    by_date = {s.date.isoformat(): s for s in data.block(block)}
+        validate(
+            ledger,
+            require_complete_sessions=False,
+            expected_dataset_sha256=digest,
+            expected_dataset_block=block,
+            forbid_retrospective=(block == "forward"),
+        )
+    if block == "forward":
+        if forward_specs is None:
+            raise ValueError("forward settlement requires --forward-specs")
+        by_date = _forward_by_date(forward_specs)
+    else:
+        data = load_portable(portable, allow_stale=allow_retrospective)
+        by_date = {s.date.isoformat(): s for s in data.block(block)}
     rows = _read(ledger)
     grouped: dict[str, dict[int, dict]] = {}
     for row in rows:
@@ -109,13 +134,14 @@ def settle(ledger: Path, block: str, portable: Path = PORTABLE,
         "max_drawdown": max_dd,
         "sessions": results,
         "confirmatory": False,
+        "retrospective_artifact_override": bool(allow_retrospective),
     }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--ledger", type=Path, required=True)
-    parser.add_argument("--block", choices=("development", "selection", "holdout"), required=True)
+    parser.add_argument("--block", choices=("development", "selection", "holdout", "forward"), required=True)
     parser.add_argument("--portable", type=Path,
                         help=("portable explicito. Si se omite, hay que dar --dataset-version: "
                               "el default historico se resolvia en import-time al portable v1 "
@@ -125,6 +151,11 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--strict-ledger", action="store_true",
                         help="validate hashes, sampling contract and portable dataset binding")
+    parser.add_argument("--allow-retrospective", action="store_true",
+                        help="explicitly permit settlement against a historical portable artifact; "
+                             "never valid for confirmatory publication")
+    parser.add_argument("--forward-specs", type=Path,
+                        help="post-freeze specs pickle required for --block forward")
     args = parser.parse_args()
     if (args.portable is None) == (args.dataset_version is None):
         parser.error("da exactamente uno: --portable o --dataset-version. Un default silencioso "
@@ -134,7 +165,9 @@ def main() -> int:
                                     else "research_data_portable.pkl"))
     try:
         report = settle(args.ledger, args.block, portable,
-                        strict_ledger=args.strict_ledger)
+                        strict_ledger=args.strict_ledger,
+                        allow_retrospective=args.allow_retrospective,
+                        forward_specs=args.forward_specs)
     except (OSError, ValueError, KeyError) as exc:
         print(f"llm_settlement_error: {exc}", file=sys.stderr)
         return 2

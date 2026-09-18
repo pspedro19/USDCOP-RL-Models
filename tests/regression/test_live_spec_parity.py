@@ -223,7 +223,10 @@ def test_macro_is_not_behind_price_for_the_live_lane():
 
     from src.research.dataset import SEED_M5
 
-    macro = ROOT / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_DAILY_CLEAN.parquet"
+    # The research/live lane uses the verified v2 macro artifact, not the legacy
+    # MACRO_DAILY_CLEAN snapshot which may legitimately lag the primary market feed.
+    from src.research.features import MACRO_CLEAN
+    macro = MACRO_CLEAN
     if not (SEED_M5.is_file() and macro.is_file()):
         pytest.skip("faltan seed o macro materializados")
 

@@ -82,24 +82,13 @@ def test_s3_oracle_strictly_pays_the_declared_cost() -> None:
     assert charged_net < free_net
 
 
-def test_s2_still_pays_commission_and_slippage() -> None:
-    """En S2, `sin coste` significa **sin spread**, no coste cero. Se dice, no se supone.
-
-    El contrato de costes cobra ademas comision por lado y slippage proporcional a la
-    volatilidad, asi que el oraculo de S2 paga ~0,021 pese a tener spread 0 (medido con
-    semilla 19: bruto 0,119056 identico en ambas, coste 0,020778 en S2 contra 0,044740 en S3).
-
-    Importa para leer un fallo de S2: la pregunta que aisla es "¿aprende la senal siquiera?",
-    y con comision distinta de cero un fallo conserva un resto de ambiguedad. Queda escrito
-    aqui en vez de en la cabeza de quien lo interprete.
-    """
+def test_s2_pays_no_spread_commission_or_slippage() -> None:
+    """S2 is now genuinely free; historical partial-cost evidence is obsolete."""
     sessions = make_sessions(Fixture.SIGNAL_PLANTED, n=3, seed=5)
     results = [oracle_result(Fixture.SIGNAL_PLANTED, s) for s in sessions]
-    assert all(s.spread_pips == 0.0 for s in sessions), "S2 no debe cobrar spread"
-    assert np.mean([r.total_cost for r in results]) > 0.0, (
-        "si S2 llegara a coste exactamente cero, actualizar esta nota y el diseno: dejaria de "
-        "haber ambiguedad al interpretar un fallo suyo"
-    )
+    assert all(s.spread_pips == 0.0 for s in sessions)
+    assert all(r.total_cost == 0.0 for r in results)
+    assert all(r.daily_return == r.gross_return for r in results)
 
 
 def test_every_fixture_declares_a_spread() -> None:

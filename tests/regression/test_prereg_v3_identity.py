@@ -69,6 +69,10 @@ def test_schema_hash_in_prereg_matches_the_artifact() -> None:
 
 
 def test_portable_identity_in_prereg_matches_the_artifact() -> None:
+    # While v3 is PARTIAL the old portable is intentionally retained as historical
+    # evidence; it must not be mistaken for the post-fix confirmatory artifact.
+    if "status: PARTIAL" in _prereg_text().split("---", 2)[1]:
+        pytest.skip("portable v2 pendiente de regeneración tras los gates v2")
     if not PORTABLE.is_file():
         pytest.skip("research_data_portable_v2.pkl no existe en este checkout")
     blob = pickle.loads(PORTABLE.read_bytes())
@@ -95,3 +99,17 @@ def test_no_two_frozen_hashes_share_a_tail() -> None:
                 f"dos hashes de la tabla de identidad comparten los ultimos 18 caracteres "
                 f"({left} y {right}). No es una colision: es una pegada defectuosa."
             )
+
+
+def test_prereg_sanity_correction_matches_published_aggregate() -> None:
+    artifact = ROOT / "outputs" / "thesis-repair" / "sanity_protocol_v2.json"
+    if not artifact.is_file():
+        pytest.skip("agregado sintético v2 no existe en este checkout")
+    aggregate = json.loads(artifact.read_text(encoding="utf-8"))
+    assert aggregate.get("passed") is True
+    correction_start = _prereg_text().find("## Corrección de la compuerta de sanidad")
+    identity_start = _prereg_text().find("## Identidad congelada")
+    assert correction_start >= 0 and identity_start > correction_start
+    correction = _prereg_text()[correction_start:identity_start]
+    assert "flat_init_no_turn" in correction
+    assert "sanity_protocol_v2.json" in correction

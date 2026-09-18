@@ -20,7 +20,22 @@ de sondas que ambos consumen. Una sonda desconocida **aborta**; nunca se degrada
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from copy import deepcopy
+from dataclasses import asdict, dataclass
+import hashlib
+from importlib.metadata import PackageNotFoundError, version
+import json
+from pathlib import Path
+import platform
+
+ROOT = Path(__file__).resolve().parents[2]
+FROZEN_SANITY_PROBE = "flat_init_no_turn"
+PPO_KWARGS = {
+    "learning_rate": 3e-4, "n_steps": 4096, "batch_size": 128, "n_epochs": 10,
+    "gamma": 0.98, "gae_lambda": 0.95, "clip_range": 0.2, "ent_coef": 0.01,
+    "vf_coef": 0.5, "max_grad_norm": 0.5, "normalize_advantage": True,
+}
+NET_ARCH = {"pi": [256, 256], "vf": [256, 256]}
 
 # Etiqueta del brazo que entrena SIN la receta de la compuerta. No es una sonda: es el control
 # de una variable frente a la receta seleccionada, y se nombra para que ninguna tabla lo
@@ -102,3 +117,103 @@ def apply_flat_bias(model, recipe: Recipe) -> bool:
         bias.zero_()
         bias[flat_index] = float(recipe.flat_bias_logit)
     return True
+
+
+def canonical_sha256(value: object) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
+                                    allow_nan=False).encode("utf-8")).hexdigest()
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def effective_recipe(probe: str) -> dict:
+    """Full effective configuration, shared by synthetic and market training."""
+    recipe = recipe_for(probe)
+    kwargs = deepcopy(PPO_KWARGS)
+    if recipe.ent_coef is not None:
+        kwargs["ent_coef"] = recipe.ent_coef
+    if recipe.gamma is not None:
+        kwargs["gamma"] = recipe.gamma
+    return {
+        "recipe": asdict(recipe), "algorithm": "PPO", "policy": "MlpPolicy",
+        "device": "cpu", "ppo_kwargs": kwargs,
+        "policy_kwargs": {"net_arch": deepcopy(NET_ARCH), "activation_fn": "torch.nn.Tanh"},
+        "environment": {"reward_scale": 100.0, "shuffle": True,
+                        "kappa_turn": recipe.kappa_turn, "lambda_dd": 0.0},
+        "vecnormalize": {"norm_obs": False, "norm_reward": recipe.norm_reward,
+                         "clip_reward": 10.0, "gamma": kwargs["gamma"]},
+        "evaluation": {"deterministic": True, "normalizer_training": False},
+    }
+
+
+def build_ppo(sessions, *, seed: int, probe: str):
+    """Construct (model, normalizer, recipe) once; never trains or reads data."""
+    import torch
+    from stable_baselines3 import PPO
+    from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+    from src.research.session_gym import SessionTradingEnv
+
+    recipe = recipe_for(probe)
+    config = effective_recipe(probe)
+    vec = DummyVecEnv([lambda: SessionTradingEnv(sessions, seed=seed,
+                                                 **config["environment"])])
+    normalizer = VecNormalize(vec, **config["vecnormalize"])
+    model = PPO(config["policy"], normalizer, seed=seed, device=config["device"], verbose=0,
+                policy_kwargs={"net_arch": deepcopy(NET_ARCH), "activation_fn": torch.nn.Tanh},
+                **config["ppo_kwargs"])
+    apply_flat_bias(model, recipe)
+    return model, normalizer, recipe
+
+
+def training_code_hashes() -> dict[str, str]:
+    """Identity includes both callers, numerical environment and fee contract."""
+    paths = (
+        "src/research/ppo_recipe.py", "src/research/synthetic_sessions.py",
+        "src/research/session_env.py", "src/research/session_gym.py",
+        "src/research/cost_model.py", "src/research/cost_contract.py",
+        "src/research/features.py", "config/research/cost_contract.yaml",
+        "scripts/analysis/thesis_ppo_sanity.py", "scripts/analysis/thesis_train_ppo.py",
+    )
+    return {name: file_sha256(ROOT / name) for name in paths}
+
+
+def library_versions() -> dict[str, str]:
+    versions = {"python": platform.python_version()}
+    for name in ("numpy", "pandas", "torch", "stable-baselines3", "gymnasium"):
+        try:
+            versions[name] = version(name)
+        except PackageNotFoundError:
+            versions[name] = "not-installed"
+    return versions
+
+
+def sessions_sha256(sessions) -> str:
+    """Hash actual arrays, fees and ordered dates, not merely a claimed dataset ID."""
+    import numpy as np
+    from src.research.cost_model import CostParameters
+
+    digest = hashlib.sha256()
+    for spec in sessions:
+        parameters = getattr(spec, "cost_parameters", None) or CostParameters()
+        header = {"date": str(spec.date), "spread": float(spec.spread_pips),
+                  "cost_parameters": asdict(parameters)}
+        digest.update(canonical_sha256(header).encode("ascii"))
+        for array in (spec.close, spec.market, spec.context):
+            values = np.asarray(array, dtype="<f8", order="C")
+            digest.update(canonical_sha256(list(values.shape)).encode("ascii"))
+            digest.update(values.tobytes())
+    return digest.hexdigest()
+
+
+def write_immutable_json(path: Path, value: dict) -> None:
+    """Exclusive creation: a second invocation cannot silently overwrite evidence."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("x", encoding="utf-8", newline="\n") as handle:
+        json.dump(value, handle, indent=2, sort_keys=True, allow_nan=False)
+        handle.write("\n")

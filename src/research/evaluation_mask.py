@@ -181,6 +181,15 @@ def build_mask(seed: Path | None = None) -> EvaluationMask:
     """Construye la mascara desde la serie de 5 minutos ya reparada."""
     path = seed or DEFAULT_SEED
     df = pd.read_parquet(path)
+    return _mask_from_frame(df, source=path.relative_to(REPO).as_posix())
+
+
+def _mask_from_frame(df: pd.DataFrame, *, source: str) -> EvaluationMask:
+    """Evaluate an already bounded frame with the unchanged historical rules.
+
+    The caller owns the temporal cutoff. No second file read may import the
+    current session's unobserved completion into a live admission decision.
+    """
     t = pd.to_datetime(df["time"])
     if "symbol" in df.columns:
         keep = df["symbol"].astype(str).str.upper().str.replace("/", "", regex=False) == "USDCOP"
@@ -251,7 +260,7 @@ def build_mask(seed: Path | None = None) -> EvaluationMask:
     return EvaluationMask(
         valid=tuple(sorted(valid)),
         excluded={k: tuple(sorted(v)) for k, v in excluded.items() if v},
-        source=path.relative_to(REPO).as_posix(),
+        source=source,
         flat_ohlc_pct={d: float(flat_by_day.get(d, 0.0)) for d in per_day.index},
         train_valid=tuple(sorted(train_valid)),
     )

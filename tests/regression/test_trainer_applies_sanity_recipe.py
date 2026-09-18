@@ -114,16 +114,14 @@ def _function(name: str) -> ast.FunctionDef:
 
 
 def test_train_one_builds_the_environment_from_the_recipe() -> None:
-    """`kappa_turn` es parametro del ENTORNO: si no viaja, la receta se pierde a mitad."""
+    """One shared constructor owns environment, normalization, network and bias."""
     src = ast.unparse(_function("train_one"))
     assert "recipe_for(probe)" in src, "train_one debe resolver la receta de la sonda recibida"
-    assert "kappa_turn=recipe.kappa_turn" in src, (
-        "el entorno tiene que construirse con el kappa_turn de la receta, no con el default"
-    )
-    assert "apply_flat_bias(model, recipe)" in src, (
-        "sin esta llamada la sonda seleccionada no llega a la politica: es justo el defecto "
-        "que este test existe para impedir"
-    )
+    assert "build_ppo(train_specs, seed=seed, probe=probe)" in src
+    assert "PPO(" not in src, "market training must not fork the shared constructor"
+    from src.research.ppo_recipe import effective_recipe
+    assert effective_recipe("kappa_turn_one")["environment"]["kappa_turn"] == 1.0
+    assert effective_recipe("flat_init_no_turn")["recipe"]["flat_bias_logit"] == 3.0
 
 
 def test_train_one_records_which_recipe_ran() -> None:

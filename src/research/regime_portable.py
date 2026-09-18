@@ -38,6 +38,7 @@ produjeron el resultado de la tesis, y la comparación no mediría lo que dice m
 from __future__ import annotations
 
 import json
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -45,6 +46,15 @@ import numpy as np
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_PATH = REPO / "config" / "research" / "regime_hmm_frozen.json"
+
+
+def _parameter_digest(payload: dict) -> str:
+    """Hash only the fitted HMM parameters and metadata, excluding identity fields."""
+    canonical = {k: v for k, v in payload.items()
+                 if k not in {"parameter_sha256", "dataset_identity"}}
+    return hashlib.sha256(
+        json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -75,7 +85,7 @@ class PortableRegimeModel:
         out = np.empty((n, self.k), dtype=float)
         for j in range(self.k):
             cov = self.covars[j]
-            chol = np.linalg.cholesky(cov)
+            chol = _stable_cholesky(cov)
             diff = X - self.means[j]
             sol = np.linalg.solve_triangular(chol, diff.T, lower=True) \
                 if hasattr(np.linalg, "solve_triangular") else \
@@ -108,7 +118,8 @@ class PortableRegimeModel:
 
     # -- serializacion -----------------------------------------------------
     def to_dict(self) -> dict:
-        return {
+        from src.research.dataset import dataset_identity
+        payload = {
             "contract": "CTR-RESEARCH-REGIME-PORTABLE-001",
             "k": self.k,
             "startprob": self.startprob.tolist(),
@@ -122,9 +133,21 @@ class PortableRegimeModel:
             "feature_names": list(self.feature_names),
             "fit_range": list(self.fit_range),
         }
+        payload["parameter_sha256"] = _parameter_digest(payload)
+        payload["dataset_identity"] = dataset_identity()
+        return payload
 
     @classmethod
     def from_dict(cls, d: dict) -> "PortableRegimeModel":
+        if d.get("dataset_identity") is None:
+            raise ValueError("portable regime has no dataset identity; legacy artifact refused")
+        expected_parameters = _parameter_digest(d)
+        if d.get("parameter_sha256") != expected_parameters:
+            raise ValueError("portable regime parameter hash mismatch; re-export the HMM")
+        from src.research.dataset import dataset_identity
+        expected_identity = dataset_identity()
+        if d["dataset_identity"] != expected_identity:
+            raise ValueError("portable regime identity mismatch; export after rebuilding v2")
         return cls(
             k=int(d["k"]),
             startprob=np.asarray(d["startprob"], dtype=float),
@@ -161,6 +184,26 @@ def _renorm(alpha: np.ndarray, fallback: np.ndarray) -> np.ndarray:
         alpha = fallback.copy()
         total = alpha.sum()
     return alpha / total
+
+
+def _stable_cholesky(cov: np.ndarray) -> np.ndarray:
+    """Cholesky with bounded diagonal jitter for exported near-singular HMM covariances.
+
+    hmmlearn can emit a covariance that is positive semidefinite to floating-point
+    precision.  The portable evaluator must not crash in that case; the jitter is
+    recorded by the deterministic escalation and is many orders below the feature
+    scale.  A genuinely indefinite matrix still fails closed after the bound.
+    """
+    matrix = np.asarray(cov, dtype=float)
+    if not np.isfinite(matrix).all():
+        raise np.linalg.LinAlgError("HMM covariance contains non-finite values")
+    scale = max(1.0, float(np.max(np.abs(np.diag(matrix)))))
+    for multiplier in (0.0, 1e-12, 1e-10, 1e-8, 1e-6):
+        try:
+            return np.linalg.cholesky(matrix + np.eye(matrix.shape[0]) * scale * multiplier)
+        except np.linalg.LinAlgError:
+            continue
+    raise np.linalg.LinAlgError("HMM covariance is not positive definite after bounded jitter")
 
 
 def _solve_lower(chol: np.ndarray, b: np.ndarray) -> np.ndarray:

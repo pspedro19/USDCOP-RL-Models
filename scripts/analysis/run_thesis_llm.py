@@ -195,6 +195,8 @@ def main() -> int:
             temperature=float(protocol["temperature"]),
             top_p=float(protocol["top_p"]),
             max_retries_invalid_json=int(protocol["max_retries_invalid_json"]),
+            dataset_sha256=row.get("dataset_sha256"),
+            retrospective=bool(row.get("retrospective", False)),
         )
         previous_by_session[row["session_date"]] = decision.weight
         processed += 1

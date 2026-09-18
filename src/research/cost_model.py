@@ -62,6 +62,27 @@ RV_WINDOW_BARS = 12          # rv_12: 12 barras de 5 min = 1 hora
 
 
 @dataclass(frozen=True)
+class CostParameters:
+    """Explicit fee override for controls; ``None`` retains the market contract.
+
+    Spread remains an explicit session input. A genuinely zero-cost control must
+    set spread, commission AND slippage to zero, not merely change the spread.
+    """
+
+    commission_per_side: float = COMMISSION_PIPS_PER_SIDE
+    slippage_coefficient: float = SLIPPAGE_COEF
+
+    def __post_init__(self) -> None:
+        if any(not np.isfinite(x) or x < 0 for x in (
+            self.commission_per_side, self.slippage_coefficient
+        )):
+            raise ValueError("cost parameters must be finite and non-negative")
+
+
+ZERO_COST_PARAMETERS = CostParameters(commission_per_side=0.0, slippage_coefficient=0.0)
+
+
+@dataclass(frozen=True)
 class CostBreakdown:
     """Desglose por barra, para que el test 9 pueda mirar cada componente por separado."""
 
@@ -119,7 +140,7 @@ def realized_vol_pips(close: np.ndarray, window: int = RV_WINDOW_BARS) -> np.nda
 
 
 def bar_cost(dw: float, spread_pips: float, sigma12_pips: float,
-             close: float) -> CostBreakdown:
+             close: float, *, cost_parameters: CostParameters | None = None) -> CostBreakdown:
     """Costo de UN cambio de exposición, en pips y en retorno.
 
     `dw` es `w_b − w_{b−1}` con signo; solo importa su magnitud. Se devuelve el desglose
@@ -127,8 +148,9 @@ def bar_cost(dw: float, spread_pips: float, sigma12_pips: float,
     puede esconder un spread mal cobrado compensado por un slippage mal cobrado.
     """
     a = abs(float(dw))
-    spread_component = a * (spread_pips / 2.0 + COMMISSION_PIPS_PER_SIDE)
-    slippage_component = SLIPPAGE_COEF * a * sigma12_pips
+    parameters = cost_parameters or CostParameters()
+    spread_component = a * (spread_pips / 2.0 + parameters.commission_per_side)
+    slippage_component = parameters.slippage_coefficient * a * sigma12_pips
     cost_pips = spread_component + slippage_component
     return CostBreakdown(
         dw=float(dw),
@@ -142,7 +164,9 @@ def bar_cost(dw: float, spread_pips: float, sigma12_pips: float,
 
 
 def session_costs(weights: np.ndarray, close: np.ndarray, spread_pips: float,
-                  include_terminal: bool = True) -> tuple[np.ndarray, list[CostBreakdown]]:
+                  include_terminal: bool = True, *,
+                  cost_parameters: CostParameters | None = None,
+                  ) -> tuple[np.ndarray, list[CostBreakdown]]:
     """Costos de una sesión completa, incluido el cierre terminal.
 
     `weights[b]` es la exposición decidida al cierre de la barra `b` y mantenida durante
@@ -165,13 +189,15 @@ def session_costs(weights: np.ndarray, close: np.ndarray, spread_pips: float,
     prev = 0.0
     costs, breakdown = [], []
     for b in range(len(w)):
-        bd = bar_cost(w[b] - prev, spread_pips, sigma[b], c[b])
+        bd = bar_cost(w[b] - prev, spread_pips, sigma[b], c[b],
+                      cost_parameters=cost_parameters)
         costs.append(bd.cost_ret)
         breakdown.append(bd)
         prev = w[b]
 
     if include_terminal:
-        bd = bar_cost(0.0 - prev, spread_pips, sigma[-1], c[-1])
+        bd = bar_cost(0.0 - prev, spread_pips, sigma[-1], c[-1],
+                      cost_parameters=cost_parameters)
         costs.append(bd.cost_ret)
         breakdown.append(bd)
 

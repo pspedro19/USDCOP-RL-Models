@@ -113,6 +113,9 @@ def summarize(name: str, results, ann: float, costs_arr=None) -> dict:
         "baseline": name,
         "n_sessions": n,
         "n_traded": traded,
+        # Auditable return vector for downstream bootstrap/DSR; this is not
+        # used to select a strategy and preserves the session order.
+        "daily_returns": [float(x) for x in r],
         "total_return_pct": round(100.0 * (eq[-1] / eq[0] - 1.0), 3),
         "mean_abs_exposure": round(float(np.mean([x.mean_abs_exposure for x in results])), 4),
         "total_cost_pct": round(100.0 * float(np.sum([x.total_cost for x in results])), 3),
@@ -218,6 +221,7 @@ def passive_buy_hold(sessions: dict, ann: float) -> dict:
     return {
         "baseline": "B1_passive_buy_hold_overnight",
         "n_sessions": n + 1, "n_traded": 2,
+        "daily_returns": [float(x) for x in daily],
         "total_return_pct": round(100.0 * total, 3),
         "mean_abs_exposure": 1.0,
         "total_cost_pct": round(100.0 * entry_exit_cost, 4),

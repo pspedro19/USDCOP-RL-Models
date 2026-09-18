@@ -58,6 +58,7 @@ Consistencia verificable: el round-trip mínimo sin slippage de §9.3 es `2·(sp
 from __future__ import annotations
 
 import warnings
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -65,9 +66,13 @@ import numpy as np
 import pandas as pd
 
 from src.research.cost_contract import COMMISSION_PIPS_PER_SIDE, SPREAD_PIPS_BY_LEVEL
+from src.research.macro_asof import strict_asof
 
 REPO = Path(__file__).resolve().parents[2]
-MACRO_CLEAN = REPO / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_DAILY_CLEAN.parquet"
+MACRO_CLEAN = Path(os.environ.get(
+    "THESIS_MACRO_CLEAN",
+    str(REPO / "data" / "pipeline" / "04_cleaning" / "output" / "MACRO_RESEARCH_v2.parquet"),
+))
 
 # §8.2, textual: K ∈ {2,3,4,5}; K=3 se mantiene salvo que otro mejore el BIC en >10 puntos.
 K_CANDIDATES: tuple[int, ...] = (2, 3, 4, 5)
@@ -160,24 +165,7 @@ def _attach_macro(daily: pd.DataFrame) -> pd.DataFrame:
             continue
         s = macro[src].dropna().sort_index()
         r = np.log(s / s.shift(1)).dropna()
-        left = pd.DataFrame({"d": pd.to_datetime(daily.index)})
-        right = pd.DataFrame({"d": pd.to_datetime(r.index), out: r.to_numpy(),
-                              "_source": pd.to_datetime(r.index)})
-        merged = pd.merge_asof(
-            left.sort_values("d"), right.sort_values("d"), on="d",
-            direction="backward", allow_exact_matches=False,
-        )
-        values = merged[out].to_numpy(dtype=float)
-        source_dates = pd.to_datetime(merged["_source"])
-        target_dates = pd.to_datetime(left["d"])
-        # A stale macro value is unknown information, not a neutral return.
-        stale = np.array([
-            bool(pd.isna(src_date))
-            or np.busday_count(src_date.date(), target_date.date()) > 5
-            for src_date, target_date in zip(source_dates, target_dates, strict=True)
-        ])
-        values[stale] = np.nan
-        daily[out] = values
+        daily[out] = strict_asof(daily.index, r, name=out).to_numpy()
     return daily
 
 
