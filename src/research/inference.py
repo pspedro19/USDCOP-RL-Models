@@ -43,9 +43,16 @@ N_BOOT = 10_000
 
 
 def sharpe(returns: np.ndarray, ann: float = ANN_SESSIONS) -> float:
-    r = np.asarray(returns, dtype=float)
-    sd = np.std(r, ddof=1)
-    return float(np.mean(r) / sd * np.sqrt(ann)) if sd > 0 else 0.0
+    """Sharpe anualizado. Delega en el SSOT gobernado, no lo reimplementa.
+
+    La fórmula local era idéntica (media/desvío con ddof=1, por raíz de `ann`), pero tener
+    una segunda copia es justo lo que el validador de contratos existe para impedir: el día
+    que el SSOT cambie de convención, una copia silenciosa produce dos Sharpes distintos
+    para la misma serie y ninguno de los dos queda marcado como equivocado.
+    """
+    from services.common.metrics import calculate_sharpe_ratio
+
+    return calculate_sharpe_ratio(returns, periods_per_year=ann)
 
 
 def stationary_bootstrap_indices(n: int, mean_block: float,
@@ -80,12 +87,16 @@ def _bootstrap_matrix(n: int, n_boot: int, blocks, rng) -> np.ndarray:
 
 
 def _sharpe_rows(x: np.ndarray, idx: np.ndarray, ann: float) -> np.ndarray:
-    """Sharpe de cada fila remuestreada, de una sola pasada."""
-    sample = x[idx]
-    sd = sample.std(axis=1, ddof=1)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        out = np.where(sd > 0, sample.mean(axis=1) / sd * np.sqrt(ann), 0.0)
-    return out
+    """Sharpe de cada fila remuestreada, de una sola pasada.
+
+    La pasada vectorizada vive ahora en el SSOT (`sharpe_ratio_rows`): tenerla aquí era un
+    bypass real del módulo gobernado, y la razón de existir era el rendimiento, no una
+    convención distinta. El SSOT la expone con la misma convención (ddof=1, cero sin
+    dispersión), así que la copia local ya no tiene justificación.
+    """
+    from services.common.metrics import sharpe_ratio_rows
+
+    return sharpe_ratio_rows(x[idx], periods_per_year=ann)
 
 
 @dataclass

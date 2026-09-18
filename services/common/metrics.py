@@ -47,6 +47,38 @@ def calculate_sharpe_ratio(
     return float(sharpe)
 
 
+def sharpe_ratio_rows(
+    samples: np.ndarray,
+    periods_per_year: float = 252,
+) -> np.ndarray:
+    """Annualized Sharpe of EVERY ROW of a 2-D sample matrix, in one pass.
+
+    The scalar :func:`calculate_sharpe_ratio` is the right tool for one series, but a
+    bootstrap draws thousands of resamples at once and calling it per row costs minutes
+    instead of milliseconds. That performance gap is why resampling code kept growing its
+    own private Sharpe — so the governed module owns the vectorized form too, and the
+    bypass allowlist can keep shrinking instead of gaining an exemption.
+
+    Same convention as the scalar version: sample standard deviation (``ddof=1``) and a
+    zero Sharpe wherever the row has no dispersion, so a degenerate resample can never
+    contribute an infinite value to a confidence interval.
+
+    Args:
+        samples: 2-D array, one resampled series per row.
+        periods_per_year: Annualization factor for the series' frequency.
+
+    Returns:
+        1-D array with one Sharpe per row.
+    """
+    x = np.asarray(samples, dtype=float)
+    if x.ndim != 2:
+        raise ValueError(f"sharpe_ratio_rows expects a 2-D matrix, got shape {x.shape}")
+    sd = x.std(axis=1, ddof=1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        out = np.where(sd > 0, x.mean(axis=1) / sd * np.sqrt(periods_per_year), 0.0)
+    return out
+
+
 def calculate_sortino_ratio(
     returns: np.ndarray | list[float],
     target_return: float = 0.0,

@@ -23,7 +23,7 @@ entries:
   - src/inference/ab_statistics.py::ABStatistics::compare_sharpe_ratios
   - src/monitoring/model_monitor.py::ModelMonitor::get_rolling_sharpe
   - src/strategies/spx500_regime_gated_v1/pbo.py::_sharpe_from_moments
-  - src/strategies/spx500_regime_gated_v1/test_strategy.py::test_dsr_with_989_trials_rejects_a_sharpe_of_1
+  - src/strategies/spx500_regime_gated_v1/test_strategy.py::test_dsr_with_governed_trials_rejects_a_sharpe_of_1
   - src/trading/paper_trader.py::PaperTrader::_calculate_sharpe_ratio
   - src/training/curriculum_scheduler.py::AdaptiveCurriculumScheduler::_calculate_phase_sharpe
   - src/training/reward_components/dsr.py::DifferentialSharpeRatio::_get_implied_sharpe
