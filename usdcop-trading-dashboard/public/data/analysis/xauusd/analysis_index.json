@@ -3,6 +3,26 @@
   "weeks": [
     {
       "year": 2026,
+      "week": 37,
+      "start": "2026-09-07",
+      "end": "2026-09-13",
+      "sentiment": "bearish",
+      "headline": "Oro (Gold) · Semana 37 de 2026",
+      "has_weekly": true,
+      "daily_count": 4
+    },
+    {
+      "year": 2026,
+      "week": 36,
+      "start": "2026-08-31",
+      "end": "2026-09-06",
+      "sentiment": "bearish",
+      "headline": "Oro (Gold) · Semana 36 de 2026",
+      "has_weekly": true,
+      "daily_count": 5
+    },
+    {
+      "year": 2026,
       "week": 35,
       "start": "2026-08-24",
       "end": "2026-08-30",
