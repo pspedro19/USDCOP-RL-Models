@@ -476,6 +476,39 @@ def _merge_into_existing_seed(fresh: pd.DataFrame, path: Path) -> pd.DataFrame:
             "sin clave no hay UPSERT posible y no se sobrescribe."
         )
 
+    # El seed manda la convencion de tiempo; las barras nuevas se adaptan a el.
+    #
+    # Los seeds no coinciden entre activos: el diario de USD/COP guarda FECHAS normalizadas
+    # en UTC sin zona (datetime64[ns]) y el de XAU/USD guarda instantes con zona
+    # (datetime64[ns, UTC]). Concatenar sin alinear producia una columna mixta que pandas ni
+    # siquiera puede ordenar ("Cannot compare tz-naive and tz-aware timestamps"), y el
+    # ingest de COP moria ahi. Se convierte SIEMPRE hacia lo que el fichero ya usa: cambiar
+    # la convencion de un seed existente reescribiria en silencio el significado de todo su
+    # historico, que es un precio mucho mas alto que el de un ingest fallido.
+    if "time" in fresh.columns and "time" in previous.columns:
+        prev_tz = getattr(previous["time"].dtype, "tz", None)
+        fresh_time = pd.to_datetime(fresh["time"], utc=True, errors="coerce")
+        fresh = fresh.copy()
+        if prev_tz is not None:
+            aligned = fresh_time.dt.tz_convert(prev_tz)
+        else:
+            # Seed sin zona: se pasa a UTC y se quita la zona, nunca se descarta el offset
+            # a ciegas (eso desplazaria la barra).
+            aligned = fresh_time.dt.tz_convert("UTC").dt.tz_localize(None)
+
+        # Y si el seed guarda FECHAS (todo a medianoche, la regla
+        # `tz_convert("UTC").normalize()` de data-governance), las barras nuevas se
+        # normalizan igual. Sin esto una barra fresca llega a las 21:00 y NO deduplica
+        # contra la fecha ya presente: el UPSERT se convierte en un append y el seed
+        # duplica cada dia que ya tenia (medido: 1.727 -> 3.469 filas en USD/COP). El
+        # guardarrail de mas abajo solo detecta que el seed ENCOJA, asi que esta clase
+        # de corrupcion pasaba silenciosa.
+        prev_time = previous["time"]
+        prev_is_date_only = bool(
+            len(prev_time) and (prev_time.dt.normalize() == prev_time).all()
+        )
+        fresh["time"] = aligned.dt.normalize() if prev_is_date_only else aligned
+
     # Las barras frescas ganan el conflicto: son la correccion, no el historico.
     combined = pd.concat([previous, fresh], ignore_index=True)
     combined = combined.drop_duplicates(subset=keys, keep="last")
