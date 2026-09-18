@@ -113,9 +113,9 @@
     "total_ids": 55
   },
   "frontend": {
-    "api_routes": 98,
-    "pages": 32,
-    "pages_active": 24,
+    "api_routes": 96,
+    "pages": 33,
+    "pages_active": 25,
     "pages_legacy": 8
   },
   "knowledge": {
@@ -143,7 +143,7 @@
     ],
     "agents": 3,
     "rules": 10,
-    "rules_bytes": 22448,
+    "rules_bytes": 22250,
     "rules_words": 2910,
     "skill_definitions": [
       {
@@ -345,7 +345,7 @@
     "specs": 173
   },
   "migrations": {
-    "count": 78,
+    "count": 80,
     "latest": "rollback_033_event_triggers.sql"
   },
   "specs_tree": [

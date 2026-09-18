@@ -225,7 +225,7 @@ Script: `scripts/pipeline/generate_weekly_analysis.py`. Migration: 046. See `new
 ### Dashboard (Next.js 15 App Router)
 
 <!-- inv:frontend -->
-**24 páginas activas** (8 en `/legacy`) · **98 rutas API**
+**25 páginas activas** (8 en `/legacy`) · **96 rutas API**
 <!-- /inv -->
 
 Lista de páginas y rutas API por grupo: **solo** en `.claude/generated/inventory.json` (`frontend.pages`, `frontend.api_routes`) — no se enumeran a mano aquí (la lista manual omitía `/admin` y sus 22 rutas).
