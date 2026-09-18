@@ -49,7 +49,24 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
 
 // ─────────────────────────────────────────────────────────────── entitlements (plan)
 
-export type PlanId = 'free' | 'signals' | 'auto';
+export type PlanId = 'free' | 'signals' | 'auto' | 'desk';
+
+/**
+ * Billing period a quote was priced for. Everything was implicitly monthly: the webhook
+ * granted a hardcoded 30 days to every purchase, so an annual bundle could not be expressed
+ * at all. The grant window is derived from this (see `INTERVAL_DAYS`).
+ */
+export type BillingInterval = 'month' | 'year';
+
+/** Days of access one paid interval buys. The webhook never shortens time already owned. */
+export const INTERVAL_DAYS: Record<BillingInterval, number> = { month: 30, year: 365 };
+
+/**
+ * Settlement currencies. Wompi settles COP for the Colombian channel; USD covers the
+ * international one. Mirrored by `CHECK (currency IN ('COP','USD'))` in migration 090 — a
+ * value this union does not carry is rejected by the database, never silently accepted.
+ */
+export type Currency = 'COP' | 'USD';
 
 export interface ExecutionEntitlement {
   enabled: boolean;
@@ -74,24 +91,34 @@ export interface Entitlements {
 /** System ceilings per tier — users may LOWER execution limits, never raise them. */
 export const PLAN_DEFAULTS: Record<PlanId, Entitlements> = {
   free: {
-    plan: 'free', assets: ['usdcop'], forecast_delay_hours: 168, analysis_delay_days: 7,
+    plan: 'free', assets: ['usdcop', 'xauusd'], forecast_delay_hours: 168, analysis_delay_days: 7,
     signals_realtime: false,
     execution: { enabled: false, mode: 'paper', paper_weeks_required: 4,
                  max_notional_usd: 0, max_daily_loss_pct: 0, max_open_positions: 0 },
     expires_at: null,
   },
   signals: {
-    plan: 'signals', assets: ['usdcop'], forecast_delay_hours: 0, analysis_delay_days: 0,
+    plan: 'signals', assets: ['usdcop', 'xauusd'], forecast_delay_hours: 0, analysis_delay_days: 0,
     signals_realtime: true,
     execution: { enabled: false, mode: 'paper', paper_weeks_required: 4,
                  max_notional_usd: 0, max_daily_loss_pct: 0, max_open_positions: 0 },
     expires_at: null,
   },
   auto: {
-    plan: 'auto', assets: ['usdcop'], forecast_delay_hours: 0, analysis_delay_days: 0,
+    plan: 'auto', assets: ['usdcop', 'xauusd'], forecast_delay_hours: 0, analysis_delay_days: 0,
     signals_realtime: true,
     execution: { enabled: true, mode: 'paper', paper_weeks_required: 4,
                  max_notional_usd: 5000, max_daily_loss_pct: 3.0, max_open_positions: 2 },
+    expires_at: null,
+  },
+  // Multi-asset bundle: every onboarded asset in one plan instead of a base plan plus three
+  // add-ons. Signals-level capability on purpose — automatic EXECUTION is a separate legal
+  // gate (rbac.md §9) and is not something a bundle should grant as a side effect.
+  desk: {
+    plan: 'desk', assets: ['usdcop', 'xauusd', 'btcusdt', 'spx500'],
+    forecast_delay_hours: 0, analysis_delay_days: 0, signals_realtime: true,
+    execution: { enabled: false, mode: 'paper', paper_weeks_required: 4,
+                 max_notional_usd: 0, max_daily_loss_pct: 0, max_open_positions: 0 },
     expires_at: null,
   },
 };
@@ -106,7 +133,16 @@ export function isExpired(e: Entitlements | null | undefined): boolean {
 export function effectiveEntitlements(e: Entitlements | null | undefined): Entitlements {
   if (!e || isExpired(e)) return PLAN_DEFAULTS.free;
   const base = PLAN_DEFAULTS[e.plan] ?? PLAN_DEFAULTS.free;
-  return { ...base, ...e, execution: { ...base.execution, ...(e.execution ?? {}) } };
+  // The plan's asset list is a FLOOR, not a default that a stored row replaces.
+  //
+  // `{...base, ...e}` alone let the row's `assets` override the plan's, which meant a plan
+  // could never gain an asset: adding Gold to every tier would have reached nobody who had
+  // ever been written to (their row still said `["usdcop"]`), and the only fix would have
+  // been a backfill that has to be repeated for every future change. Unioning makes the
+  // plan the source of what a tier includes while purchased add-ons still accumulate on
+  // top — the two things that belong in this array, neither erasing the other.
+  const assets = [...new Set([...base.assets, ...(e.assets ?? [])])];
+  return { ...base, ...e, assets, execution: { ...base.execution, ...(e.execution ?? {}) } };
 }
 
 // ─────────────────────────────────────────────────────────────── route matrices
@@ -127,6 +163,12 @@ export const PAGE_ROUTES: readonly RouteRule[] = [
   { prefix: '/reset-password', permission: 'public' }, // forced temp-password consumption
   { prefix: '/pricing', permission: 'public' },
   { prefix: '/metodologia', permission: 'public' }, // transparency page — the sales weapon
+  // Público a propósito: el track record es MARKETING, no el producto. Lo vendible es la
+  // señal publicada ANTES del hecho (niveles, timing, sizing); el historial de operaciones
+  // ya cerradas —servido con una semana de rezago por /api/public/track-record— prueba el
+  // método sin regalar una sola operación. Exigir sesión para verlo era la fricción que
+  // impedía que un prospecto viera un solo número antes de registrarse.
+  { prefix: '/track-record', permission: 'public' },
   { prefix: '/legal', permission: 'public' },       // terminos / riesgo / privacidad
   { prefix: '/hub', permission: 'authenticated' },
   { prefix: '/dashboard', permission: 'research:read' },   // Superficie de APROBACIÓN (Voto 2/2 admin-only en el componente + API approval:vote)
@@ -155,6 +197,11 @@ export const API_ROUTES: readonly RouteRule[] = [
   { prefix: '/api/health', permission: 'public' },
   { prefix: '/api/billing/webhook', permission: 'public' }, // signature-verified inside handler
   { prefix: '/api/billing/prices', permission: 'public' },  // plan prices shown on the public pricing page
+  // Sandbox hosted-checkout stand-in. A SESSION is required (you simulate your own
+  // purchase, never someone else's); the route additionally refuses to run outside a
+  // non-production deployment with BILLING_PROVIDER=sandbox. Listed explicitly rather
+  // than left to the deny-by-default floor so the coverage test pins it.
+  { prefix: '/api/billing/sandbox', permission: 'authenticated' },
   { prefix: '/api/public', permission: 'public' },          // marketing aggregates only (live-stats)
   { prefix: '/api/captcha', permission: 'public' },         // signed challenge for auth forms (answer never in response)
   // SignalBridge auth endpoints ARE the login (they mint the session) — must be public.

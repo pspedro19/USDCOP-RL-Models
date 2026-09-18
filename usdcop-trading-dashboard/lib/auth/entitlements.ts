@@ -61,7 +61,10 @@ export function isFresherThanAllowed(fileName: string, delayDays: number): boole
   if (delayDays <= 0) return false;
   const cutoff = Date.now() - delayDays * 86_400_000;
 
-  const week = fileName.match(/(\d{4})-W(\d{2})/);
+  // Accept BOTH separators: the published analysis bundles are named `weekly_2026_W27.json`
+  // (underscore), so a dash-only pattern silently matched nothing and the free plan's T+7
+  // delay was never applied to the very files it exists to delay.
+  const week = fileName.match(/(\d{4})[-_]W(\d{2})/);
   if (week) {
     const monday = mondayOfIsoWeek(Number(week[1]), Number(week[2]));
     return monday.getTime() > cutoff;

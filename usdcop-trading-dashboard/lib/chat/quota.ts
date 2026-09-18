@@ -18,6 +18,11 @@ const DAILY_LIMIT_BY_PLAN: Record<PlanId, number> = {
   free: 15,
   signals: 100,
   auto: 250,
+  // Multi-asset bundle: four assets to ask about, so the allowance scales with them.
+  // The map is typed `Record<PlanId, …>`, which is what forces a new plan to declare its
+  // limit here instead of silently inheriting the free cap through the `?? free` fallback
+  // below — a paying customer throttled to 15 questions a day reads as a broken product.
+  desk: 400,
 };
 
 export function chatQuotaFor(entitlements: Entitlements): ChatQuota {

@@ -69,21 +69,47 @@ export async function roleDynamicPermissions(role: Role | string | undefined): P
 export interface UserOverride {
   permission: Permission;
   effect: 'grant' | 'deny';
+  /** When a temporary grant stops applying; null for a permanent override. */
+  expires_at?: string | null;
+  /** Signed agreement backing a temporary research grant (data room). */
+  nda_reference?: string | null;
 }
 
-/** Raw override rows for one user (admin editor). Empty on error. */
+/**
+ * Raw override rows for one user (admin editor). Empty on error.
+ *
+ * Expired GRANTS are returned but flagged by their `expires_at`; it is
+ * `effectivePermissions` that refuses to apply them. The admin console still needs to see
+ * that a lapsed grant existed — the row is the evidence of what was opened and when it
+ * closed, so deleting it on expiry would erase the audit answer to "who saw the research".
+ */
 export async function getUserOverrides(userId: string): Promise<UserOverride[]> {
   try {
-    const res = await query<{ permission: string; effect: string }>(
-      'SELECT permission, effect FROM rbac_user_overrides WHERE user_id = $1',
+    const res = await query<{
+      permission: string; effect: string; expires_at: Date | string | null; nda_reference: string | null;
+    }>(
+      'SELECT permission, effect, expires_at, nda_reference FROM rbac_user_overrides WHERE user_id = $1',
       [userId],
     );
     return res.rows
       .filter((r) => isPermission(r.permission) && (r.effect === 'grant' || r.effect === 'deny'))
-      .map((r) => ({ permission: r.permission as Permission, effect: r.effect as 'grant' | 'deny' }));
+      .map((r) => ({
+        permission: r.permission as Permission,
+        effect: r.effect as 'grant' | 'deny',
+        expires_at: r.expires_at ? new Date(r.expires_at).toISOString() : null,
+        nda_reference: r.nda_reference ?? null,
+      }));
   } catch {
     return [];
   }
+}
+
+/** A grant is live only while it has no expiry or its expiry is still ahead of us. */
+export function isOverrideActive(o: UserOverride, now: number = Date.now()): boolean {
+  if (o.effect === 'deny') return true;           // denies never lapse (migration 091)
+  if (!o.expires_at) return true;                 // permanent grant
+  const t = Date.parse(o.expires_at);
+  return Number.isFinite(t) && t > now;
 }
 
 // ── effective permissions (role ∪ grants − denies) ───────────────────────────
@@ -105,13 +131,21 @@ export async function effectivePermissions(
   const base = new Set<Permission>(await roleDynamicPermissions(role));
   if (userId) {
     for (const o of await getUserOverrides(userId)) {
-      if (o.effect === 'grant') base.add(o.permission);
-      else base.delete(o.permission);
+      // An expired data-room grant is inert from the instant it lapses — no sweeper job
+      // stands between the deadline and the loss of access.
+      if (o.effect === 'grant') {
+        if (isOverrideActive(o)) base.add(o.permission);
+      } else {
+        base.delete(o.permission);
+      }
     }
   }
   const value = [...base];
   effCache.set(cacheKey, { at: Date.now(), value });
   return value;
+  // NOTE: the 60s TTL bounds how long a just-expired grant can survive in cache. That is
+  // the same staleness the console already documents for permission edits; shortening it
+  // for expiry alone would trade a real cost for a minute of theoretical exposure.
 }
 
 /** Invalidate caches after an admin edit so reads reflect it within the request. */

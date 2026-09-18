@@ -3,7 +3,7 @@ RBAC L8 — Daily entitlements degradation (CTR-RBAC-001 R6)
 ==========================================================
 Persists what `effectiveEntitlements` already enforces lazily per-request: any
 `sb_users.entitlements` whose `expires_at` is in the past degrades to the free plan
-(assets [usdcop], delays free-tier, execution disabled). Idempotent; audits each
+(assets [usdcop, xauusd], delays free-tier, execution disabled). Idempotent; audits each
 degradation. Schedule: daily 05:00 UTC (00:00 COT), off trading hours.
 """
 
@@ -19,9 +19,12 @@ from airflow.operators.python import PythonOperator
 
 logger = logging.getLogger(__name__)
 
+# Template for a degraded row. `assets` and `expires_at` are overridden per user in
+# degrade_expired(): the purchased asset list is retained as a record and the past expiry
+# is carried over so `effectiveEntitlements` keeps resolving the row to the free plan.
 FREE_ENTITLEMENTS = {
     "plan": "free",
-    "assets": ["usdcop"],
+    "assets": ["usdcop", "xauusd"],  # mirrors PLAN_DEFAULTS.free (Gold ships with every tier)
     "forecast_delay_hours": 168,
     "analysis_delay_days": 7,
     "signals_realtime": False,
@@ -38,7 +41,8 @@ def degrade_expired(**context):
         cur = conn.cursor()
         # Find expired, not-already-free entitlements.
         cur.execute("""
-            SELECT id, email, entitlements->>'plan' AS plan, entitlements->>'expires_at' AS exp
+            SELECT id, email, entitlements->>'plan' AS plan, entitlements->>'expires_at' AS exp,
+                   entitlements->'assets' AS assets
             FROM sb_users
             WHERE entitlements ? 'expires_at'
               AND (entitlements->>'expires_at')::timestamptz < NOW()
@@ -46,16 +50,33 @@ def degrade_expired(**context):
         """)
         rows = cur.fetchall()
         degraded = 0
-        for uid, email, plan, exp in rows:
+        for uid, email, plan, exp, assets in rows:
+            prev_assets = assets if isinstance(assets, list) else []
+            # Degrade the PLAN, keep the PURCHASE RECORD. Writing FREE_ENTITLEMENTS verbatim
+            # used to overwrite `assets` with ["usdcop"], so a customer who let the plan lapse
+            # and renewed lost every per-asset add-on they had paid for, permanently and with
+            # no way to tell what was lost.
+            #
+            # The expired timestamp is deliberately CARRIED OVER rather than dropped: every
+            # reader resolves through `effectiveEntitlements`, which returns the free plan for
+            # any row whose `expires_at` is in the past. Keeping it in the past is what makes
+            # the retained asset list a record instead of a free upgrade — dropping the field
+            # (or nulling it) would mark the row as never-expiring and hand the paid add-ons
+            # out for free. Restoring them on reactivation is the admin path
+            # (PATCH /api/admin/users/:id), which unions the stored list.
+            degraded_row = {**FREE_ENTITLEMENTS, "assets": prev_assets, "expires_at": exp}
             cur.execute(
                 "UPDATE sb_users SET entitlements = %s::jsonb WHERE id = %s",
-                (json.dumps(FREE_ENTITLEMENTS), uid))
+                (json.dumps(degraded_row), uid))
             cur.execute(
                 "INSERT INTO audit_log (user_id, action, object_type, detail) "
                 "VALUES (%s, 'entitlement_degraded', 'billing', %s::jsonb)",
-                (str(uid), json.dumps({"from_plan": plan, "expired_at": exp, "by": "rbac_entitlements_daily"})))
+                (str(uid), json.dumps({"from_plan": plan, "expired_at": exp,
+                                       "retained_assets": prev_assets,
+                                       "by": "rbac_entitlements_daily"})))
             degraded += 1
-            logger.info(f"[RBAC-R6] degraded {email}: {plan} (expired {exp}) -> free")
+            logger.info(f"[RBAC-R6] degraded {email}: {plan} (expired {exp}) -> free "
+                        f"(retained {len(prev_assets)} asset record(s))")
         conn.commit()
         logger.info(f"[RBAC-R6] degraded {degraded} expired entitlement(s)")
         return {"degraded": degraded}
