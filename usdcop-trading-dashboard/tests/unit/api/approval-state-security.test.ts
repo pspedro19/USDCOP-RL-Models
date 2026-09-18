@@ -343,7 +343,14 @@ describe('BDD-5 · Vote 2 (/api/production/approve) opera sobre el artefacto PRI
       new NextRequest('http://localhost:3001/api/production/approve', {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...hdr('admin') },
-        body: JSON.stringify({ action: 'APPROVE', strategy_id: 'smart_simple_v11', notes: 'ok' }),
+        // Este caso comprueba DÓNDE se escribe el Voto 2 (artefacto privado), no la política
+        // de gates: el fixture lleva el DSR en rojo y aprobar sobre un gate rojo exige ahora
+        // anulación explícita, así que se declara aquí para que la prueba siga aislando su
+        // propio sujeto. El bloqueo tiene su propia cobertura en approval-vote2-authz-cas.
+        body: JSON.stringify({
+          action: 'APPROVE', strategy_id: 'smart_simple_v11', notes: 'ok',
+          override_failed_gates: true,
+        }),
       }) as never,
     );
     expect(res.status).toBe(200);

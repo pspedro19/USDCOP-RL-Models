@@ -104,6 +104,20 @@ export interface ApproveRequest {
   action: 'APPROVE' | 'REJECT';
   notes?: string;
   reviewer?: string;
+  /**
+   * Deliberate acknowledgement required to APPROVE while Vote-1 gates are red.
+   *
+   * The gates used to be purely advisory: the only precondition was
+   * `status === 'PENDING_APPROVAL'`, so a strategy whose significance and DSR gates had
+   * failed could be promoted with the same click as one that passed 6/6 — and one was
+   * (`approval_state_gold_dynamic_exit.json` is APPROVED with recommendation REVIEW). A
+   * buyer auditing the control finds that in minutes.
+   *
+   * This does NOT remove the operator's authority to overrule a gate; it makes doing so
+   * impossible by accident and impossible to do quietly. The failed gates are named in
+   * the audit trail alongside the acknowledgement.
+   */
+  override_failed_gates?: boolean;
 }
 
 export interface ApproveResponse {

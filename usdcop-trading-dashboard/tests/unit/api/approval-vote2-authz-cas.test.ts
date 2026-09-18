@@ -81,10 +81,20 @@ function principal(role: string | undefined) {
   };
 }
 
+/**
+ * These suites test WHO may vote and WHAT happens when two votes race — not gate policy.
+ * The shared fixture deliberately carries a red `deflated_sharpe` gate (it mirrors the real
+ * v11 state), and approving over a red gate now requires an explicit acknowledgement. The
+ * helper states it once so every authz/CAS case keeps testing its own subject; the block
+ * itself is covered by its own describe block below.
+ */
 function approveReq(
   body: Record<string, unknown>,
   opts: { headers?: Record<string, string>; origin?: string } = {},
 ): NextRequest {
+  if (body.action === 'APPROVE' && body.override_failed_gates === undefined) {
+    body = { ...body, override_failed_gates: true };
+  }
   return new NextRequest(`${opts.origin ?? 'http://localhost:3001'}/api/production/approve`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', cookie: 'next-auth.session-token=SECRET', ...(opts.headers ?? {}) },
@@ -319,5 +329,74 @@ describe('P0-3 · el auto-deploy no reenvía la cookie del aprobador a un host d
       }
     }
     delete process.env.NEXTAUTH_URL;
+  });
+});
+
+/**
+ * P0-4 · Los gates del Voto 1 BLOQUEAN el Voto 2.
+ *
+ * Eran puramente consultivos: la única precondición era `status === 'PENDING_APPROVAL'`, de
+ * modo que promover una estrategia con la significancia y el DSR en rojo costaba el mismo
+ * clic que promover una con 6/6 — y ocurrió (`approval_state_gold_dynamic_exit.json` quedó
+ * APPROVED con recomendación REVIEW y `min_trades` fallido). El operador conserva la
+ * facultad de pasar por encima; lo que ya no puede es hacerlo por accidente ni en silencio.
+ *
+ * Mutaciones que deben volver esto rojo:
+ *   M1  quitar el chequeo de `failedGates`            → se aprueba en rojo sin decir nada
+ *   M2  exigir la anulación también para REJECT       → no se puede rechazar lo que falla
+ *   M3  no registrar `overrode_failed_gates`          → la decisión deja de ser auditable
+ */
+describe('P0-4 · los gates del Voto 1 bloquean la aprobación', () => {
+  beforeEach(() => seed());
+
+  it('APPROVE con un gate en rojo y sin anulación ⇒ 409 y el estado NO cambia', async () => {
+    authMock.protect.mockResolvedValue(principal('admin'));
+    const res = await approvePOST(approveReq({
+      action: 'APPROVE', strategy_id: 'smart_simple_v11', override_failed_gates: false,
+    }));
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.message).toContain('deflated_sharpe'); // nombra el gate que falló
+    expect(onDisk().status).toBe('PENDING_APPROVAL');  // nada se movió
+  });
+
+  it('APPROVE con anulación explícita ⇒ 200, y la traza nombra el gate anulado', async () => {
+    authMock.protect.mockResolvedValue(principal('admin'));
+    const res = await approvePOST(approveReq({
+      action: 'APPROVE', strategy_id: 'smart_simple_v11', override_failed_gates: true,
+    }));
+    expect(res.status).toBe(200);
+    const d = onDisk();
+    expect(d.status).toBe('APPROVED');
+    const last = d.audit_trail[d.audit_trail.length - 1];
+    expect(last.overrode_failed_gates).toEqual(['deflated_sharpe']);
+    expect(last.recommendation_at_approval).toBe('REVIEW');
+  });
+
+  it('REJECT nunca necesita anulación: rechazar algo que falla es lo esperado', async () => {
+    authMock.protect.mockResolvedValue(principal('admin'));
+    const res = await approvePOST(approveReq({
+      action: 'REJECT', strategy_id: 'smart_simple_v11', notes: 'no pasa',
+    }));
+    expect(res.status).toBe(200);
+    expect(onDisk().status).toBe('REJECTED');
+  });
+
+  it('con todos los gates en verde no hace falta anular nada', async () => {
+    seed({
+      ...PENDING(),
+      backtest_recommendation: 'PROMOTE',
+      gates: [{ gate: 'deflated_sharpe', label: 'DSR', passed: true, value: 0.97, threshold: 0.95 }],
+    });
+    authMock.protect.mockResolvedValue(principal('admin'));
+    const res = await approvePOST(approveReq({
+      action: 'APPROVE', strategy_id: 'smart_simple_v11', override_failed_gates: false,
+    }));
+    expect(res.status).toBe(200);
+    const d = onDisk();
+    expect(d.status).toBe('APPROVED');
+    // Sin gates rojos no se anuló nada, así que el campo no debe aparecer.
+    expect(d.audit_trail[d.audit_trail.length - 1].overrode_failed_gates).toBeUndefined();
   });
 });

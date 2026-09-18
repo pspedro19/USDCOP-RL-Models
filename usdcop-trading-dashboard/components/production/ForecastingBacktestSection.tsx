@@ -372,11 +372,14 @@ function ApprovalPanel({
   onApprove,
   onReject,
   isSubmitting,
+  submitError,
 }: {
   approval: ApprovalState;
   onApprove: (notes: string) => void;
   onReject: (reason: string) => void;
   isSubmitting: boolean;
+  /** Why the last attempt was refused — e.g. Vote-1 gates still red. */
+  submitError?: string | null;
 }) {
   const t = useGmT(DICT);
   const [notes, setNotes] = useState('');
@@ -461,6 +464,14 @@ function ApprovalPanel({
             {t('reject')}
           </button>
         </div>
+      )}
+
+      {/* Why the last attempt was refused. Without this the button just appeared to do
+          nothing when the server blocked an approval over red Vote-1 gates. */}
+      {submitError && (
+        <p role="alert" className={`mt-2 text-[0.75rem] leading-snug ${GM.neg}`}>
+          {submitError}
+        </p>
       )}
     </section>
   );
@@ -1194,6 +1205,9 @@ export function ForecastingBacktestSection({
   const [error, setError] = useState<string | null>(null);
   const [showAllTrades, setShowAllTrades] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Why the last Vote-2 attempt was refused. Kept separate from `error` (which is about
+  // loading backtest data) so a failed approval never reads as a broken chart.
+  const [approvalError, setApprovalError] = useState<string | null>(null);
 
   // Replay state
   // Daily equity series from the bundle (signals_<year>.json) — SSOT for window-dynamic
@@ -1583,15 +1597,40 @@ export function ForecastingBacktestSection({
     return () => { if (replayRef.current) clearInterval(replayRef.current); };
   }, [isPlaying, playSpeed, replaySteps]);
 
-  const handleApprove = async (notes: string) => {
+  /**
+   * Vote 2. The server refuses an APPROVE while Vote-1 gates are red (409) unless the
+   * reviewer states the override explicitly. Surfacing that as a confirmation is the whole
+   * point: overruling a statistical gate has to be a decision someone takes on the record,
+   * not a click that looks identical to approving a clean 6/6. Swallowing the 409 silently
+   * — which is what the old `if (res.ok)` with no else did — would make the button appear
+   * broken and hide the rule.
+   */
+  const handleApprove = async (notes: string, overrideFailedGates = false) => {
     setIsSubmitting(true);
+    setApprovalError(null);
     try {
       const res = await fetch('/api/production/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'APPROVE', notes, reviewer: 'dashboard_user', strategy_id: strategyId }),
+        body: JSON.stringify({
+          action: 'APPROVE', notes, reviewer: 'dashboard_user', strategy_id: strategyId,
+          ...(overrideFailedGates ? { override_failed_gates: true } : {}),
+        }),
       });
-      if (res.ok) setApproval(await fetchApproval(strategyId));
+      if (res.ok) {
+        setApproval(await fetchApproval(strategyId));
+        return;
+      }
+      const body = await res.json().catch(() => null);
+      if (res.status === 409 && !overrideFailedGates && body?.message) {
+        const confirmed = typeof window !== 'undefined' && window.confirm(
+          `${body.message}\n\n¿Aprobar de todas formas? Quedará registrado en la auditoría ` +
+          'junto con los gates que anulaste.',
+        );
+        if (confirmed) { await handleApprove(notes, true); return; }
+        return;
+      }
+      setApprovalError(body?.message ?? `No se pudo aprobar (HTTP ${res.status}).`);
     } finally {
       setIsSubmitting(false);
     }
@@ -1599,13 +1638,19 @@ export function ForecastingBacktestSection({
 
   const handleReject = async (reason: string) => {
     setIsSubmitting(true);
+    setApprovalError(null);
     try {
       const res = await fetch('/api/production/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'REJECT', notes: reason, reviewer: 'dashboard_user', strategy_id: strategyId }),
       });
-      if (res.ok) setApproval(await fetchApproval(strategyId));
+      if (res.ok) {
+        setApproval(await fetchApproval(strategyId));
+        return;
+      }
+      const body = await res.json().catch(() => null);
+      setApprovalError(body?.message ?? `No se pudo rechazar (HTTP ${res.status}).`);
     } finally {
       setIsSubmitting(false);
     }
@@ -2026,6 +2071,7 @@ export function ForecastingBacktestSection({
                     onApprove={handleApprove}
                     onReject={handleReject}
                     isSubmitting={isSubmitting}
+                    submitError={approvalError}
                   />
                   <DeployPanel approval={approval} />
                 </>

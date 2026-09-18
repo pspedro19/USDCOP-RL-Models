@@ -33,6 +33,33 @@ import { dirname, join } from 'node:path';
 
 export type Row = Record<string, unknown>;
 
+/**
+ * Map an `INSERT ... (cols) VALUES (...)` statement to `{column: value}`.
+ *
+ * Positional assumptions are how a fake silently drifts from the schema it claims to
+ * mirror: add a column in the middle and every later index shifts, with no error. This
+ * reads the declared column list and pairs it with the VALUES list, resolving `$n`
+ * placeholders against `params` and taking quoted literals verbatim.
+ */
+export function insertColumns(sql: string, params: unknown[]): Record<string, unknown> {
+  const m = sql.match(/INSERT\s+INTO\s+\w+\s*\(([^)]*)\)\s*VALUES\s*\(([^)]*)\)/i);
+  if (!m) throw new Error(`unparseable INSERT in test harness: ${sql}`);
+  const cols = m[1].split(',').map((c) => c.trim());
+  const vals = m[2].split(',').map((v) => v.trim());
+  if (cols.length !== vals.length) {
+    throw new Error(`INSERT column/value arity mismatch (${cols.length} vs ${vals.length}): ${sql}`);
+  }
+  const out: Record<string, unknown> = {};
+  cols.forEach((col, i) => {
+    const raw = vals[i];
+    const ph = raw.match(/^\$(\d+)/);           // $3::jsonb → params[2]
+    if (ph) { out[col] = params[Number(ph[1]) - 1]; return; }
+    const lit = raw.match(/^'([^']*)'/);         // 'pending' → "pending"
+    out[col] = lit ? lit[1] : raw;
+  });
+  return out;
+}
+
 export interface BillingEventRow {
   provider_event_id: string;
   order_reference: string;
@@ -264,13 +291,23 @@ export function createScriptedPostgres() {
       return res(o ? [{ ...o }] : []);
     }
     if (/INSERT INTO checkout_orders/i.test(sql)) {
-      const reference = String(params[4]);
+      // Columns are READ FROM THE STATEMENT, never assumed by position. The fake used to
+      // hardcode `params[4]` as the reference and `'COP'` as the currency, so the day a
+      // column was added (migration 090 put `billing_interval` before `reference`) every
+      // sealed quote was recorded under the wrong key and the money tests went red for a
+      // reason that had nothing to do with money. Parsing the column list makes the fake
+      // survive a schema change the same way the real table does.
+      const cols = insertColumns(sql, params);
+      const reference = String(cols.reference ?? '');
+      if (!reference) throw new Error(`checkout INSERT without a reference: ${sql}`);
       if (!state.orders.has(reference)) {
         apply(() => state.orders.set(reference, {
-          user_id: params[0], plan: params[1],
-          addon_assets: JSON.parse(String(params[2])),
-          amount_cents: Number(params[3]), currency: 'COP',
-          reference, status: 'pending',
+          user_id: cols.user_id, plan: cols.plan,
+          addon_assets: JSON.parse(String(cols.addon_assets ?? '[]')),
+          amount_cents: Number(cols.amount_cents),
+          currency: String(cols.currency ?? 'COP'),
+          billing_interval: String(cols.billing_interval ?? 'month'),
+          reference, status: String(cols.status ?? 'pending'),
         }));
       }
       return res([], 1);

@@ -100,6 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body: ApproveRequest & { strategy_id?: string } = await request.json();
+    const overrideFailedGates = body.override_failed_gates === true;
 
     if (!body.action || !['APPROVE', 'REJECT'].includes(body.action)) {
       return NextResponse.json(
@@ -126,6 +127,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, status: record.state.status, message: `Cannot ${action.toLowerCase()} — current status is ${record.state.status}` } as ApproveResponse,
         { status: 409 }
+      );
+    }
+
+    // ── (2b) Los gates del Voto 1 BLOQUEAN, salvo anulación explícita.
+    //
+    // Antes la única precondición era el estado, así que promover una estrategia con la
+    // significancia y el DSR en rojo costaba exactamente el mismo clic que promover una
+    // con 6/6 — y ocurrió (`approval_state_gold_dynamic_exit.json` quedó APPROVED con
+    // recomendación REVIEW y `min_trades` fallido). Esto NO le quita al operador la
+    // facultad de pasar por encima de un gate: la vuelve deliberada, y la deja nombrada
+    // en la traza. Un REJECT nunca necesita anulación.
+    const failedGates = (record.state.gates ?? []).filter((g) => !g.passed);
+    if (action === 'APPROVE' && failedGates.length > 0 && !overrideFailedGates) {
+      return NextResponse.json(
+        {
+          success: false,
+          status: record.state.status,
+          message:
+            `No se puede aprobar: ${failedGates.length} de ${(record.state.gates ?? []).length} ` +
+            `gates del Voto 1 están en rojo (${failedGates.map((g) => g.gate).join(', ')}). ` +
+            'Para anularlo a conciencia, reenvía la aprobación con override_failed_gates=true; ' +
+            'quedará registrado en la auditoría con los gates que fallaron.',
+        } as ApproveResponse,
+        { status: 409 },
       );
     }
 
@@ -165,6 +190,15 @@ export async function POST(request: NextRequest) {
             from: current.status,
             to: action === 'APPROVE' ? 'APPROVED' : 'REJECTED',
             notes: body.notes || '',
+            // An approval cast over red gates is recorded WITH the gates it overruled, in
+            // the same atomic commit as the state change. Reconstructing later which gates
+            // were red at the moment of the decision must never depend on a separate file.
+            ...(action === 'APPROVE' && failedGates.length > 0
+              ? {
+                  overrode_failed_gates: failedGates.map((g) => g.gate),
+                  recommendation_at_approval: current.backtest_recommendation ?? null,
+                }
+              : {}),
           },
         ];
         return next;
@@ -180,7 +214,10 @@ export async function POST(request: NextRequest) {
     }
 
     // ── (4) Auditoría en DB (mirror best-effort del rastro ya comprometido en disco).
-    await auditVote(gate.userId, action, outcome.state.strategy, { notes: body.notes || '', file: record.repoPath }, request);
+    await auditVote(gate.userId, action, outcome.state.strategy, {
+      notes: body.notes || '', file: record.repoPath,
+      ...(failedGates.length > 0 ? { overrode_failed_gates: failedGates.map((g) => g.gate) } : {}),
+    }, request);
 
     const response: ApproveResponse = {
       success: true,
