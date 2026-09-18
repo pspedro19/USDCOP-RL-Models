@@ -1,0 +1,70 @@
+{
+  "strategy_id": "strategy_full",
+  "asset_id": "xauusd",
+  "symbol": "XAU/USD",
+  "chart_symbol": "XAUUSD",
+  "display_name": "Strategy Full",
+  "pipeline_type": "rule_based",
+  "timeframe": "daily",
+  "status": "experimental",
+  "schema_version": "1.0.0",
+  "synthetic": true,
+  "disclaimer": "DEMOSTRACIÓN. Los resultados de esta estrategia son SINTÉTICOS: se generaron para mostrar el funcionamiento del replay de señales. No son un track record, no corresponden a operaciones reales ni simuladas sobre una política, y no deben usarse para ninguna decisión de inversión. Los resultados reales del sistema están en las estrategias marcadas como producción.",
+  "capabilities": {
+    "replay": true,
+    "live": false,
+    "approval": false
+  },
+  "produced_by": {
+    "source": "generate_strategy_full_demo.py",
+    "version": "1.0.0",
+    "generated_at": "2026-09-11T21:08:40.123808+00:00"
+  },
+  "model_versions": [
+    {
+      "version": "1.0.0",
+      "active": true
+    }
+  ],
+  "backtests": [
+    {
+      "model_version": "1.0.0",
+      "year": 2025,
+      "immutable_id": "strategy_full__1.0.0__2025",
+      "summary": "strategies/strategy_full/backtests/1.0.0/summary_2025.json",
+      "trades": "strategies/strategy_full/backtests/1.0.0/trades_2025.json",
+      "signals": "strategies/strategy_full/backtests/1.0.0/signals_2025.json",
+      "replayable": true,
+      "gates": {},
+      "headline": {
+        "return_pct": 23.32,
+        "sharpe": 1.68,
+        "max_dd_pct": -6.41,
+        "win_rate_pct": 60.9,
+        "trades": 46,
+        "p_value": null
+      }
+    },
+    {
+      "model_version": "1.0.0",
+      "year": 2026,
+      "immutable_id": "strategy_full__1.0.0__2026",
+      "summary": "strategies/strategy_full/backtests/1.0.0/summary_2026.json",
+      "trades": "strategies/strategy_full/backtests/1.0.0/trades_2026.json",
+      "signals": "strategies/strategy_full/backtests/1.0.0/signals_2026.json",
+      "replayable": true,
+      "gates": {},
+      "headline": {
+        "return_pct": 18.14,
+        "sharpe": 1.84,
+        "max_dd_pct": -4.59,
+        "win_rate_pct": 60.6,
+        "trades": 33,
+        "p_value": null
+      }
+    }
+  ],
+  "production": null,
+  "approval": null,
+  "surface": "action"
+}

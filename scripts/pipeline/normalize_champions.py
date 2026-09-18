@@ -51,6 +51,15 @@ _CHAMPION_KEEP = {"experimental", "paper", "production"}
 # constant is repeated here — keep the two in lockstep).
 _SURFACES = ("action", "diagnostic")
 
+# Statuses a SYNTHETIC demo fixture may hold. A fixture exists to show the replay UI
+# working; it is not a candidate that won or lost anything, so neither branch of the
+# champion rewrite fits it: promoting it would let invented numbers stand where an
+# asset's evidence belongs, and archiving it (the default for every non-champion) would
+# silently delete the fixture on the next weekly pass. It is exempt from the rewrite and
+# from nothing else — `_synthetic_guard` still refuses to let one claim a champion seat,
+# a `production` status or an `approval`.
+_SYNTHETIC_KEEP = {"experimental"}
+
 
 def _frozen_surfaces() -> dict[str, str]:
     """strategy_id -> `surface` declared by its frozen YAML manifest (BL-13).
@@ -118,6 +127,24 @@ def normalize(check_only: bool = False) -> int:
     for man_path in sorted(strat_root.glob("*/manifest.json")):
         man = json.loads(man_path.read_text(encoding="utf-8"))
         sid, status = man.get("strategy_id"), man.get("status")
+        if man.get("synthetic") is True:
+            # A declared fixture is out of the champion contest entirely (see
+            # _SYNTHETIC_KEEP). The guard below is what keeps the exemption narrow:
+            # a fixture that claims a champion seat, a production status or an
+            # approval is an ERROR, never a normalization.
+            if sid in champions:
+                surface_errors.append(
+                    f"{sid}: synthetic=true pero figura en CHAMPION_BY_ASSET — "
+                    "una estrategia sintetica JAMAS puede ser campeona de un activo")
+            elif status not in _SYNTHETIC_KEEP:
+                surface_errors.append(
+                    f"{sid}: synthetic=true con status {status!r} — una fixture solo "
+                    f"puede ser {sorted(_SYNTHETIC_KEEP)} (nunca production/paper)")
+            elif man.get("approval") is not None:
+                surface_errors.append(
+                    f"{sid}: synthetic=true con approval {man.get('approval')!r} — "
+                    "una fixture no puede portar la firma de un Vote-2")
+            continue
         # C-005: every bundle manifest carries surface. The frozen YAML is authoritative
         # where one exists; otherwise the bundle's own declaration; ABSENCE -> "action"
         # (every published bundle was a tradeable candidate — diagnostic is opt-in).

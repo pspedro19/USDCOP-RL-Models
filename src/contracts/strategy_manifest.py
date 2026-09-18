@@ -207,9 +207,24 @@ class StrategyBundleManifest:
 
     @property
     def active_backtest(self) -> "BacktestEntry | None":
-        """The backtest entry for the active version (prefers a replayable one), else the last."""
+        """The backtest entry whose headline the registry publishes for this strategy.
+
+        Order matters for honesty, not convenience: the headline a prospective reader sees
+        must be the number the approval actually rests on (quant-constitution §7,
+        approval-gates §2 — "Vote 2 se emite sobre los números del bundle publicado").
+
+        1. An entry of the active version that carries `gates` — that is the evaluated OOS
+           year backing the recommendation (for smart_simple_v11 2.0.0 that is 2025:
+           +7.35%, Sharpe 0.942, p=0.2277, 4/6 REVIEW). Picking any other entry let the
+           registry advertise a forward *replay* slice (1.77%, "Sharpe 3.792" over 40
+           sub-trades) as if it were the strategy's track record.
+        2. Otherwise a replayable entry, then the first match, then the last backtest.
+        """
         av = self.active_version
         matches = [b for b in self.backtests if b.model_version == av]
+        gated = [b for b in matches if b.gates]
+        if gated:
+            return max(gated, key=lambda b: b.year)
         for b in matches:
             if b.replayable:
                 return b

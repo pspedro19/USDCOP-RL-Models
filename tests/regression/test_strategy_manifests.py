@@ -792,16 +792,64 @@ def test_ts_runtime_surface_validator_mirrors_python_whitelist():
         "strategy-manifest.contract (one whitelist, two entry points)")
 
 
+def _bundle_manifest(strategy_id: str) -> dict:
+    p = (ROOT / "usdcop-trading-dashboard/public/data/strategies"
+         / strategy_id / "manifest.json")
+    return json.loads(p.read_text(encoding="utf-8")) if p.is_file() else {}
+
+
 def test_registry_champion_matches_manifest():
+    """The visible strategy of an asset must be the one the authority freezes.
+
+    Synthetic DEMO fixtures are excluded from the map — not waved through it. A bundle
+    declaring `synthetic: true` is a UI fixture with invented numbers, so it is neither a
+    champion nor a dethroned candidate, and `normalize_champions` exempts it from the
+    status rewrite for the same reason. `test_synthetic_bundles_are_never_champions`
+    below is what keeps that exemption from becoming a hole.
+    """
     reg = json.loads((ROOT / "usdcop-trading-dashboard/public/data/registry.json")
                      .read_text(encoding="utf-8"))
     live = {s["asset_id"]: s["strategy_id"] for s in reg["strategies"]
-            if s.get("status") != "archived"}
+            if s.get("status") != "archived"
+            and _bundle_manifest(s["strategy_id"]).get("synthetic") is not True}
     for asset, sid in _champions().items():
         if asset in live:
             assert live[asset] == sid, (
                 f"{asset}: registry serves {live[asset]!r} but manifest/authority freeze {sid!r}"
             )
+
+
+def test_synthetic_bundles_are_never_champions():
+    """A fixture may be visible; it may never be an asset's evidence.
+
+    The exemption above buys the demo bundle the right to stay in the registry. This is
+    its price: invented numbers can never occupy a champion seat, carry a `production`
+    status, or travel with an approval record — the three ways a fixture would stop
+    reading as a fixture (quant-constitution §7, approval-gates §2).
+    """
+    reg = json.loads((ROOT / "usdcop-trading-dashboard/public/data/registry.json")
+                     .read_text(encoding="utf-8"))
+    champions = _champions()
+    default_sid = reg.get("default", {}).get("strategy_id")
+    for s in reg["strategies"]:
+        sid = s["strategy_id"]
+        man = _bundle_manifest(sid)
+        if man.get("synthetic") is not True:
+            continue
+        assert sid not in champions.values(), (
+            f"{sid}: synthetic bundle sits in CHAMPION_BY_ASSET — a fixture cannot be "
+            "the evidence an asset is judged on")
+        assert sid != default_sid, (
+            f"{sid}: synthetic bundle is the registry default — the active strategy "
+            "must never be a fixture")
+        assert s.get("status") != "production" and man.get("status") != "production", (
+            f"{sid}: synthetic bundle claims production status")
+        assert man.get("approval") is None, (
+            f"{sid}: synthetic bundle carries an approval record — a fixture must not "
+            "hold the signature of a human Vote-2")
+        assert man.get("disclaimer"), (
+            f"{sid}: synthetic bundle without `disclaimer` — the invented numbers must "
+            "disclose themselves wherever the manifest travels")
 
 
 def test_manifest_files_are_tracked_in_git():

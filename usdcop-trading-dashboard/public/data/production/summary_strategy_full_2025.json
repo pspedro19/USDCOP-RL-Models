@@ -1,0 +1,44 @@
+{
+  "strategy_id": "strategy_full",
+  "strategy_name": "Strategy Full",
+  "year": 2025,
+  "initial_capital": 10000.0,
+  "asset": "XAU/USD",
+  "chart_symbol": "XAUUSD",
+  "mode": "demo",
+  "synthetic": true,
+  "disclaimer": "DEMOSTRACIÓN. Los resultados de esta estrategia son SINTÉTICOS: se generaron para mostrar el funcionamiento del replay de señales. No son un track record, no corresponden a operaciones reales ni simuladas sobre una política, y no deben usarse para ninguna decisión de inversión. Los resultados reales del sistema están en las estrategias marcadas como producción.",
+  "generated_at": "2026-09-11T21:08:40.111520+00:00",
+  "n_trading_days": 261,
+  "n_trades": 46,
+  "insufficient_trades": false,
+  "strategies": {
+    "strategy_full": {
+      "final_equity": 12332.4,
+      "total_return_pct": 23.32,
+      "sharpe": 1.68,
+      "calmar": 3.64,
+      "max_dd_pct": -6.41,
+      "win_rate_pct": 60.9,
+      "profit_factor": 1.724,
+      "n_long": 27,
+      "n_short": 19,
+      "trading_days": 261,
+      "exit_reasons": {
+        "week_end": 6,
+        "hard_stop": 12,
+        "take_profit": 28
+      },
+      "insufficient_trades": false
+    },
+    "buy_and_hold": {
+      "final_equity": 16426.63,
+      "total_return_pct": 64.27
+    }
+  },
+  "statistical_tests": {
+    "p_value": null,
+    "significant": false,
+    "note": "Serie sintética: no se calcula significancia estadística."
+  }
+}

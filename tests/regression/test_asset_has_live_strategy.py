@@ -30,6 +30,23 @@ def _registry() -> list[dict]:
     return json.loads(REGISTRY.read_text(encoding="utf-8"))["strategies"]
 
 
+def _is_synthetic(strategy_id: str) -> bool:
+    """True for a bundle that declares itself a DEMO fixture.
+
+    A fixture publishes invented numbers to exercise the replay UI, so it is not a
+    candidate competing for the asset's seat — counting it as one would either hide a
+    real two-champion collision behind a demo or force the demo to be archived out of
+    existence. The flag comes from the bundle's own manifest; `normalize_champions` reads
+    the same field, and `test_synthetic_bundles_are_never_champions`
+    (tests/regression/test_strategy_manifests.py) is what keeps the exemption narrow.
+    """
+    p = (ROOT / "usdcop-trading-dashboard" / "public" / "data" / "strategies"
+         / strategy_id / "manifest.json")
+    if not p.is_file():
+        return False
+    return json.loads(p.read_text(encoding="utf-8")).get("synthetic") is True
+
+
 def test_every_asset_has_a_visible_strategy():
     rows = _registry()
     assets = {s.get("asset_id") for s in rows if s.get("asset_id")}
@@ -54,7 +71,8 @@ def test_at_most_one_non_archived_per_asset():
     rows = _registry()
     by_asset: dict[str, list[str]] = {}
     for s in rows:
-        if s.get("status") != "archived" and s.get("asset_id"):
+        if s.get("status") != "archived" and s.get("asset_id") \
+                and not _is_synthetic(s["strategy_id"]):
             by_asset.setdefault(s["asset_id"], []).append(s["strategy_id"])
     multi = {a: ids for a, ids in by_asset.items() if len(ids) > 1}
     assert not multi, (

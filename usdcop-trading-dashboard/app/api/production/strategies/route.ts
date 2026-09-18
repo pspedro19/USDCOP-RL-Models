@@ -5,6 +5,13 @@
  *   summary_<sid>.json          → additional per-strategy production exports (e.g. BTC paper)
  * (summary_*_2025.json backtest files are excluded.)
  * No hardcoded strategy ids — the selector renders whatever was legitimately exported.
+ *
+ * SYNTHETIC DEMO BUNDLES get their own door. A real strategy only reaches this list after a
+ * human Vote-2, and that gate is not negotiable. A demo fixture has no approval and must
+ * never acquire one — writing an APPROVED record for it would forge the very signature the
+ * gate exists to record. So a summary carrying `synthetic: true` is listed on the strength
+ * of being declared synthetic, never on the strength of an approval, and is flagged
+ * `mode: 'demo'` so every consumer can tell the two apart without inspecting the id.
  */
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
@@ -34,6 +41,8 @@ export async function GET() {
 
   type Summary = {
     strategy_id?: string; strategy_name?: string; year?: number; mode?: string;
+    /** Declared by the bundle itself; the ONLY thing that opens the demo door. */
+    synthetic?: boolean;
     strategies?: Record<string, { total_return_pct?: number | null }>;
   };
   const push = async (summaryFile: string, isDefault: boolean) => {
@@ -42,17 +51,21 @@ export async function GET() {
     seen.add(s.strategy_id);
     // Approval state lives OUTSIDE public/ (CXD-057) — only `status` is used here,
     // which IS in the public allowlist; the rest of the document never leaves the server.
+    const isSynthetic = s.synthetic === true;
     const a = (await readApprovalState(isDefault ? null : s.strategy_id))?.state ?? null;
     // Production lists ONLY operator-approved strategies; a PENDING per-sid export
     // stays out until the human Vote-2 on /dashboard moves it here (operator directive).
-    if (!isDefault && a?.status !== 'APPROVED' && a?.status !== 'LIVE') return;
+    // A synthetic demo is exempt from the APPROVAL check and from nothing else: it can
+    // never be the default, and it is labelled DEMO on the way out.
+    if (!isDefault && !isSynthetic && a?.status !== 'APPROVED' && a?.status !== 'LIVE') return;
+    if (isSynthetic && isDefault) return; // a fixture must never be the active strategy
     options.push({
       strategy_id: s.strategy_id,
       strategy_name: s.strategy_name ?? s.strategy_id,
-      status: a?.status ?? 'LIVE',
+      status: isSynthetic ? 'DEMO' : (a?.status ?? 'LIVE'),
       year: s.year ?? null,
       return_pct: s.strategies?.[s.strategy_id]?.total_return_pct ?? null,
-      mode: s.mode ?? 'live',
+      mode: isSynthetic ? 'demo' : (s.mode ?? 'live'),
       is_active_default: isDefault,
     });
   };

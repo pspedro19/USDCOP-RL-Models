@@ -148,15 +148,67 @@ def _pct_families(data) -> dict:
     return families
 
 
-def _decimal_disguise_offenders(families: dict) -> list[str]:
+def _equity_corroborated_pct_keys(data) -> set[str]:
+    """``*_pct`` keys whose scale an equity series in the SAME document independently proves.
+
+    The magnitude heuristic below assumes "a real pct return column crosses 1 somewhere".
+    That prior is false for a genuinely flat period: the honest 2026 paper ledger reports
+    +0.66% / +0.43% / +0.40% YTD, and flagging it would push an exporter to inflate small
+    but real returns to satisfy a test — the exact opposite of BL-42's intent.
+
+    Equity settles the scale without any prior. A strategy whose trades carry ``equity``
+    starts at ``equity[0] / (1 + pnl_pct[0]/100)``; the realised return to the last trade
+    is then a unit-free witness. If it matches the published YTD figure read as PERCENTAGE
+    POINTS (and not as a decimal, which would be 100x larger), the family is proven.
+    """
+    proven: set[str] = set()
+    strategies = data.get("strategies")
+    if not isinstance(strategies, dict):
+        return proven
+    for entry in strategies.values():
+        if not isinstance(entry, dict):
+            continue
+        trades = entry.get("trades")
+        if not isinstance(trades, list) or not trades:
+            continue
+        first, last = trades[0], trades[-1]
+        if not (isinstance(first, dict) and isinstance(last, dict)):
+            continue
+        start_pnl, start_eq, end_eq = (
+            first.get("pnl_pct"), first.get("equity"), last.get("equity"))
+        if not all(isinstance(v, (int, float)) and math.isfinite(v)
+                   for v in (start_pnl, start_eq, end_eq)):
+            continue
+        opening = start_eq / (1.0 + start_pnl / 100.0)
+        if opening <= 0:
+            continue
+        realised_pct = (end_eq / opening - 1.0) * 100.0
+        for key, value in entry.items():
+            if not key.endswith("_pct") or isinstance(value, bool):
+                continue
+            if not isinstance(value, (int, float)) or not math.isfinite(value):
+                continue
+            # Published pct points agree with the equity series within rounding.
+            if abs(value - realised_pct) <= EQUITY_PCT_TOLERANCE * 100.0:
+                proven.add(key)
+    return proven
+
+
+def _decimal_disguise_offenders(families: dict, corroborated: set[str] | None = None) -> list[str]:
     """A ``*_pct`` family whose |median| < 0.5 AND |max| < 1.0 is a decimal in disguise.
 
     Same 0.5 prior as the DB layer (declared ex-ante in BL-42, not tuned on outcomes);
     the |max| < 1.0 guard keeps genuinely-small pct families (one +1.6% week among
     noise) out: a real pct return column crosses 1 somewhere, a decimal one does not.
+
+    ``corroborated`` lists keys an equity series already proved to be percentage points
+    (see ``_equity_corroborated_pct_keys``); evidence beats the magnitude prior.
     """
+    corroborated = corroborated or set()
     offenders = []
     for key, values in families.items():
+        if key in corroborated:
+            continue
         if len(values) < MIN_ROWS_FOR_MEDIAN:
             continue
         ordered = sorted(abs(v) for v in values)
@@ -173,7 +225,9 @@ def _decimal_disguise_offenders(families: dict) -> list[str]:
 def test_pct_families_are_not_decimals_in_disguise(path: Path):
     """CXD-012: |v| <= 100 alone accepts 0.01606 under ``_pct``. The family-median
     detector closes that hole for every published bundle."""
-    offenders = _decimal_disguise_offenders(_pct_families(_load(path)))
+    data = _load(path)
+    offenders = _decimal_disguise_offenders(
+        _pct_families(data), _equity_corroborated_pct_keys(data))
     assert not offenders, (
         f"{path.name}: *_pct families that are decimals in disguise: {offenders}")
 
