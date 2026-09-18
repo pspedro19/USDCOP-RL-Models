@@ -1,15 +1,15 @@
 {
-  "_note": "LEGACY fallback only — SSOT is public/data/registry.json. Values here may be stale (e.g. return_pct 23.07 vs registry smart_simple_v11 25.63). Do not treat as authoritative.",
+  "_note": "LEGACY fallback only — SSOT is public/data/registry.json (built by scripts/pipeline/build_strategy_registry.py from the immutable bundles). Kept in sync with the active version's GATED backtest so that if /api/registry ever fails the fallback cannot advertise superseded numbers: v11 2.0.0 / 2025 OOS = +7.35%, Sharpe 0.942, p=0.2277, 4/6 gates REVIEW. The old +23.07%/Sharpe 3.822/p=0.0056 figures were superseded by the honesty cascade (HYPOTHESIS-REGISTRY § RE-MEDICIÓN #3) and must not be published anywhere.",
   "strategies": [
     {
       "strategy_id": "smart_simple_v11",
       "strategy_name": "Smart Simple v2.0.0",
       "pipeline": "ml_forecasting",
-      "status": "APPROVED",
+      "status": "PENDING_APPROVAL",
       "backtest_year": 2025,
-      "return_pct": 23.07,
-      "sharpe": 3.822,
-      "p_value": 0.0056
+      "return_pct": 7.35,
+      "sharpe": 0.942,
+      "p_value": 0.2277
     }
   ],
   "default_strategy": "smart_simple_v11"
